@@ -1,0 +1,13 @@
+{
+  "version": 2,
+  "dgSpecHash": "/tTrgcVp/HI=",
+  "success": true,
+  "projectFilePath": "C:\\Users\\Alias\\repos\\LocalLLMServerManager\\LocalLLMServerManager.csproj",
+  "expectedPackageFiles": [
+    "C:\\Users\\Alias\\.nuget\\packages\\microsoft.aspnetcore.openapi\\9.0.8\\microsoft.aspnetcore.openapi.9.0.8.nupkg.sha512",
+    "C:\\Users\\Alias\\.nuget\\packages\\microsoft.openapi\\1.6.17\\microsoft.openapi.1.6.17.nupkg.sha512",
+    "C:\\Users\\Alias\\.nuget\\packages\\system.io.hashing\\8.0.0\\system.io.hashing.8.0.0.nupkg.sha512",
+    "C:\\Users\\Alias\\.nuget\\packages\\yarp.reverseproxy\\2.3.0\\yarp.reverseproxy.2.3.0.nupkg.sha512"
+  ],
+  "logs": []
+}
