@@ -131,6 +131,6 @@ No configuration needed — the dashboard auto-detects Ollama at `localhost:1143
 
 ## 🔧 Prerequisites
 
-- [.NET 9 SDK](https://dotnet.microsoft.com/download/dotnet/9) — to build/run from source
+- [.NET 10 SDK](https://dotnet.microsoft.com/download/dotnet/10) — to build/run from source
 - [Ollama](https://ollama.com/) — LLM inference runtime
 - [Stable Diffusion WebUI Forge](https://github.com/lllyasviel/stable-diffusion-webui-forge) *(optional)* — image generation backend
