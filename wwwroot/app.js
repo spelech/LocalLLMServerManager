@@ -1168,7 +1168,88 @@ const civitaiFilesLoading = /** @type {HTMLElement} */ (document.getElementById(
 const civitaiFilesList = /** @type {HTMLElement} */ (document.getElementById('civitai-files-list'));
 const civitaiDownloadUrl = /** @type {HTMLInputElement} */ (document.getElementById('civitai-download-url'));
 const btnCivitaiCopyUrl = /** @type {HTMLButtonElement} */ (document.getElementById('btn-civitai-copy-url'));
+const btnCivitaiDownload = /** @type {HTMLButtonElement} */ (document.getElementById('btn-civitai-download'));
 const btnCloseCivitaiModal = /** @type {HTMLButtonElement} */ (document.getElementById('btn-close-civitai-modal'));
+
+// Forge path UI elements
+const forgePathInput = /** @type {HTMLInputElement} */ (document.getElementById('forge-path-input'));
+const btnSaveForgePath = /** @type {HTMLButtonElement} */ (document.getElementById('btn-save-forge-path'));
+const forgePathStatus = /** @type {HTMLElement} */ (document.getElementById('forge-path-status'));
+
+// Download progress elements
+const civitaiDlProgress = /** @type {HTMLElement} */ (document.getElementById('civitai-dl-progress'));
+const civitaiDlPct = /** @type {HTMLElement} */ (document.getElementById('civitai-dl-pct'));
+const civitaiDlBytes = /** @type {HTMLElement} */ (document.getElementById('civitai-dl-bytes'));
+const civitaiDlBar = /** @type {HTMLElement} */ (document.getElementById('civitai-dl-bar'));
+const civitaiDlStatus = /** @type {HTMLElement} */ (document.getElementById('civitai-dl-status'));
+
+/** @type {string} */
+let civitaiSelectedFileName = '';
+/** @type {boolean} */
+let civitaiForgePathConfigured = false;
+
+// ---------------------------------------------------------------------------
+// Settings — load on startup
+// ---------------------------------------------------------------------------
+async function loadAppSettings() {
+    try {
+        const res = await fetch('/api/settings');
+        if (!res.ok) return;
+        const settings = await res.json();
+        if (settings.forgeModelsPath) {
+            forgePathInput.value = settings.forgeModelsPath;
+            setForgePathStatus(true, settings.forgeModelsPath);
+        }
+    } catch { /* ignore */ }
+}
+
+function setForgePathStatus(configured, path = '') {
+    civitaiForgePathConfigured = configured;
+    if (configured && path) {
+        forgePathStatus.textContent = '✓ Configured';
+        forgePathStatus.style.background = 'rgba(34, 197, 94, 0.15)';
+        forgePathStatus.style.color = 'var(--online)';
+    } else {
+        forgePathStatus.textContent = 'Not configured';
+        forgePathStatus.style.background = 'rgba(0,0,0,0.2)';
+        forgePathStatus.style.color = 'var(--text-muted)';
+    }
+    // Update download button availability
+    if (btnCivitaiDownload) {
+        btnCivitaiDownload.disabled = !configured || !civitaiDownloadUrl.value;
+    }
+}
+
+if (btnSaveForgePath) {
+    btnSaveForgePath.addEventListener('click', async () => {
+        const path = forgePathInput.value.trim();
+        btnSaveForgePath.disabled = true;
+        btnSaveForgePath.textContent = 'Saving...';
+        try {
+            const res = await fetch('/api/settings', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ forgeModelsPath: path })
+            });
+            if (!res.ok) {
+                const err = await res.text();
+                showToast(`Could not save: ${err}`, 'error');
+                setForgePathStatus(false);
+            } else {
+                setForgePathStatus(true, path);
+                showToast('Forge models path saved!', 'success');
+            }
+        } catch {
+            showToast('Failed to contact server.', 'error');
+        } finally {
+            btnSaveForgePath.disabled = false;
+            btnSaveForgePath.textContent = 'Save Path';
+        }
+    });
+}
+
+// Load settings immediately
+loadAppSettings();
 
 // Type badge colour mapping
 const civitaiTypeBadgeColor = {
@@ -1359,7 +1440,13 @@ async function openCivitaiModal(model) {
                 document.querySelectorAll('#civitai-files-list .file-row').forEach(r => r.classList.remove('selected'));
                 row.classList.add('selected');
                 civitaiDownloadUrl.value = downloadUrl;
+                civitaiSelectedFileName = primaryFile.name || '';
                 btnCivitaiCopyUrl.disabled = !downloadUrl;
+                if (btnCivitaiDownload) {
+                    btnCivitaiDownload.disabled = !downloadUrl || !civitaiForgePathConfigured;
+                }
+                // Reset progress UI
+                if (civitaiDlProgress) civitaiDlProgress.style.display = 'none';
             });
 
             civitaiFilesList.appendChild(row);
@@ -1369,4 +1456,95 @@ async function openCivitaiModal(model) {
         civitaiFilesList.style.display = 'block';
         civitaiFilesList.innerHTML = '<div style="padding:2rem;text-align:center;color:var(--offline);">Failed to load model versions.</div>';
     }
+}
+
+// ---------------------------------------------------------------------------
+// Download to Forge button — SSE progress
+// ---------------------------------------------------------------------------
+if (btnCivitaiDownload) {
+    btnCivitaiDownload.addEventListener('click', async () => {
+        const url = civitaiDownloadUrl.value;
+        const fileName = civitaiSelectedFileName;
+        if (!url || !fileName) return;
+
+        // Show progress bar
+        civitaiDlProgress.style.display = 'block';
+        civitaiDlBar.style.width = '0%';
+        civitaiDlPct.textContent = '0%';
+        civitaiDlBytes.textContent = '0 B / ?';
+        civitaiDlStatus.textContent = 'Connecting...';
+        btnCivitaiDownload.disabled = true;
+        btnCivitaiDownload.textContent = '⬇ Downloading...';
+
+        try {
+            const res = await fetch('/api/civitai/download', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ url, fileName })
+            });
+
+            if (!res.ok || !res.body) {
+                const errText = await res.text();
+                showToast(`Download failed: ${errText}`, 'error');
+                civitaiDlStatus.textContent = `Error: ${errText}`;
+                civitaiDlStatus.style.color = 'var(--offline)';
+                btnCivitaiDownload.disabled = false;
+                btnCivitaiDownload.textContent = '⬇ Download to Forge';
+                return;
+            }
+
+            const reader = res.body.getReader();
+            const decoder = new TextDecoder();
+            let buf = '';
+
+            while (true) {
+                const { done, value } = await reader.read();
+                if (done) break;
+                buf += decoder.decode(value, { stream: true });
+                const events = buf.split('\n\n');
+                buf = events.pop() || '';
+
+                for (const block of events) {
+                    const lines = block.split('\n');
+                    const eventLine = lines.find(l => l.startsWith('event:'));
+                    const dataLine  = lines.find(l => l.startsWith('data:'));
+                    if (!eventLine || !dataLine) continue;
+
+                    const eventName = eventLine.slice(6).trim();
+                    const data = JSON.parse(dataLine.slice(5).trim());
+
+                    if (eventName === 'start') {
+                        civitaiDlStatus.textContent = `Downloading ${data.fileName}...`;
+                        civitaiDlStatus.style.color = '';
+                    } else if (eventName === 'progress') {
+                        const pct = data.pct >= 0 ? data.pct : 0;
+                        civitaiDlBar.style.width = `${pct}%`;
+                        civitaiDlPct.textContent = data.pct >= 0 ? `${pct}%` : 'Downloading...';
+                        civitaiDlBytes.textContent = `${formatBytes(data.bytesRead)} / ${data.totalBytes > 0 ? formatBytes(data.totalBytes) : '?'}`;
+                    } else if (eventName === 'done') {
+                        civitaiDlBar.style.width = '100%';
+                        civitaiDlPct.textContent = '100%';
+                        civitaiDlStatus.textContent = `✓ Saved to: ${data.destPath}`;
+                        civitaiDlStatus.style.color = 'var(--online)';
+                        showToast(`Downloaded: ${data.fileName}`, 'success');
+                        btnCivitaiDownload.disabled = false;
+                        btnCivitaiDownload.textContent = '⬇ Download to Forge';
+                    } else if (eventName === 'error') {
+                        civitaiDlStatus.textContent = `Error: ${data}`;
+                        civitaiDlStatus.style.color = 'var(--offline)';
+                        showToast(`Download error: ${data}`, 'error');
+                        btnCivitaiDownload.disabled = false;
+                        btnCivitaiDownload.textContent = '⬇ Download to Forge';
+                    }
+                }
+            }
+        } catch (err) {
+            const e = /** @type {Error} */ (err);
+            civitaiDlStatus.textContent = `Error: ${e.message}`;
+            civitaiDlStatus.style.color = 'var(--offline)';
+            showToast(`Download error: ${e.message}`, 'error');
+            btnCivitaiDownload.disabled = false;
+            btnCivitaiDownload.textContent = '⬇ Download to Forge';
+        }
+    });
 }

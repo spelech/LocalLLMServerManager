@@ -2,6 +2,34 @@ using System.Text.Json;
 using System.Text;
 using LocalLLMServerManager;
 
+// Settings helper functions (must precede app.Run() in top-level programs)
+static string SettingsFilePath()
+{
+    return Path.Combine(AppContext.BaseDirectory, "settings.json");
+}
+
+static AppSettings LoadSettings()
+{
+    try
+    {
+        var path = SettingsFilePath();
+        if (File.Exists(path))
+        {
+            var json = File.ReadAllText(path);
+            return JsonSerializer.Deserialize<AppSettings>(json) ?? new AppSettings();
+        }
+    }
+    catch { }
+    return new AppSettings();
+}
+
+static void SaveSettings(AppSettings settings)
+{
+    File.WriteAllText(
+        SettingsFilePath(),
+        JsonSerializer.Serialize(settings, new JsonSerializerOptions { WriteIndented = true }));
+}
+
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
@@ -230,5 +258,133 @@ app.MapGet("/api/gpu/vram", () =>
 });
 
 app.MapReverseProxy();
+
+// ---------------------------------------------------------------------------
+// Settings endpoints
+// ---------------------------------------------------------------------------
+app.MapGet("/api/settings", () =>
+{
+    var settings = LoadSettings();
+    return Results.Ok(settings);
+});
+
+app.MapPost("/api/settings", async (HttpContext ctx) =>
+{
+    try
+    {
+        var settings = await JsonSerializer.DeserializeAsync<AppSettings>(ctx.Request.Body);
+        if (settings == null) return Results.BadRequest("Invalid body");
+
+        // Validate directory exists if provided
+        if (!string.IsNullOrWhiteSpace(settings.ForgeModelsPath) && !Directory.Exists(settings.ForgeModelsPath))
+        {
+            return Results.BadRequest($"Directory does not exist: {settings.ForgeModelsPath}");
+        }
+
+        SaveSettings(settings);
+        return Results.Ok(settings);
+    }
+    catch (Exception ex)
+    {
+        return Results.Problem(ex.Message);
+    }
+});
+
+// ---------------------------------------------------------------------------
+// CivitAI direct download — streams to the configured Forge models directory.
+// Progress is reported as Server-Sent Events so the UI can show a live bar.
+// ---------------------------------------------------------------------------
+app.MapPost("/api/civitai/download", async (HttpContext ctx, HttpClient http) =>
+{
+    string? url = null;
+    string? fileName = null;
+
+    try
+    {
+        var body = await JsonSerializer.DeserializeAsync<JsonElement>(ctx.Request.Body);
+        url = body.GetProperty("url").GetString();
+        fileName = body.GetProperty("fileName").GetString();
+    }
+    catch
+    {
+        ctx.Response.StatusCode = 400;
+        await ctx.Response.WriteAsync("Invalid JSON body");
+        return;
+    }
+
+    if (string.IsNullOrWhiteSpace(url) || string.IsNullOrWhiteSpace(fileName))
+    {
+        ctx.Response.StatusCode = 400;
+        await ctx.Response.WriteAsync("url and fileName are required");
+        return;
+    }
+
+    // Sanitise filename — strip any path traversal characters
+    fileName = Path.GetFileName(fileName);
+
+    var settings = LoadSettings();
+    if (string.IsNullOrWhiteSpace(settings.ForgeModelsPath) || !Directory.Exists(settings.ForgeModelsPath))
+    {
+        ctx.Response.StatusCode = 400;
+        await ctx.Response.WriteAsync("Forge models path is not configured or does not exist. Configure it in the Stable Diffusion tab.");
+        return;
+    }
+
+    var destPath = Path.Combine(settings.ForgeModelsPath, fileName);
+
+    // Use SSE to stream progress back
+    ctx.Response.Headers["Content-Type"] = "text/event-stream";
+    ctx.Response.Headers["Cache-Control"] = "no-cache";
+    ctx.Response.Headers["X-Accel-Buffering"] = "no";
+
+    async Task SendEvent(string eventName, string data)
+    {
+        await ctx.Response.WriteAsync($"event: {eventName}\ndata: {data}\n\n");
+        await ctx.Response.Body.FlushAsync();
+    }
+
+    try
+    {
+        using var response = await http.GetAsync(url, HttpCompletionOption.ResponseHeadersRead);
+        if (!response.IsSuccessStatusCode)
+        {
+            await SendEvent("error", $"Remote server returned {(int)response.StatusCode}");
+            return;
+        }
+
+        var totalBytes = response.Content.Headers.ContentLength ?? -1L;
+        await SendEvent("start", JsonSerializer.Serialize(new { fileName, totalBytes }));
+
+        using var stream = await response.Content.ReadAsStreamAsync();
+        using var fileStream = new FileStream(destPath, FileMode.Create, FileAccess.Write, FileShare.None, 81920, true);
+
+        var buffer = new byte[81920];
+        long bytesRead = 0;
+        int read;
+        var lastReportAt = 0L;
+
+        while ((read = await stream.ReadAsync(buffer)) > 0)
+        {
+            await fileStream.WriteAsync(buffer.AsMemory(0, read));
+            bytesRead += read;
+
+            // Send progress update every ~500 KB or on the last chunk
+            if (bytesRead - lastReportAt > 512 * 1024 || (totalBytes > 0 && bytesRead >= totalBytes))
+            {
+                lastReportAt = bytesRead;
+                var pct = totalBytes > 0 ? (int)(bytesRead * 100 / totalBytes) : -1;
+                await SendEvent("progress", JsonSerializer.Serialize(new { bytesRead, totalBytes, pct }));
+            }
+        }
+
+        await SendEvent("done", JsonSerializer.Serialize(new { fileName, destPath }));
+    }
+    catch (Exception ex)
+    {
+        await SendEvent("error", ex.Message);
+        // Clean up partial file
+        if (File.Exists(destPath)) File.Delete(destPath);
+    }
+});
 
 app.Run();

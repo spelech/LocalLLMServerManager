@@ -305,6 +305,24 @@
                 <p>Search CivitAI for checkpoints, LoRAs, and embeddings to use with your Forge / Automatic1111 instance.</p>
             </div>
 
+            <!-- Forge Path Configuration Banner -->
+            <div class="glass-card info-banner" id="forge-path-banner" style="margin-bottom: 1.5rem; gap: 1rem; flex-direction: column; align-items: stretch;">
+                <div style="display:flex; align-items:center; gap: 0.75rem;">
+                    <div class="info-icon">📂</div>
+                    <div style="flex:1;">
+                        <h5 style="margin:0 0 0.2rem;">Forge / SD Models Directory</h5>
+                        <p style="margin:0; font-size:0.8rem; color: var(--text-muted);">Set the path to your Forge <code>models/</code> folder to enable one-click downloads directly to disk.</p>
+                    </div>
+                    <span id="forge-path-status" style="font-size:0.75rem; padding: 0.3rem 0.75rem; border-radius: 999px; background: rgba(0,0,0,0.2); color: var(--text-muted); white-space:nowrap;">Not configured</span>
+                </div>
+                <div style="display:flex; gap:0.75rem; align-items:center;">
+                    <input type="text" id="forge-path-input"
+                        placeholder="e.g. C:\AI\stable-diffusion-webui-forge\models"
+                        style="flex:1; background: rgba(0,0,0,0.25); border: 1px solid var(--border-color); color: var(--text-main); padding: 0.55rem 1rem; border-radius: var(--radius-sm); font-size: 0.9rem;">
+                    <button id="btn-save-forge-path" class="search-submit-btn" style="flex-shrink:0;">Save Path</button>
+                </div>
+            </div>
+
             <!-- CivitAI Search Controls -->
             <div class="search-section" style="margin-bottom: 1.5rem;">
                 <form id="civitai-search-form" class="search-bar" style="margin-bottom: 1rem;">
@@ -391,14 +409,28 @@
                 <div class="files-list" id="civitai-files-list" style="display:none;"></div>
 
                 <div class="manual-input-box" style="margin-top:1.5rem;">
-                    <label>Direct Download URL:</label>
-                    <div class="manual-pull-row">
-                        <input type="text" id="civitai-download-url" readonly placeholder="Select a version above...">
+                    <label>Selected Version &amp; Download:</label>
+                    <div class="manual-pull-row" style="flex-wrap:wrap; gap: 0.5rem;">
+                        <input type="text" id="civitai-download-url" readonly placeholder="Select a version above..." style="min-width:0; flex:1;">
                         <button class="action-btn" id="btn-civitai-copy-url" disabled style="white-space:nowrap;">
                             📋 Copy URL
                         </button>
+                        <button class="action-btn pull-btn" id="btn-civitai-download" disabled style="white-space:nowrap;">
+                            ⬇ Download to Forge
+                        </button>
                     </div>
-                    <p style="font-size:0.75rem; color: var(--text-muted); margin-top: 0.5rem;">Paste this URL into your browser or a download manager, then place the file in your Forge <code>models/Stable-diffusion/</code> directory.</p>
+
+                    <!-- Per-modal download progress -->
+                    <div id="civitai-dl-progress" style="display:none; margin-top:1rem;">
+                        <div class="progress-info-row" style="margin-bottom:0.4rem;">
+                            <span id="civitai-dl-pct">0%</span>
+                            <span id="civitai-dl-bytes" style="font-size:0.8rem; color:var(--text-muted);">0 B / 0 B</span>
+                        </div>
+                        <div class="progress-bar-container">
+                            <div class="progress-bar-fill" id="civitai-dl-bar" style="width:0%;"></div>
+                        </div>
+                        <div id="civitai-dl-status" style="font-size:0.8rem; color:var(--text-muted); margin-top:0.4rem;">Starting...</div>
+                    </div>
                 </div>
             </div>
         </div>
