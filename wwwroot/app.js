@@ -4,6 +4,7 @@
 let localModels = [];
 let loadedModels = [];
 let hfSearchResults = [];
+let civitaiResults = [];
 let currentPullController = null;
 let gpuTotalVram = 8 * 1024 * 1024 * 1024; // Default to 8 GB until detected
 const modelMetadataCache = new Map();
@@ -1146,5 +1147,226 @@ async function pullModel(modelName) {
                 currentPullController = null;
             }, 5000);
         }
+    }
+}
+
+// =============================================
+// CIVITAI STABLE DIFFUSION SECTION
+// =============================================
+
+const civitaiSearchForm = /** @type {HTMLFormElement} */ (document.getElementById('civitai-search-form'));
+const civitaiSearchInput = /** @type {HTMLInputElement} */ (document.getElementById('civitai-search-input'));
+const civitaiTypeFilter = /** @type {HTMLSelectElement} */ (document.getElementById('civitai-type-filter'));
+const civitaiSortFilter = /** @type {HTMLSelectElement} */ (document.getElementById('civitai-sort-filter'));
+const civitaiResultsContainer = /** @type {HTMLElement} */ (document.getElementById('civitai-results-container'));
+const civitaiModal = /** @type {HTMLElement} */ (document.getElementById('civitai-model-modal'));
+const civitaiModalName = /** @type {HTMLElement} */ (document.getElementById('civitai-modal-name'));
+const civitaiModalCreator = /** @type {HTMLElement} */ (document.getElementById('civitai-modal-creator'));
+const civitaiModalDownloads = /** @type {HTMLElement} */ (document.getElementById('civitai-modal-downloads'));
+const civitaiModalDesc = /** @type {HTMLElement} */ (document.getElementById('civitai-modal-desc'));
+const civitaiFilesLoading = /** @type {HTMLElement} */ (document.getElementById('civitai-files-loading'));
+const civitaiFilesList = /** @type {HTMLElement} */ (document.getElementById('civitai-files-list'));
+const civitaiDownloadUrl = /** @type {HTMLInputElement} */ (document.getElementById('civitai-download-url'));
+const btnCivitaiCopyUrl = /** @type {HTMLButtonElement} */ (document.getElementById('btn-civitai-copy-url'));
+const btnCloseCivitaiModal = /** @type {HTMLButtonElement} */ (document.getElementById('btn-close-civitai-modal'));
+
+// Type badge colour mapping
+const civitaiTypeBadgeColor = {
+    Checkpoint: 'hsl(258, 80%, 45%)',
+    LORA: 'hsl(190, 85%, 35%)',
+    TextualInversion: 'hsl(38, 92%, 45%)',
+    VAE: 'hsl(142, 70%, 35%)',
+    Controlnet: 'hsl(0, 75%, 40%)'
+};
+
+if (civitaiSearchForm) {
+    civitaiSearchForm.addEventListener('submit', (e) => {
+        e.preventDefault();
+        searchCivitai(civitaiSearchInput.value.trim());
+    });
+}
+
+document.querySelectorAll('.civitai-tag').forEach(chip => {
+    chip.addEventListener('click', () => {
+        const query = /** @type {HTMLElement} */ (chip).dataset.query || '';
+        civitaiSearchInput.value = query;
+        searchCivitai(query);
+    });
+});
+
+if (btnCloseCivitaiModal) {
+    btnCloseCivitaiModal.addEventListener('click', () => civitaiModal.classList.remove('active'));
+}
+window.addEventListener('click', (e) => {
+    if (e.target === civitaiModal) civitaiModal.classList.remove('active');
+});
+
+if (btnCivitaiCopyUrl) {
+    btnCivitaiCopyUrl.addEventListener('click', () => {
+        const url = civitaiDownloadUrl.value;
+        if (!url) return;
+        navigator.clipboard.writeText(url).then(() => {
+            showToast('Download URL copied to clipboard!', 'success');
+        }).catch(() => {
+            civitaiDownloadUrl.select();
+            document.execCommand('copy');
+            showToast('URL copied!', 'success');
+        });
+    });
+}
+
+async function searchCivitai(query) {
+    const types = civitaiTypeFilter ? civitaiTypeFilter.value : 'Checkpoint';
+    const sort = civitaiSortFilter ? civitaiSortFilter.value : 'Most Downloaded';
+
+    civitaiResultsContainer.innerHTML = `
+        <div class="loading-state">
+            <div class="spinner"></div>
+            <p>Searching CivitAI...</p>
+        </div>
+    `;
+
+    try {
+        const params = new URLSearchParams({ types, sort });
+        if (query) params.set('q', query);
+        const response = await fetch(`/api/civitai/search?${params}`);
+        if (!response.ok) throw new Error('Search failed');
+        const data = await response.json();
+        civitaiResults = data.items || [];
+        renderCivitaiResults();
+    } catch {
+        civitaiResultsContainer.innerHTML = `
+            <div class="empty-search-state">
+                <svg viewBox="0 0 24 24" fill="none" stroke="var(--offline)" stroke-width="1.5" class="empty-icon">
+                    <circle cx="12" cy="12" r="10"/>
+                    <line x1="12" y1="8" x2="12" y2="12"/>
+                    <line x1="12" y1="16" x2="12.01" y2="16"/>
+                </svg>
+                <p>Failed to reach CivitAI. Check your internet connection.</p>
+            </div>
+        `;
+    }
+}
+
+function renderCivitaiResults() {
+    if (civitaiResults.length === 0) {
+        civitaiResultsContainer.innerHTML = `
+            <div class="empty-search-state">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" class="empty-icon">
+                    <rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/>
+                </svg>
+                <p>No models found. Try a different query or type filter.</p>
+            </div>
+        `;
+        return;
+    }
+
+    civitaiResultsContainer.innerHTML = '<div class="search-results-grid" id="civitai-grid"></div>';
+    const grid = /** @type {HTMLElement} */ (document.getElementById('civitai-grid'));
+
+    civitaiResults.forEach(model => {
+        const card = document.createElement('div');
+        card.className = 'hf-card';
+
+        const downloads = (model.stats?.downloadCount || 0).toLocaleString();
+        const rating = model.stats?.rating ? model.stats.rating.toFixed(1) : 'N/A';
+        const typeColor = civitaiTypeBadgeColor[model.type] || 'hsl(210,10%,40%)';
+        const thumbUrl = model.modelVersions?.[0]?.images?.[0]?.url || '';
+        const thumbHtml = thumbUrl
+            ? `<img src="${thumbUrl}" alt="${model.name}" style="width:100%; height:120px; object-fit:cover; border-radius: var(--radius-md); margin-bottom: 0.75rem;">`
+            : '';
+        const desc = model.description
+            ? model.description.replace(/<[^>]*>/g, '').substring(0, 100) + '...'
+            : 'No description available.';
+
+        card.innerHTML = `
+            ${thumbHtml}
+            <div>
+                <div class="hf-card-header">
+                    <h4 class="hf-card-title">${model.name}</h4>
+                    <p class="hf-card-author">by <span>${model.creator?.username || 'Unknown'}</span></p>
+                </div>
+                <div class="hf-card-stats">
+                    <div class="hf-stat">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                        ${downloads}
+                    </div>
+                    <div class="hf-stat">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+                        ${rating}
+                    </div>
+                    <span class="quant-tag-badge" style="background: ${typeColor}22; border-color: ${typeColor}55; color: ${typeColor};">${model.type}</span>
+                </div>
+                <p class="hf-card-desc">${desc}</p>
+            </div>
+            <button class="hf-card-action">View Versions</button>
+        `;
+
+        card.querySelector('.hf-card-action').addEventListener('click', () => {
+            openCivitaiModal(model);
+        });
+
+        grid.appendChild(card);
+    });
+}
+
+async function openCivitaiModal(model) {
+    civitaiModalName.textContent = model.name;
+    civitaiModalCreator.textContent = model.creator?.username || 'Unknown';
+    civitaiModalDownloads.textContent = (model.stats?.downloadCount || 0).toLocaleString();
+    civitaiModalDesc.textContent = model.description
+        ? model.description.replace(/<[^>]*>/g, '').substring(0, 300)
+        : 'No description available.';
+    civitaiFilesLoading.style.display = 'flex';
+    civitaiFilesList.style.display = 'none';
+    civitaiFilesList.innerHTML = '';
+    civitaiDownloadUrl.value = '';
+    btnCivitaiCopyUrl.disabled = true;
+    civitaiModal.classList.add('active');
+
+    try {
+        const response = await fetch(`/api/civitai/model?id=${model.id}`);
+        const detail = await response.json();
+        const versions = detail.modelVersions || [];
+
+        civitaiFilesLoading.style.display = 'none';
+        civitaiFilesList.style.display = 'block';
+
+        if (versions.length === 0) {
+            civitaiFilesList.innerHTML = '<div style="padding:2rem;text-align:center;color:var(--text-muted);">No versions found.</div>';
+            return;
+        }
+
+        versions.forEach(version => {
+            const primaryFile = version.files?.[0];
+            if (!primaryFile) return;
+
+            const row = document.createElement('div');
+            row.className = 'file-row';
+            const sizeBytes = primaryFile.sizeKB ? primaryFile.sizeKB * 1024 : 0;
+            const sizeDisplay = sizeBytes > 0 ? formatBytes(sizeBytes) : 'Unknown size';
+            const downloadUrl = primaryFile.downloadUrl || '';
+
+            row.innerHTML = `
+                <div class="file-info">
+                    <span class="file-name">${version.name} — ${primaryFile.name}</span>
+                    <span class="file-size-badge">${sizeDisplay}</span>
+                </div>
+                <span class="quant-tag-badge">${version.baseModel || 'SD'}</span>
+            `;
+
+            row.addEventListener('click', () => {
+                document.querySelectorAll('#civitai-files-list .file-row').forEach(r => r.classList.remove('selected'));
+                row.classList.add('selected');
+                civitaiDownloadUrl.value = downloadUrl;
+                btnCivitaiCopyUrl.disabled = !downloadUrl;
+            });
+
+            civitaiFilesList.appendChild(row);
+        });
+    } catch {
+        civitaiFilesLoading.style.display = 'none';
+        civitaiFilesList.style.display = 'block';
+        civitaiFilesList.innerHTML = '<div style="padding:2rem;text-align:center;color:var(--offline);">Failed to load model versions.</div>';
     }
 }

@@ -100,6 +100,43 @@ app.MapGet("/api/hf/model", async (string repoId, HttpClient httpClient) =>
     }
 });
 
+// CivitAI search proxy (avoids CORS)
+app.MapGet("/api/civitai/search", async (HttpClient http, string? q, string? types, string? sort) =>
+{
+    try
+    {
+        var queryType = string.IsNullOrWhiteSpace(types) ? "Checkpoint" : types;
+        var querySort = string.IsNullOrWhiteSpace(sort) ? "Most Downloaded" : sort;
+        var url = $"https://civitai.com/api/v1/models?limit=20&nsfw=false&types={Uri.EscapeDataString(queryType)}&sort={Uri.EscapeDataString(querySort)}";
+        if (!string.IsNullOrWhiteSpace(q))
+        {
+            url += $"&query={Uri.EscapeDataString(q)}";
+        }
+        var response = await http.GetAsync(url);
+        var content = await response.Content.ReadAsStringAsync();
+        return Results.Content(content, "application/json");
+    }
+    catch (Exception ex)
+    {
+        return Results.Problem(ex.Message);
+    }
+});
+
+// CivitAI single model detail proxy
+app.MapGet("/api/civitai/model", async (HttpClient http, int id) =>
+{
+    try
+    {
+        var response = await http.GetAsync($"https://civitai.com/api/v1/models/{id}");
+        var content = await response.Content.ReadAsStringAsync();
+        return Results.Content(content, "application/json");
+    }
+    catch (Exception ex)
+    {
+        return Results.Problem(ex.Message);
+    }
+});
+
 // GPU details retrieval endpoint (Native Registry)
 app.MapGet("/api/gpu/vram", () =>
 {
