@@ -92,6 +92,7 @@ const ollamaHealthEl = /** @type {HTMLElement} */ (document.getElementById('olla
 const forgeHealthEl = /** @type {HTMLElement} */ (document.getElementById('forge-health'));
 const statTotalModelsEl = /** @type {HTMLElement} */ (document.getElementById('stat-total-models'));
 const statVramModelsEl = /** @type {HTMLElement} */ (document.getElementById('stat-vram-models'));
+const statGpuNameEl = /** @type {HTMLElement} */ (document.getElementById('stat-gpu-name'));
 const btnUnloadAll = /** @type {HTMLButtonElement} */ (document.getElementById('btn-unload-all'));
 const installedModelsGrid = /** @type {HTMLElement} */ (document.getElementById('installed-models-grid'));
 
@@ -323,6 +324,9 @@ async function detectGpuVram() {
             if (data && data.totalVramBytes > 0) {
                 gpuTotalVram = data.totalVramBytes;
                 vramLabelTotal.textContent = `${(gpuTotalVram / (1024 * 1024 * 1024)).toFixed(1)} GB Total`;
+                if (statGpuNameEl && data.gpuName) {
+                    statGpuNameEl.textContent = data.gpuName;
+                }
             }
         }
     } catch (err) {

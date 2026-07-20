@@ -100,21 +100,61 @@ app.MapGet("/api/hf/model", async (string repoId, HttpClient httpClient) =>
     }
 });
 
-// GPU VRAM retrieval endpoint (Native WMI)
+// GPU details retrieval endpoint (Native Registry)
 app.MapGet("/api/gpu/vram", () =>
 {
+    string gpuName = "Generic GPU";
     long vramBytes = 8L * 1024 * 1024 * 1024; // Default to 8GB
+    
     try
     {
         if (OperatingSystem.IsWindows())
         {
-            using var searcher = new System.Management.ManagementObjectSearcher("SELECT AdapterRAM FROM Win32_VideoController");
-            foreach (System.Management.ManagementObject obj in searcher.Get())
+            const string regPath = @"SYSTEM\CurrentControlSet\Control\Class\{4d36e968-e325-11ce-bfc1-08002be10318}";
+            using var baseKey = Microsoft.Win32.Registry.LocalMachine.OpenSubKey(regPath);
+            if (baseKey != null)
             {
-                var ramStr = obj["AdapterRAM"]?.ToString();
-                if (long.TryParse(ramStr, out long ramBytes) && ramBytes > 0)
+                foreach (var subKeyName in baseKey.GetSubKeyNames())
                 {
-                    vramBytes = Math.Max(vramBytes, ramBytes);
+                    if (subKeyName.Length == 4 && int.TryParse(subKeyName, out _))
+                    {
+                        using var subKey = baseKey.OpenSubKey(subKeyName);
+                        if (subKey != null)
+                        {
+                            var provider = subKey.GetValue("ProviderName")?.ToString() ?? "";
+                            var driverDesc = subKey.GetValue("DriverDesc")?.ToString() ?? "";
+                            
+                            // Skip basic render driver or virtual devices
+                            if (driverDesc.Contains("Basic Render") || provider.Contains("Microsoft") && driverDesc.Contains("Indirect Display"))
+                            {
+                                continue;
+                            }
+
+                            var qwMemSize = subKey.GetValue("HardwareInformation.qwMemorySize");
+                            if (qwMemSize != null)
+                            {
+                                long size = Convert.ToInt64(qwMemSize);
+                                if (size > 0)
+                                {
+                                    vramBytes = size;
+                                    gpuName = driverDesc;
+                                    break;
+                                }
+                            }
+                            
+                            var memorySize = subKey.GetValue("HardwareInformation.MemorySize");
+                            if (memorySize != null)
+                            {
+                                long size = Convert.ToInt64(memorySize);
+                                if (size > 0)
+                                {
+                                    vramBytes = size;
+                                    gpuName = driverDesc;
+                                    break;
+                                }
+                            }
+                        }
+                    }
                 }
             }
         }
@@ -123,7 +163,7 @@ app.MapGet("/api/gpu/vram", () =>
     {
         // Ignore and fallback
     }
-    return Results.Ok(new { totalVramBytes = vramBytes });
+    return Results.Ok(new { totalVramBytes = vramBytes, gpuName });
 });
 
 app.MapReverseProxy();
