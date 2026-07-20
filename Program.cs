@@ -118,41 +118,67 @@ app.MapGet("/api/gpu/vram", () =>
                 {
                     if (subKeyName.Length == 4 && int.TryParse(subKeyName, out _))
                     {
-                        using var subKey = baseKey.OpenSubKey(subKeyName);
-                        if (subKey != null)
+                        try
                         {
-                            var provider = subKey.GetValue("ProviderName")?.ToString() ?? "";
-                            var driverDesc = subKey.GetValue("DriverDesc")?.ToString() ?? "";
-                            
-                            // Skip basic render driver or virtual devices
-                            if (driverDesc.Contains("Basic Render") || provider.Contains("Microsoft") && driverDesc.Contains("Indirect Display"))
+                            using var subKey = baseKey.OpenSubKey(subKeyName);
+                            if (subKey != null)
                             {
-                                continue;
-                            }
+                                var provider = subKey.GetValue("ProviderName")?.ToString() ?? "";
+                                var driverDesc = subKey.GetValue("DriverDesc")?.ToString() ?? "";
+                                
+                                // Skip basic render driver or remote/virtual displays
+                                if (driverDesc.Contains("Basic Render") || 
+                                    (provider.Contains("Microsoft") && driverDesc.Contains("Indirect")) ||
+                                    driverDesc.Contains("Virtual Desktop"))
+                                {
+                                    continue;
+                                }
 
-                            var qwMemSize = subKey.GetValue("HardwareInformation.qwMemorySize");
-                            if (qwMemSize != null)
-                            {
-                                long size = Convert.ToInt64(qwMemSize);
-                                if (size > 0)
+                                // 1. Attempt to read 64-bit QWORD memory size
+                                var qwMemSize = subKey.GetValue("HardwareInformation.qwMemorySize");
+                                if (qwMemSize != null)
                                 {
-                                    vramBytes = size;
-                                    gpuName = driverDesc;
-                                    break;
+                                    try
+                                    {
+                                        long size = Convert.ToInt64(qwMemSize);
+                                        if (size > 0)
+                                        {
+                                            vramBytes = size;
+                                            gpuName = driverDesc;
+                                            // Break early if we found a physical dedicated GPU (NVIDIA/Radeon)
+                                            if (gpuName.Contains("NVIDIA") || gpuName.Contains("Radeon") || gpuName.Contains("GeForce") || gpuName.Contains("AMD"))
+                                            {
+                                                break;
+                                            }
+                                        }
+                                    }
+                                    catch {}
+                                }
+                                
+                                // 2. Fallback to DWORD memory size (ensure it is not a byte array)
+                                var memorySize = subKey.GetValue("HardwareInformation.MemorySize");
+                                if (memorySize != null && memorySize is not byte[])
+                                {
+                                    try
+                                    {
+                                        long size = Convert.ToInt64(memorySize);
+                                        if (size > 0)
+                                        {
+                                            vramBytes = size;
+                                            gpuName = driverDesc;
+                                            if (gpuName.Contains("NVIDIA") || gpuName.Contains("Radeon") || gpuName.Contains("GeForce") || gpuName.Contains("AMD"))
+                                            {
+                                                break;
+                                            }
+                                        }
+                                    }
+                                    catch {}
                                 }
                             }
-                            
-                            var memorySize = subKey.GetValue("HardwareInformation.MemorySize");
-                            if (memorySize != null)
-                            {
-                                long size = Convert.ToInt64(memorySize);
-                                if (size > 0)
-                                {
-                                    vramBytes = size;
-                                    gpuName = driverDesc;
-                                    break;
-                                }
-                            }
+                        }
+                        catch
+                        {
+                            // Ignore single key error and continue to scan other keys
                         }
                     }
                 }
