@@ -1,6 +1,6 @@
 # Local LLM Server Manager
 
-> **v1.2.0** — An orchestrator, proxy, and visual dashboard to manage local Large Language Models (**Ollama**) and Image Generation (**Stable Diffusion / Forge**) on Windows.
+> **v1.3.0** — An orchestrator, proxy, and visual dashboard to manage local Large Language Models (**Ollama**) and Image Generation (**Stable Diffusion / Forge**) on Windows.
 
 It tracks GPU VRAM usage in real time, profiles model capabilities, computes KV Cache memory footprints, integrates with the **Hugging Face Hub** to discover and pull GGUF models, and connects to **CivitAI** to browse and download Stable Diffusion checkpoints, LoRAs, and embeddings directly to your Forge models folder.
 
@@ -68,6 +68,7 @@ We use **MAJOR.MINOR.PATCH** (SemVer):
 | `1.0.0` | Initial release — dashboard, VRAM bar, HF search, Ollama pull, YARP proxy, Windows Service |
 | `1.1.0` | CivitAI search tab with model type / sort filters and preview thumbnails |
 | `1.2.0` | Forge models directory config, direct-to-disk CivitAI downloads with SSE progress, persistent `settings.json` |
+| `1.3.0` | Migration to .NET 10 LTS target framework and updated dependencies |
 
 ---
 
