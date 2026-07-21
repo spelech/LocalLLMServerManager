@@ -1,0 +1,69 @@
+{
+  "name": "Hunyuan3D v2 (3D Mesh)",
+  "type": "3d",
+  "description": "Multi-Stage High-Resolution 3D Asset Generation using Hunyuan3D v2 nodes in ComfyUI",
+  "workflow": {
+    "1": {
+      "inputs": {
+        "text": "a wooden treasure chest with gold ornaments, detailed 3d asset",
+        "clip": [ "2", 0 ]
+      },
+      "class_type": "CLIPTextEncode",
+      "_meta": { "title": "CLIP Text Encode (Prompt)" }
+    },
+    "2": {
+      "inputs": {
+        "clip_name": "t5xxl_fp16.safetensors"
+      },
+      "class_type": "CLIPLoader",
+      "_meta": { "title": "Load CLIP" }
+    },
+    "3": {
+      "inputs": {
+        "seed": 12345,
+        "steps": 30,
+        "cfg": 8.0,
+        "sampler_name": "dpmpp_2m",
+        "scheduler": "karras",
+        "denoise": 1.0,
+        "model": [ "4", 0 ],
+        "positive": [ "1", 0 ],
+        "latent_image": [ "5", 0 ]
+      },
+      "class_type": "KSampler",
+      "_meta": { "title": "KSampler (Hunyuan3D Stage 1)" }
+    },
+    "4": {
+      "inputs": {
+        "model_name": "hunyuan3d_v2.safetensors"
+      },
+      "class_type": "Hunyuan3DModelLoader",
+      "_meta": { "title": "Load Hunyuan3D v2 Model" }
+    },
+    "5": {
+      "inputs": {
+        "width": 512,
+        "height": 512,
+        "batch_size": 1
+      },
+      "class_type": "EmptyLatentImage",
+      "_meta": { "title": "Empty Latent Image" }
+    },
+    "6": {
+      "inputs": {
+        "samples": [ "3", 0 ]
+      },
+      "class_type": "Hunyuan3DMeshDecode",
+      "_meta": { "title": "Hunyuan3D Mesh Decode" }
+    },
+    "7": {
+      "inputs": {
+        "filename_prefix": "Hunyuan3D_Mesh",
+        "mesh": [ "6", 0 ],
+        "file_format": "glb"
+      },
+      "class_type": "SaveGLBMesh",
+      "_meta": { "title": "Save GLB Mesh" }
+    }
+  }
+}

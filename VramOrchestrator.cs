@@ -41,7 +41,47 @@ public class VramOrchestrator
         }
     }
 
+    public async Task<bool> IsComfyUiHealthyAsync(string comfyUrl = "http://127.0.0.1:8188")
+    {
+        try
+        {
+            var baseUrl = comfyUrl.TrimEnd('/');
+            var response = await _httpClient.GetAsync($"{baseUrl}/system_stats");
+            return response.IsSuccessStatusCode;
+        }
+        catch
+        {
+            return false;
+        }
+    }
+
     public async Task EnsureVramForImageGenerationAsync()
+    {
+        await UnloadOllamaModelsAsync("Image Generation");
+    }
+
+    public async Task EnsureVramForComfyUiAsync()
+    {
+        await UnloadOllamaModelsAsync("ComfyUI Workflows (3D / Image)");
+    }
+
+    public async Task FreeComfyUiVramAsync(string comfyUrl = "http://127.0.0.1:8188")
+    {
+        try
+        {
+            var baseUrl = comfyUrl.TrimEnd('/');
+            var payload = new { free_memory = true, unload_models = true };
+            var content = new StringContent(JsonSerializer.Serialize(payload), Encoding.UTF8, "application/json");
+            await _httpClient.PostAsync($"{baseUrl}/free", content);
+            _logger.LogInformation("Triggered ComfyUI VRAM unload / free memory.");
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to call ComfyUI free memory API.");
+        }
+    }
+
+    private async Task UnloadOllamaModelsAsync(string reason)
     {
         try
         {
@@ -54,11 +94,11 @@ public class VramOrchestrator
 
             if (models != null && models.Count > 0)
             {
-                _logger.LogInformation("Active LLM found in VRAM. Issuing unload command to free up VRAM for Image Generation.");
+                _logger.LogInformation($"Active LLM found in VRAM. Issuing unload command to free up VRAM for {reason}.");
                 
                 foreach (var model in models)
                 {
-                    var modelName = model["name"]?.ToString();
+                    var modelName = model?["name"]?.ToString();
                     if (!string.IsNullOrEmpty(modelName))
                     {
                         var payload = new { model = modelName, keep_alive = 0 };
@@ -73,7 +113,7 @@ public class VramOrchestrator
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Failed to orchestrate VRAM for image generation.");
+            _logger.LogError(ex, $"Failed to orchestrate VRAM for {reason}.");
         }
     }
 }

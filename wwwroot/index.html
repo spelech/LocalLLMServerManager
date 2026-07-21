@@ -9,6 +9,8 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="index.css">
+    <!-- Google Model Viewer for WebGL 3D Mesh rendering -->
+    <script type="module" src="https://ajax.googleapis.com/ajax/libs/model-viewer/3.5.0/model-viewer.min.js"></script>
 </head>
 <body>
     <div class="glass-bg"></div>
@@ -49,6 +51,13 @@
                     <div class="status-indicator offline"></div>
                     <div class="health-details">
                         <span class="service-label">Stable Diffusion</span>
+                        <span class="status-text text-offline">Checking...</span>
+                    </div>
+                </div>
+                <div class="health-card" id="comfy-health">
+                    <div class="status-indicator offline"></div>
+                    <div class="health-details">
+                        <span class="service-label">ComfyUI</span>
                         <span class="status-text text-offline">Checking...</span>
                     </div>
                 </div>
@@ -142,6 +151,14 @@
                     <polyline points="21 15 16 10 5 21"/>
                 </svg>
                 Stable Diffusion
+            </button>
+            <button class="tab-link" data-tab="tab-comfy3d">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="tab-icon">
+                    <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/>
+                    <polyline points="3.27 6.96 12 12.01 20.73 6.96"/>
+                    <line x1="12" y1="22.08" x2="12" y2="12"/>
+                </svg>
+                3D &amp; ComfyUI Studio
             </button>
         </nav>
 
@@ -431,6 +448,126 @@
                         </div>
                         <div id="civitai-dl-status" style="font-size:0.8rem; color:var(--text-muted); margin-top:0.4rem;">Starting...</div>
                     </div>
+                </div>
+        <!-- TAB CONTENT: 3D & COMFYUI STUDIO -->
+        <div id="tab-comfy3d" class="tab-content">
+            <div class="content-header">
+                <h2>3D &amp; ComfyUI Studio</h2>
+                <p class="section-desc">Generate 3D Mesh Assets (TRELLIS V2 / Hunyuan3D v2) and Images via local ComfyUI workflow engine.</p>
+            </div>
+
+            <!-- Configuration & Preferred Engine Card -->
+            <div class="glass-card" style="padding: 1.25rem; margin-bottom: 1.5rem; display: flex; flex-wrap: wrap; gap: 1.5rem; align-items: center; justify-content: space-between;">
+                <div style="flex: 1; min-width: 250px;">
+                    <label style="font-weight: 600; font-size: 0.85rem; color: var(--text-muted); display: block; margin-bottom: 0.4rem;">
+                        Preferred Image &amp; Mesh Generator Engine:
+                    </label>
+                    <div style="display: flex; gap: 0.75rem;">
+                        <button class="action-btn engine-toggle-btn active" id="btn-engine-forge" data-engine="Forge" style="flex: 1;">
+                            ⚡ Stable Diffusion / Forge
+                        </button>
+                        <button class="action-btn engine-toggle-btn" id="btn-engine-comfy" data-engine="ComfyUI" style="flex: 1;">
+                            🧩 ComfyUI Engine
+                        </button>
+                    </div>
+                </div>
+
+                <div style="flex: 1; min-width: 250px;">
+                    <label style="font-weight: 600; font-size: 0.85rem; color: var(--text-muted); display: block; margin-bottom: 0.4rem;">
+                        ComfyUI Service Endpoint:
+                    </label>
+                    <div style="display: flex; gap: 0.5rem;">
+                        <input type="text" id="cfg-comfy-url" value="http://127.0.0.1:8188" style="flex: 1; font-family: var(--font-mono); font-size: 0.85rem;">
+                        <button class="action-btn" id="btn-save-comfy-cfg" style="white-space: nowrap;">Save Config</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Main Studio Grid -->
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(340px, 1fr)); gap: 1.5rem; margin-bottom: 2rem;">
+                
+                <!-- Left Card: Workflow Presets & Prompt Form -->
+                <div class="glass-card" style="padding: 1.5rem; display: flex; flex-direction: column; gap: 1.25rem;">
+                    <div style="display: flex; justify-content: space-between; align-items: center;">
+                        <h3 style="font-size: 1.1rem; font-weight: 700; margin: 0; color: var(--text-bright);">Workflow Generation</h3>
+                        <span class="badge" id="workflow-badge-type" style="background: rgba(139, 92, 246, 0.2); color: #c084fc; padding: 2px 10px; border-radius: 12px; font-size: 0.75rem; font-weight: 600;">3D Mesh</span>
+                    </div>
+
+                    <div>
+                        <label style="font-size: 0.8rem; font-weight: 600; color: var(--text-muted); display: block; margin-bottom: 0.4rem;">
+                            Select Preset Workflow:
+                        </label>
+                        <select id="comfy-workflow-preset" class="civitai-select" style="width: 100%; font-size: 0.9rem; padding: 0.6rem;">
+                            <option value="trellis_v2_api">TRELLIS V2 (3D Mesh Generator)</option>
+                            <option value="hunyuan3d_v2_api">Hunyuan3D v2 (3D Mesh Generator)</option>
+                            <option value="flux_sdxl_image_api">FLUX / SDXL (High-Res Image Generator)</option>
+                        </select>
+                    </div>
+
+                    <div>
+                        <label style="font-size: 0.8rem; font-weight: 600; color: var(--text-muted); display: block; margin-bottom: 0.4rem;">
+                            Generation Prompt:
+                        </label>
+                        <textarea id="comfy-prompt-input" rows="4" style="width: 100%; border-radius: 8px; border: 1px solid var(--border-color); background: rgba(15, 23, 42, 0.6); color: var(--text-bright); padding: 0.75rem; font-family: var(--font-sans); font-size: 0.9rem; resize: vertical;" placeholder="Describe the 3D model or image asset you want to generate..."></textarea>
+                    </div>
+
+                    <div style="display: flex; gap: 1rem;">
+                        <div style="flex: 1;">
+                            <label style="font-size: 0.8rem; font-weight: 600; color: var(--text-muted); display: block; margin-bottom: 0.4rem;">Seed (-1 for Random):</label>
+                            <input type="number" id="comfy-seed-input" value="-1" style="width: 100%; font-size: 0.85rem; font-family: var(--font-mono);">
+                        </div>
+                    </div>
+
+                    <button class="action-btn pull-btn" id="btn-comfy-queue" style="padding: 0.75rem; font-size: 0.95rem; font-weight: 700; margin-top: 0.5rem;">
+                        🚀 Queue Generation (Auto-Free LLM VRAM)
+                    </button>
+
+                    <!-- Status / Log Output -->
+                    <div id="comfy-status-box" style="display: none; background: rgba(15, 23, 42, 0.8); border: 1px solid var(--border-color); border-radius: 8px; padding: 0.75rem; font-size: 0.8rem; font-family: var(--font-mono); color: var(--text-muted);">
+                        <span id="comfy-status-text">Queuing job...</span>
+                    </div>
+                </div>
+
+                <!-- Right Card: WebGL 3D Mesh Viewer -->
+                <div class="glass-card" style="padding: 1.5rem; display: flex; flex-direction: column; gap: 1rem;">
+                    <div style="display: flex; justify-content: space-between; align-items: center;">
+                        <h3 style="font-size: 1.1rem; font-weight: 700; margin: 0; color: var(--text-bright);">Interactive WebGL 3D Viewer</h3>
+                        <div style="display: flex; gap: 0.5rem;">
+                            <button class="action-btn" id="btn-3d-wireframe" title="Toggle Wireframe" style="padding: 4px 10px; font-size: 0.75rem;">🌐 Wireframe</button>
+                            <button class="action-btn" id="btn-3d-download-glb" title="Download GLB" disabled style="padding: 4px 10px; font-size: 0.75rem;">⬇ Download GLB</button>
+                        </div>
+                    </div>
+
+                    <!-- Model Viewer Canvas Container -->
+                    <div style="position: relative; width: 100%; height: 380px; border-radius: 12px; overflow: hidden; background: radial-gradient(circle, #1e1b4b 0%, #0f172a 100%); border: 1px solid rgba(139, 92, 246, 0.2);">
+                        <model-viewer id="studio-3d-viewer" 
+                                      alt="Interactive 3D Mesh Preview" 
+                                      auto-rotate 
+                                      camera-controls 
+                                      shadow-intensity="1" 
+                                      shadow-softness="0.8"
+                                      exposure="1.0"
+                                      style="width: 100%; height: 100%;">
+                            <div id="viewer-placeholder" style="position: absolute; top: 0; left: 0; right: 0; bottom: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; color: var(--text-muted); text-align: center; padding: 1.5rem; pointer-events: none;">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="width: 48px; height: 48px; opacity: 0.4; margin-bottom: 0.5rem;">
+                                    <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/>
+                                    <polyline points="3.27 6.96 12 12.01 20.73 6.96"/>
+                                    <line x1="12" y1="22.08" x2="12" y2="12"/>
+                                </svg>
+                                <p style="margin: 0; font-size: 0.9rem; font-weight: 500;">No 3D Model Loaded</p>
+                                <p style="margin: 0.25rem 0 0 0; font-size: 0.75rem; opacity: 0.7;">Queue a TRELLIS V2 or Hunyuan3D workflow or select a generated model from below to preview interactively.</p>
+                            </div>
+                        </model-viewer>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Recent 3D Models Gallery -->
+            <div class="glass-card" style="padding: 1.5rem;">
+                <h3 style="font-size: 1.1rem; font-weight: 700; margin: 0 0 1rem 0; color: var(--text-bright);">Generated 3D Mesh Assets</h3>
+                <div id="gallery-3d-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 1rem;">
+                    <!-- 3D Model items populated dynamically by JS -->
+                    <div style="color: var(--text-muted); font-size: 0.85rem;">Scanning 3D outputs directory...</div>
                 </div>
             </div>
         </div>

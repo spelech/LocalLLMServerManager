@@ -58,11 +58,18 @@ app.Use(async (context, next) =>
     var path = context.Request.Path.Value ?? string.Empty;
     var isForgeRequest = path.StartsWith("/sdapi", StringComparison.OrdinalIgnoreCase) || 
                          path.StartsWith("/v1/images", StringComparison.OrdinalIgnoreCase);
+    var isComfyRequest = path.StartsWith("/comfyapi", StringComparison.OrdinalIgnoreCase) ||
+                         path.StartsWith("/api/comfy/prompt", StringComparison.OrdinalIgnoreCase);
+
+    var orchestrator = context.RequestServices.GetRequiredService<VramOrchestrator>();
 
     if (isForgeRequest)
     {
-        var orchestrator = context.RequestServices.GetRequiredService<VramOrchestrator>();
         await orchestrator.EnsureVramForImageGenerationAsync();
+    }
+    else if (isComfyRequest)
+    {
+        await orchestrator.EnsureVramForComfyUiAsync();
     }
 
     await next();
@@ -71,14 +78,20 @@ app.Use(async (context, next) =>
 // Health check endpoint
 app.MapGet("/health", async (VramOrchestrator orchestrator) =>
 {
+    var settings = LoadSettings();
+    var comfyUrl = string.IsNullOrWhiteSpace(settings.ComfyUiUrl) ? "http://127.0.0.1:8188" : settings.ComfyUiUrl;
+
     var ollamaHealthy = await orchestrator.IsOllamaHealthyAsync();
     var forgeHealthy = await orchestrator.IsForgeHealthyAsync();
+    var comfyHealthy = await orchestrator.IsComfyUiHealthyAsync(comfyUrl);
 
     return Results.Ok(new
     {
-        Status = ollamaHealthy && forgeHealthy ? "Healthy" : "Degraded",
+        Status = (ollamaHealthy && (forgeHealthy || comfyHealthy)) ? "Healthy" : "Degraded",
         Ollama = ollamaHealthy ? "Online" : "Offline",
-        StableDiffusion = forgeHealthy ? "Online" : "Offline"
+        StableDiffusion = forgeHealthy ? "Online" : "Offline",
+        ComfyUI = comfyHealthy ? "Online" : "Offline",
+        PreferredImageEngine = settings.PreferredImageEngine
     });
 });
 
@@ -385,6 +398,132 @@ app.MapPost("/api/civitai/download", async (HttpContext ctx, HttpClient http) =>
         // Clean up partial file
         if (File.Exists(destPath)) File.Delete(destPath);
     }
+});
+
+// ---------------------------------------------------------------------------
+// ComfyUI & 3D Model Endpoints
+// ---------------------------------------------------------------------------
+
+// List available workflow presets
+app.MapGet("/api/comfy/workflows", () =>
+{
+    var workflowsDir = Path.Combine(AppContext.BaseDirectory, "Workflows");
+    var result = new List<object>();
+
+    if (Directory.Exists(workflowsDir))
+    {
+        var jsonFiles = Directory.GetFiles(workflowsDir, "*.json");
+        foreach (var file in jsonFiles)
+        {
+            try
+            {
+                var content = File.ReadAllText(file);
+                using var doc = JsonDocument.Parse(content);
+                var root = doc.RootElement;
+                
+                var name = root.TryGetProperty("name", out var n) ? n.GetString() : Path.GetFileNameWithoutExtension(file);
+                var type = root.TryGetProperty("type", out var t) ? t.GetString() : "general";
+                var description = root.TryGetProperty("description", out var d) ? d.GetString() : "";
+
+                result.Add(new
+                {
+                    id = Path.GetFileNameWithoutExtension(file),
+                    name,
+                    type,
+                    description,
+                    filePath = file
+                });
+            }
+            catch { }
+        }
+    }
+
+    return Results.Ok(result);
+});
+
+// Get detailed workflow template content
+app.MapGet("/api/comfy/workflows/{id}", (string id) =>
+{
+    var workflowsDir = Path.Combine(AppContext.BaseDirectory, "Workflows");
+    var filePath = Path.Combine(workflowsDir, $"{id}.json");
+
+    if (!File.Exists(filePath))
+    {
+        return Results.NotFound($"Workflow preset '{id}' not found.");
+    }
+
+    var content = File.ReadAllText(filePath);
+    return Results.Content(content, "application/json");
+});
+
+// Post workflow prompt to ComfyUI with automatic VRAM orchestration
+app.MapPost("/api/comfy/prompt", async (HttpContext ctx, HttpClient http, VramOrchestrator orchestrator) =>
+{
+    try
+    {
+        var settings = LoadSettings();
+        var comfyUrl = string.IsNullOrWhiteSpace(settings.ComfyUiUrl) ? "http://127.0.0.1:8188" : settings.ComfyUiUrl.TrimEnd('/');
+
+        // 1. Clear LLM VRAM before executing ComfyUI workflow
+        await orchestrator.EnsureVramForComfyUiAsync();
+
+        // 2. Read request payload
+        using var reader = new StreamReader(ctx.Request.Body);
+        var bodyText = await reader.ReadToEndAsync();
+
+        // 3. Post to ComfyUI /prompt endpoint
+        var content = new StringContent(bodyText, Encoding.UTF8, System.Net.Http.Headers.MediaTypeHeaderValue.Parse("application/json"));
+        var response = await http.PostAsync($"{comfyUrl}/prompt", content);
+
+        var responseContent = await response.Content.ReadAsStringAsync();
+        if (!response.IsSuccessStatusCode)
+        {
+            return Results.StatusCode((int)response.StatusCode);
+        }
+
+        return Results.Content(responseContent, "application/json");
+    }
+    catch (Exception ex)
+    {
+        return Results.Problem(ex.Message);
+    }
+});
+
+// Unload VRAM from ComfyUI
+app.MapPost("/api/comfy/free", async (VramOrchestrator orchestrator) =>
+{
+    var settings = LoadSettings();
+    var comfyUrl = string.IsNullOrWhiteSpace(settings.ComfyUiUrl) ? "http://127.0.0.1:8188" : settings.ComfyUiUrl;
+    await orchestrator.FreeComfyUiVramAsync(comfyUrl);
+    return Results.Ok(new { message = "ComfyUI VRAM free request sent." });
+});
+
+// List saved/generated 3D model files (.glb, .gltf, .obj, .stl)
+app.MapGet("/api/3d/files", () =>
+{
+    var settings = LoadSettings();
+    var outputDir = !string.IsNullOrWhiteSpace(settings.ThreeDModelsPath) && Directory.Exists(settings.ThreeDModelsPath)
+        ? settings.ThreeDModelsPath
+        : Path.Combine(AppContext.BaseDirectory, "wwwroot", "3d_outputs");
+
+    if (!Directory.Exists(outputDir))
+    {
+        Directory.CreateDirectory(outputDir);
+    }
+
+    var extensions = new[] { "*.glb", "*.gltf", "*.obj", "*.stl" };
+    var files = extensions.SelectMany(ext => Directory.GetFiles(outputDir, ext))
+                          .Select(f => new FileInfo(f))
+                          .OrderByDescending(f => f.LastWriteTime)
+                          .Select(f => new
+                          {
+                              name = f.Name,
+                              sizeBytes = f.Length,
+                              created = f.LastWriteTime,
+                              relativePath = $"/3d_outputs/{f.Name}"
+                          });
+
+    return Results.Ok(files);
 });
 
 app.Run();

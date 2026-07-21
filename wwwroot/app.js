@@ -91,6 +91,7 @@ function estimateKvCachePerToken(/** @type {string} */ repoId) {
 // DOM Elements
 const ollamaHealthEl = /** @type {HTMLElement} */ (document.getElementById('ollama-health'));
 const forgeHealthEl = /** @type {HTMLElement} */ (document.getElementById('forge-health'));
+const comfyHealthEl = /** @type {HTMLElement} */ (document.getElementById('comfy-health'));
 const statTotalModelsEl = /** @type {HTMLElement} */ (document.getElementById('stat-total-models'));
 const statVramModelsEl = /** @type {HTMLElement} */ (document.getElementById('stat-vram-models'));
 const statGpuNameEl = /** @type {HTMLElement} */ (document.getElementById('stat-gpu-name'));
@@ -366,6 +367,21 @@ async function checkHealth() {
                 forgeIndicator.className = 'status-indicator offline';
                 forgeText.textContent = 'Offline';
                 forgeText.className = 'status-text text-offline';
+            }
+
+            // ComfyUI UI update
+            if (comfyHealthEl) {
+                const comfyIndicator = comfyHealthEl.querySelector('.status-indicator');
+                const comfyText = comfyHealthEl.querySelector('.status-text');
+                if (data.comfyUI === 'Online') {
+                    comfyIndicator.className = 'status-indicator online';
+                    comfyText.textContent = 'Online';
+                    comfyText.className = 'status-text text-online';
+                } else {
+                    comfyIndicator.className = 'status-indicator offline';
+                    comfyText.textContent = 'Offline';
+                    comfyText.className = 'status-text text-offline';
+                }
             }
         }
     } catch {
@@ -1548,3 +1564,231 @@ if (btnCivitaiDownload) {
         }
     });
 }
+
+// ---------------------------------------------------------------------------
+// 3D & ComfyUI Studio Handlers & WebGL 3D Mesh Viewer
+// ---------------------------------------------------------------------------
+const btnEngineForge = document.getElementById('btn-engine-forge');
+const btnEngineComfy = document.getElementById('btn-engine-comfy');
+const cfgComfyUrl = /** @type {HTMLInputElement} */ (document.getElementById('cfg-comfy-url'));
+const btnSaveComfyCfg = document.getElementById('btn-save-comfy-cfg');
+const comfyWorkflowPreset = /** @type {HTMLSelectElement} */ (document.getElementById('comfy-workflow-preset'));
+const comfyPromptInput = /** @type {HTMLTextAreaElement} */ (document.getElementById('comfy-prompt-input'));
+const btnComfyQueue = /** @type {HTMLButtonElement} */ (document.getElementById('btn-comfy-queue'));
+const comfyStatusBox = document.getElementById('comfy-status-box');
+const comfyStatusText = document.getElementById('comfy-status-text');
+const studio3dViewer = document.getElementById('studio-3d-viewer');
+const viewerPlaceholder = document.getElementById('viewer-placeholder');
+const btn3dWireframe = document.getElementById('btn-3d-wireframe');
+const btn3dDownloadGlb = /** @type {HTMLButtonElement} */ (document.getElementById('btn-3d-download-glb'));
+const gallery3dGrid = document.getElementById('gallery-3d-grid');
+
+let currentActiveGlbUrl = null;
+
+// Engine preference toggle
+if (btnEngineForge && btnEngineComfy) {
+    btnEngineForge.addEventListener('click', () => setPreferredEngine('Forge'));
+    btnEngineComfy.addEventListener('click', () => setPreferredEngine('ComfyUI'));
+}
+
+async function setPreferredEngine(engine) {
+    if (btnEngineForge && btnEngineComfy) {
+        btnEngineForge.classList.toggle('active', engine === 'Forge');
+        btnEngineComfy.classList.toggle('active', engine === 'ComfyUI');
+    }
+    try {
+        await fetch('/api/settings', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ PreferredImageEngine: engine })
+        });
+        showToast(`Preferred generator set to ${engine}`, 'success');
+    } catch {
+        showToast('Failed to save preferred engine setting', 'error');
+    }
+}
+
+// Preset selection update default prompts
+const presetDefaults = {
+    'trellis_v2_api': 'a futuristic cyberpunk sports car, 3d asset, white background',
+    'hunyuan3d_v2_api': 'a wooden treasure chest with gold ornaments, detailed 3d asset',
+    'flux_sdxl_image_api': 'cinematic photorealistic portrait of a female astronaut on Mars, dramatic lighting, 8k resolution'
+};
+
+if (comfyWorkflowPreset && comfyPromptInput) {
+    comfyPromptInput.value = presetDefaults[comfyWorkflowPreset.value] || '';
+    comfyWorkflowPreset.addEventListener('change', () => {
+        const val = comfyWorkflowPreset.value;
+        if (presetDefaults[val]) {
+            comfyPromptInput.value = presetDefaults[val];
+        }
+        const badge = document.getElementById('workflow-badge-type');
+        if (badge) {
+            badge.textContent = val.includes('image') ? 'Image Workflow' : '3D Mesh';
+        }
+    });
+}
+
+// Save ComfyUI URL setting
+if (btnSaveComfyCfg && cfgComfyUrl) {
+    btnSaveComfyCfg.addEventListener('click', async () => {
+        const url = cfgComfyUrl.value.trim();
+        try {
+            await fetch('/api/settings', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ ComfyUiUrl: url })
+            });
+            showToast('ComfyUI URL updated', 'success');
+            checkHealth();
+        } catch {
+            showToast('Failed to save settings', 'error');
+        }
+    });
+}
+
+// Wireframe toggle for 3D Viewer
+if (btn3dWireframe && studio3dViewer) {
+    let wireframeOn = false;
+    btn3dWireframe.addEventListener('click', () => {
+        wireframeOn = !wireframeOn;
+        studio3dViewer.style.filter = wireframeOn ? 'invert(0.9) hue-rotate(180deg)' : 'none';
+        btn3dWireframe.classList.toggle('active', wireframeOn);
+    });
+}
+
+// Download GLB
+if (btn3dDownloadGlb) {
+    btn3dDownloadGlb.addEventListener('click', () => {
+        if (!currentActiveGlbUrl) return;
+        const a = document.createElement('a');
+        a.href = currentActiveGlbUrl;
+        a.download = currentActiveGlbUrl.split('/').pop() || 'model.glb';
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+    });
+}
+
+// Load 3D Model into WebGL Viewer
+function load3dModelIntoViewer(glbUrl) {
+    if (!studio3dViewer) return;
+    currentActiveGlbUrl = glbUrl;
+    studio3dViewer.setAttribute('src', glbUrl);
+    if (viewerPlaceholder) viewerPlaceholder.style.display = 'none';
+    if (btn3dDownloadGlb) btn3dDownloadGlb.disabled = false;
+}
+
+// Fetch and render 3D outputs gallery
+async function load3dGallery() {
+    if (!gallery3dGrid) return;
+    try {
+        const res = await fetch('/api/3d/files');
+        if (!res.ok) throw new Error('Failed');
+        const files = await res.json();
+        
+        if (!files || files.length === 0) {
+            gallery3dGrid.innerHTML = '<div style="color:var(--text-muted); font-size:0.85rem; grid-column: 1/-1;">No 3D models generated yet. Queue a TRELLIS V2 or Hunyuan3D workflow above!</div>';
+            return;
+        }
+
+        gallery3dGrid.innerHTML = '';
+        files.forEach(file => {
+            const card = document.createElement('div');
+            card.className = 'glass-card';
+            card.style.cssText = 'padding: 0.9rem; cursor: pointer; transition: transform 0.2s, border-color 0.2s; display: flex; flex-direction: column; gap: 0.5rem;';
+            card.innerHTML = `
+                <div style="display: flex; align-items: center; gap: 0.5rem; color: #c084fc;">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:20px; height:20px;">
+                        <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/>
+                    </svg>
+                    <span style="font-weight: 600; font-size: 0.85rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${file.name}</span>
+                </div>
+                <div style="font-size: 0.75rem; color: var(--text-muted); display: flex; justify-content: space-between;">
+                    <span>${formatBytes(file.sizeBytes)}</span>
+                    <span>${new Date(file.created).toLocaleDateString()}</span>
+                </div>
+            `;
+            card.addEventListener('click', () => {
+                load3dModelIntoViewer(file.relativePath);
+                showToast(`Loaded ${file.name} into 3D viewer`, 'info');
+            });
+            gallery3dGrid.appendChild(card);
+        });
+    } catch {
+        gallery3dGrid.innerHTML = '<div style="color:var(--offline); font-size:0.85rem;">Could not scan 3D outputs directory.</div>';
+    }
+}
+
+// ComfyUI Queue Generation button
+if (btnComfyQueue) {
+    btnComfyQueue.addEventListener('click', async () => {
+        const preset = comfyWorkflowPreset ? comfyWorkflowPreset.value : 'trellis_v2_api';
+        const promptText = comfyPromptInput ? comfyPromptInput.value : '';
+
+        if (!promptText.trim()) {
+            showToast('Please enter a prompt for generation', 'error');
+            return;
+        }
+
+        if (comfyStatusBox) comfyStatusBox.style.display = 'block';
+        if (comfyStatusText) {
+            comfyStatusText.style.color = '';
+            comfyStatusText.textContent = 'Unloading LLM VRAM & submitting workflow to ComfyUI...';
+        }
+        btnComfyQueue.disabled = true;
+
+        try {
+            // Fetch workflow template
+            const wfRes = await fetch(`/api/comfy/workflows/${preset}`);
+            if (!wfRes.ok) throw new Error('Could not load workflow preset');
+            const wfData = await wfRes.json();
+
+            // Override prompt text in node 1 if text input exists
+            if (wfData.workflow && wfData.workflow["1"] && wfData.workflow["1"].inputs) {
+                wfData.workflow["1"].inputs.text = promptText;
+            }
+
+            // Post to backend proxy
+            const res = await fetch('/api/comfy/prompt', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ prompt: wfData.workflow })
+            });
+
+            if (!res.ok) {
+                const err = await res.text();
+                throw new Error(err || 'Failed to queue workflow');
+            }
+
+            const data = await res.json();
+            if (comfyStatusText) {
+                comfyStatusText.textContent = `✓ Workflow queued successfully! (ID: ${data.prompt_id || 'Active'})`;
+                comfyStatusText.style.color = 'var(--online)';
+            }
+            showToast('Workflow queued in ComfyUI!', 'success');
+
+            // Refresh 3D gallery after delay
+            setTimeout(load3dGallery, 3000);
+
+        } catch (err) {
+            const e = /** @type {Error} */ (err);
+            if (comfyStatusText) {
+                comfyStatusText.textContent = `Error: ${e.message}`;
+                comfyStatusText.style.color = 'var(--offline)';
+            }
+            showToast(`Queue error: ${e.message}`, 'error');
+        } finally {
+            btnComfyQueue.disabled = false;
+        }
+    });
+}
+
+// Tab click hook for 3D Studio tab to refresh gallery
+document.querySelectorAll('.tab-link').forEach(btn => {
+    btn.addEventListener('click', () => {
+        if (btn.getAttribute('data-tab') === 'tab-comfy3d') {
+            load3dGallery();
+        }
+    });
+});

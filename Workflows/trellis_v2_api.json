@@ -1,0 +1,70 @@
+{
+  "name": "TRELLIS V2 (3D Mesh)",
+  "type": "3d",
+  "description": "High-quality 3D Mesh Asset Generation using TRELLIS V2 nodes in ComfyUI",
+  "workflow": {
+    "1": {
+      "inputs": {
+        "text": "a futuristic cyberpunk sports car, 3d asset, white background",
+        "clip": [ "2", 0 ]
+      },
+      "class_type": "CLIPTextEncode",
+      "_meta": { "title": "CLIP Text Encode (Prompt)" }
+    },
+    "2": {
+      "inputs": {
+        "clip_name": "t5xxl_fp16.safetensors"
+      },
+      "class_type": "CLIPLoader",
+      "_meta": { "title": "Load CLIP" }
+    },
+    "3": {
+      "inputs": {
+        "seed": 42,
+        "steps": 25,
+        "cfg": 7.5,
+        "sampler_name": "euler",
+        "scheduler": "normal",
+        "denoise": 1.0,
+        "model": [ "4", 0 ],
+        "positive": [ "1", 0 ],
+        "latent_image": [ "5", 0 ]
+      },
+      "class_type": "KSampler",
+      "_meta": { "title": "KSampler (TRELLIS 3D Latent)" }
+    },
+    "4": {
+      "inputs": {
+        "model_name": "trellis_v2.safetensors"
+      },
+      "class_type": "TrellisModelLoader",
+      "_meta": { "title": "Load TRELLIS V2 Model" }
+    },
+    "5": {
+      "inputs": {
+        "width": 512,
+        "height": 512,
+        "batch_size": 1
+      },
+      "class_type": "EmptyLatentImage",
+      "_meta": { "title": "Empty Latent Image" }
+    },
+    "6": {
+      "inputs": {
+        "samples": [ "3", 0 ],
+        "ss_model": [ "4", 0 ]
+      },
+      "class_type": "TrellisMeshDecode",
+      "_meta": { "title": "TRELLIS Mesh Decode" }
+    },
+    "7": {
+      "inputs": {
+        "filename_prefix": "TRELLIS_3D",
+        "mesh": [ "6", 0 ],
+        "file_format": "glb"
+      },
+      "class_type": "SaveGLBMesh",
+      "_meta": { "title": "Save GLB Mesh" }
+    }
+  }
+}

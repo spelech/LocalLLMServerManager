@@ -1740,3 +1740,19 @@ body {
         padding: 0.8rem;
     }
 }
+
+/* Engine Preference Toggle Buttons */
+.engine-toggle-btn {
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid var(--border-color);
+    color: var(--text-muted);
+    font-weight: 600;
+    transition: var(--transition-smooth);
+}
+
+.engine-toggle-btn.active {
+    background: rgba(139, 92, 246, 0.25);
+    border-color: #a78bfa;
+    color: var(--text-bright);
+    box-shadow: 0 0 12px rgba(139, 92, 246, 0.3);
+}
