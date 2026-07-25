@@ -1578,6 +1578,7 @@ const btnComfyQueue = /** @type {HTMLButtonElement} */ (document.getElementById(
 const comfyStatusBox = document.getElementById('comfy-status-box');
 const comfyStatusText = document.getElementById('comfy-status-text');
 const studio3dViewer = document.getElementById('studio-3d-viewer');
+const studioVideoViewer = document.getElementById('studio-video-viewer');
 const viewerPlaceholder = document.getElementById('viewer-placeholder');
 const btn3dWireframe = document.getElementById('btn-3d-wireframe');
 const btn3dDownloadGlb = /** @type {HTMLButtonElement} */ (document.getElementById('btn-3d-download-glb'));
@@ -1612,7 +1613,9 @@ async function setPreferredEngine(engine) {
 const presetDefaults = {
     'trellis_v2_api': 'a futuristic cyberpunk sports car, 3d asset, white background',
     'hunyuan3d_v2_api': 'a wooden treasure chest with gold ornaments, detailed 3d asset',
-    'flux_sdxl_image_api': 'cinematic photorealistic portrait of a female astronaut on Mars, dramatic lighting, 8k resolution'
+    'flux_sdxl_image_api': 'cinematic photorealistic portrait of a female astronaut on Mars, dramatic lighting, 8k resolution',
+    'animatediff_sdxl_api': 'a detailed high resolution video of a woman walking in Tokyo, dynamic motion',
+    'svd_api': 'high quality video, smooth motion'
 };
 
 if (comfyWorkflowPreset && comfyPromptInput) {
@@ -1624,7 +1627,19 @@ if (comfyWorkflowPreset && comfyPromptInput) {
         }
         const badge = document.getElementById('workflow-badge-type');
         if (badge) {
-            badge.textContent = val.includes('image') ? 'Image Workflow' : '3D Mesh';
+            if (val.includes('video') || val.includes('svd') || val.includes('animatediff')) {
+                badge.textContent = 'Video';
+                badge.style.background = 'rgba(59, 130, 246, 0.2)';
+                badge.style.color = '#60a5fa';
+            } else if (val.includes('image')) {
+                badge.textContent = 'Image Workflow';
+                badge.style.background = 'rgba(234, 179, 8, 0.2)';
+                badge.style.color = '#facc15';
+            } else {
+                badge.textContent = '3D Mesh';
+                badge.style.background = 'rgba(139, 92, 246, 0.2)';
+                badge.style.color = '#c084fc';
+            }
         }
     });
 }
@@ -1670,13 +1685,26 @@ if (btn3dDownloadGlb) {
     });
 }
 
-// Load 3D Model into WebGL Viewer
-function load3dModelIntoViewer(glbUrl) {
-    if (!studio3dViewer) return;
-    currentActiveGlbUrl = glbUrl;
-    studio3dViewer.setAttribute('src', glbUrl);
+// Load Media into Viewer
+function loadMediaIntoViewer(mediaUrl) {
+    if (!studio3dViewer || !studioVideoViewer) return;
+    currentActiveGlbUrl = mediaUrl;
+    
     if (viewerPlaceholder) viewerPlaceholder.style.display = 'none';
     if (btn3dDownloadGlb) btn3dDownloadGlb.disabled = false;
+    
+    const isVideo = mediaUrl.endsWith('.mp4') || mediaUrl.endsWith('.webm') || mediaUrl.endsWith('.gif');
+    
+    if (isVideo) {
+        studio3dViewer.style.display = 'none';
+        studioVideoViewer.style.display = 'block';
+        studioVideoViewer.src = mediaUrl;
+    } else {
+        studioVideoViewer.style.display = 'none';
+        studioVideoViewer.pause();
+        studio3dViewer.style.display = 'block';
+        studio3dViewer.setAttribute('src', mediaUrl);
+    }
 }
 
 // Fetch and render 3D outputs gallery
@@ -1710,8 +1738,8 @@ async function load3dGallery() {
                 </div>
             `;
             card.addEventListener('click', () => {
-                load3dModelIntoViewer(file.relativePath);
-                showToast(`Loaded ${file.name} into 3D viewer`, 'info');
+                loadMediaIntoViewer(file.relativePath);
+                showToast(`Loaded ${file.name} into viewer`, 'info');
             });
             gallery3dGrid.appendChild(card);
         });

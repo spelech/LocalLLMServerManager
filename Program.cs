@@ -526,4 +526,79 @@ app.MapGet("/api/3d/files", () =>
     return Results.Ok(files);
 });
 
+// ---------------------------------------------------------------------------
+// Process Management Endpoints (Start/Stop AI Engines)
+// ---------------------------------------------------------------------------
+System.Diagnostics.Process? comfyProcess = null;
+System.Diagnostics.Process? forgeProcess = null;
+JobObject aiEnginesJob = new JobObject(); // Master Win32 Job Object
+
+app.MapPost("/api/comfy/start", () =>
+{
+    if (comfyProcess != null && !comfyProcess.HasExited) return Results.Ok(new { message = "ComfyUI is already running" });
+    
+    var path = @"D:\AI\ComfyUI\run_nvidia_gpu.bat";
+    if (!System.IO.File.Exists(path)) return Results.NotFound(new { message = "run_nvidia_gpu.bat not found" });
+
+    comfyProcess = new System.Diagnostics.Process
+    {
+        StartInfo = new System.Diagnostics.ProcessStartInfo
+        {
+            FileName = path,
+            WorkingDirectory = @"D:\AI\ComfyUI",
+            UseShellExecute = false, // Must be false to assign to job object reliably
+            CreateNoWindow = true,
+            WindowStyle = System.Diagnostics.ProcessWindowStyle.Hidden
+        }
+    };
+    comfyProcess.Start();
+    aiEnginesJob.AddProcess(comfyProcess);
+    return Results.Ok(new { message = "ComfyUI Started" });
+});
+
+app.MapPost("/api/comfy/stop", () =>
+{
+    if (comfyProcess != null && !comfyProcess.HasExited)
+    {
+        comfyProcess.Kill(true);
+        comfyProcess = null;
+        return Results.Ok(new { message = "ComfyUI Stopped" });
+    }
+    return Results.Ok(new { message = "ComfyUI is not running" });
+});
+
+app.MapPost("/api/forge/start", () =>
+{
+    if (forgeProcess != null && !forgeProcess.HasExited) return Results.Ok(new { message = "SD Forge is already running" });
+    
+    var path = @"D:\AI\SD_Forge\run.bat";
+    if (!System.IO.File.Exists(path)) return Results.NotFound(new { message = "run.bat not found" });
+
+    forgeProcess = new System.Diagnostics.Process
+    {
+        StartInfo = new System.Diagnostics.ProcessStartInfo
+        {
+            FileName = path,
+            WorkingDirectory = @"D:\AI\SD_Forge",
+            UseShellExecute = false,
+            CreateNoWindow = true,
+            WindowStyle = System.Diagnostics.ProcessWindowStyle.Hidden
+        }
+    };
+    forgeProcess.Start();
+    aiEnginesJob.AddProcess(forgeProcess);
+    return Results.Ok(new { message = "SD Forge Started" });
+});
+
+app.MapPost("/api/forge/stop", () =>
+{
+    if (forgeProcess != null && !forgeProcess.HasExited)
+    {
+        forgeProcess.Kill(true);
+        forgeProcess = null;
+        return Results.Ok(new { message = "SD Forge Stopped" });
+    }
+    return Results.Ok(new { message = "SD Forge is not running" });
+});
+
 app.Run();

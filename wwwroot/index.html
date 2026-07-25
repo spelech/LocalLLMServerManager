@@ -332,11 +332,19 @@
                     </div>
                     <span id="forge-path-status" style="font-size:0.75rem; padding: 0.3rem 0.75rem; border-radius: 999px; background: rgba(0,0,0,0.2); color: var(--text-muted); white-space:nowrap;">Not configured</span>
                 </div>
-                <div style="display:flex; gap:0.75rem; align-items:center;">
+                <div style="display:flex; gap:0.75rem; align-items:center; margin-bottom: 0.5rem;">
                     <input type="text" id="forge-path-input"
                         placeholder="e.g. C:\AI\stable-diffusion-webui-forge\models"
                         style="flex:1; background: rgba(0,0,0,0.25); border: 1px solid var(--border-color); color: var(--text-main); padding: 0.55rem 1rem; border-radius: var(--radius-sm); font-size: 0.9rem;">
                     <button id="btn-save-forge-path" class="search-submit-btn" style="flex-shrink:0;">Save Path</button>
+                </div>
+                <div style="display:flex; gap:0.75rem; align-items:center;">
+                    <button class="action-btn" id="btn-boot-forge" style="white-space: nowrap; background: rgba(16, 185, 129, 0.2); color: #10b981; border: 1px solid rgba(16, 185, 129, 0.4);" onclick="fetch('/api/forge/start', { method: 'POST' }).then(r=>r.json()).then(data=>alert(data.message))">
+                        ▶ Boot SD Forge
+                    </button>
+                    <button class="action-btn" id="btn-stop-forge" style="white-space: nowrap; background: rgba(239, 68, 68, 0.2); color: #ef4444; border: 1px solid rgba(239, 68, 68, 0.4);" onclick="fetch('/api/forge/stop', { method: 'POST' }).then(r=>r.json()).then(data=>alert(data.message))">
+                        ⏹ Stop SD Forge
+                    </button>
                 </div>
             </div>
 
@@ -456,8 +464,8 @@
         <!-- TAB CONTENT: 3D & COMFYUI STUDIO -->
         <div id="tab-comfy3d" class="tab-content">
             <div class="content-header">
-                <h2>3D &amp; ComfyUI Studio</h2>
-                <p class="section-desc">Generate 3D Mesh Assets (TRELLIS V2 / Hunyuan3D v2) and Images via local ComfyUI workflow engine.</p>
+                <h2>3D, Video &amp; ComfyUI Studio</h2>
+                <p class="section-desc">Generate 3D Mesh Assets (TRELLIS / Hunyuan), Video (AnimateDiff / SVD), and Images via local ComfyUI workflow engine.</p>
             </div>
 
             <!-- Configuration & Preferred Engine Card -->
@@ -483,6 +491,15 @@
                     <div style="display: flex; gap: 0.5rem;">
                         <input type="text" id="cfg-comfy-url" value="http://127.0.0.1:8188" style="flex: 1; font-family: var(--font-mono); font-size: 0.85rem;">
                         <button class="action-btn" id="btn-save-comfy-cfg" style="white-space: nowrap;">Save Config</button>
+                        <button class="action-btn" id="btn-open-comfy-ui" style="white-space: nowrap; background: rgba(139, 92, 246, 0.2); color: #c084fc; border: 1px solid rgba(139, 92, 246, 0.4);" onclick="window.open(document.getElementById('cfg-comfy-url').value, '_blank')">
+                            ↗ Open Node Manager
+                        </button>
+                        <button class="action-btn" id="btn-boot-comfy-ui" style="white-space: nowrap; background: rgba(16, 185, 129, 0.2); color: #10b981; border: 1px solid rgba(16, 185, 129, 0.4);" onclick="fetch('/api/comfy/start', { method: 'POST' }).then(r=>r.json()).then(data=>alert(data.message))">
+                            ▶ Boot Engine
+                        </button>
+                        <button class="action-btn" id="btn-stop-comfy-ui" style="white-space: nowrap; background: rgba(239, 68, 68, 0.2); color: #ef4444; border: 1px solid rgba(239, 68, 68, 0.4);" onclick="fetch('/api/comfy/stop', { method: 'POST' }).then(r=>r.json()).then(data=>alert(data.message))">
+                            ⏹ Stop Engine
+                        </button>
                     </div>
                 </div>
             </div>
@@ -505,6 +522,8 @@
                             <option value="trellis_v2_api">TRELLIS V2 (3D Mesh Generator)</option>
                             <option value="hunyuan3d_v2_api">Hunyuan3D v2 (3D Mesh Generator)</option>
                             <option value="flux_sdxl_image_api">FLUX / SDXL (High-Res Image Generator)</option>
+                            <option value="animatediff_sdxl_api">AnimateDiff SDXL (Text/Image to Video)</option>
+                            <option value="svd_api">Stable Video Diffusion (Image to Video)</option>
                         </select>
                     </div>
 
@@ -558,20 +577,21 @@
                                     <polyline points="3.27 6.96 12 12.01 20.73 6.96"/>
                                     <line x1="12" y1="22.08" x2="12" y2="12"/>
                                 </svg>
-                                <p style="margin: 0; font-size: 0.9rem; font-weight: 500;">No 3D Model Loaded</p>
-                                <p style="margin: 0.25rem 0 0 0; font-size: 0.75rem; opacity: 0.7;">Queue a TRELLIS V2 or Hunyuan3D workflow or select a generated model from below to preview interactively.</p>
+                                <p style="margin: 0; font-size: 0.9rem; font-weight: 500;">No Media Loaded</p>
+                                <p style="margin: 0.25rem 0 0 0; font-size: 0.75rem; opacity: 0.7;">Queue a workflow or select a generated asset from below to preview interactively.</p>
                             </div>
                         </model-viewer>
+                        <video id="studio-video-viewer" controls autoplay loop muted style="width: 100%; height: 100%; display: none; object-fit: contain;"></video>
                     </div>
                 </div>
             </div>
 
-            <!-- Recent 3D Models Gallery -->
+            <!-- Recent Media Gallery -->
             <div class="glass-card" style="padding: 1.5rem;">
-                <h3 style="font-size: 1.1rem; font-weight: 700; margin: 0 0 1rem 0; color: var(--text-bright);">Generated 3D Mesh Assets</h3>
+                <h3 style="font-size: 1.1rem; font-weight: 700; margin: 0 0 1rem 0; color: var(--text-bright);">Generated Media Assets (3D, Video, Image)</h3>
                 <div id="gallery-3d-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 1rem;">
-                    <!-- 3D Model items populated dynamically by JS -->
-                    <div style="color: var(--text-muted); font-size: 0.85rem;">Scanning 3D outputs directory...</div>
+                    <!-- Media items populated dynamically by JS -->
+                    <div style="color: var(--text-muted); font-size: 0.85rem;">Scanning outputs directory...</div>
                 </div>
             </div>
         </div>
