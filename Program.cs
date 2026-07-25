@@ -66,10 +66,34 @@ app.Use(async (context, next) =>
     if (isForgeRequest)
     {
         await orchestrator.EnsureVramForImageGenerationAsync();
+        
+        if (!await orchestrator.IsForgeHealthyAsync())
+        {
+            var http = context.RequestServices.GetRequiredService<IHttpClientFactory>().CreateClient();
+            await http.PostAsync("http://127.0.0.1:5246/api/forge/start", null);
+            for (int i = 0; i < 30; i++)
+            {
+                if (await orchestrator.IsForgeHealthyAsync()) break;
+                await Task.Delay(2000);
+            }
+        }
     }
     else if (isComfyRequest)
     {
         await orchestrator.EnsureVramForComfyUiAsync();
+
+        var settings = LoadSettings();
+        var comfyUrl = string.IsNullOrWhiteSpace(settings.ComfyUiUrl) ? "http://127.0.0.1:8188" : settings.ComfyUiUrl;
+        if (!await orchestrator.IsComfyUiHealthyAsync(comfyUrl))
+        {
+            var http = context.RequestServices.GetRequiredService<IHttpClientFactory>().CreateClient();
+            await http.PostAsync("http://127.0.0.1:5246/api/comfy/start", null);
+            for (int i = 0; i < 30; i++)
+            {
+                if (await orchestrator.IsComfyUiHealthyAsync(comfyUrl)) break;
+                await Task.Delay(2000);
+            }
+        }
     }
 
     await next();
@@ -571,8 +595,8 @@ app.MapPost("/api/forge/start", () =>
 {
     if (forgeProcess != null && !forgeProcess.HasExited) return Results.Ok(new { message = "SD Forge is already running" });
     
-    var path = @"D:\AI\SD_Forge\run.bat";
-    if (!System.IO.File.Exists(path)) return Results.NotFound(new { message = "run.bat not found" });
+    var path = @"D:\AI\SD_Forge\webui-user.bat";
+    if (!System.IO.File.Exists(path)) return Results.NotFound(new { message = "webui-user.bat not found" });
 
     forgeProcess = new System.Diagnostics.Process
     {
@@ -601,4 +625,4 @@ app.MapPost("/api/forge/stop", () =>
     return Results.Ok(new { message = "SD Forge is not running" });
 });
 
-app.Run();
+app.Run("http://0.0.0.0:5246");

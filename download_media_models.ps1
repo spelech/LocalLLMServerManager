@@ -27,8 +27,25 @@ $svdDest = Join-Path $checkpointsDir "svd_xt_1_1.safetensors"
 
 if (-not (Test-Path $svdDest)) {
     Write-Host "Downloading Stable Video Diffusion XT 1.1 (~9.5 GB)..." -ForegroundColor Cyan
-    $headers = @{
-        "Authorization" = "Bearer <YOUR_HF_TOKEN>"
+    # Read HF_TOKEN from .env file
+    $envPath = Join-Path $PSScriptRoot ".env"
+    $hfToken = ""
+    if (Test-Path $envPath) {
+        $envLines = Get-Content $envPath
+        foreach ($line in $envLines) {
+            if ($line.StartsWith("HF_TOKEN=")) {
+                $hfToken = $line.Substring(9).Trim()
+            }
+        }
+    }
+    
+    if (-not $hfToken) {
+        Write-Host "WARNING: HF_TOKEN not found in .env. Attempting download without auth..." -ForegroundColor Yellow
+    }
+
+    $headers = @{}
+    if ($hfToken) {
+        $headers["Authorization"] = "Bearer $hfToken"
     }
     Invoke-WebRequest -Uri $svdUrl -OutFile $svdDest -Headers $headers
 } else {
