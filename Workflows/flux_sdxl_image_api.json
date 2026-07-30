@@ -13,21 +13,31 @@
     },
     "2": {
       "inputs": {
-        "clip_name": "t5xxl_fp16.safetensors"
+        "clip_name": "t5xxl_fp16.safetensors",
+        "type": "flux2"
       },
       "class_type": "CLIPLoader",
       "_meta": { "title": "Load CLIP" }
+    },
+    "9": {
+      "inputs": {
+        "text": "",
+        "clip": [ "2", 0 ]
+      },
+      "class_type": "CLIPTextEncode",
+      "_meta": { "title": "Negative Prompt" }
     },
     "3": {
       "inputs": {
         "seed": 987654,
         "steps": 20,
-        "cfg": 3.5,
+        "cfg": 1.0,
         "sampler_name": "euler",
         "scheduler": "simple",
         "denoise": 1.0,
         "model": [ "4", 0 ],
         "positive": [ "1", 0 ],
+        "negative": [ "9", 0 ],
         "latent_image": [ "5", 0 ]
       },
       "class_type": "KSampler",
@@ -36,7 +46,7 @@
     "4": {
       "inputs": {
         "unet_name": "flux1-dev.safetensors",
-        "weight_dtype": "default"
+        "weight_dtype": "fp8_e4m3fn"
       },
       "class_type": "UNETLoader",
       "_meta": { "title": "Load Diffusion Model" }

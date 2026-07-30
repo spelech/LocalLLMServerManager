@@ -557,11 +557,21 @@ System.Diagnostics.Process? comfyProcess = null;
 System.Diagnostics.Process? forgeProcess = null;
 JobObject aiEnginesJob = new JobObject(); // Master Win32 Job Object
 
-app.MapPost("/api/comfy/start", () =>
+app.MapPost("/api/comfy/start", async (VramOrchestrator orchestrator) =>
 {
-    if (comfyProcess != null && !comfyProcess.HasExited) return Results.Ok(new { message = "ComfyUI is already running" });
-    
     var settings = LoadSettings();
+    var comfyUrl = string.IsNullOrWhiteSpace(settings.ComfyUiUrl) ? "http://127.0.0.1:8188" : settings.ComfyUiUrl;
+
+    if (comfyProcess != null)
+    {
+        if (!comfyProcess.HasExited && await orchestrator.IsComfyUiHealthyAsync(comfyUrl))
+        {
+            return Results.Ok(new { message = "ComfyUI is already running" });
+        }
+        try { comfyProcess.Kill(true); } catch { }
+        comfyProcess = null;
+    }
+
     var path = string.IsNullOrWhiteSpace(settings.ComfyUiExecutablePath) ? @"D:\AI\ComfyUI\run_nvidia_gpu.bat" : settings.ComfyUiExecutablePath;
     if (!System.IO.File.Exists(path)) return Results.NotFound(new { message = $"ComfyUI executable not found at: {path}" });
 

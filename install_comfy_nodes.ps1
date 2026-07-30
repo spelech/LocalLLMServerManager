@@ -11,8 +11,8 @@ Write-Host "Installing ComfyUI Custom Nodes to $customNodesDir..." -ForegroundCo
 
 $repos = @(
     # 3D Generation Nodes
-    "https://github.com/Vchitect/ComfyUI-Trellis.git",
-    "https://github.com/kijai/ComfyUI-Hunyuan3DWrapper.git",
+    "https://github.com/PozzettiAndrea/ComfyUI-TRELLIS2.git",
+    "https://github.com/StartHua/ComfyUI-Hunyuan3DWrapper.git",
     "https://github.com/MrForExample/ComfyUI-3D-Pack.git",
     
     # Video Generation Nodes
