@@ -519,6 +519,7 @@
                             Select Preset Workflow:
                         </label>
                         <select id="comfy-workflow-preset" class="civitai-select" style="width: 100%; font-size: 0.9rem; padding: 0.6rem;">
+                            <option value="sticker_generator">🏷️ Die-Cut Sticker & Patch Generator (FLUX)</option>
                             <option value="trellis_v2_api">TRELLIS V2 (3D Mesh Generator)</option>
                             <option value="hunyuan3d_v2_api">Hunyuan3D v2 (3D Mesh Generator)</option>
                             <option value="flux_sdxl_image_api">FLUX / SDXL (High-Res Image Generator)</option>
@@ -528,10 +529,23 @@
                     </div>
 
                     <div>
-                        <label style="font-size: 0.8rem; font-weight: 600; color: var(--text-muted); display: block; margin-bottom: 0.4rem;">
-                            Generation Prompt:
-                        </label>
-                        <textarea id="comfy-prompt-input" rows="4" style="width: 100%; border-radius: 8px; border: 1px solid var(--border-color); background: rgba(15, 23, 42, 0.6); color: var(--text-bright); padding: 0.75rem; font-family: var(--font-sans); font-size: 0.9rem; resize: vertical;" placeholder="Describe the 3D model or image asset you want to generate..."></textarea>
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.4rem;">
+                            <label style="font-size: 0.8rem; font-weight: 600; color: var(--text-muted); margin: 0;">
+                                Generation Prompt:
+                            </label>
+                            <span style="font-size: 0.75rem; color: #8b5cf6; font-weight: 600;">✨ Style Assistant</span>
+                        </div>
+                        
+                        <!-- Quick Style Modifier Buttons -->
+                        <div class="quick-tags" style="margin-bottom: 0.6rem;">
+                            <button class="tag-chip style-preset-btn" data-prefix="die-cut sticker of a " data-suffix=", bold thick black outlines, vibrant vector illustration, thick white die-cut border, clean white background, sticker style">🏷️ Sticker</button>
+                            <button class="tag-chip style-preset-btn" data-prefix="kawaii chibi " data-suffix=", cute pastel colors, soft lighting, adorable big eyes, high detail">🦄 Kawaii Chibi</button>
+                            <button class="tag-chip style-preset-btn" data-prefix="3d isometric game asset of a " data-suffix=", octane render, ray tracing, studio lighting, clean background">🎮 3D Asset</button>
+                            <button class="tag-chip style-preset-btn" data-prefix="futuristic cyberpunk " data-suffix=", neon glow, dark tech background, highly detailed, 8k resolution">🔥 Cyberpunk</button>
+                            <button class="tag-chip style-preset-btn" data-prefix="cinematic photo of " data-suffix=", 8k resolution, photorealistic, studio lighting, highly detailed">📸 Realistic</button>
+                        </div>
+
+                        <textarea id="comfy-prompt-input" rows="4" style="width: 100%; border-radius: 8px; border: 1px solid var(--border-color); background: rgba(15, 23, 42, 0.6); color: var(--text-bright); padding: 0.75rem; font-family: var(--font-sans); font-size: 0.9rem; resize: vertical;" placeholder="Describe what you want to generate..."></textarea>
                     </div>
 
                     <div style="display: flex; gap: 1rem;">

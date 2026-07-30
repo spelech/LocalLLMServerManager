@@ -1611,12 +1611,37 @@ async function setPreferredEngine(engine) {
 
 // Preset selection update default prompts
 const presetDefaults = {
+    'sticker_generator': 'die-cut sticker of a cute baby panda wearing red headphones, bold thick black outlines, vibrant vector illustration, thick white die-cut border, clean white background, sticker style',
     'trellis_v2_api': 'a futuristic cyberpunk sports car, 3d asset, white background',
     'hunyuan3d_v2_api': 'a wooden treasure chest with gold ornaments, detailed 3d asset',
     'flux_sdxl_image_api': 'cinematic photorealistic portrait of a female astronaut on Mars, dramatic lighting, 8k resolution',
     'animatediff_sdxl_api': 'a detailed high resolution video of a woman walking in Tokyo, dynamic motion',
     'svd_api': 'high quality video, smooth motion'
 };
+
+document.querySelectorAll('.style-preset-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+        const el = /** @type {HTMLElement} */ (btn);
+        const prefix = el.dataset.prefix || '';
+        const suffix = el.dataset.suffix || '';
+        let currentPrompt = comfyPromptInput ? comfyPromptInput.value.trim() : '';
+        
+        // Strip existing prefix/suffix if present to avoid duplication
+        if (currentPrompt.includes('die-cut sticker of a ')) {
+            currentPrompt = currentPrompt.replace(/die-cut sticker of a /gi, '').replace(/, bold thick black outlines.*/gi, '');
+        }
+        if (currentPrompt.includes('kawaii chibi ')) {
+            currentPrompt = currentPrompt.replace(/kawaii chibi /gi, '').replace(/, cute pastel colors.*/gi, '');
+        }
+
+        if (!currentPrompt) {
+            currentPrompt = 'cute baby panda wearing headphones';
+        }
+
+        comfyPromptInput.value = `${prefix}${currentPrompt}${suffix}`;
+        showToast('Style applied to prompt!', 'info');
+    });
+});
 
 if (comfyWorkflowPreset && comfyPromptInput) {
     comfyPromptInput.value = presetDefaults[comfyWorkflowPreset.value] || '';
