@@ -561,15 +561,17 @@ app.MapPost("/api/comfy/start", () =>
 {
     if (comfyProcess != null && !comfyProcess.HasExited) return Results.Ok(new { message = "ComfyUI is already running" });
     
-    var path = @"D:\AI\ComfyUI\run_nvidia_gpu.bat";
-    if (!System.IO.File.Exists(path)) return Results.NotFound(new { message = "run_nvidia_gpu.bat not found" });
+    var settings = LoadSettings();
+    var path = string.IsNullOrWhiteSpace(settings.ComfyUiExecutablePath) ? @"D:\AI\ComfyUI\run_nvidia_gpu.bat" : settings.ComfyUiExecutablePath;
+    if (!System.IO.File.Exists(path)) return Results.NotFound(new { message = $"ComfyUI executable not found at: {path}" });
 
     comfyProcess = new System.Diagnostics.Process
     {
         StartInfo = new System.Diagnostics.ProcessStartInfo
         {
-            FileName = path,
-            WorkingDirectory = @"D:\AI\ComfyUI",
+            FileName = "cmd.exe",
+            Arguments = $"/c \"{path}\"",
+            WorkingDirectory = System.IO.Path.GetDirectoryName(path) ?? "",
             UseShellExecute = false, // Must be false to assign to job object reliably
             CreateNoWindow = true,
             WindowStyle = System.Diagnostics.ProcessWindowStyle.Hidden
@@ -595,15 +597,17 @@ app.MapPost("/api/forge/start", () =>
 {
     if (forgeProcess != null && !forgeProcess.HasExited) return Results.Ok(new { message = "SD Forge is already running" });
     
-    var path = @"D:\AI\SD_Forge\webui-user.bat";
-    if (!System.IO.File.Exists(path)) return Results.NotFound(new { message = "webui-user.bat not found" });
+    var settings = LoadSettings();
+    var path = string.IsNullOrWhiteSpace(settings.ForgeExecutablePath) ? @"D:\AI\SD_Forge\webui-user.bat" : settings.ForgeExecutablePath;
+    if (!System.IO.File.Exists(path)) return Results.NotFound(new { message = $"SD Forge executable not found at: {path}" });
 
     forgeProcess = new System.Diagnostics.Process
     {
         StartInfo = new System.Diagnostics.ProcessStartInfo
         {
-            FileName = path,
-            WorkingDirectory = @"D:\AI\SD_Forge",
+            FileName = "cmd.exe",
+            Arguments = $"/c \"{path}\"",
+            WorkingDirectory = System.IO.Path.GetDirectoryName(path) ?? "",
             UseShellExecute = false,
             CreateNoWindow = true,
             WindowStyle = System.Diagnostics.ProcessWindowStyle.Hidden

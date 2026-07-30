@@ -1,6 +1,6 @@
 # Local LLM Server Manager
 
-> **v1.4.0** — An orchestrator, proxy, and visual dashboard to manage local Large Language Models (**Ollama**), Image Generation (**Stable Diffusion / Forge & ComfyUI**), and **3D Mesh Generation (TRELLIS V2 & Hunyuan3D v2)** on Windows.
+> **v1.5.0** — An orchestrator, proxy, and visual dashboard to manage local Large Language Models (**Ollama**), Image Generation (**Stable Diffusion / Forge & ComfyUI**), and **3D Mesh Generation (TRELLIS V2 & Hunyuan3D v2)** on Windows.
 
 It tracks GPU VRAM usage in real time, profiles model capabilities, computes KV Cache memory footprints, integrates with the **Hugging Face Hub** to discover and pull GGUF models, connects to **CivitAI** to browse and download Stable Diffusion checkpoints directly to disk, and features a **3D & ComfyUI Studio** with an interactive WebGL 3D canvas viewer.
 
@@ -58,6 +58,8 @@ It tracks GPU VRAM usage in real time, profiles model capabilities, computes KV 
 17. **YARP Reverse Proxy** — Transparently proxies Ollama (`:11434`), Forge (`:7860`), and ComfyUI (`:8188`) traffic through a single endpoint (`:5246`).
 18. **VRAM Orchestrator** — Auto-unloads active LLM models from GPU memory before heavy Stable Diffusion or ComfyUI 3D render jobs to prevent OOM errors.
 19. **Optional Windows Service** — Run headlessly as a background service starting on boot.
+20. **Background Engine Management** — UI controls to start/stop engines directly from the dashboard, utilizing Win32 Job Objects for reliable child process termination.
+21. **Lazy Boot** — AI engines can now boot lazily on-demand when first requested, conserving system resources when idle.
 
 ---
 
@@ -79,6 +81,7 @@ We use **MAJOR.MINOR.PATCH** (SemVer):
 | `1.2.0` | Forge models directory config, direct-to-disk CivitAI downloads with SSE progress, persistent `settings.json` |
 | `1.3.0` | Migration to .NET 10 LTS target framework and updated dependencies |
 | `1.4.0` | ComfyUI integration, 3D Mesh Studio (TRELLIS V2 / Hunyuan3D v2), interactive WebGL 3D viewer, preferred engine toggle |
+| `1.5.0` | Lazy boot for AI engines, Win32 Job Object integration, and UI controls for background engine management |
 
 ---
 
