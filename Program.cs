@@ -1,5 +1,6 @@
 using System.Text.Json;
 using System.Text;
+using System.Diagnostics;
 using LocalLLMServerManager;
 
 // Settings helper functions (must precede app.Run() in top-level programs)
@@ -637,6 +638,24 @@ app.MapPost("/api/forge/stop", () =>
         return Results.Ok(new { message = "SD Forge Stopped" });
     }
     return Results.Ok(new { message = "SD Forge is not running" });
+});
+
+app.MapPost("/api/service/update", () =>
+{
+    var repoDir = Directory.GetCurrentDirectory();
+    var script = "$ServiceName = 'LocalLLMServerManager'; Stop-Service -Name $ServiceName -Force -ErrorAction SilentlyContinue; Start-Sleep -Seconds 1; dotnet publish -c Release -o C:\\LocalLLMServerManager --nologo; Start-Service -Name $ServiceName -ErrorAction SilentlyContinue;";
+    
+    var psi = new ProcessStartInfo
+    {
+        FileName = "powershell.exe",
+        Arguments = $"-NoProfile -ExecutionPolicy Bypass -Command \"{script}\"",
+        WorkingDirectory = repoDir,
+        UseShellExecute = true,
+        CreateNoWindow = true
+    };
+    
+    Process.Start(psi);
+    return Results.Ok(new { message = "Service update spawned in detached process. Rebuilding and restarting service..." });
 });
 
 app.Run("http://0.0.0.0:5246");
