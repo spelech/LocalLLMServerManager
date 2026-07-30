@@ -82,6 +82,15 @@
       },
       "class_type": "SaveImage",
       "_meta": { "title": "Save Image" }
+    },
+    "10": {
+      "inputs": {
+        "upscale_method": "bicubic",
+        "scale_by": 2.0,
+        "image": [ "6", 0 ]
+      },
+      "class_type": "ImageScaleBy",
+      "_meta": { "title": "Optional 2x Upscaler (1024 to 2048px)" }
     }
   }
 }
