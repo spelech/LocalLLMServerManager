@@ -49,10 +49,13 @@ jobs:
           New-Item -ItemType Directory -Path dist -Force
           Compress-Archive -Path "publish\*" -DestinationPath "dist\LocalLLMServerManager-${{ github.ref_name }}-win-x64.zip" -Force
 
+      - name: Install Inno Setup
+        run: choco install innosetup -y
+
       - name: Compile Inno Setup Installer
-        uses: ammarjw/innosetup-action@v1
-        with:
-          filepath: installer.iss
+        shell: powershell
+        run: |
+          & "C:\Program Files (x86)\Inno Setup 6\ISCC.exe" installer.iss
 
       - name: Package Installer Executable
         shell: powershell
