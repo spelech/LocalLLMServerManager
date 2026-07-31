@@ -21,6 +21,16 @@ public partial class App : Application
         {
             desktop.ShutdownMode = ShutdownMode.OnExplicitShutdown;
             desktop.MainWindow = new MainWindow();
+            desktop.MainWindow.Show();
+        }
+
+        var icons = TrayIcon.GetIcons(this);
+        if (icons != null)
+        {
+            foreach (var icon in icons)
+            {
+                icon.IsVisible = true;
+            }
         }
 
         base.OnFrameworkInitializationCompleted();
