@@ -24,25 +24,13 @@ public class Program
         {
             // Session 1 Desktop & Tray Mode
             WebApplication? webApp = null;
-            try
-            {
-                // Check if server is already running (e.g., via Windows Service)
-                using var http = new HttpClient();
-                http.Timeout = TimeSpan.FromSeconds(2);
-                var resp = await http.GetAsync("http://127.0.0.1:5246/health");
-                if (!resp.IsSuccessStatusCode)
-                {
-                    webApp = CreateWebApplication(args, isServiceMode: false);
-                    webApp.Urls.Add("http://0.0.0.0:5246");
-                    await webApp.StartAsync();
-                }
-            }
-            catch
+            
+            // Only start in-process WebHost if port 5246 is not already occupied (e.g. by Windows Service)
+            if (!IsPortInUse(5246))
             {
                 try
                 {
                     webApp = CreateWebApplication(args, isServiceMode: false);
-                    webApp.Urls.Add("http://0.0.0.0:5246");
                     await webApp.StartAsync();
                 }
                 catch { }
@@ -55,6 +43,20 @@ public class Program
             {
                 try { await webApp.StopAsync(); } catch { }
             }
+        }
+    }
+
+    private static bool IsPortInUse(int port)
+    {
+        try
+        {
+            var ipProperties = System.Net.NetworkInformation.IPGlobalProperties.GetIPGlobalProperties();
+            var activeListeners = ipProperties.GetActiveTcpListeners();
+            return activeListeners.Any(endpoint => endpoint.Port == port);
+        }
+        catch
+        {
+            return false;
         }
     }
 
@@ -95,6 +97,9 @@ public class Program
     {
         var builder = WebApplication.CreateBuilder(args);
 
+        builder.WebHost.UseUrls("http://0.0.0.0:5246");
+        builder.Logging.AddFilter("System.Net.Http.HttpClient", LogLevel.Warning);
+
         builder.Services.AddHttpClient();
         builder.Services.AddSingleton<VramOrchestrator>();
 
@@ -111,7 +116,6 @@ public class Program
 
         var app = builder.Build();
 
-        app.UseHttpsRedirection();
         app.UseDefaultFiles();
         app.UseStaticFiles();
 
