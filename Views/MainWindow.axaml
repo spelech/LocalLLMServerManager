@@ -7,7 +7,7 @@
         x:Class="LocalLLMServerManager.Views.MainWindow"
         x:DataType="vm:MainWindowViewModel"
         Icon="avares://LocalLLMServerManager/Assets/app-icon.ico"
-        Title="Local LLM Server Manager v2.0.0"
+        Title="Local LLM Server Manager v2.1.0"
         Width="640" Height="480"
         WindowStartupLocation="CenterScreen"
         Background="#0F172A">
@@ -98,7 +98,7 @@
         <!-- Footer -->
         <Border Grid.Row="2" BorderBrush="#1E293B" BorderThickness="0,1,0,0" Padding="0,12,0,0" Margin="0,12,0,0">
             <Grid ColumnDefinitions="*, Auto">
-                <TextBlock Text="LocalLLMServerManager v2.0.0 — Running on http://127.0.0.1:5246" FontSize="12" Foreground="#64748B"/>
+                <TextBlock Text="LocalLLMServerManager v2.1.0 — Running on http://127.0.0.1:5246" FontSize="12" Foreground="#64748B"/>
                 <TextBlock Grid.Column="1" Text="System Tray Enabled 🟢" FontSize="12" Foreground="#22C55E"/>
             </Grid>
         </Border>

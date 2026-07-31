@@ -1,38 +1,42 @@
 # Local LLM Server Manager
 
-> **v2.0.0** — A native Windows application (.NET 10 + Avalonia UI), system tray app, background service, and visual orchestrator dashboard to manage local Large Language Models (**Ollama**), Image Generation (**Stable Diffusion / Forge & ComfyUI**), and **3D Mesh Generation (TRELLIS V2 & Hunyuan3D v2)** on Windows.
+> **v2.1.0** — A native Windows application (.NET 10 + Avalonia UI), system tray app, background service, and visual orchestrator dashboard to manage local Large Language Models (**Ollama**), Image Generation (**Stable Diffusion / Forge & ComfyUI**), and **3D Mesh Generation (TRELLIS V2 & Hunyuan3D v2)** on Windows.
 
 It tracks GPU VRAM usage in real time, profiles model capabilities, computes KV Cache memory footprints, integrates with the **Hugging Face Hub** to discover and pull GGUF models, connects to **CivitAI** to browse and download Stable Diffusion checkpoints directly to disk, features a **3D & ComfyUI Studio** with an interactive WebGL 3D canvas viewer, and provides a **System Tray Icon & Native Avalonia UI Dashboard** with pre-logon Windows Service boot.
 
 ---
 
-## 📸 Web UI Screenshots (From Running Instance)
+## 📸 User Interface Screenshots
 
-### 1. Model Management Dashboard
+### 1. Avalonia UI Native System Tray & Desktop Dashboard (v2.1.0)
+*Fluent Dark Avalonia desktop window showing live VRAM consumption, GPU hardware telemetry, AI engine health badges, and one-click quick actions.*
+![Avalonia Native Desktop Dashboard](Assets/native_dashboard.jpg)
+
+### 2. Modern Glassmorphism Web UI
+*Responsive web dashboard with real-time model capability tags, KV Cache context calculator, engine status toggles, and mobile-friendly UI layout.*
+![Modern Glassmorphism Web UI](Assets/web_dashboard.jpg)
+
+### 3. Model Management Dashboard
 *View installed Ollama models, VRAM usage bar, GPU name, active loaded models, and capabilities profiles.*
 ![Installed Models Dashboard](screenshots/dashboard.png)
 
-### 2. 3D & ComfyUI Studio (TRELLIS V2 / Hunyuan3D v2 & WebGL Viewer)
+### 4. 3D & ComfyUI Studio (TRELLIS V2 / Hunyuan3D v2 & WebGL Viewer)
 *Select 3D mesh workflows (TRELLIS V2, Hunyuan3D v2), queue generations with auto-VRAM offloading, and inspect 3D assets interactively in WebGL with 360° rotation.*
 ![3D & ComfyUI Studio](screenshots/comfyui_3d_studio.png)
 
-### 3. Find & Download Models — Hugging Face Hub
+### 5. Find & Download Models — Hugging Face Hub
 *Search GGUF repositories on Hugging Face, inspect quantization file sizes, and pull them with live progress tracking.*
 ![Discover and Download Models Panel](screenshots/discover.png)
 
-### 4. Stable Diffusion — CivitAI Search
-*Browse CivitAI checkpoints by type, sort, and keyword. Filter by Checkpoint, LoRA, Embedding, VAE, or ControlNet.*
+### 6. Stable Diffusion — CivitAI Search & Downloads
+*Browse CivitAI checkpoints with real preview images, ratings, and direct-to-disk downloads.*
 ![CivitAI Model Search](screenshots/stable_diffusion.png)
-
-### 5. CivitAI Results Grid
-*Real model preview images, download counts, ratings, and one-click version selection for direct-to-disk downloads.*
-![CivitAI Results with Thumbnails](screenshots/civitai.png)
 
 ---
 
 ## 🌟 Key Features
 
-### Native Desktop App & Windows Service (v2.0.0)
+### Native Desktop App & Windows Service (v2.1.0)
 1. **Avalonia UI Native Dashboard** — Sleek Fluent dark desktop window presenting live VRAM usage, engine status cards, and one-click browser launch.
 2. **System Tray Integration** — Operates quietly in the Windows notification area with right-click quick controls (Open Dashboard, View Health, Exit).
 3. **Pre-Logon Machine Boot** — Optional Windows Service (`--service`) boots headlessly on machine startup in Session 0 before user login.
@@ -138,14 +142,14 @@ We use **MAJOR.MINOR.PATCH** (SemVer):
 ## 🚀 Installation & Downloads
 
 ### Option 1: Official Windows Installer (.exe)
-Download the latest `LocalLLMServerManager-v2.0.0-Setup.exe` from the [GitHub Releases](https://github.com/spelech/LocalLLMServerManager/releases) page.
+Download the latest `LocalLLMServerManager-v2.1.0-Setup.exe` from the [GitHub Releases](https://github.com/spelech/LocalLLMServerManager/releases) page.
 * Includes an installation wizard with options for:
   * 🟢 **Install Windows Service** (Headless pre-logon machine boot)
   * 🟢 **Auto-Start System Tray App** on user login
   * 🟢 **Desktop & Start Menu Shortcuts**
 
 ### Option 2: Standalone Portable (.zip)
-Download `LocalLLMServerManager-v2.0.0-win-x64.zip` from Releases, extract to any folder, and run `LocalLLMServerManager.exe`. Includes bundled runtime — no .NET SDK installation required!
+Download `LocalLLMServerManager-v2.1.0-win-x64.zip` from Releases, extract to any folder, and run `LocalLLMServerManager.exe`. Includes bundled runtime — no .NET SDK installation required!
 
 ### Option 3: Install from Source (PowerShell Script)
 1. Open PowerShell as **Administrator**.

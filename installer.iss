@@ -1,6 +1,6 @@
-; Script generated for Inno Setup - LocalLLMServerManager v2.0.0
+; Script generated for Inno Setup - LocalLLMServerManager v2.1.0
 #define MyAppName "Local LLM Server Manager"
-#define MyAppVersion "2.0.0"
+#define MyAppVersion "2.1.0"
 #define MyAppPublisher "LocalLLMServerManager Team"
 #define MyAppURL "https://github.com/spelech/LocalLLMServerManager"
 #define MyAppExeName "LocalLLMServerManager.exe"

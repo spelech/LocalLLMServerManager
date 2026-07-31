@@ -14,7 +14,7 @@ public class MainWindowUiTests
         var window = new MainWindow();
 
         Assert.NotNull(window);
-        Assert.Equal("Local LLM Server Manager v2.0.0", window.Title);
+        Assert.Equal("Local LLM Server Manager v2.1.0", window.Title);
         Assert.NotNull(window.DataContext);
         Assert.IsType<MainWindowViewModel>(window.DataContext);
     }

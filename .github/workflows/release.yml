@@ -57,8 +57,9 @@ jobs:
       - name: Package Installer Executable
         shell: powershell
         run: |
-          if (Test-Path "LocalLLMServerManager-v2.0.0-Setup.exe") {
-            Move-Item -Path "LocalLLMServerManager-v2.0.0-Setup.exe" -Destination "dist\LocalLLMServerManager-${{ github.ref_name }}-Setup.exe" -Force
+          $setupExe = Get-ChildItem -Path . -Filter "LocalLLMServerManager-*-Setup.exe" | Select-Object -First 1
+          if ($setupExe) {
+            Move-Item -Path $setupExe.FullName -Destination "dist\LocalLLMServerManager-${{ github.ref_name }}-Setup.exe" -Force
           }
 
       - name: Create GitHub Release

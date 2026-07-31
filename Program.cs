@@ -183,7 +183,7 @@ public class Program
                 StableDiffusion = forgeHealthy ? "Online" : "Offline",
                 ComfyUI = comfyHealthy ? "Online" : "Offline",
                 PreferredImageEngine = settings.PreferredImageEngine,
-                Version = "2.0.0"
+                Version = "2.1.0"
             });
         });
 
