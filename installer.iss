@@ -29,7 +29,7 @@ Name: "english"; MessagesFile: "compiler:Default.isl"
 
 [Tasks]
 Name: "desktopicon"; Description: "{cm:CreateDesktopIcon}"; GroupDescription: "{cm:AdditionalIcons}"; Flags: unchecked
-Name: "autostart"; Description: "Auto-start System Tray App on user login"; GroupDescription: "System Integration"; Flags: checked
+Name: "autostart"; Description: "Auto-start System Tray App on user login"; GroupDescription: "System Integration"
 Name: "windowsservice"; Description: "Install background Windows Service (starts automatically on system boot)"; GroupDescription: "System Integration"; Flags: unchecked
 
 [Files]
