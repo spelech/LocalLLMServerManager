@@ -23,33 +23,38 @@ public class Program
         else
         {
             // Session 1 Desktop & Tray Mode
-            _ = Task.Run(async () =>
+            WebApplication? webApp = null;
+            try
+            {
+                // Check if server is already running (e.g., via Windows Service)
+                using var http = new HttpClient();
+                http.Timeout = TimeSpan.FromSeconds(2);
+                var resp = await http.GetAsync("http://127.0.0.1:5246/health");
+                if (!resp.IsSuccessStatusCode)
+                {
+                    webApp = CreateWebApplication(args, isServiceMode: false);
+                    webApp.Urls.Add("http://0.0.0.0:5246");
+                    await webApp.StartAsync();
+                }
+            }
+            catch
             {
                 try
                 {
-                    // Check if server is already running (e.g., via Windows Service)
-                    using var http = new HttpClient();
-                    http.Timeout = TimeSpan.FromSeconds(2);
-                    var resp = await http.GetAsync("http://127.0.0.1:5246/health");
-                    if (!resp.IsSuccessStatusCode)
-                    {
-                        var app = CreateWebApplication(args, isServiceMode: false);
-                        await app.RunAsync("http://0.0.0.0:5246");
-                    }
+                    webApp = CreateWebApplication(args, isServiceMode: false);
+                    webApp.Urls.Add("http://0.0.0.0:5246");
+                    await webApp.StartAsync();
                 }
-                catch
-                {
-                    try
-                    {
-                        var app = CreateWebApplication(args, isServiceMode: false);
-                        await app.RunAsync("http://0.0.0.0:5246");
-                    }
-                    catch { }
-                }
-            });
+                catch { }
+            }
 
             // Start Avalonia UI Desktop Lifetime
             BuildAvaloniaApp().StartWithClassicDesktopLifetime(args);
+
+            if (webApp != null)
+            {
+                try { await webApp.StopAsync(); } catch { }
+            }
         }
     }
 
