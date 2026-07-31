@@ -18,6 +18,7 @@ DefaultGroupName={#MyAppName}
 AllowNoIcons=yes
 LicenseFile=README.md
 OutputBaseFilename=LocalLLMServerManager-v{#MyAppVersion}-Setup
+OutputDir=.
 Compression=lzma2/max
 SolidCompression=yes
 WizardStyle=modern

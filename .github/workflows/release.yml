@@ -21,6 +21,7 @@ jobs:
         uses: actions/setup-dotnet@v4
         with:
           dotnet-version: '10.0.x'
+          include-prerelease: true
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
@@ -48,10 +49,10 @@ jobs:
           New-Item -ItemType Directory -Path dist -Force
           Compress-Archive -Path "publish\*" -DestinationPath "dist\LocalLLMServerManager-${{ github.ref_name }}-win-x64.zip" -Force
 
-      - name: Install Inno Setup
-        uses: dotnet/flash-build/action-innosetup@v1
+      - name: Compile Inno Setup Installer
+        uses: ammarjw/innosetup-action@v1
         with:
-          path: installer.iss
+          filepath: installer.iss
 
       - name: Package Installer Executable
         shell: powershell
