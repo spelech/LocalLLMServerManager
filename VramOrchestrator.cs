@@ -95,7 +95,7 @@ public class VramOrchestrator
             if (models != null && models.Count > 0)
             {
                 _logger.LogInformation($"Active LLM found in VRAM. Issuing unload command to free up VRAM for {reason}.");
-                
+
                 foreach (var model in models)
                 {
                     var modelName = model?["name"]?.ToString();
@@ -107,7 +107,7 @@ public class VramOrchestrator
                         _logger.LogInformation($"Unloaded model: {modelName}");
                     }
                 }
-                
+
                 await Task.Delay(1500); // Give the system time to clear VRAM
             }
         }

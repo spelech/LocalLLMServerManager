@@ -119,7 +119,7 @@ public class Program
         app.Use(async (context, next) =>
         {
             var path = context.Request.Path.Value ?? string.Empty;
-            var isForgeRequest = path.StartsWith("/sdapi", StringComparison.OrdinalIgnoreCase) || 
+            var isForgeRequest = path.StartsWith("/sdapi", StringComparison.OrdinalIgnoreCase) ||
                                  path.StartsWith("/v1/images", StringComparison.OrdinalIgnoreCase);
             var isComfyRequest = path.StartsWith("/comfyapi", StringComparison.OrdinalIgnoreCase) ||
                                  path.StartsWith("/api/comfy/prompt", StringComparison.OrdinalIgnoreCase);
@@ -129,7 +129,7 @@ public class Program
             if (isForgeRequest)
             {
                 await orchestrator.EnsureVramForImageGenerationAsync();
-                
+
                 if (!await orchestrator.IsForgeHealthyAsync())
                 {
                     var http = context.RequestServices.GetRequiredService<IHttpClientFactory>().CreateClient();
@@ -174,7 +174,7 @@ public class Program
 
             return Results.Ok(new
             {
-                Status = (ollamaHealthy && (forgeHealthy || comfyHealthy)) ? "Healthy" : "Degraded",
+                Status = (ollamaHealthy || forgeHealthy || comfyHealthy) ? "Healthy" : "Degraded",
                 Ollama = ollamaHealthy ? "Online" : "Offline",
                 StableDiffusion = forgeHealthy ? "Online" : "Offline",
                 ComfyUI = comfyHealthy ? "Online" : "Offline",
@@ -271,7 +271,7 @@ public class Program
         {
             string gpuName = "Generic GPU";
             long vramBytes = 8L * 1024 * 1024 * 1024; // Default to 8GB
-            
+
             try
             {
                 if (OperatingSystem.IsWindows())
@@ -291,8 +291,8 @@ public class Program
                                     {
                                         var provider = subKey.GetValue("ProviderName")?.ToString() ?? "";
                                         var driverDesc = subKey.GetValue("DriverDesc")?.ToString() ?? "";
-                                        
-                                        if (driverDesc.Contains("Basic Render") || 
+
+                                        if (driverDesc.Contains("Basic Render") ||
                                             (provider.Contains("Microsoft") && driverDesc.Contains("Indirect")) ||
                                             driverDesc.Contains("Virtual Desktop"))
                                         {
@@ -462,7 +462,7 @@ public class Program
                         var content = File.ReadAllText(file);
                         using var doc = JsonDocument.Parse(content);
                         var root = doc.RootElement;
-                        
+
                         var name = root.TryGetProperty("name", out var n) ? n.GetString() : Path.GetFileNameWithoutExtension(file);
                         var type = root.TryGetProperty("type", out var t) ? t.GetString() : "general";
                         var description = root.TryGetProperty("description", out var d) ? d.GetString() : "";
@@ -610,7 +610,7 @@ public class Program
         app.MapPost("/api/forge/start", () =>
         {
             if (forgeProcess != null && !forgeProcess.HasExited) return Results.Ok(new { message = "SD Forge is already running" });
-            
+
             var settings = LoadSettings();
             var path = string.IsNullOrWhiteSpace(settings.ForgeExecutablePath) ? @"D:\AI\SD_Forge\webui-user.bat" : settings.ForgeExecutablePath;
             if (!System.IO.File.Exists(path)) return Results.NotFound(new { message = $"SD Forge executable not found at: {path}" });
@@ -647,7 +647,7 @@ public class Program
         {
             var repoDir = Directory.GetCurrentDirectory();
             var script = "$ServiceName = 'LocalLLMServerManager'; Stop-Service -Name $ServiceName -Force -ErrorAction SilentlyContinue; Start-Sleep -Seconds 1; dotnet publish -c Release -o C:\\LocalLLMServerManager --nologo; Start-Service -Name $ServiceName -ErrorAction SilentlyContinue;";
-            
+
             var psi = new ProcessStartInfo
             {
                 FileName = "powershell.exe",
@@ -656,7 +656,7 @@ public class Program
                 UseShellExecute = true,
                 CreateNoWindow = true
             };
-            
+
             Process.Start(psi);
             return Results.Ok(new { message = "Service update spawned in detached process. Rebuilding and restarting service..." });
         });

@@ -139,9 +139,9 @@ public partial class MainWindowViewModel : ObservableObject
 
                 GpuName = doc?["gpuName"]?.ToString() ?? doc?["GpuName"]?.ToString() ?? "GPU";
                 long vramBytes = doc?["vramBytes"]?.GetValue<long>() ?? doc?["VramBytes"]?.GetValue<long>() ?? 8589934592L;
-                
+
                 VramTotalGb = Math.Round(vramBytes / (1024.0 * 1024.0 * 1024.0), 1);
-                
+
                 // Query Ollama VRAM usage if online
                 long usedBytes = 0;
                 try
