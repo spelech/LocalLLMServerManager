@@ -61,7 +61,7 @@ if ($InstallService) {
     
     Write-Host "Registering Windows Service..." -ForegroundColor Yellow
     New-Service -Name $ServiceName `
-                -BinaryPathName "`"$ExePath`"" `
+                -BinaryPathName "`"$ExePath`" --service" `
                 -DisplayName "Local LLM Server Manager" `
                 -Description "Orchestrates GPU VRAM between Ollama and Forge, and manages local model weights." `
                 -StartupType Automatic | Out-Null
@@ -75,6 +75,14 @@ if ($InstallService) {
     Write-Host "You can run the app manually by executing:" -ForegroundColor Cyan
     Write-Host "  $InstallDir\LocalLLMServerManager.exe" -ForegroundColor Cyan
 }
+
+# 5. Configure System Tray Auto-Start on User Logon
+Write-Host "Configuring System Tray App to auto-start on logon..." -ForegroundColor Yellow
+$ExePath = Join-Path $InstallDir "LocalLLMServerManager.exe"
+Set-ItemProperty -Path "HKCU:\Software\Microsoft\Windows\CurrentVersion\Run" `
+                 -Name "LocalLLMServerManagerTray" `
+                 -Value "`"$ExePath`"" -ErrorAction SilentlyContinue
+Write-Host "System Tray auto-start configured!" -ForegroundColor Green
 
 Write-Host ""
 Write-Host "Installation Complete!" -ForegroundColor Green

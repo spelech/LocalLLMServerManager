@@ -11,7 +11,7 @@ if ($ExistingService) {
 } else {
     Write-Host "Registering Windows Service to start on boot..."
     New-Service -Name $ServiceName `
-                -BinaryPathName "`"$ExePath`"" `
+                -BinaryPathName "`"$ExePath`" --service" `
                 -DisplayName "Local LLM Server Manager" `
                 -Description "Orchestrates GPU VRAM between Ollama and Forge, and manages local model weights." `
                 -StartupType Automatic | Out-Null

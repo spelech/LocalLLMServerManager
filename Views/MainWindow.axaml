@@ -1,0 +1,106 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:vm="using:LocalLLMServerManager.ViewModels"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        mc:Ignorable="d" d:DesignWidth="600" d:DesignHeight="450"
+        x:Class="LocalLLMServerManager.Views.MainWindow"
+        x:DataType="vm:MainWindowViewModel"
+        Icon="avares://LocalLLMServerManager/Assets/app-icon.ico"
+        Title="Local LLM Server Manager v2.0.0"
+        Width="640" Height="480"
+        WindowStartupLocation="CenterScreen"
+        Background="#0F172A">
+
+    <Design.DataContext>
+        <vm:MainWindowViewModel/>
+    </Design.DataContext>
+
+    <Grid RowDefinitions="Auto, *, Auto" Margin="24">
+        <!-- Header -->
+        <Grid Grid.Row="0" ColumnDefinitions="*, Auto" Margin="0,0,0,20">
+            <StackPanel Grid.Column="0">
+                <TextBlock Text="Local LLM Server Manager" FontSize="22" FontWeight="Bold" Foreground="#F8FAFC"/>
+                <TextBlock Text="{Binding ServiceModeText}" FontSize="13" Foreground="#94A3B8" Margin="0,2,0,0"/>
+            </StackPanel>
+            <Button Grid.Column="1" Command="{Binding RefreshStatusCommand}" 
+                    Background="#1E293B" Foreground="#38BDF8" BorderBrush="#334155" BorderThickness="1" CornerRadius="6" Padding="12,6">
+                <StackPanel Orientation="Horizontal" Spacing="6">
+                    <TextBlock Text="🔄 Refresh"/>
+                </StackPanel>
+            </Button>
+        </Grid>
+
+        <!-- Main Content -->
+        <ScrollViewer Grid.Row="1">
+            <StackPanel Spacing="16">
+                <!-- GPU & VRAM Card -->
+                <Border Background="#1E293B" CornerRadius="8" BorderBrush="#334155" BorderThickness="1" Padding="16">
+                    <StackPanel Spacing="10">
+                        <Grid ColumnDefinitions="*, Auto">
+                            <TextBlock Text="{Binding GpuName}" FontWeight="SemiBold" FontSize="15" Foreground="#F1F5F9"/>
+                            <TextBlock Grid.Column="1" Text="{Binding VramStatusText}" FontSize="13" Foreground="#38BDF8" FontWeight="Bold"/>
+                        </Grid>
+                        <!-- VRAM Progress Bar -->
+                        <ProgressBar Value="{Binding VramPercentage}" Maximum="100" Height="10" CornerRadius="5" Background="#0F172A" Foreground="#38BDF8"/>
+                    </StackPanel>
+                </Border>
+
+                <!-- Engine Health Grid -->
+                <UniformGrid Columns="3">
+                    <!-- Ollama -->
+                    <Border Background="#1E293B" CornerRadius="8" BorderBrush="#334155" BorderThickness="1" Padding="14" Margin="0,0,8,0">
+                        <StackPanel Spacing="6">
+                            <TextBlock Text="🦙 Ollama LLM" FontSize="13" Foreground="#94A3B8" FontWeight="Medium"/>
+                            <TextBlock Text="{Binding OllamaStatus}" FontSize="16" FontWeight="Bold" Foreground="#38BDF8"/>
+                            <TextBlock Text="Port 11434" FontSize="11" Foreground="#64748B"/>
+                        </StackPanel>
+                    </Border>
+
+                    <!-- ComfyUI -->
+                    <Border Background="#1E293B" CornerRadius="8" BorderBrush="#334155" BorderThickness="1" Padding="14" Margin="4,0,4,0">
+                        <StackPanel Spacing="6">
+                            <TextBlock Text="🧩 ComfyUI 3D" FontSize="13" Foreground="#94A3B8" FontWeight="Medium"/>
+                            <TextBlock Text="{Binding ComfyStatus}" FontSize="16" FontWeight="Bold" Foreground="#A855F7"/>
+                            <Button Content="Start Engine" Command="{Binding ToggleEngineCommand}" CommandParameter="comfy"
+                                    Margin="0,4,0,0" Padding="8,2" FontSize="11" HorizontalAlignment="Left" Background="#0F172A" Foreground="#CBD5E1"/>
+                        </StackPanel>
+                    </Border>
+
+                    <!-- SD Forge -->
+                    <Border Background="#1E293B" CornerRadius="8" BorderBrush="#334155" BorderThickness="1" Padding="14" Margin="8,0,0,0">
+                        <StackPanel Spacing="6">
+                            <TextBlock Text="🎨 SD Forge" FontSize="13" Foreground="#94A3B8" FontWeight="Medium"/>
+                            <TextBlock Text="{Binding ForgeStatus}" FontSize="16" FontWeight="Bold" Foreground="#EC4899"/>
+                            <Button Content="Start Engine" Command="{Binding ToggleEngineCommand}" CommandParameter="forge"
+                                    Margin="0,4,0,0" Padding="8,2" FontSize="11" HorizontalAlignment="Left" Background="#0F172A" Foreground="#CBD5E1"/>
+                        </StackPanel>
+                    </Border>
+                </UniformGrid>
+
+                <!-- Launch Full Web Dashboard Banner -->
+                <Border Background="#0284C7" CornerRadius="8" Padding="18" Margin="0,8,0,0">
+                    <Grid ColumnDefinitions="*, Auto">
+                        <StackPanel Grid.Column="0">
+                            <TextBlock Text="Full Web Dashboard &amp; 3D Studio" FontSize="16" FontWeight="Bold" Foreground="#FFFFFF"/>
+                            <TextBlock Text="Access interactive 3D WebGL viewer, Hugging Face hub, CivitAI model downloader &amp; KV Cache calculator." 
+                                       FontSize="12" Foreground="#E0F2FE" TextWrapping="Wrap" Margin="0,4,0,0"/>
+                        </StackPanel>
+                        <Button Grid.Column="1" Command="{Binding OpenWebUiInBrowserCommand}" 
+                                Background="#FFFFFF" Foreground="#0284C7" FontWeight="Bold" CornerRadius="6" Padding="16,10" VerticalAlignment="Center" Margin="12,0,0,0">
+                            Open in Browser 🚀
+                        </Button>
+                    </Grid>
+                </Border>
+            </StackPanel>
+        </ScrollViewer>
+
+        <!-- Footer -->
+        <Border Grid.Row="2" BorderBrush="#1E293B" BorderThickness="0,1,0,0" Padding="0,12,0,0" Margin="0,12,0,0">
+            <Grid ColumnDefinitions="*, Auto">
+                <TextBlock Text="LocalLLMServerManager v2.0.0 — Running on http://127.0.0.1:5246" FontSize="12" Foreground="#64748B"/>
+                <TextBlock Grid.Column="1" Text="System Tray Enabled 🟢" FontSize="12" Foreground="#22C55E"/>
+            </Grid>
+        </Border>
+    </Grid>
+</Window>
