@@ -326,13 +326,20 @@ async function detectGpuVram() {
             if (data && data.totalVramBytes > 0) {
                 gpuTotalVram = data.totalVramBytes;
                 vramLabelTotal.textContent = `${(gpuTotalVram / (1024 * 1024 * 1024)).toFixed(1)} GB Total`;
-                if (statGpuNameEl && data.gpuName) {
-                    statGpuNameEl.textContent = data.gpuName;
+                if (statGpuNameEl) {
+                    statGpuNameEl.textContent = data.gpuName || 'GPU Active';
                 }
+            } else if (statGpuNameEl) {
+                statGpuNameEl.textContent = 'GPU Connected';
             }
+        } else if (statGpuNameEl) {
+            statGpuNameEl.textContent = 'GPU Online';
         }
     } catch (err) {
         console.error('Failed to detect native GPU memory:', err);
+        if (statGpuNameEl) {
+            statGpuNameEl.textContent = 'GPU Active';
+        }
     }
 }
 
@@ -458,15 +465,18 @@ async function loadLocalModels() {
         // Update total models count
         statTotalModelsEl.textContent = String(localModels.length);
 
-        // Warm up cache for all models
-        await Promise.all(localModels.map(m => fetchModelMetadata(m.name)));
+        // Render Grid IMMEDIATELY so models are displayed without waiting for metadata
+        renderInstalledModels();
+
+        // Warm up cache for all models safely in background using Promise.allSettled
+        Promise.allSettled(localModels.map(m => fetchModelMetadata(m.name))).then(() => {
+            renderInstalledModels();
+        });
 
         // Fetch running models (VRAM)
         await updateVramUsageOnly();
-
-        // Render Grid
-        renderInstalledModels();
-    } catch {
+    } catch (err) {
+        console.error('Error loading local models:', err);
         installedModelsGrid.innerHTML = `
             <div class="empty-grid-state">
                 <svg viewBox="0 0 24 24" fill="none" stroke="var(--offline)" stroke-width="1.5" class="empty-icon">

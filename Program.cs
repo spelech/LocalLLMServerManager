@@ -12,13 +12,14 @@ public class Program
     private static System.Diagnostics.Process? forgeProcess = null;
     private static JobObject aiEnginesJob = new JobObject();
 
-    public static async Task Main(string[] args)
+    [STAThread]
+    public static void Main(string[] args)
     {
         if (args.Contains("--service"))
         {
             // Windows Service Mode (Session 0)
             var app = CreateWebApplication(args, isServiceMode: true);
-            await app.RunAsync();
+            app.Run();
         }
         else
         {
@@ -31,17 +32,17 @@ public class Program
                 try
                 {
                     webApp = CreateWebApplication(args, isServiceMode: false);
-                    await webApp.StartAsync();
+                    webApp.Start();
                 }
                 catch { }
             }
 
-            // Start Avalonia UI Desktop Lifetime
+            // Start Avalonia UI Desktop Lifetime on STA main thread
             BuildAvaloniaApp().StartWithClassicDesktopLifetime(args);
 
             if (webApp != null)
             {
-                try { await webApp.StopAsync(); } catch { }
+                try { webApp.StopAsync().GetAwaiter().GetResult(); } catch { }
             }
         }
     }
@@ -270,98 +271,15 @@ public class Program
             }
         });
 
-        // GPU details retrieval endpoint (Native Registry)
+        // GPU details retrieval endpoint (NVIDIA CUDA priority + Registry scoring fallback)
         app.MapGet("/api/gpu/vram", () =>
         {
-            string gpuName = "Generic GPU";
-            long vramBytes = 8L * 1024 * 1024 * 1024; // Default to 8GB
-
-            try
-            {
-                if (OperatingSystem.IsWindows())
-                {
-                    const string regPath = @"SYSTEM\CurrentControlSet\Control\Class\{4d36e968-e325-11ce-bfc1-08002be10318}";
-                    using var baseKey = Microsoft.Win32.Registry.LocalMachine.OpenSubKey(regPath);
-                    if (baseKey != null)
-                    {
-                        foreach (var subKeyName in baseKey.GetSubKeyNames())
-                        {
-                            if (subKeyName.Length == 4 && int.TryParse(subKeyName, out _))
-                            {
-                                try
-                                {
-                                    using var subKey = baseKey.OpenSubKey(subKeyName);
-                                    if (subKey != null)
-                                    {
-                                        var provider = subKey.GetValue("ProviderName")?.ToString() ?? "";
-                                        var driverDesc = subKey.GetValue("DriverDesc")?.ToString() ?? "";
-
-                                        if (driverDesc.Contains("Basic Render") ||
-                                            (provider.Contains("Microsoft") && driverDesc.Contains("Indirect")) ||
-                                            driverDesc.Contains("Virtual Desktop"))
-                                        {
-                                            continue;
-                                        }
-
-                                        var qwMemSize = subKey.GetValue("HardwareInformation.qwMemorySize");
-                                        if (qwMemSize != null)
-                                        {
-                                            try
-                                            {
-                                                long size = Convert.ToInt64(qwMemSize);
-                                                if (size > 0)
-                                                {
-                                                    vramBytes = size;
-                                                    gpuName = driverDesc;
-                                                    break;
-                                                }
-                                            }
-                                            catch { }
-                                        }
-
-                                        var dwMemSize = subKey.GetValue("HardwareInformation.MemorySize");
-                                        if (dwMemSize != null)
-                                        {
-                                            try
-                                            {
-                                                byte[]? rawBytes = dwMemSize as byte[];
-                                                if (rawBytes != null && rawBytes.Length >= 4)
-                                                {
-                                                    uint size32 = BitConverter.ToUInt32(rawBytes, 0);
-                                                    if (size32 > 0)
-                                                    {
-                                                        vramBytes = (long)size32;
-                                                        gpuName = driverDesc;
-                                                        break;
-                                                    }
-                                                }
-                                                else
-                                                {
-                                                    long size = Convert.ToInt64(dwMemSize);
-                                                    if (size > 0)
-                                                    {
-                                                        vramBytes = size;
-                                                        gpuName = driverDesc;
-                                                        break;
-                                                    }
-                                                }
-                                            }
-                                            catch { }
-                                        }
-                                    }
-                                }
-                                catch { }
-                            }
-                        }
-                    }
-                }
-            }
-            catch { }
-
+            var (gpuName, vramBytes, usedVramBytes) = GetGpuInfo();
             return Results.Ok(new
             {
                 GpuName = gpuName,
                 VramBytes = vramBytes,
+                UsedVramBytes = usedVramBytes,
                 VramGB = Math.Round((double)vramBytes / (1024 * 1024 * 1024), 2)
             });
         });
@@ -373,6 +291,54 @@ public class Program
             SaveSettings(newSettings);
             return Results.Ok(newSettings);
         });
+
+        // Model Context Protocol (MCP) Server Integration for AI Agents
+        app.MapGet("/api/mcp/tools", () => Results.Ok(new
+        {
+            tools = new object[]
+            {
+                new
+                {
+                    name = "get_telemetry",
+                    description = "Returns GPU VRAM usage, engine status (Ollama, SD Forge, ComfyUI), and system health.",
+                    parameters = new { type = "object", properties = new { } }
+                },
+                new
+                {
+                    name = "list_models",
+                    description = "Lists installed Ollama LLM models, size, and load status.",
+                    parameters = new { type = "object", properties = new { } }
+                },
+                new
+                {
+                    name = "unload_vram",
+                    description = "Unloads all models or a specified model from GPU VRAM.",
+                    parameters = new
+                    {
+                        type = "object",
+                        properties = new
+                        {
+                            model = new { type = "string", description = "Optional model name to unload. If omitted, unloads all models." }
+                        }
+                    }
+                },
+                new
+                {
+                    name = "toggle_engine",
+                    description = "Starts or stops AI engine (forge or comfy).",
+                    parameters = new
+                    {
+                        type = "object",
+                        properties = new
+                        {
+                            engine = new { type = "string", @enum = new[] { "forge", "comfy" }, description = "Engine to toggle" },
+                            action = new { type = "string", @enum = new[] { "start", "stop" }, description = "Action to perform" }
+                        },
+                        required = new[] { "engine", "action" }
+                    }
+                }
+            }
+        }));
 
         // CivitAI direct-to-disk SSE download streaming endpoint
         app.MapGet("/api/civitai/download", async (HttpContext ctx, HttpClient http, string fileUrl, string modelType, string fileName) =>
@@ -666,5 +632,133 @@ public class Program
         });
 
         return app;
+    }
+
+    private static (string GpuName, long TotalVramBytes, long UsedVramBytes) GetGpuInfo()
+    {
+        // 1. Try nvidia-smi first for exact CUDA telemetry
+        try
+        {
+            using var proc = new Process();
+            proc.StartInfo.FileName = "nvidia-smi";
+            proc.StartInfo.Arguments = "--query-gpu=name,memory.total,memory.used --format=csv,noheader,nounits";
+            proc.StartInfo.UseShellExecute = false;
+            proc.StartInfo.RedirectStandardOutput = true;
+            proc.StartInfo.CreateNoWindow = true;
+            proc.Start();
+
+            string output = proc.StandardOutput.ReadToEnd();
+            proc.WaitForExit(2000);
+
+            if (!string.IsNullOrWhiteSpace(output))
+            {
+                var parts = output.Trim().Split(',');
+                if (parts.Length >= 2)
+                {
+                    string gpuName = parts[0].Trim();
+                    if (long.TryParse(parts[1].Trim(), out long totalMb) && totalMb > 0)
+                    {
+                        long totalBytes = totalMb * 1024L * 1024L;
+                        long usedBytes = 0;
+                        if (parts.Length >= 3 && long.TryParse(parts[2].Trim(), out long usedMb))
+                        {
+                            usedBytes = usedMb * 1024L * 1024L;
+                        }
+                        return (gpuName, totalBytes, usedBytes);
+                    }
+                }
+            }
+        }
+        catch { }
+
+        // 2. Registry Fallback: Find discrete NVIDIA/AMD GPU over Intel integrated
+        string bestGpuName = "Generic GPU";
+        long bestVramBytes = 8L * 1024 * 1024 * 1024;
+        int bestScore = -1;
+
+        try
+        {
+            if (OperatingSystem.IsWindows())
+            {
+                const string regPath = @"SYSTEM\CurrentControlSet\Control\Class\{4d36e968-e325-11ce-bfc1-08002be10318}";
+                using var baseKey = Microsoft.Win32.Registry.LocalMachine.OpenSubKey(regPath);
+                if (baseKey != null)
+                {
+                    foreach (var subKeyName in baseKey.GetSubKeyNames())
+                    {
+                        if (subKeyName.Length == 4 && int.TryParse(subKeyName, out _))
+                        {
+                            try
+                            {
+                                using var subKey = baseKey.OpenSubKey(subKeyName);
+                                if (subKey != null)
+                                {
+                                    var provider = subKey.GetValue("ProviderName")?.ToString() ?? "";
+                                    var driverDesc = subKey.GetValue("DriverDesc")?.ToString() ?? "";
+
+                                    if (driverDesc.Contains("Basic Render") ||
+                                        (provider.Contains("Microsoft") && driverDesc.Contains("Indirect")) ||
+                                        driverDesc.Contains("Virtual Desktop"))
+                                    {
+                                        continue;
+                                    }
+
+                                    int score = 1;
+                                    if (driverDesc.Contains("NVIDIA", StringComparison.OrdinalIgnoreCase) ||
+                                        provider.Contains("NVIDIA", StringComparison.OrdinalIgnoreCase))
+                                    {
+                                        score = 10;
+                                    }
+                                    else if (driverDesc.Contains("Radeon", StringComparison.OrdinalIgnoreCase) ||
+                                             driverDesc.Contains("AMD", StringComparison.OrdinalIgnoreCase))
+                                    {
+                                        score = 5;
+                                    }
+                                    else if (driverDesc.Contains("Intel", StringComparison.OrdinalIgnoreCase))
+                                    {
+                                        score = 0; // Low score for integrated graphics
+                                    }
+
+                                    var qwMemSize = subKey.GetValue("HardwareInformation.qwMemorySize");
+                                    long vram = 0;
+                                    if (qwMemSize != null)
+                                    {
+                                        try { vram = Convert.ToInt64(qwMemSize); } catch { }
+                                    }
+
+                                    if (vram <= 0)
+                                    {
+                                        var dwMemSize = subKey.GetValue("HardwareInformation.MemorySize");
+                                        if (dwMemSize != null)
+                                        {
+                                            try
+                                            {
+                                                byte[]? rawBytes = dwMemSize as byte[];
+                                                if (rawBytes != null && rawBytes.Length >= 4)
+                                                    vram = BitConverter.ToUInt32(rawBytes, 0);
+                                                else
+                                                    vram = Convert.ToInt64(dwMemSize);
+                                            }
+                                            catch { }
+                                        }
+                                    }
+
+                                    if (score > bestScore || (score == bestScore && vram > bestVramBytes))
+                                    {
+                                        bestScore = score;
+                                        bestGpuName = driverDesc;
+                                        if (vram > 0) bestVramBytes = vram;
+                                    }
+                                }
+                            }
+                            catch { }
+                        }
+                    }
+                }
+            }
+        }
+        catch { }
+
+        return (bestGpuName, bestVramBytes, 0L);
     }
 }

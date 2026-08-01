@@ -33,7 +33,12 @@ Name: "autostart"; Description: "Auto-start System Tray App on user login"; Grou
 Name: "windowsservice"; Description: "Install background Windows Service (starts automatically on system boot)"; GroupDescription: "System Integration"; Flags: unchecked
 
 [Files]
-Source: "publish\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs
+Source: "publish\LocalLLMServerManager.exe"; DestDir: "{app}"; Flags: ignoreversion
+Source: "publish\*.dll"; DestDir: "{app}"; Flags: ignoreversion
+Source: "publish\*.json"; DestDir: "{app}"; Flags: ignoreversion
+Source: "publish\*.config"; DestDir: "{app}"; Flags: ignoreversion
+Source: "publish\wwwroot\*"; DestDir: "{app}\wwwroot"; Flags: ignoreversion recursesubdirs createallsubdirs
+Source: "publish\Workflows\*"; DestDir: "{app}\Workflows"; Flags: ignoreversion recursesubdirs createallsubdirs
 
 [Icons]
 Name: "{group}\{#MyAppName}"; Filename: "{app}\{#MyAppExeName}"

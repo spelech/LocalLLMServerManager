@@ -3,12 +3,12 @@
         xmlns:vm="using:LocalLLMServerManager.ViewModels"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-        mc:Ignorable="d" d:DesignWidth="600" d:DesignHeight="450"
+        mc:Ignorable="d" d:DesignWidth="960" d:DesignHeight="680"
         x:Class="LocalLLMServerManager.Views.MainWindow"
         x:DataType="vm:MainWindowViewModel"
         Icon="avares://LocalLLMServerManager/Assets/app-icon.ico"
         Title="Local LLM Server Manager v2.1.0"
-        Width="640" Height="480"
+        Width="960" Height="680"
         WindowStartupLocation="CenterScreen"
         Background="#0F172A">
 
@@ -16,89 +16,182 @@
         <vm:MainWindowViewModel/>
     </Design.DataContext>
 
-    <Grid RowDefinitions="Auto, *, Auto" Margin="24">
-        <!-- Header -->
-        <Grid Grid.Row="0" ColumnDefinitions="*, Auto" Margin="0,0,0,20">
-            <StackPanel Grid.Column="0">
-                <TextBlock Text="Local LLM Server Manager" FontSize="22" FontWeight="Bold" Foreground="#F8FAFC"/>
-                <TextBlock Text="{Binding ServiceModeText}" FontSize="13" Foreground="#94A3B8" Margin="0,2,0,0"/>
-            </StackPanel>
-            <Button Grid.Column="1" Command="{Binding RefreshStatusCommand}" 
-                    Background="#1E293B" Foreground="#38BDF8" BorderBrush="#334155" BorderThickness="1" CornerRadius="6" Padding="12,6">
-                <StackPanel Orientation="Horizontal" Spacing="6">
-                    <TextBlock Text="🔄 Refresh"/>
-                </StackPanel>
-            </Button>
-        </Grid>
-
-        <!-- Main Content -->
-        <ScrollViewer Grid.Row="1">
-            <StackPanel Spacing="16">
-                <!-- GPU & VRAM Card -->
-                <Border Background="#1E293B" CornerRadius="8" BorderBrush="#334155" BorderThickness="1" Padding="16">
-                    <StackPanel Spacing="10">
-                        <Grid ColumnDefinitions="*, Auto">
-                            <TextBlock Text="{Binding GpuName}" FontWeight="SemiBold" FontSize="15" Foreground="#F1F5F9"/>
-                            <TextBlock Grid.Column="1" Text="{Binding VramStatusText}" FontSize="13" Foreground="#38BDF8" FontWeight="Bold"/>
-                        </Grid>
-                        <!-- VRAM Progress Bar -->
-                        <ProgressBar Value="{Binding VramPercentage}" Maximum="100" Height="10" CornerRadius="5" Background="#0F172A" Foreground="#38BDF8"/>
+    <Grid RowDefinitions="Auto, *, Auto" Margin="20">
+        <!-- Top Telemetry Header -->
+        <Border Grid.Row="0" Background="#1E293B" CornerRadius="8" BorderBrush="#334155" BorderThickness="1" Padding="16" Margin="0,0,0,16">
+            <Grid RowDefinitions="Auto, Auto" ColumnDefinitions="*, Auto">
+                <StackPanel Grid.Row="0" Grid.Column="0">
+                    <TextBlock Text="Local LLM Server Manager" FontSize="20" FontWeight="Bold" Foreground="#F8FAFC"/>
+                    <StackPanel Orientation="Horizontal" Spacing="10" Margin="0,4,0,0">
+                        <TextBlock Text="{Binding GpuName}" FontSize="13" Foreground="#38BDF8" FontWeight="SemiBold"/>
+                        <TextBlock Text="•" Foreground="#64748B"/>
+                        <TextBlock Text="{Binding ServiceModeText}" FontSize="13" Foreground="#94A3B8"/>
                     </StackPanel>
-                </Border>
+                </StackPanel>
 
-                <!-- Engine Health Grid -->
-                <UniformGrid Columns="3">
-                    <!-- Ollama -->
-                    <Border Background="#1E293B" CornerRadius="8" BorderBrush="#334155" BorderThickness="1" Padding="14" Margin="0,0,8,0">
-                        <StackPanel Spacing="6">
-                            <TextBlock Text="🦙 Ollama LLM" FontSize="13" Foreground="#94A3B8" FontWeight="Medium"/>
-                            <TextBlock Text="{Binding OllamaStatus}" FontSize="16" FontWeight="Bold" Foreground="#38BDF8"/>
-                            <TextBlock Text="Port 11434" FontSize="11" Foreground="#64748B"/>
-                        </StackPanel>
-                    </Border>
+                <Button Grid.Row="0" Grid.Column="1" Command="{Binding RefreshStatusCommand}" 
+                        Background="#0F172A" Foreground="#38BDF8" BorderBrush="#334155" BorderThickness="1" CornerRadius="6" Padding="12,6" VerticalAlignment="Top">
+                    🔄 Refresh Telemetry
+                </Button>
 
-                    <!-- ComfyUI -->
-                    <Border Background="#1E293B" CornerRadius="8" BorderBrush="#334155" BorderThickness="1" Padding="14" Margin="4,0,4,0">
-                        <StackPanel Spacing="6">
-                            <TextBlock Text="🧩 ComfyUI 3D" FontSize="13" Foreground="#94A3B8" FontWeight="Medium"/>
-                            <TextBlock Text="{Binding ComfyStatus}" FontSize="16" FontWeight="Bold" Foreground="#A855F7"/>
-                            <Button Content="Start Engine" Command="{Binding ToggleEngineCommand}" CommandParameter="comfy"
-                                    Margin="0,4,0,0" Padding="8,2" FontSize="11" HorizontalAlignment="Left" Background="#0F172A" Foreground="#CBD5E1"/>
-                        </StackPanel>
-                    </Border>
+                <!-- VRAM Allocation Gauge Bar -->
+                <Grid Grid.Row="1" Grid.ColumnSpan="2" RowDefinitions="Auto, Auto" Margin="0,12,0,0">
+                    <Grid Grid.Row="0" ColumnDefinitions="*, Auto" Margin="0,0,0,6">
+                        <TextBlock Text="GPU VRAM Allocation" FontSize="12" Foreground="#94A3B8" FontWeight="Medium"/>
+                        <TextBlock Grid.Column="1" Text="{Binding VramStatusText}" FontSize="12" Foreground="#38BDF8" FontWeight="Bold"/>
+                    </Grid>
+                    <ProgressBar Grid.Row="1" Value="{Binding VramPercentage}" Maximum="100" Height="10" CornerRadius="5" Background="#0F172A" Foreground="#38BDF8"/>
+                </Grid>
+            </Grid>
+        </Border>
 
-                    <!-- SD Forge -->
-                    <Border Background="#1E293B" CornerRadius="8" BorderBrush="#334155" BorderThickness="1" Padding="14" Margin="8,0,0,0">
-                        <StackPanel Spacing="6">
-                            <TextBlock Text="🎨 SD Forge" FontSize="13" Foreground="#94A3B8" FontWeight="Medium"/>
-                            <TextBlock Text="{Binding ForgeStatus}" FontSize="16" FontWeight="Bold" Foreground="#EC4899"/>
-                            <Button Content="Start Engine" Command="{Binding ToggleEngineCommand}" CommandParameter="forge"
-                                    Margin="0,4,0,0" Padding="8,2" FontSize="11" HorizontalAlignment="Left" Background="#0F172A" Foreground="#CBD5E1"/>
-                        </StackPanel>
-                    </Border>
-                </UniformGrid>
-
-                <!-- Launch Full Web Dashboard Banner -->
-                <Border Background="#0284C7" CornerRadius="8" Padding="18" Margin="0,8,0,0">
-                    <Grid ColumnDefinitions="*, Auto">
-                        <StackPanel Grid.Column="0">
-                            <TextBlock Text="Full Web Dashboard &amp; 3D Studio" FontSize="16" FontWeight="Bold" Foreground="#FFFFFF"/>
-                            <TextBlock Text="Access interactive 3D WebGL viewer, Hugging Face hub, CivitAI model downloader &amp; KV Cache calculator." 
-                                       FontSize="12" Foreground="#E0F2FE" TextWrapping="Wrap" Margin="0,4,0,0"/>
-                        </StackPanel>
-                        <Button Grid.Column="1" Command="{Binding OpenWebUiInBrowserCommand}" 
-                                Background="#FFFFFF" Foreground="#0284C7" FontWeight="Bold" CornerRadius="6" Padding="16,10" VerticalAlignment="Center" Margin="12,0,0,0">
-                            Open in Browser 🚀
+        <!-- Main Content Area: Native Avalonia XAML Tabs -->
+        <TabControl Grid.Row="1" Background="Transparent">
+            <!-- TAB 1: Installed LLM Models & KV Cache Calculator -->
+            <TabItem Header="🦙 Installed Models &amp; VRAM">
+                <Grid RowDefinitions="Auto, *, Auto" Margin="0,12,0,0">
+                    <!-- Controls Bar -->
+                    <Grid Grid.Row="0" ColumnDefinitions="*, Auto" Margin="0,0,0,10">
+                        <TextBlock Text="Ollama Model Library" FontSize="16" FontWeight="Bold" Foreground="#F1F5F9" VerticalAlignment="Center"/>
+                        <Button Grid.Column="1" Command="{Binding UnloadAllVramCommand}" 
+                                Background="#991B1B" Foreground="#FEF2F2" FontWeight="Bold" CornerRadius="6" Padding="12,6">
+                            🧹 Unload All VRAM
                         </Button>
                     </Grid>
-                </Border>
-            </StackPanel>
-        </ScrollViewer>
+
+                    <!-- Installed Models List -->
+                    <ScrollViewer Grid.Row="1" Margin="0,0,0,12">
+                        <ItemsControl ItemsSource="{Binding InstalledModels}">
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate x:DataType="vm:OllamaModelItem">
+                                    <Border Background="#1E293B" CornerRadius="6" BorderBrush="#334155" BorderThickness="1" Padding="12" Margin="0,0,0,8">
+                                        <Grid ColumnDefinitions="*, Auto, Auto">
+                                            <StackPanel Grid.Column="0">
+                                                <TextBlock Text="{Binding Name}" FontWeight="Bold" FontSize="14" Foreground="#F8FAFC"/>
+                                                <StackPanel Orientation="Horizontal" Spacing="8" Margin="0,4,0,0">
+                                                    <Border Background="#0F172A" CornerRadius="4" Padding="6,2">
+                                                        <TextBlock Text="{Binding CapabilityTag}" FontSize="11" Foreground="{Binding CapabilityColor}" FontWeight="Bold"/>
+                                                    </Border>
+                                                    <TextBlock Text="{Binding FormatSize}" FontSize="12" Foreground="#94A3B8" VerticalAlignment="Center"/>
+                                                </StackPanel>
+                                            </StackPanel>
+                                            <TextBlock Grid.Column="1" Text="Installed 🟢" FontSize="12" Foreground="#22C55E" VerticalAlignment="Center" Margin="0,0,12,0"/>
+                                        </Grid>
+                                    </Border>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                    </ScrollViewer>
+
+                    <!-- Interactive KV Cache Context Token Slider -->
+                    <Border Grid.Row="2" Background="#1E293B" CornerRadius="6" BorderBrush="#334155" BorderThickness="1" Padding="12">
+                        <StackPanel Spacing="6">
+                            <Grid ColumnDefinitions="*, Auto">
+                                <TextBlock Text="Interactive KV Cache Calculator" FontSize="13" FontWeight="Bold" Foreground="#F1F5F9"/>
+                                <TextBlock Grid.Column="1" Text="{Binding EstimatedKvCacheText}" FontSize="13" Foreground="#38BDF8" FontWeight="Bold"/>
+                            </Grid>
+                            <Grid ColumnDefinitions="*, Auto">
+                                <Slider Value="{Binding TargetContextTokens}" Minimum="1024" Maximum="32768" SmallChange="1024" LargeChange="4096"/>
+                                <TextBlock Grid.Column="1" Text="{Binding TargetContextTokens, StringFormat='{}{0:N0} tokens'}" FontSize="12" Foreground="#94A3B8" VerticalAlignment="Center" Margin="10,0,0,0"/>
+                            </Grid>
+                        </StackPanel>
+                    </Border>
+                </Grid>
+            </TabItem>
+
+            <!-- TAB 2: Hugging Face GGUF Hub -->
+            <TabItem Header="🤗 Hugging Face GGUF Hub">
+                <Grid RowDefinitions="Auto, *" Margin="0,12,0,0">
+                    <Grid Grid.Row="0" ColumnDefinitions="*, Auto" Margin="0,0,0,12">
+                        <TextBox Text="{Binding SearchQuery}" Watermark="Search GGUF models (e.g. llama 3.3, qwen2.5-coder)..." 
+                                 Background="#1E293B" Foreground="#F8FAFC" BorderBrush="#334155" CornerRadius="6" Padding="10,8"/>
+                        <Button Grid.Column="1" Command="{Binding SearchHuggingFaceCommand}" 
+                                Background="#38BDF8" Foreground="#0F172A" FontWeight="Bold" CornerRadius="6" Padding="16,8" Margin="8,0,0,0">
+                            🔍 Search Hub
+                        </Button>
+                    </Grid>
+
+                    <ScrollViewer Grid.Row="1">
+                        <ItemsControl ItemsSource="{Binding HuggingFaceResults}">
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate x:DataType="vm:HuggingFaceRepoItem">
+                                    <Border Background="#1E293B" CornerRadius="6" BorderBrush="#334155" BorderThickness="1" Padding="12" Margin="0,0,0,8">
+                                        <Grid ColumnDefinitions="*, Auto">
+                                            <StackPanel Grid.Column="0">
+                                                <TextBlock Text="{Binding Id}" FontWeight="Bold" FontSize="14" Foreground="#38BDF8"/>
+                                                <TextBlock Text="{Binding Author, StringFormat='Author: {0}'}" FontSize="12" Foreground="#94A3B8" Margin="0,2,0,0"/>
+                                            </StackPanel>
+                                            <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="12" VerticalAlignment="Center">
+                                                <TextBlock Text="{Binding Downloads}" FontSize="12" Foreground="#CBD5E1"/>
+                                                <Border Background="#0F172A" CornerRadius="4" Padding="6,2">
+                                                    <TextBlock Text="{Binding Likes, StringFormat='❤️ {0}'}" FontSize="12" Foreground="#EC4899"/>
+                                                </Border>
+                                            </StackPanel>
+                                        </Grid>
+                                    </Border>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                    </ScrollViewer>
+                </Grid>
+            </TabItem>
+
+            <!-- TAB 3: Image & 3D AI Engines -->
+            <TabItem Header="🎨 Image &amp; 3D Engines">
+                <StackPanel Spacing="12" Margin="0,12,0,0">
+                    <TextBlock Text="AI Image &amp; 3D Generation Engines" FontSize="16" FontWeight="Bold" Foreground="#F1F5F9"/>
+
+                    <UniformGrid Columns="2">
+                        <!-- SD Forge Engine -->
+                        <Border Background="#1E293B" CornerRadius="8" BorderBrush="#334155" BorderThickness="1" Padding="16" Margin="0,0,6,0">
+                            <StackPanel Spacing="8">
+                                <TextBlock Text="🎨 Stable Diffusion / Forge" FontSize="14" FontWeight="Bold" Foreground="#F8FAFC"/>
+                                <TextBlock Text="{Binding ForgeStatus, StringFormat='Status: {0}'}" FontSize="13" Foreground="#EC4899" FontWeight="SemiBold"/>
+                                <TextBlock Text="Port 7860 • WebUI &amp; SD API Endpoint" FontSize="12" Foreground="#94A3B8"/>
+                                <Button Content="▶️ Start Forge Engine" Command="{Binding ToggleEngineCommand}" CommandParameter="forge" 
+                                        Background="#0F172A" Foreground="#38BDF8" CornerRadius="6" Padding="12,6" Margin="0,4,0,0"/>
+                            </StackPanel>
+                        </Border>
+
+                        <!-- ComfyUI Engine -->
+                        <Border Background="#1E293B" CornerRadius="8" BorderBrush="#334155" BorderThickness="1" Padding="16" Margin="6,0,0,0">
+                            <StackPanel Spacing="8">
+                                <TextBlock Text="🧩 ComfyUI 3D Mesh Studio" FontSize="14" FontWeight="Bold" Foreground="#F8FAFC"/>
+                                <TextBlock Text="{Binding ComfyStatus, StringFormat='Status: {0}'}" FontSize="13" Foreground="#A855F7" FontWeight="SemiBold"/>
+                                <TextBlock Text="Port 8188 • TRELLIS V2 &amp; Hunyuan3D Pipelines" FontSize="12" Foreground="#94A3B8"/>
+                                <Button Content="▶️ Start ComfyUI Engine" Command="{Binding ToggleEngineCommand}" CommandParameter="comfy" 
+                                        Background="#0F172A" Foreground="#A855F7" CornerRadius="6" Padding="12,6" Margin="0,4,0,0"/>
+                            </StackPanel>
+                        </Border>
+                    </UniformGrid>
+                </StackPanel>
+            </TabItem>
+
+            <!-- TAB 4: Remote Access & Web Dashboard -->
+            <TabItem Header="🌐 Remote Access &amp; Settings">
+                <StackPanel Spacing="16" Margin="0,12,0,0">
+                    <Border Background="#1E293B" CornerRadius="8" BorderBrush="#334155" BorderThickness="1" Padding="18">
+                        <StackPanel Spacing="10">
+                            <TextBlock Text="🌐 Remote &amp; Mobile Web Access" FontSize="16" FontWeight="Bold" Foreground="#F8FAFC"/>
+                            <TextBlock Text="You can access this manager remotely from your phone, laptop, or another device on your local network:" 
+                                       FontSize="13" Foreground="#94A3B8" TextWrapping="Wrap"/>
+                            <Border Background="#0F172A" CornerRadius="6" Padding="12">
+                                <SelectableTextBlock Text="{Binding LanAccessUrl}" FontSize="16" FontWeight="Bold" Foreground="#38BDF8"/>
+                            </Border>
+                            <Button Command="{Binding OpenWebUiInBrowserCommand}" 
+                                    Background="#38BDF8" Foreground="#0F172A" FontWeight="Bold" CornerRadius="6" Padding="16,8" HorizontalAlignment="Left">
+                                🚀 Launch Web UI in Browser
+                            </Button>
+                        </StackPanel>
+                    </Border>
+                </StackPanel>
+            </TabItem>
+        </TabControl>
 
         <!-- Footer -->
         <Border Grid.Row="2" BorderBrush="#1E293B" BorderThickness="0,1,0,0" Padding="0,12,0,0" Margin="0,12,0,0">
             <Grid ColumnDefinitions="*, Auto">
-                <TextBlock Text="LocalLLMServerManager v2.1.0 — Running on http://127.0.0.1:5246" FontSize="12" Foreground="#64748B"/>
+                <TextBlock Text="LocalLLMServerManager v2.1.0 — Dual-UI Active (Native XAML + Web API :5246)" FontSize="12" Foreground="#64748B"/>
                 <TextBlock Grid.Column="1" Text="System Tray Enabled 🟢" FontSize="12" Foreground="#22C55E"/>
             </Grid>
         </Border>
