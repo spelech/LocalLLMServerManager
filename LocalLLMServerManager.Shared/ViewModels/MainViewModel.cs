@@ -49,8 +49,21 @@ public record CivitaiModelItem(
 
 public partial class MainViewModel : ObservableObject
 {
-    private static readonly HttpClient _http = new();
-    private const string ApiBase = "http://127.0.0.1:5246";
+    public static HttpClient DefaultHttpClient { get; set; } = new();
+    private static HttpClient? _customHttp;
+
+    public HttpClient Http
+    {
+        get => _customHttp ?? DefaultHttpClient;
+        set => _customHttp = value;
+    }
+
+    public MainViewModel(HttpClient? httpClient = null)
+    {
+        if (httpClient != null) _customHttp = httpClient;
+    }
+    public static string DefaultApiBase { get; set; } = "http://127.0.0.1:5246";
+    [ObservableProperty] private string _apiBase = DefaultApiBase;
 
     [ObservableProperty] private string _gpuName = "Detecting GPU...";
     [ObservableProperty] private double _vramUsedGb = 0;
@@ -137,7 +150,7 @@ public partial class MainViewModel : ObservableObject
     {
         try
         {
-            var response = await _http.GetAsync("http://127.0.0.1:11434/api/tags");
+            var response = await Http.GetAsync("http://127.0.0.1:11434/api/tags");
             if (response.IsSuccessStatusCode)
             {
                 var jsonStr = await response.Content.ReadAsStringAsync();
@@ -174,7 +187,7 @@ public partial class MainViewModel : ObservableObject
         try
         {
             ToastService.Instance.Show("Unloading all models from VRAM...", ToastType.Info);
-            var psResp = await _http.GetAsync("http://127.0.0.1:11434/api/ps");
+            var psResp = await Http.GetAsync("http://127.0.0.1:11434/api/ps");
             if (psResp.IsSuccessStatusCode)
             {
                 var doc = JsonNode.Parse(await psResp.Content.ReadAsStringAsync());
@@ -191,7 +204,7 @@ public partial class MainViewModel : ObservableObject
                                 System.Text.Encoding.UTF8,
                                 "application/json"
                             );
-                            await _http.PostAsync("http://127.0.0.1:11434/api/generate", content);
+                            await Http.PostAsync("http://127.0.0.1:11434/api/generate", content);
                         }
                     }
                 }
@@ -213,8 +226,9 @@ public partial class MainViewModel : ObservableObject
 
         try
         {
-            string url = $"{ApiBase}/api/hf/search?q={Uri.EscapeDataString(HfSearchQuery)}";
-            var response = await _http.GetAsync(url);
+            string query = HfSearchQuery ?? "";
+            string url = $"{ApiBase}/api/hf/search?q={Uri.EscapeDataString(query)}";
+            var response = await Http.GetAsync(url);
             if (response.IsSuccessStatusCode)
             {
                 var jsonStr = await response.Content.ReadAsStringAsync();
@@ -257,7 +271,7 @@ public partial class MainViewModel : ObservableObject
         try
         {
             string url = $"{ApiBase}/api/hf/model?repoId={Uri.EscapeDataString(repoId)}";
-            var response = await _http.GetAsync(url);
+            var response = await Http.GetAsync(url);
             if (response.IsSuccessStatusCode)
             {
                 var doc = JsonNode.Parse(await response.Content.ReadAsStringAsync());
@@ -312,7 +326,7 @@ public partial class MainViewModel : ObservableObject
             );
 
             using var req = new HttpRequestMessage(HttpMethod.Post, "http://127.0.0.1:11434/api/pull") { Content = content };
-            using var resp = await _http.SendAsync(req, HttpCompletionOption.ResponseHeadersRead);
+            using var resp = await Http.SendAsync(req, HttpCompletionOption.ResponseHeadersRead);
 
             if (resp.IsSuccessStatusCode)
             {
@@ -367,8 +381,10 @@ public partial class MainViewModel : ObservableObject
     {
         try
         {
-            string url = $"{ApiBase}/api/civitai/search?q={Uri.EscapeDataString(CivitaiSearchQuery)}&types={Uri.EscapeDataString(SelectedCivitaiType)}";
-            var response = await _http.GetAsync(url);
+            string query = CivitaiSearchQuery ?? "";
+            string typeStr = SelectedCivitaiType ?? "";
+            string url = $"{ApiBase}/api/civitai/search?q={Uri.EscapeDataString(query)}&types={Uri.EscapeDataString(typeStr)}";
+            var response = await Http.GetAsync(url);
             if (response.IsSuccessStatusCode)
             {
                 var doc = JsonNode.Parse(await response.Content.ReadAsStringAsync());
@@ -426,7 +442,7 @@ public partial class MainViewModel : ObservableObject
         try
         {
             string url = $"{ApiBase}/api/civitai/download?fileUrl={Uri.EscapeDataString(item.DownloadUrl)}&modelType={Uri.EscapeDataString(item.Type)}&fileName={Uri.EscapeDataString(item.FileName)}";
-            var response = await _http.GetAsync(url);
+            var response = await Http.GetAsync(url);
             if (response.IsSuccessStatusCode)
             {
                 ToastService.Instance.Show($"Saved '{item.FileName}' directly to models disk!", ToastType.Success);
@@ -462,7 +478,7 @@ public partial class MainViewModel : ObservableObject
 
             if (endpoint != null)
             {
-                await _http.PostAsync(endpoint, null);
+                await Http.PostAsync(endpoint, null);
                 ToastService.Instance.Show($"Triggered {engineName.ToUpper()} engine status update", ToastType.Info);
                 await Task.Delay(1000);
                 await RefreshStatusAsync();
@@ -475,7 +491,7 @@ public partial class MainViewModel : ObservableObject
     {
         try
         {
-            var response = await _http.GetAsync($"{ApiBase}/health");
+            var response = await Http.GetAsync($"{ApiBase}/health");
             if (response.IsSuccessStatusCode)
             {
                 var doc = JsonNode.Parse(await response.Content.ReadAsStringAsync());
@@ -508,7 +524,7 @@ public partial class MainViewModel : ObservableObject
     {
         try
         {
-            var response = await _http.GetAsync($"{ApiBase}/api/gpu/vram");
+            var response = await Http.GetAsync($"{ApiBase}/api/gpu/vram");
             if (response.IsSuccessStatusCode)
             {
                 var doc = JsonNode.Parse(await response.Content.ReadAsStringAsync());

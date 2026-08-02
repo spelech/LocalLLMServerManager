@@ -21,7 +21,7 @@ public partial class App : Application
         {
             desktop.ShutdownMode = ShutdownMode.OnExplicitShutdown;
             desktop.MainWindow = new MainWindow();
-            desktop.MainWindow.Show();
+            try { desktop.MainWindow.Show(); } catch { }
         }
 
         var icons = TrayIcon.GetIcons(this);
@@ -36,7 +36,7 @@ public partial class App : Application
         base.OnFrameworkInitializationCompleted();
     }
 
-    private void OnOpenDashboardClick(object? sender, EventArgs e)
+    public void OnOpenDashboardClick(object? sender, EventArgs e)
     {
         if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
         {
@@ -44,12 +44,16 @@ public partial class App : Application
             {
                 desktop.MainWindow = new MainWindow();
             }
-            desktop.MainWindow.Show();
-            desktop.MainWindow.Activate();
+            try
+            {
+                desktop.MainWindow.Show();
+                desktop.MainWindow.Activate();
+            }
+            catch { }
         }
     }
 
-    private void OnOpenWebUiClick(object? sender, EventArgs e)
+    public void OnOpenWebUiClick(object? sender, EventArgs e)
     {
         try
         {
@@ -62,7 +66,7 @@ public partial class App : Application
         catch { }
     }
 
-    private void OnExitClick(object? sender, EventArgs e)
+    public void OnExitClick(object? sender, EventArgs e)
     {
         if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
         {

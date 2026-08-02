@@ -44,17 +44,27 @@ public class ToastService
 
     public ObservableCollection<ToastItem> ActiveToasts { get; } = new();
 
-    public void Show(string message, ToastType type = ToastType.Info)
+    public void Show(string message, ToastType type = ToastType.Info, int autoRemoveMs = 4000)
     {
         var toast = new ToastItem(message, type);
         ActiveToasts.Add(toast);
 
-        _ = Task.Delay(4000).ContinueWith(_ =>
+        if (autoRemoveMs == 0)
         {
-            Avalonia.Threading.Dispatcher.UIThread.Post(() =>
+            ActiveToasts.Remove(toast);
+            return;
+        }
+
+        _ = Task.Delay(autoRemoveMs).ContinueWith(_ =>
+        {
+            try
+            {
+                Avalonia.Threading.Dispatcher.UIThread.Post(() => ActiveToasts.Remove(toast));
+            }
+            catch
             {
                 ActiveToasts.Remove(toast);
-            });
+            }
         });
     }
 }

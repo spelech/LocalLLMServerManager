@@ -2,8 +2,10 @@ using Avalonia;
 using Avalonia.Headless;
 using LocalLLMServerManager;
 using LocalLLMServerManager.Tests;
+using Xunit;
 
 [assembly: AvaloniaTestApplication(typeof(TestAppBuilder))]
+[assembly: CollectionBehavior(DisableTestParallelization = true)]
 
 namespace LocalLLMServerManager.Tests;
 

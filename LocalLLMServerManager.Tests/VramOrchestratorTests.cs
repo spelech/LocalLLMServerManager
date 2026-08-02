@@ -1,3 +1,4 @@
+using System;
 using System.Net;
 using System.Net.Http;
 using System.Threading;
@@ -119,5 +120,41 @@ public class VramOrchestratorTests
         Assert.NotNull(capturedRequest);
         Assert.Equal(HttpMethod.Post, capturedRequest.Method);
         Assert.Equal("http://127.0.0.1:8188/free", capturedRequest.RequestUri?.ToString());
+    }
+
+    [Fact]
+    public async Task EnsureVramForImageGenerationAsync_ExecutesCleanly()
+    {
+        var handlerMock = new Mock<HttpMessageHandler>();
+        handlerMock.Protected()
+            .Setup<Task<HttpResponseMessage>>(
+                "SendAsync",
+                ItExpr.IsAny<HttpRequestMessage>(),
+                ItExpr.IsAny<CancellationToken>()
+            )
+            .ReturnsAsync(new HttpResponseMessage { StatusCode = HttpStatusCode.OK });
+
+        var client = new HttpClient(handlerMock.Object);
+        var orchestrator = new VramOrchestrator(client, NullLogger<VramOrchestrator>.Instance);
+
+        await orchestrator.EnsureVramForImageGenerationAsync();
+    }
+
+    [Fact]
+    public async Task EnsureVramForComfyUiAsync_ExecutesCleanly()
+    {
+        var handlerMock = new Mock<HttpMessageHandler>();
+        handlerMock.Protected()
+            .Setup<Task<HttpResponseMessage>>(
+                "SendAsync",
+                ItExpr.IsAny<HttpRequestMessage>(),
+                ItExpr.IsAny<CancellationToken>()
+            )
+            .ReturnsAsync(new HttpResponseMessage { StatusCode = HttpStatusCode.OK });
+
+        var client = new HttpClient(handlerMock.Object);
+        var orchestrator = new VramOrchestrator(client, NullLogger<VramOrchestrator>.Instance);
+
+        await orchestrator.EnsureVramForComfyUiAsync();
     }
 }

@@ -1,0 +1,29 @@
+name: CI & Code Coverage
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  build-and-test:
+    runs-on: windows-latest
+
+    steps:
+    - name: Checkout Code
+      uses: actions/checkout@v4
+
+    - name: Setup .NET SDK 10.0
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: '10.0.x'
+
+    - name: Restore Dependencies
+      run: dotnet restore LocalLLMServerManager.sln
+
+    - name: Build Solution
+      run: dotnet build LocalLLMServerManager.sln -c Release --no-restore
+
+    - name: Run Unit Tests & Collect Code Coverage
+      run: dotnet test LocalLLMServerManager.Tests/LocalLLMServerManager.Tests.csproj -c Release --collect:"XPlat Code Coverage" --nologo
