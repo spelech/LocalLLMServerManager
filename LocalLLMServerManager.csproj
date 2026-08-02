@@ -11,11 +11,15 @@
         MINOR — new user-facing features (bump per feature PR)
         PATCH — bug fixes, dependency updates, doc-only changes
     -->
-    <Version>2.1.0</Version>
-    <AssemblyVersion>2.1.0.0</AssemblyVersion>
-    <FileVersion>2.1.0.0</FileVersion>
+    <Version>3.0.0</Version>
+    <AssemblyVersion>3.0.0.0</AssemblyVersion>
+    <FileVersion>3.0.0.0</FileVersion>
     <BuiltInComInteropSupport>true</BuiltInComInteropSupport>
   </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="LocalLLMServerManager.Shared\LocalLLMServerManager.Shared.csproj" />
+  </ItemGroup>
 
   <ItemGroup>
     <PackageReference Include="Avalonia" Version="11.2.3" />
