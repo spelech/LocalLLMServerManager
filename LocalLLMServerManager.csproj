@@ -39,6 +39,12 @@
   </ItemGroup>
 
   <ItemGroup>
+    <Compile Remove="LocalLLMServerManager.Shared\**" />
+    <AvaloniaXaml Remove="LocalLLMServerManager.Shared\**\*.axaml" />
+    <AvaloniaResource Remove="LocalLLMServerManager.Shared\**" />
+    <Compile Remove="LocalLLMServerManager.Web\**" />
+    <AvaloniaXaml Remove="LocalLLMServerManager.Web\**\*.axaml" />
+    <AvaloniaResource Remove="LocalLLMServerManager.Web\**" />
     <Compile Remove="LocalLLMServerManager.Tests\**" />
     <EmbeddedResource Remove="LocalLLMServerManager.Tests\**" />
     <None Remove="LocalLLMServerManager.Tests\**" />

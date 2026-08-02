@@ -1,5 +1,5 @@
 using System.Threading.Tasks;
-using LocalLLMServerManager.ViewModels;
+using LocalLLMServerManager.Shared.ViewModels;
 using Xunit;
 
 namespace LocalLLMServerManager.Tests;
@@ -7,9 +7,9 @@ namespace LocalLLMServerManager.Tests;
 public class MainWindowViewModelTests
 {
     [Fact]
-    public void MainWindowViewModel_InitialState_HasDefaults()
+    public void MainViewModel_InitialState_HasDefaults()
     {
-        var vm = new MainWindowViewModel();
+        var vm = new MainViewModel();
 
         Assert.NotNull(vm.GpuName);
         Assert.Equal(8.0, vm.VramTotalGb);
@@ -21,9 +21,9 @@ public class MainWindowViewModelTests
     }
 
     [Fact]
-    public async Task MainWindowViewModel_RefreshStatusAsync_UpdatesState()
+    public async Task MainViewModel_RefreshStatusAsync_UpdatesState()
     {
-        var vm = new MainWindowViewModel();
+        var vm = new MainViewModel();
 
         await vm.RefreshStatusAsync();
 
@@ -34,9 +34,9 @@ public class MainWindowViewModelTests
     }
 
     [Fact]
-    public void MainWindowViewModel_RelayCommands_AreExecutable()
+    public void MainViewModel_RelayCommands_AreExecutable()
     {
-        var vm = new MainWindowViewModel();
+        var vm = new MainViewModel();
 
         Assert.True(vm.RefreshStatusCommand.CanExecute(null));
         Assert.True(vm.OpenWebUiInBrowserCommand.CanExecute(null));

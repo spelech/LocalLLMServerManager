@@ -1,5 +1,5 @@
 using Avalonia.Controls;
-using LocalLLMServerManager.ViewModels;
+using LocalLLMServerManager.Shared.ViewModels;
 
 namespace LocalLLMServerManager.Views;
 
@@ -8,7 +8,7 @@ public partial class MainWindow : Window
     public MainWindow()
     {
         InitializeComponent();
-        DataContext = new MainWindowViewModel();
+        DataContext = new MainViewModel();
     }
 
     protected override void OnClosing(WindowClosingEventArgs e)
