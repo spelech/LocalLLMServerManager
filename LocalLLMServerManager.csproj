@@ -48,6 +48,9 @@
     <Compile Remove="LocalLLMServerManager.Tests\**" />
     <EmbeddedResource Remove="LocalLLMServerManager.Tests\**" />
     <None Remove="LocalLLMServerManager.Tests\**" />
+    <Content Remove="LocalLLMServerManager.Tests\**" />
+    <Content Remove="publish\**" />
+    <Content Remove="dist\**" />
   </ItemGroup>
 
   <ItemGroup>

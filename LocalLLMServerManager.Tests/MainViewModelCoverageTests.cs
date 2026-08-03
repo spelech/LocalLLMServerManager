@@ -3,9 +3,11 @@ using System.IO;
 using System.Net;
 using System.Net.Http;
 using System.Text;
+using System.Text.Json;
 using System.Threading.Tasks;
 using LocalLLMServerManager.Shared.Services;
 using LocalLLMServerManager.Shared.ViewModels;
+using LocalLLMServerManager;
 using Moq;
 using Moq.Protected;
 using Xunit;
@@ -224,4 +226,86 @@ public class MainViewModelCoverageTests : IClassFixture<AppTestServerFixture>
         var c2 = new CivitaiModelItem(1, "n", "t", "th", "d", "f", 5.0, 10);
         Assert.Equal(c1, c2);
     }
+
+    [Fact]
+    public void MainViewModel_HasSettingsObservableProperties_DefaultsAreSet()
+    {
+        var vm = CreateTestViewModel();
+        Assert.Equal(@"%APPDATA%\AI\ComfyUI\run_nvidia_gpu.bat", vm.ComfyUiExecutablePath);
+        Assert.Equal(@"%APPDATA%\AI\SD_Forge\webui-user.bat", vm.ForgeExecutablePath);
+        Assert.Equal(@"%APPDATA%\AI\SD_Forge\models", vm.ForgeModelsPath);
+        Assert.Equal(@"%APPDATA%\AI\3d_outputs", vm.ThreeDModelsPath);
+        Assert.Equal(@"%APPDATA%\AI\Workflows", vm.WorkflowsPath);
+        Assert.Equal("http://127.0.0.1:8188", vm.ComfyUiUrl);
+        Assert.Equal("Forge", vm.PreferredImageEngine);
+    }
+
+    [Fact]
+    public async Task LoadSettingsAsync_PopulatesPropertiesFromHttpResponse()
+    {
+        var settingsJson = JsonSerializer.Serialize(new AppSettings(
+            ForgeModelsPath: "D:\\Custom\\Forge\\Models",
+            ComfyUiUrl: "http://localhost:8189",
+            ThreeDModelsPath: "D:\\Custom\\3d_outputs",
+            WorkflowsPath: "D:\\Custom\\Workflows",
+            PreferredImageEngine: "ComfyUI",
+            ComfyUiExecutablePath: "D:\\Custom\\ComfyUI\\run.bat",
+            ForgeExecutablePath: "D:\\Custom\\Forge\\webui.bat",
+            OllamaExecutablePath: "ollama"
+        ));
+
+        var handlerMock = new Mock<HttpMessageHandler>();
+        handlerMock.Protected()
+            .Setup<Task<HttpResponseMessage>>(
+                "SendAsync",
+                ItExpr.Is<HttpRequestMessage>(req => req.RequestUri!.ToString().Contains("/api/settings") && req.Method == HttpMethod.Get),
+                ItExpr.IsAny<System.Threading.CancellationToken>()
+            )
+            .ReturnsAsync(new HttpResponseMessage { StatusCode = HttpStatusCode.OK, Content = new StringContent(settingsJson, Encoding.UTF8, "application/json") });
+
+        var client = new HttpClient(handlerMock.Object);
+        var vm = new MainViewModel(client) { ApiBase = "http://127.0.0.1:5246" };
+
+        await vm.LoadSettingsAsync();
+
+        Assert.Equal("D:\\Custom\\Forge\\Models", vm.ForgeModelsPath);
+        Assert.Equal("http://localhost:8189", vm.ComfyUiUrl);
+        Assert.Equal("D:\\Custom\\3d_outputs", vm.ThreeDModelsPath);
+        Assert.Equal("D:\\Custom\\Workflows", vm.WorkflowsPath);
+        Assert.Equal("ComfyUI", vm.PreferredImageEngine);
+        Assert.Equal("D:\\Custom\\ComfyUI\\run.bat", vm.ComfyUiExecutablePath);
+        Assert.Equal("D:\\Custom\\Forge\\webui.bat", vm.ForgeExecutablePath);
+    }
+
+    [Fact]
+    public async Task SaveSettingsAsync_PostsAppSettingsToEndpoint()
+    {
+        HttpRequestMessage? capturedRequest = null;
+
+        var handlerMock = new Mock<HttpMessageHandler>();
+        handlerMock.Protected()
+            .Setup<Task<HttpResponseMessage>>(
+                "SendAsync",
+                ItExpr.Is<HttpRequestMessage>(req => req.RequestUri!.ToString().Contains("/api/settings") && req.Method == HttpMethod.Post),
+                ItExpr.IsAny<System.Threading.CancellationToken>()
+            )
+            .Callback<HttpRequestMessage, System.Threading.CancellationToken>((req, ct) => capturedRequest = req)
+            .ReturnsAsync(new HttpResponseMessage { StatusCode = HttpStatusCode.OK, Content = new StringContent("{\"status\":\"saved\"}", Encoding.UTF8, "application/json") });
+
+        var client = new HttpClient(handlerMock.Object);
+        var vm = new MainViewModel(client) { ApiBase = "http://127.0.0.1:5246" };
+
+        vm.ForgeModelsPath = "E:\\Models";
+        vm.ComfyUiUrl = "http://127.0.0.1:9000";
+
+        await vm.SaveSettingsAsync();
+
+        Assert.NotNull(capturedRequest);
+        var body = await capturedRequest!.Content!.ReadAsStringAsync();
+        var postedSettings = JsonSerializer.Deserialize<AppSettings>(body);
+        Assert.NotNull(postedSettings);
+        Assert.Equal("E:\\Models", postedSettings!.ForgeModelsPath);
+        Assert.Equal("http://127.0.0.1:9000", postedSettings.ComfyUiUrl);
+    }
 }
+

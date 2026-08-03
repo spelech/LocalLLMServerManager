@@ -4,6 +4,7 @@ using System.Diagnostics;
 using System.IO;
 using System.Net;
 using System.Net.Http;
+using System.Net.Http.Json;
 using System.Net.Sockets;
 using System.Text.Json;
 using System.Text.Json.Nodes;
@@ -11,6 +12,7 @@ using System.Threading.Tasks;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using LocalLLMServerManager.Shared.Services;
+using LocalLLMServerManager;
 
 namespace LocalLLMServerManager.Shared.ViewModels;
 
@@ -98,6 +100,15 @@ public partial class MainViewModel : ObservableObject
     [ObservableProperty] private double _targetContextTokens = 4096;
     [ObservableProperty] private string _estimatedKvCacheText = "~256 MB";
     [ObservableProperty] private string _lanAccessUrl = "http://localhost:5246";
+
+    // Tool Paths & Settings State
+    [ObservableProperty] private string _comfyUiExecutablePath = "%APPDATA%\\AI\\ComfyUI\\run_nvidia_gpu.bat";
+    [ObservableProperty] private string _forgeExecutablePath = "%APPDATA%\\AI\\SD_Forge\\webui-user.bat";
+    [ObservableProperty] private string _forgeModelsPath = "%APPDATA%\\AI\\SD_Forge\\models";
+    [ObservableProperty] private string _threeDModelsPath = "%APPDATA%\\AI\\3d_outputs";
+    [ObservableProperty] private string _workflowsPath = "%APPDATA%\\AI\\Workflows";
+    [ObservableProperty] private string _comfyUiUrl = "http://127.0.0.1:8188";
+    [ObservableProperty] private string _preferredImageEngine = "Forge";
 
     public ObservableCollection<OllamaModelItem> InstalledModels { get; } = new();
     public ObservableCollection<HuggingFaceRepoItem> HuggingFaceResults { get; } = new();
@@ -541,6 +552,64 @@ public partial class MainViewModel : ObservableObject
         catch
         {
             GpuName = "System GPU";
+        }
+    }
+
+    [RelayCommand]
+    public async Task LoadSettingsAsync()
+    {
+        try
+        {
+            var response = await Http.GetAsync($"{ApiBase}/api/settings");
+            if (response.IsSuccessStatusCode)
+            {
+                var jsonStr = await response.Content.ReadAsStringAsync();
+                var settings = JsonSerializer.Deserialize<AppSettings>(jsonStr, new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
+                if (settings != null)
+                {
+                    ForgeModelsPath = settings.ForgeModelsPath;
+                    ComfyUiUrl = settings.ComfyUiUrl;
+                    ThreeDModelsPath = settings.ThreeDModelsPath;
+                    WorkflowsPath = settings.WorkflowsPath;
+                    PreferredImageEngine = settings.PreferredImageEngine;
+                    ComfyUiExecutablePath = settings.ComfyUiExecutablePath;
+                    ForgeExecutablePath = settings.ForgeExecutablePath;
+                }
+            }
+        }
+        catch { }
+    }
+
+    [RelayCommand]
+    public async Task SaveSettingsAsync()
+    {
+        try
+        {
+            var settings = new AppSettings(
+                ForgeModelsPath: this.ForgeModelsPath,
+                ComfyUiUrl: this.ComfyUiUrl,
+                ThreeDModelsPath: this.ThreeDModelsPath,
+                WorkflowsPath: this.WorkflowsPath,
+                PreferredImageEngine: this.PreferredImageEngine,
+                ComfyUiExecutablePath: this.ComfyUiExecutablePath,
+                ForgeExecutablePath: this.ForgeExecutablePath
+            );
+
+            var content = new StringContent(
+                JsonSerializer.Serialize(settings),
+                System.Text.Encoding.UTF8,
+                "application/json"
+            );
+
+            var response = await Http.PostAsync($"{ApiBase}/api/settings", content);
+            if (response.IsSuccessStatusCode)
+            {
+                ToastService.Instance.Show("Settings saved successfully.", ToastType.Success);
+            }
+        }
+        catch
+        {
+            ToastService.Instance.Show("Failed to save settings.", ToastType.Error);
         }
     }
 }

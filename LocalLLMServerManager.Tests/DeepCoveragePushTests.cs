@@ -55,7 +55,8 @@ public class DeepCoveragePushTests : IClassFixture<AppTestServerFixture>
     [Fact]
     public async Task ThreeDOutputs_FullDiskDirectory_Reads3dModels()
     {
-        var outputsDir = Path.Combine(AppContext.BaseDirectory, "wwwroot", "3d_outputs");
+        var settings = Program.LoadSettings();
+        var outputsDir = Program.ResolvePath(settings.ThreeDModelsPath, @"%APPDATA%\AI\3d_outputs");
         if (!Directory.Exists(outputsDir))
         {
             Directory.CreateDirectory(outputsDir);
