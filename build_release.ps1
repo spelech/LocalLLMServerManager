@@ -17,14 +17,11 @@ Write-Host "--> 1. Running Test Suite & Verification..." -ForegroundColor Yellow
 dotnet test --nologo -c Release
 if ($LASTEXITCODE -ne 0) { throw "dotnet test failed!" }
 
-Write-Host "--> 2. Running Frontend Linting & Type Checks..." -ForegroundColor Yellow
-npm run lint
-if ($LASTEXITCODE -ne 0) { throw "npm run lint failed!" }
+# 2. Publish Avalonia WebAssembly to wwwroot & Build Self-Contained Release
+Write-Host "--> 2. Building & Publishing Avalonia WebAssembly (Wasm) UI..." -ForegroundColor Yellow
+dotnet publish LocalLLMServerManager.Web/LocalLLMServerManager.Web.csproj -c Release -o wwwroot --nologo
+if ($LASTEXITCODE -ne 0) { throw "Avalonia Wasm publish failed!" }
 
-npx tsc --noEmit
-if ($LASTEXITCODE -ne 0) { throw "npx tsc --noEmit failed!" }
-
-# 2. Clean & Publish Self-Contained Release
 Write-Host "--> 3. Publishing Self-Contained win-x64 Executable..." -ForegroundColor Yellow
 if (Test-Path $PublishDir) { Remove-Item -Path $PublishDir -Recurse -Force }
 if (Test-Path $DistDir) { Remove-Item -Path $DistDir -Recurse -Force }

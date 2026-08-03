@@ -1,4 +1,6 @@
 <Solution>
   <Project Path="LocalLLMServerManager.csproj" />
+  <Project Path="LocalLLMServerManager.Shared/LocalLLMServerManager.Shared.csproj" />
+  <Project Path="LocalLLMServerManager.Web/LocalLLMServerManager.Web.csproj" />
   <Project Path="LocalLLMServerManager.Tests/LocalLLMServerManager.Tests.csproj" />
 </Solution>
