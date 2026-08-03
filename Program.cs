@@ -95,6 +95,13 @@ public class Program
             JsonSerializer.Serialize(settings, new JsonSerializerOptions { WriteIndented = true }));
     }
 
+    public static string ResolvePath(string? rawPath, string fallbackRelativePath)
+    {
+        var target = string.IsNullOrWhiteSpace(rawPath) ? fallbackRelativePath : rawPath;
+        var expanded = Environment.ExpandEnvironmentVariables(target);
+        return Path.GetFullPath(expanded);
+    }
+
     public static WebApplication CreateWebApplication(string[] args, bool isServiceMode = false, string url = "http://0.0.0.0:5246")
     {
         var builder = WebApplication.CreateBuilder(args);
@@ -362,16 +369,17 @@ public class Program
             }
 
             var settings = LoadSettings();
+            var forgeModelsDir = ResolvePath(settings.ForgeModelsPath, @"%APPDATA%\AI\SD_Forge\models");
             var targetDir = modelType.ToLowerInvariant() switch
             {
-                "lora" => Path.Combine(settings.ForgeModelsPath, "Lora"),
-                "controlnet" => Path.Combine(settings.ForgeModelsPath, "ControlNet"),
-                "vae" => Path.Combine(settings.ForgeModelsPath, "VAE"),
-                "embedding" => Path.Combine(settings.ForgeModelsPath, "embeddings"),
-                _ => Path.Combine(settings.ForgeModelsPath, "Stable-diffusion")
+                "lora" => Path.Combine(forgeModelsDir, "Lora"),
+                "controlnet" => Path.Combine(forgeModelsDir, "ControlNet"),
+                "vae" => Path.Combine(forgeModelsDir, "VAE"),
+                "embedding" => Path.Combine(forgeModelsDir, "embeddings"),
+                _ => Path.Combine(forgeModelsDir, "Stable-diffusion")
             };
 
-            if (string.IsNullOrWhiteSpace(settings.ForgeModelsPath) || !Directory.Exists(settings.ForgeModelsPath))
+            if (string.IsNullOrWhiteSpace(forgeModelsDir) || !Directory.Exists(forgeModelsDir))
             {
                 await SendEvent("error", "Forge Models Directory is not configured or does not exist. Please set it in Settings.");
                 return;
@@ -515,9 +523,7 @@ public class Program
         app.MapGet("/api/3d/files", () =>
         {
             var settings = LoadSettings();
-            var outputDir = !string.IsNullOrWhiteSpace(settings.ThreeDModelsPath) && Directory.Exists(settings.ThreeDModelsPath)
-                ? settings.ThreeDModelsPath
-                : Path.Combine(AppContext.BaseDirectory, "wwwroot", "3d_outputs");
+            var outputDir = ResolvePath(settings.ThreeDModelsPath, @"%APPDATA%\AI\3d_outputs");
 
             if (!Directory.Exists(outputDir))
             {
@@ -554,7 +560,7 @@ public class Program
                 comfyProcess = null;
             }
 
-            var path = string.IsNullOrWhiteSpace(settings.ComfyUiExecutablePath) ? @"D:\AI\ComfyUI\run_nvidia_gpu.bat" : settings.ComfyUiExecutablePath;
+            var path = ResolvePath(settings.ComfyUiExecutablePath, @"%APPDATA%\AI\ComfyUI\run_nvidia_gpu.bat");
             if (!System.IO.File.Exists(path)) return Results.NotFound(new { message = $"ComfyUI executable not found at: {path}" });
 
             comfyProcess = new System.Diagnostics.Process
@@ -590,7 +596,7 @@ public class Program
             if (forgeProcess != null && !forgeProcess.HasExited) return Results.Ok(new { message = "SD Forge is already running" });
 
             var settings = LoadSettings();
-            var path = string.IsNullOrWhiteSpace(settings.ForgeExecutablePath) ? @"D:\AI\SD_Forge\webui-user.bat" : settings.ForgeExecutablePath;
+            var path = ResolvePath(settings.ForgeExecutablePath, @"%APPDATA%\AI\SD_Forge\webui-user.bat");
             if (!System.IO.File.Exists(path)) return Results.NotFound(new { message = $"SD Forge executable not found at: {path}" });
 
             forgeProcess = new System.Diagnostics.Process
