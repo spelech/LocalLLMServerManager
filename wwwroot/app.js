@@ -205,6 +205,10 @@ document.addEventListener('DOMContentLoaded', async () => {
             link.classList.add('active');
             const targetEl = document.getElementById(targetTab);
             if (targetEl) targetEl.classList.add('active');
+
+            if (targetTab === 'tab-settings') {
+                loadAppSettings();
+            }
         });
     });
 
@@ -1217,15 +1221,40 @@ let civitaiForgePathConfigured = false;
 // ---------------------------------------------------------------------------
 // Settings — load on startup
 // ---------------------------------------------------------------------------
+// ---------------------------------------------------------------------------
+// Settings — load on startup
+// ---------------------------------------------------------------------------
+function populateSettingsForm(settings) {
+    if (!settings) return;
+    const comfyExe = /** @type {HTMLInputElement} */ (document.getElementById('setting-comfy-exe'));
+    const forgeExe = /** @type {HTMLInputElement} */ (document.getElementById('setting-forge-exe'));
+    const forgeModels = /** @type {HTMLInputElement} */ (document.getElementById('setting-forge-models'));
+    const threeDModels = /** @type {HTMLInputElement} */ (document.getElementById('setting-3d-models'));
+    const workflows = /** @type {HTMLInputElement} */ (document.getElementById('setting-workflows'));
+    const comfyUrl = /** @type {HTMLInputElement} */ (document.getElementById('setting-comfy-url'));
+    const preferredEngine = /** @type {HTMLSelectElement} */ (document.getElementById('setting-preferred-engine'));
+
+    if (comfyExe) comfyExe.value = settings.comfyUiExecutablePath || settings.ComfyUiExecutablePath || '';
+    if (forgeExe) forgeExe.value = settings.forgeExecutablePath || settings.ForgeExecutablePath || '';
+    if (forgeModels) forgeModels.value = settings.forgeModelsPath || settings.ForgeModelsPath || '';
+    if (threeDModels) threeDModels.value = settings.threeDModelsPath || settings.ThreeDModelsPath || '';
+    if (workflows) workflows.value = settings.workflowsPath || settings.WorkflowsPath || '';
+    if (comfyUrl) comfyUrl.value = settings.comfyUiUrl || settings.ComfyUiUrl || '';
+    if (preferredEngine) preferredEngine.value = settings.preferredImageEngine || settings.PreferredImageEngine || 'Forge';
+
+    if (forgePathInput && (settings.forgeModelsPath || settings.ForgeModelsPath)) {
+        const path = settings.forgeModelsPath || settings.ForgeModelsPath;
+        forgePathInput.value = path;
+        setForgePathStatus(true, path);
+    }
+}
+
 async function loadAppSettings() {
     try {
         const res = await fetch('/api/settings');
         if (!res.ok) return;
         const settings = await res.json();
-        if (settings.forgeModelsPath) {
-            forgePathInput.value = settings.forgeModelsPath;
-            setForgePathStatus(true, settings.forgeModelsPath);
-        }
+        populateSettingsForm(settings);
     } catch { /* ignore */ }
 }
 
@@ -1270,6 +1299,51 @@ if (btnSaveForgePath) {
         } finally {
             btnSaveForgePath.disabled = false;
             btnSaveForgePath.textContent = 'Save Path';
+        }
+    });
+}
+
+const settingsForm = /** @type {HTMLFormElement} */ (document.getElementById('settings-form'));
+if (settingsForm) {
+    settingsForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const btnSave = /** @type {HTMLButtonElement} */ (document.getElementById('btn-save-settings'));
+        if (btnSave) {
+            btnSave.disabled = true;
+            btnSave.textContent = 'Saving...';
+        }
+
+        const payload = {
+            ComfyUiExecutablePath: (/** @type {HTMLInputElement} */ (document.getElementById('setting-comfy-exe'))).value.trim(),
+            ForgeExecutablePath: (/** @type {HTMLInputElement} */ (document.getElementById('setting-forge-exe'))).value.trim(),
+            ForgeModelsPath: (/** @type {HTMLInputElement} */ (document.getElementById('setting-forge-models'))).value.trim(),
+            ThreeDModelsPath: (/** @type {HTMLInputElement} */ (document.getElementById('setting-3d-models'))).value.trim(),
+            WorkflowsPath: (/** @type {HTMLInputElement} */ (document.getElementById('setting-workflows'))).value.trim(),
+            ComfyUiUrl: (/** @type {HTMLInputElement} */ (document.getElementById('setting-comfy-url'))).value.trim(),
+            PreferredImageEngine: (/** @type {HTMLSelectElement} */ (document.getElementById('setting-preferred-engine'))).value
+        };
+
+        try {
+            const res = await fetch('/api/settings', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+
+            if (res.ok) {
+                showToast('Settings saved successfully!', 'success');
+                await loadAppSettings();
+            } else {
+                const err = await res.text();
+                showToast(`Failed to save settings: ${err}`, 'error');
+            }
+        } catch {
+            showToast('Error connecting to server to save settings.', 'error');
+        } finally {
+            if (btnSave) {
+                btnSave.disabled = false;
+                btnSave.textContent = '💾 Save Settings';
+            }
         }
     });
 }

@@ -160,6 +160,13 @@
                 </svg>
                 3D &amp; ComfyUI Studio
             </button>
+            <button class="tab-link" data-tab="tab-settings">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="tab-icon">
+                    <circle cx="12" cy="12" r="3"/>
+                    <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+                </svg>
+                Settings
+            </button>
         </nav>
 
         <!-- TAB CONTENT: INSTALLED MODELS -->
@@ -607,6 +614,76 @@
                     <!-- Media items populated dynamically by JS -->
                     <div style="color: var(--text-muted); font-size: 0.85rem;">Scanning outputs directory...</div>
                 </div>
+            </div>
+        </div>
+
+        <!-- TAB CONTENT: SETTINGS -->
+        <div id="tab-settings" class="tab-content">
+            <div class="content-header">
+                <h2>Tool Paths &amp; Application Settings</h2>
+                <p>Configure local executable paths, model directories, workflows folder, and default server endpoints.</p>
+            </div>
+
+            <div class="glass-card" style="padding: 1.5rem; max-width: 800px; margin-bottom: 2rem;">
+                <form id="settings-form" style="display: flex; flex-direction: column; gap: 1.25rem;">
+                    <div>
+                        <label style="font-weight: 600; font-size: 0.85rem; color: var(--text-muted); display: block; margin-bottom: 0.4rem;" for="setting-comfy-exe">
+                            ComfyUI Executable Path:
+                        </label>
+                        <input type="text" id="setting-comfy-exe" placeholder="e.g. C:\AI\ComfyUI\run_nvidia_gpu.bat" style="width: 100%; background: rgba(0,0,0,0.25); border: 1px solid var(--border-color); color: var(--text-bright); padding: 0.6rem 0.8rem; border-radius: var(--radius-sm); font-family: var(--font-mono); font-size: 0.9rem;">
+                    </div>
+
+                    <div>
+                        <label style="font-weight: 600; font-size: 0.85rem; color: var(--text-muted); display: block; margin-bottom: 0.4rem;" for="setting-forge-exe">
+                            Forge Executable Path:
+                        </label>
+                        <input type="text" id="setting-forge-exe" placeholder="e.g. C:\AI\SD_Forge\webui-user.bat" style="width: 100%; background: rgba(0,0,0,0.25); border: 1px solid var(--border-color); color: var(--text-bright); padding: 0.6rem 0.8rem; border-radius: var(--radius-sm); font-family: var(--font-mono); font-size: 0.9rem;">
+                    </div>
+
+                    <div>
+                        <label style="font-weight: 600; font-size: 0.85rem; color: var(--text-muted); display: block; margin-bottom: 0.4rem;" for="setting-forge-models">
+                            Forge Models Directory Path:
+                        </label>
+                        <input type="text" id="setting-forge-models" placeholder="e.g. C:\AI\SD_Forge\models" style="width: 100%; background: rgba(0,0,0,0.25); border: 1px solid var(--border-color); color: var(--text-bright); padding: 0.6rem 0.8rem; border-radius: var(--radius-sm); font-family: var(--font-mono); font-size: 0.9rem;">
+                    </div>
+
+                    <div>
+                        <label style="font-weight: 600; font-size: 0.85rem; color: var(--text-muted); display: block; margin-bottom: 0.4rem;" for="setting-3d-models">
+                            3D Models Output Path:
+                        </label>
+                        <input type="text" id="setting-3d-models" placeholder="e.g. C:\AI\3d_outputs" style="width: 100%; background: rgba(0,0,0,0.25); border: 1px solid var(--border-color); color: var(--text-bright); padding: 0.6rem 0.8rem; border-radius: var(--radius-sm); font-family: var(--font-mono); font-size: 0.9rem;">
+                    </div>
+
+                    <div>
+                        <label style="font-weight: 600; font-size: 0.85rem; color: var(--text-muted); display: block; margin-bottom: 0.4rem;" for="setting-workflows">
+                            Workflows Directory Path:
+                        </label>
+                        <input type="text" id="setting-workflows" placeholder="e.g. C:\AI\Workflows" style="width: 100%; background: rgba(0,0,0,0.25); border: 1px solid var(--border-color); color: var(--text-bright); padding: 0.6rem 0.8rem; border-radius: var(--radius-sm); font-family: var(--font-mono); font-size: 0.9rem;">
+                    </div>
+
+                    <div>
+                        <label style="font-weight: 600; font-size: 0.85rem; color: var(--text-muted); display: block; margin-bottom: 0.4rem;" for="setting-comfy-url">
+                            ComfyUI Service URL:
+                        </label>
+                        <input type="text" id="setting-comfy-url" placeholder="http://127.0.0.1:8188" style="width: 100%; background: rgba(0,0,0,0.25); border: 1px solid var(--border-color); color: var(--text-bright); padding: 0.6rem 0.8rem; border-radius: var(--radius-sm); font-family: var(--font-mono); font-size: 0.9rem;">
+                    </div>
+
+                    <div>
+                        <label style="font-weight: 600; font-size: 0.85rem; color: var(--text-muted); display: block; margin-bottom: 0.4rem;" for="setting-preferred-engine">
+                            Preferred Image Engine:
+                        </label>
+                        <select id="setting-preferred-engine" style="width: 100%; background: rgba(0,0,0,0.25); border: 1px solid var(--border-color); color: var(--text-bright); padding: 0.6rem 0.8rem; border-radius: var(--radius-sm); font-size: 0.9rem; cursor: pointer;">
+                            <option value="Forge">Forge (Stable Diffusion)</option>
+                            <option value="ComfyUI">ComfyUI</option>
+                        </select>
+                    </div>
+
+                    <div style="margin-top: 0.5rem;">
+                        <button type="submit" id="btn-save-settings" class="search-submit-btn" style="padding: 0.75rem 1.5rem; font-size: 0.95rem; font-weight: 700;">
+                            💾 Save Settings
+                        </button>
+                    </div>
+                </form>
             </div>
         </div>
     </div>

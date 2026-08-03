@@ -16,8 +16,21 @@ public class AppTestServerFixture : IAsyncLifetime
 
     public async Task InitializeAsync()
     {
-        _app = Program.CreateWebApplication(Array.Empty<string>(), isServiceMode: false, url: TestBaseUrl);
-        await _app.StartAsync();
+        for (int port = 5299; port <= 5310; port++)
+        {
+            try
+            {
+                TestBaseUrl = $"http://127.0.0.1:{port}";
+                _app = Program.CreateWebApplication(Array.Empty<string>(), isServiceMode: false, url: TestBaseUrl);
+                await _app.StartAsync();
+                return;
+            }
+            catch (System.IO.IOException)
+            {
+                if (_app != null) { try { await _app.DisposeAsync(); } catch { } }
+                if (port == 5310) throw;
+            }
+        }
     }
 
     public async Task DisposeAsync()

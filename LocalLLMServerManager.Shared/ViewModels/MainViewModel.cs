@@ -120,6 +120,7 @@ public partial class MainViewModel : ObservableObject
     {
         DetectLanIp();
         _ = RefreshStatusAsync();
+        _ = LoadSettingsAsync();
     }
 
     private void DetectLanIp()
