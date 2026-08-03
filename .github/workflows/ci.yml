@@ -20,10 +20,10 @@ jobs:
         dotnet-version: '10.0.x'
 
     - name: Restore Dependencies
-      run: dotnet restore LocalLLMServerManager.sln
+      run: dotnet restore LocalLLMServerManager.slnx
 
     - name: Build Solution
-      run: dotnet build LocalLLMServerManager.sln -c Release --no-restore
+      run: dotnet build LocalLLMServerManager.slnx -c Release --no-restore
 
     - name: Run Unit Tests & Collect Code Coverage
       run: dotnet test LocalLLMServerManager.Tests/LocalLLMServerManager.Tests.csproj -c Release --collect:"XPlat Code Coverage" --nologo
