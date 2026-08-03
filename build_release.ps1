@@ -40,7 +40,8 @@ $IsccPath = Get-Command "ISCC.exe" -ErrorAction SilentlyContinue | Select-Object
 if (-not $IsccPath) {
     $PossiblePaths = @(
         "${env:ProgramFiles(x86)}\Inno Setup 6\ISCC.exe",
-        "${env:ProgramFiles}\Inno Setup 6\ISCC.exe"
+        "${env:ProgramFiles}\Inno Setup 6\ISCC.exe",
+        "${env:LOCALAPPDATA}\Programs\Inno Setup 6\ISCC.exe"
     )
     foreach ($p in $PossiblePaths) {
         if (Test-Path $p) {
