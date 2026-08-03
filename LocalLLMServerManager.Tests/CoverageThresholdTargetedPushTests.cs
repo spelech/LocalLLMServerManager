@@ -39,6 +39,10 @@ public class CoverageThresholdTargetedPushTests : IClassFixture<AppTestServerFix
         Assert.Equal("#38BDF8", t4.BadgeColor);
 
         ToastService.Instance.Show("Test toast", ToastType.Warning, autoRemoveMs: 0);
+        ToastService.Instance.Show("Async delay toast", ToastType.Info, autoRemoveMs: 5);
+        await Task.Delay(50);
+        ToastService.Instance.Remove(t4);
+        ToastService.Instance.Clear();
 
         var hfSearchJson = @"[
             { ""id"": ""meta-llama/Llama-3.3-8B-Instruct-GGUF"", ""author"": ""meta-llama"", ""likes"": 1500, ""downloads"": 25000 }
@@ -225,6 +229,7 @@ public class CoverageThresholdTargetedPushTests : IClassFixture<AppTestServerFix
             await client.PostAsync("/api/forge/stop", null);
 
             await client.PostAsync("/api/comfy/free", null);
+            try { await client.PostAsync("/api/service/update", null); } catch { }
 
             await client.GetAsync("/api/comfy/workflows");
             await client.GetAsync("/api/comfy/workflows/testpreset");
@@ -252,8 +257,10 @@ public class CoverageThresholdTargetedPushTests : IClassFixture<AppTestServerFix
             Assert.True(parsedOutput.HasValue);
             Assert.Equal("NVIDIA GeForce RTX 4090", parsedOutput.Value.GpuName);
 
-            var nullOutput = Program.ParseNvidiaSmiOutput("");
-            Assert.False(nullOutput.HasValue);
+            Assert.False(Program.ParseNvidiaSmiOutput(null).HasValue);
+            Assert.False(Program.ParseNvidiaSmiOutput("").HasValue);
+            Assert.False(Program.ParseNvidiaSmiOutput("invalid,format").HasValue);
+            Assert.False(Program.ParseNvidiaSmiOutput("NVIDIA GPU, invalidTotal, invalidUsed").HasValue);
 
             var loadedSettings = Program.LoadSettings();
             Assert.NotNull(loadedSettings);
@@ -270,6 +277,43 @@ public class CoverageThresholdTargetedPushTests : IClassFixture<AppTestServerFix
             try { if (File.Exists(model3dPath)) File.Delete(model3dPath); } catch { }
             try { if (File.Exists(dummyBatPath)) File.Delete(dummyBatPath); } catch { }
         }
+    }
+
+    [Fact]
+    public async Task ToastService_AutoRemoveContinuation_ExecutesAndRemovesToast()
+    {
+        ToastService.Instance.Show("Auto remove test", ToastType.Info, autoRemoveMs: 10);
+        await Task.Delay(100);
+        ToastService.Instance.Show("Warning remove test", ToastType.Warning, autoRemoveMs: 10);
+        await Task.Delay(100);
+        ToastService.Instance.Show("Error remove test", ToastType.Error, autoRemoveMs: 10);
+        await Task.Delay(100);
+        ToastService.Instance.Show("Success remove test", ToastType.Success, autoRemoveMs: 10);
+        await Task.Delay(100);
+    }
+
+    [Fact]
+    public void Program_MainInternal_ServiceAndDesktopModes_ExecutesCleanly()
+    {
+        Program.MainInternal(new[] { "--service" }, runWeb: false);
+        Program.MainInternal(Array.Empty<string>(), runWeb: false);
+    }
+
+    [Fact]
+    public async Task MainViewModel_SaveSettings_ExceptionHandling_ShowsErrorToast()
+    {
+        ToastService.Instance.Clear();
+        var handlerMock = new Mock<HttpMessageHandler>();
+        handlerMock.Protected()
+            .Setup<Task<HttpResponseMessage>>("SendAsync", ItExpr.IsAny<HttpRequestMessage>(), ItExpr.IsAny<System.Threading.CancellationToken>())
+            .ThrowsAsync(new InvalidOperationException("Save settings network failure"));
+
+        var client = new HttpClient(handlerMock.Object);
+        var vm = new MainViewModel(client) { ApiBase = "http://127.0.0.1:5246" };
+
+        await vm.SaveSettingsAsync();
+        Assert.Single(ToastService.Instance.ActiveToasts);
+        ToastService.Instance.Clear();
     }
 
     [Fact]

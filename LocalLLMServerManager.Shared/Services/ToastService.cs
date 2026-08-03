@@ -44,6 +44,16 @@ public class ToastService
 
     public ObservableCollection<ToastItem> ActiveToasts { get; } = new();
 
+    public void Remove(ToastItem toast)
+    {
+        ActiveToasts.Remove(toast);
+    }
+
+    public void Clear()
+    {
+        ActiveToasts.Clear();
+    }
+
     public void Show(string message, ToastType type = ToastType.Info, int autoRemoveMs = 4000)
     {
         var toast = new ToastItem(message, type);
@@ -51,19 +61,27 @@ public class ToastService
 
         if (autoRemoveMs == 0)
         {
-            ActiveToasts.Remove(toast);
+            Remove(toast);
             return;
         }
 
-        _ = Task.Delay(autoRemoveMs).ContinueWith(_ =>
+        _ = Task.Run(async () =>
         {
+            await Task.Delay(autoRemoveMs);
             try
             {
-                Avalonia.Threading.Dispatcher.UIThread.Post(() => ActiveToasts.Remove(toast));
+                if (Avalonia.Application.Current != null)
+                {
+                    Avalonia.Threading.Dispatcher.UIThread.Post(() => Remove(toast));
+                }
+                else
+                {
+                    Remove(toast);
+                }
             }
             catch
             {
-                ActiveToasts.Remove(toast);
+                Remove(toast);
             }
         });
     }
