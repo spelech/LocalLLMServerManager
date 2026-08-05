@@ -36,15 +36,15 @@ It tracks GPU VRAM usage in real time via NVML CUDA telemetry, profiles model ca
 
 ## 🌟 Key Features
 
-### Native Desktop App & Windows Service (v2.1.0)
-1. **Avalonia UI Native Dashboard** — Sleek Fluent dark desktop window presenting live VRAM usage, engine status cards, and one-click browser launch.
-2. **System Tray Integration** — Operates quietly in the Windows notification area with right-click quick controls (Open Dashboard, View Health, Exit).
-3. **Pre-Logon Machine Boot** — Optional Windows Service (`--service`) boots headlessly on machine startup in Session 0 before user login.
-4. **Automated Tray Attachment** — When a user logs in, the Avalonia System Tray app automatically attaches to the running Windows Service instance.
+### Native Desktop App & Services (Windows & Linux)
+1. **Avalonia UI Native Dashboard** — Sleek Fluent dark desktop window presenting live VRAM usage, engine status cards, and one-click browser launch on Windows and Linux (X11 / Wayland).
+2. **System Tray Integration** — Operates quietly in the notification area with right-click quick controls (Open Dashboard, View Health, Exit).
+3. **Headless Background Services** — Runs headlessly on machine boot via Windows Service or Linux `systemd` daemon (`localllmmanager.service`).
+4. **Automated Tray Attachment** — When a user logs in, the Avalonia System Tray app automatically attaches to the running background service instance.
 
 ### LLM Management (Ollama)
 5. **Service Health Checks** — Real-time status indicators for Ollama (`11434`), Stable Diffusion / Forge (`7860`), and ComfyUI (`8188`).
-6. **Native VRAM Detection** — Reads GPU name and VRAM directly from the Windows Registry, bypassing the WMI 4 GB cap. Correctly reports e.g. *NVIDIA GeForce RTX 4070 Ti SUPER — 16 GB*.
+6. **Cross-Platform VRAM Telemetry** — Reads GPU name and VRAM via NVML CUDA (`nvidia-smi`), Windows Registry, or Linux system memory (`/proc/meminfo`). Correctly reports e.g. *NVIDIA GeForce RTX 4070 Ti SUPER — 16 GB*.
 7. **VRAM Usage Visualizer** — Stacked bar showing loaded-model VRAM vs free GPU memory.
 8. **KV Cache Context Calculator** — Slide target token length (up to 32 K tokens) to preview weights + KV cache sizes and warn when context exceeds VRAM.
 9. **Model Capabilities Profile** — Tags model families (Llama, Gemma, Qwen, Phi, Mistral, DeepSeek) with use-case badges (`Coding`, `Reasoning`, `Math`, `Chat`).
@@ -67,7 +67,7 @@ It tracks GPU VRAM usage in real time via NVML CUDA telemetry, profiles model ca
 ### Infrastructure & Reverse Proxy
 21. **YARP Reverse Proxy** — Transparently proxies Ollama (`:11434`), Forge (`:7860`), and ComfyUI (`:8188`) traffic through a single endpoint (`:5246`).
 22. **VRAM Orchestrator** — Auto-unloads active LLM models from GPU memory before heavy Stable Diffusion or ComfyUI 3D render jobs to prevent OOM errors.
-23. **Background Engine Management** — UI controls to start/stop engines directly from the dashboard, utilizing Win32 Job Objects for reliable child process termination.
+23. **Background Engine Management** — UI controls to start/stop engines directly from the dashboard cleanly.
 24. **Lazy Boot** — AI engines can now boot lazily on-demand when first requested, conserving system resources when idle.
 
 ---
@@ -76,8 +76,8 @@ It tracks GPU VRAM usage in real time via NVML CUDA telemetry, profiles model ca
 
 ```
                   +----------------------------------------------+
-                  |  Windows Desktop (Session 1 - User Logon)   |
-                  |  - Avalonia UI System Tray Icon              |
+                  |  Desktop Session (User Logon - Win/Linux)    |
+                  |  - Avalonia UI System Tray Icon / Window     |
                   |  - Native XAML Dark Dashboard Window         |
                   |  - Auto-Attaches to local server (:5246)     |
                   +----------------------+-----------------------+
@@ -86,7 +86,7 @@ It tracks GPU VRAM usage in real time via NVML CUDA telemetry, profiles model ca
 +-----------------------------------------------------------------------------------+
 |  Local HTTP Server & Reverse Proxy Host                                           |
 |  - ASP.NET Core Web API + YARP Reverse Proxy (:5246)                              |
-|  - VRAM Orchestrator & Win32 Job Objects                                          |
+|  - VRAM Orchestrator & Process Management                                         |
 |  - Responsive Web Dashboard & WebGL 3D Studio (wwwroot)                           |
 +------------------------------------+----------------------------------------------+
                                      |
@@ -100,8 +100,8 @@ It tracks GPU VRAM usage in real time via NVML CUDA telemetry, profiles model ca
 ```
 
 ### Dual-Session Lifecycle
-* **Session 0 (Windows Service Mode)**: Machine boots -> `LocalLLMServerManager.exe --service` starts automatically before user logon. Hosts the Web API, YARP proxy, and VRAM orchestrator headlessly on `http://127.0.0.1:5246`.
-* **Session 1 (User Logon Tray App)**: User signs in -> `LocalLLMServerManager.exe` starts in system tray, probes `:5246/health`, and automatically attaches to the running service instance.
+* **Headless Background Service Mode**: Machine boots -> `LocalLLMServerManager --service` starts automatically before user logon (Windows Service or Linux `systemd` daemon). Hosts Web API, YARP proxy, and VRAM orchestrator headlessly on `http://127.0.0.1:5246`.
+* **User Desktop Session**: User signs in -> `LocalLLMServerManager` desktop app starts, probes `:5246/health`, and automatically attaches to the running background service instance.
 
 ---
 
@@ -132,44 +132,73 @@ We use **MAJOR.MINOR.PATCH** (SemVer):
 | `1.2.0` | Forge models directory config, direct-to-disk CivitAI downloads with SSE progress, persistent `settings.json` |
 | `1.3.0` | Migration to .NET 10 LTS target framework and updated dependencies |
 | `1.4.0` | ComfyUI integration, 3D Mesh Studio (TRELLIS V2 / Hunyuan3D v2), interactive WebGL 3D viewer, preferred engine toggle |
-| `1.5.0` | Lazy boot for AI engines, Win32 Job Object integration, and UI controls for background engine management |
+| `1.5.0` | Lazy boot for AI engines, process job objects, and UI controls for background engine management |
 | `2.0.0` | Major architecture update — Avalonia UI desktop shell, system tray icon, pre-logon Windows Service boot & logon tray attachment |
-
----
+| `3.0.0` | Avalonia WebAssembly (Wasm) integration, 3D Canvas Studio, unified multi-platform interface |
+| `3.1.0` | Cross-platform Linux support, Linux release scripts (`build_release.sh`), systemd service installer (`install_linux.sh`), `.desktop` launcher, NVML & `/proc/meminfo` VRAM telemetry, and SSH remote workflow support |
 
 ---
 
 ## 🚀 Installation & Downloads
 
 ### Option 1: Official Windows Installer (.exe)
-Download the latest `LocalLLMServerManager-v2.1.0-Setup.exe` from the [GitHub Releases](https://github.com/spelech/LocalLLMServerManager/releases) page.
+Download the latest `LocalLLMServerManager-v3.1.0-Setup.exe` from the [GitHub Releases](https://github.com/spelech/LocalLLMServerManager/releases) page.
 * Includes an installation wizard with options for:
   * 🟢 **Install Windows Service** (Headless pre-logon machine boot)
   * 🟢 **Auto-Start System Tray App** on user login
   * 🟢 **Desktop & Start Menu Shortcuts**
 
-### Option 2: Standalone Portable (.zip)
-Download `LocalLLMServerManager-v2.1.0-win-x64.zip` from Releases, extract to any folder, and run `LocalLLMServerManager.exe`. Includes bundled runtime — no .NET SDK installation required!
-
-### Option 3: Install from Source (PowerShell Script)
-1. Open PowerShell as **Administrator**.
-2. Navigate to the project directory.
-3. Run the installer script:
-   ```powershell
-   Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope Process -Force
-   .\install.ps1
-   ```
-
-### Building Release Packages Locally
-To build the self-contained `win-x64` standalone zip archive and Inno Setup installer executable locally:
-```powershell
-.\build_release.ps1
+### Option 2: Linux Automated Installation Script (`install_linux.sh`)
+Clone the repository on Linux and run:
+```bash
+sudo ./install_linux.sh
 ```
+* Installs the app binary to `/usr/local/share/LocalLLMServerManager`
+* Symlinks binary to `/usr/local/bin/localllmmanager`
+* Registers the **systemd service** (`localllmmanager.service`) for background autostart
+* Installs desktop launcher (`localllmmanager.desktop`) in your application menu
+
+### Option 3: Standalone Portable (.zip / .tar.gz)
+Download `LocalLLMServerManager-v3.1.0-win-x64.zip` or `LocalLLMServerManager-v3.1.0-linux-x64.tar.gz` from Releases, extract, and run executable. Includes bundled runtime — no .NET SDK required!
+
+### Option 4: Building Release Packages Locally
+- **Windows:** Run `.\build_release.ps1`
+- **Linux:** Run `./build_release.sh`
 Output artifacts will be generated in `dist/`.
 
 ---
 
+## 🌐 Remote SSH Viewing & Port Forwarding
+
+To work with LocalLLMServerManager on a remote Linux machine over SSH:
+1. Connect over SSH with local port forwarding:
+   ```bash
+   ssh -L 5246:localhost:5246 user@your-linux-host
+   ```
+2. Run the application in headless service mode on the remote host:
+   ```bash
+   dotnet run -- --service
+   # or manage via systemd: sudo systemctl start localllmmanager
+   ```
+3. Open **`http://localhost:5246`** in your local browser to access 100% of the UI features (VRAM monitor, Hugging Face search, CivitAI downloader, 3D WebGL viewer) at full speed with zero lag over SSH.
+
+---
+
 ## ⚙️ Service Control Commands
+
+### Linux (systemd)
+```bash
+# Start Service
+sudo systemctl start localllmmanager
+
+# Stop Service
+sudo systemctl stop localllmmanager
+
+# Check Status
+sudo systemctl status localllmmanager
+```
+
+### Windows (Service Control)
 Open PowerShell as **Administrator**:
 ```powershell
 # Start Service

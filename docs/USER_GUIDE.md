@@ -79,3 +79,30 @@ This studio tab provides a powerful frontend for interacting with your local Com
 3. Click **🚀 Queue Generation**. 
 
 Behind the scenes, the VRAM orchestrator will automatically free up any LLM models you have loaded if it needs the space. Once ComfyUI finishes the job, the result will automatically populate in your **Recent Media Gallery**. If you generated a `.glb` or `.gltf` 3D mesh, it will load into the **Interactive WebGL 3D Viewer** where you can rotate it 360°, toggle wireframes, and export it!
+
+---
+
+## 5. Cross-Platform Linux & Remote SSH Workflow
+
+Local LLM Server Manager supports native Linux execution and remote SSH viewing.
+
+### Running on Linux Desktop (Native GUI)
+Launch the desktop application directly from your Linux terminal or application menu:
+```bash
+localllmmanager
+```
+This opens the native Avalonia UI dark desktop window on X11 and Wayland display environments.
+
+### Working Remotely over SSH
+To access all features of the manager from a remote machine:
+1. Establish an SSH connection with port forwarding for port `5246`:
+   ```bash
+   ssh -L 5246:localhost:5246 user@linux-host
+   ```
+2. Start the headless service on the remote Linux host:
+   ```bash
+   sudo systemctl start localllmmanager
+   # or run directly: dotnet run -- --service
+   ```
+3. Open `http://localhost:5246` in your local client browser. You get 100% of the UI functionality (VRAM telemetry, Hugging Face search, CivitAI downloader, 3D WebGL viewer) at native speed with zero lag over SSH.
+
