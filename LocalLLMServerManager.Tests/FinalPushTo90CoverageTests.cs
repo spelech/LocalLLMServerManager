@@ -55,15 +55,19 @@ public class FinalPushTo90CoverageTests : IClassFixture<AppTestServerFixture>
     [Fact]
     public async Task WebApp_ComfyAndForgeStartEndpoints_HandleProcessLaunch()
     {
+        var comfyExt = OperatingSystem.IsWindows() ? "dummy_comfy.bat" : "dummy_comfy.sh";
+        var forgeExt = OperatingSystem.IsWindows() ? "dummy_forge.bat" : "dummy_forge.sh";
+
         var settings = new AppSettings
         {
-            ComfyUiExecutablePath = Path.Combine(AppContext.BaseDirectory, "dummy_comfy.bat"),
-            ForgeExecutablePath = Path.Combine(AppContext.BaseDirectory, "dummy_forge.bat")
+            ComfyUiExecutablePath = Path.Combine(AppContext.BaseDirectory, comfyExt),
+            ForgeExecutablePath = Path.Combine(AppContext.BaseDirectory, forgeExt)
         };
         Program.SaveSettings(settings);
 
-        File.WriteAllText(settings.ComfyUiExecutablePath, "@echo off\nexit /b 0");
-        File.WriteAllText(settings.ForgeExecutablePath, "@echo off\nexit /b 0");
+        var scriptContent = OperatingSystem.IsWindows() ? "@echo off\nexit /b 0" : "#!/bin/sh\nexit 0";
+        File.WriteAllText(settings.ComfyUiExecutablePath, scriptContent);
+        File.WriteAllText(settings.ForgeExecutablePath, scriptContent);
 
         try
         {

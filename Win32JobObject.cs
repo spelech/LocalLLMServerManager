@@ -24,6 +24,8 @@ namespace LocalLLMServerManager
 
         public JobObject()
         {
+            if (!OperatingSystem.IsWindows()) return;
+
             handle = CreateJobObject(IntPtr.Zero, null);
 
             var info = new JOBOBJECT_BASIC_LIMIT_INFORMATION
@@ -42,7 +44,7 @@ namespace LocalLLMServerManager
 
             if (!SetInformationJobObject(handle, JobObjectInfoType.ExtendedLimitInformation, extendedInfoPtr, (uint)length))
             {
-                throw new Exception($"Unable to set information.  Error: {Marshal.GetLastWin32Error()}");
+                throw new Exception($"Unable to set information. Error: {Marshal.GetLastWin32Error()}");
             }
 
             Marshal.FreeHGlobal(extendedInfoPtr);
@@ -56,6 +58,8 @@ namespace LocalLLMServerManager
 
         public void AddProcess(IntPtr processHandle)
         {
+            if (!OperatingSystem.IsWindows()) return;
+
             if (!AssignProcessToJobObject(handle, processHandle))
             {
                 throw new Exception($"Unable to add the process to the job object. Error: {Marshal.GetLastWin32Error()}");
@@ -74,7 +78,10 @@ namespace LocalLLMServerManager
 
             if (handle != IntPtr.Zero)
             {
-                CloseHandle(handle);
+                if (OperatingSystem.IsWindows())
+                {
+                    CloseHandle(handle);
+                }
                 handle = IntPtr.Zero;
             }
 

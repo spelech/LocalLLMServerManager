@@ -98,6 +98,12 @@ public class Program
     public static string ResolvePath(string? rawPath, string fallbackRelativePath)
     {
         var target = string.IsNullOrWhiteSpace(rawPath) ? fallbackRelativePath : rawPath;
+        if (!OperatingSystem.IsWindows() && target.Contains("%APPDATA%"))
+        {
+            var userHome = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
+            var appDataFallback = Path.Combine(userHome, ".config");
+            target = target.Replace("%APPDATA%", appDataFallback);
+        }
         var expanded = Environment.ExpandEnvironmentVariables(target);
         return Path.GetFullPath(expanded);
     }
@@ -567,8 +573,8 @@ public class Program
             {
                 StartInfo = new System.Diagnostics.ProcessStartInfo
                 {
-                    FileName = "cmd.exe",
-                    Arguments = $"/c \"{path}\"",
+                    FileName = OperatingSystem.IsWindows() ? "cmd.exe" : "/bin/sh",
+                    Arguments = OperatingSystem.IsWindows() ? $"/c \"{path}\"" : $"\"{path}\"",
                     WorkingDirectory = System.IO.Path.GetDirectoryName(path) ?? "",
                     UseShellExecute = false,
                     CreateNoWindow = true,
@@ -603,8 +609,8 @@ public class Program
             {
                 StartInfo = new System.Diagnostics.ProcessStartInfo
                 {
-                    FileName = "cmd.exe",
-                    Arguments = $"/c \"{path}\"",
+                    FileName = OperatingSystem.IsWindows() ? "cmd.exe" : "/bin/sh",
+                    Arguments = OperatingSystem.IsWindows() ? $"/c \"{path}\"" : $"\"{path}\"",
                     WorkingDirectory = System.IO.Path.GetDirectoryName(path) ?? "",
                     UseShellExecute = false,
                     CreateNoWindow = true,
@@ -667,12 +673,60 @@ public class Program
                 string output = process.StandardOutput.ReadToEnd();
                 process.WaitForExit();
                 var parsed = ParseNvidiaSmiOutput(output);
-                if (parsed.HasValue) return parsed.Value;
+            if (parsed.HasValue) return parsed.Value;
             }
         }
         catch { }
 
+        if (OperatingSystem.IsLinux())
+        {
+            var linuxMem = GetLinuxMemoryInfo();
+            if (linuxMem.HasValue) return linuxMem.Value;
+        }
+
         return GetGpuInfoFromRegistry();
+    }
+
+    public static (string GpuName, long TotalVramBytes, long UsedVramBytes)? GetLinuxMemoryInfo()
+    {
+        if (!OperatingSystem.IsLinux()) return null;
+        try
+        {
+            if (File.Exists("/proc/meminfo"))
+            {
+                long totalKb = 0;
+                long availableKb = 0;
+                foreach (var line in File.ReadLines("/proc/meminfo"))
+                {
+                    if (line.StartsWith("MemTotal:"))
+                    {
+                        var parts = line.Split(':', StringSplitOptions.TrimEntries);
+                        if (parts.Length >= 2)
+                        {
+                            var val = parts[1].Split(' ', StringSplitOptions.RemoveEmptyEntries)[0];
+                            long.TryParse(val, out totalKb);
+                        }
+                    }
+                    else if (line.StartsWith("MemAvailable:"))
+                    {
+                        var parts = line.Split(':', StringSplitOptions.TrimEntries);
+                        if (parts.Length >= 2)
+                        {
+                            var val = parts[1].Split(' ', StringSplitOptions.RemoveEmptyEntries)[0];
+                            long.TryParse(val, out availableKb);
+                        }
+                    }
+                }
+                if (totalKb > 0)
+                {
+                    long totalBytes = totalKb * 1024;
+                    long usedBytes = Math.Max(0, (totalKb - availableKb) * 1024);
+                    return ("Linux System Memory", totalBytes, usedBytes);
+                }
+            }
+        }
+        catch { }
+        return null;
     }
 
     public static (string GpuName, long TotalVramBytes, long UsedVramBytes)? ParseNvidiaSmiOutput(string output)

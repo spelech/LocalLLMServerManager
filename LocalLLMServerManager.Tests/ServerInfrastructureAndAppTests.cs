@@ -20,8 +20,8 @@ public class ServerInfrastructureAndAppTests
         {
             StartInfo = new ProcessStartInfo
             {
-                FileName = "cmd.exe",
-                Arguments = "/c choice /t 2 /d y",
+                FileName = OperatingSystem.IsWindows() ? "cmd.exe" : "sleep",
+                Arguments = OperatingSystem.IsWindows() ? "/c choice /t 2 /d y" : "2",
                 UseShellExecute = false,
                 CreateNoWindow = true
             }
