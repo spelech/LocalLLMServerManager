@@ -1,0 +1,14 @@
+[Unit]
+Description=Local LLM Server Manager Service
+After=network.target
+
+[Service]
+Type=simple
+ExecStart=/usr/local/share/LocalLLMServerManager/LocalLLMServerManager --service
+WorkingDirectory=/usr/local/share/LocalLLMServerManager
+Restart=always
+RestartSec=5
+Environment=ASPNETCORE_ENVIRONMENT=Production
+
+[Install]
+WantedBy=multi-user.target

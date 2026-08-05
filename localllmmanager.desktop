@@ -1,0 +1,9 @@
+[Desktop Entry]
+Type=Application
+Name=Local LLM Server Manager
+Comment=Manage Local LLMs, ComfyUI, Forge & 3D Mesh Generators
+Exec=/usr/local/share/LocalLLMServerManager/LocalLLMServerManager
+Icon=/usr/local/share/LocalLLMServerManager/wwwroot/favicon.ico
+Terminal=false
+Categories=Development;Utility;
+StartupWMClass=LocalLLMServerManager

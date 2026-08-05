@@ -6,13 +6,13 @@
   "compilationOptions": {},
   "targets": {
     ".NETCoreApp,Version=v10.0": {
-      "LocalLLMServerManager.Web/3.0.0": {
+      "LocalLLMServerManager.Web/3.1.0": {
         "dependencies": {
           "Avalonia": "11.2.3",
           "Avalonia.Browser": "11.2.3",
           "Avalonia.Fonts.Inter": "11.2.3",
           "Avalonia.Themes.Fluent": "11.2.3",
-          "LocalLLMServerManager.Shared": "3.0.0"
+          "LocalLLMServerManager.Shared": "3.1.0"
         },
         "runtime": {
           "LocalLLMServerManager.Web.dll": {}
@@ -279,7 +279,7 @@
           }
         }
       },
-      "LocalLLMServerManager.Shared/3.0.0": {
+      "LocalLLMServerManager.Shared/3.1.0": {
         "dependencies": {
           "Avalonia": "11.2.3",
           "Avalonia.Fonts.Inter": "11.2.3",
@@ -288,15 +288,15 @@
         },
         "runtime": {
           "LocalLLMServerManager.Shared.dll": {
-            "assemblyVersion": "3.0.0.0",
-            "fileVersion": "3.0.0.0"
+            "assemblyVersion": "3.1.0.0",
+            "fileVersion": "3.1.0.0"
           }
         }
       }
     }
   },
   "libraries": {
-    "LocalLLMServerManager.Web/3.0.0": {
+    "LocalLLMServerManager.Web/3.1.0": {
       "type": "project",
       "serviceable": false,
       "sha512": ""
@@ -413,7 +413,7 @@
       "path": "skiasharp.nativeassets.win32/2.88.9",
       "hashPath": "skiasharp.nativeassets.win32.2.88.9.nupkg.sha512"
     },
-    "LocalLLMServerManager.Shared/3.0.0": {
+    "LocalLLMServerManager.Shared/3.1.0": {
       "type": "project",
       "serviceable": false,
       "sha512": ""
