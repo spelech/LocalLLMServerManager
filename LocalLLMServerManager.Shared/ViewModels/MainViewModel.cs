@@ -52,7 +52,7 @@ public record CivitaiModelItem(
 public partial class MainViewModel : ObservableObject
 {
     public static HttpClient DefaultHttpClient { get; set; } = new();
-    private static HttpClient? _customHttp;
+    private HttpClient? _customHttp;
 
     public HttpClient Http
     {
@@ -60,9 +60,12 @@ public partial class MainViewModel : ObservableObject
         set => _customHttp = value;
     }
 
-    public MainViewModel(HttpClient? httpClient = null)
+    public MainViewModel(HttpClient? httpClient)
     {
         if (httpClient != null) _customHttp = httpClient;
+        DetectLanIp();
+        _ = RefreshStatusAsync();
+        _ = LoadSettingsAsync();
     }
     public static string DefaultApiBase { get; set; } = "http://127.0.0.1:5246";
     [ObservableProperty] private string _apiBase = DefaultApiBase;
@@ -116,11 +119,8 @@ public partial class MainViewModel : ObservableObject
     public ObservableCollection<CivitaiModelItem> CivitaiResults { get; } = new();
     public ObservableCollection<ToastItem> Toasts => ToastService.Instance.ActiveToasts;
 
-    public MainViewModel()
+    public MainViewModel() : this(null)
     {
-        DetectLanIp();
-        _ = RefreshStatusAsync();
-        _ = LoadSettingsAsync();
     }
 
     private void DetectLanIp()
