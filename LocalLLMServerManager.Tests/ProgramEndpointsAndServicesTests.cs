@@ -223,4 +223,92 @@ public class ProgramEndpointsAndServicesTests : IClassFixture<AppTestServerFixtu
         var response = await _client.PostAsJsonAsync("/api/service/update", request);
         Assert.Equal(System.Net.HttpStatusCode.BadRequest, response.StatusCode);
     }
+
+    [Theory]
+    [InlineData("safe_file.bat")]
+    [InlineData("AI/SD_Forge/webui-user.bat")]
+    public void IsSafePath_WithSafePaths_ReturnsTrue(string path)
+    {
+        var fullPath = Path.GetFullPath(path);
+        Assert.True(Program.IsSafePath(fullPath));
+    }
+
+    [Theory]
+    [InlineData("some/path/../../etc/passwd")]
+    [InlineData("../outside.bat")]
+    [InlineData("./traversal")]
+    [InlineData(".\\traversal")]
+    public void IsSafePath_WithPathTraversal_ReturnsFalse(string path)
+    {
+        Assert.False(Program.IsSafePath(path));
+    }
+
+    [Theory]
+    [InlineData("file;inject.bat")]
+    [InlineData("file&inject.bat")]
+    [InlineData("file|inject.bat")]
+    [InlineData("file`inject.bat")]
+    [InlineData("file$inject.bat")]
+    [InlineData("file>inject.bat")]
+    [InlineData("file<inject.bat")]
+    [InlineData("file*inject.bat")]
+    [InlineData("file?inject.bat")]
+    public void IsSafePath_WithShellMetacharacters_ReturnsFalse(string path)
+    {
+        Assert.False(Program.IsSafePath(path));
+    }
+
+    [Fact]
+    public void IsSafePath_WithSystemDirectories_ReturnsFalse()
+    {
+        if (OperatingSystem.IsWindows())
+        {
+            var systemPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Windows), "notepad.exe");
+            Assert.False(Program.IsSafePath(systemPath));
+        }
+        else
+        {
+            Assert.False(Program.IsSafePath("/etc/passwd"));
+            Assert.False(Program.IsSafePath("/bin/sh"));
+        }
+    }
+
+    [Fact]
+    public async Task StartEndpoints_WithUnsafePathsInSettings_ReturnsBadRequest()
+    {
+        var getResp = await _client.GetAsync("/api/settings");
+        Assert.True(getResp.IsSuccessStatusCode);
+        var originalSettings = await getResp.Content.ReadFromJsonAsync<AppSettings>();
+        Assert.NotNull(originalSettings);
+
+        try
+        {
+            var unsafeForgePath = "../unsafe/path/webui-user.bat";
+            var unsafeComfyPath = OperatingSystem.IsWindows() ? "C:\\Windows\\notepad.exe" : "/bin/sh";
+
+            var unsafeSettings = originalSettings with { ForgeExecutablePath = unsafeForgePath, ComfyUiExecutablePath = unsafeComfyPath };
+            var postResp = await _client.PostAsJsonAsync("/api/settings", unsafeSettings);
+            Assert.True(postResp.IsSuccessStatusCode);
+
+            var forgeStartResp = await _client.PostAsync("/api/forge/start", null);
+            if (forgeStartResp.StatusCode != System.Net.HttpStatusCode.BadRequest)
+            {
+                var content = await forgeStartResp.Content.ReadAsStringAsync();
+                File.WriteAllText("test_error_forge.txt", $"Status: {forgeStartResp.StatusCode}\nContent: {content}");
+            }
+            Assert.Equal(System.Net.HttpStatusCode.BadRequest, forgeStartResp.StatusCode);
+
+            var comfyStartResp = await _client.PostAsync("/api/comfy/start", null);
+            if (comfyStartResp.StatusCode != System.Net.HttpStatusCode.BadRequest)
+            {
+                var content = await comfyStartResp.Content.ReadAsStringAsync();
+                File.WriteAllText("test_error_comfy.txt", $"Status: {comfyStartResp.StatusCode}\nContent: {content}");
+            }
+            Assert.Equal(System.Net.HttpStatusCode.BadRequest, comfyStartResp.StatusCode);
+        }
+        finally
+        {
+            await _client.PostAsJsonAsync("/api/settings", originalSettings);
+        }
+    }
 }
