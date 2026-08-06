@@ -73,26 +73,53 @@ public class Program
         return Path.Combine(AppContext.BaseDirectory, "settings.json");
     }
 
+    private static readonly object settingsLock = new object();
+
     public static AppSettings LoadSettings()
     {
-        try
+        lock (settingsLock)
         {
-            var path = SettingsFilePath();
-            if (File.Exists(path))
+            for (int i = 0; i < 5; i++)
             {
-                var json = File.ReadAllText(path);
-                return JsonSerializer.Deserialize<AppSettings>(json) ?? new AppSettings();
+                try
+                {
+                    var path = SettingsFilePath();
+                    if (File.Exists(path))
+                    {
+                        var json = File.ReadAllText(path);
+                        return JsonSerializer.Deserialize<AppSettings>(json) ?? new AppSettings();
+                    }
+                    break;
+                }
+                catch
+                {
+                    Thread.Sleep(50);
+                }
             }
+            return new AppSettings();
         }
-        catch { }
-        return new AppSettings();
     }
 
     public static void SaveSettings(AppSettings settings)
     {
-        File.WriteAllText(
-            SettingsFilePath(),
-            JsonSerializer.Serialize(settings, new JsonSerializerOptions { WriteIndented = true }));
+        lock (settingsLock)
+        {
+            for (int i = 0; i < 5; i++)
+            {
+                try
+                {
+                    File.WriteAllText(
+                        SettingsFilePath(),
+                        JsonSerializer.Serialize(settings, new JsonSerializerOptions { WriteIndented = true }));
+                    return;
+                }
+                catch
+                {
+                    if (i == 4) throw;
+                    Thread.Sleep(50);
+                }
+            }
+        }
     }
 
     public static string ResolvePath(string? rawPath, string fallbackRelativePath)
@@ -106,6 +133,61 @@ public class Program
         }
         var expanded = Environment.ExpandEnvironmentVariables(target);
         return Path.GetFullPath(expanded);
+    }
+
+    public static bool IsSafePath(string path)
+    {
+        if (string.IsNullOrWhiteSpace(path)) return false;
+
+        // Reject directory traversal sequences
+        if (path.Contains("..") || path.Contains("./") || path.Contains(".\\"))
+        {
+            return false;
+        }
+
+        // Reject common shell metacharacters to prevent execution manipulation or script injections
+        char[] dangerousChars = { ';', '&', '|', '`', '$', '>', '<', '*', '?' };
+        if (path.Any(c => dangerousChars.Contains(c)))
+        {
+            return false;
+        }
+
+        try
+        {
+            var fullPath = Path.GetFullPath(path);
+
+            if (OperatingSystem.IsWindows())
+            {
+                var winDir = Environment.GetFolderPath(Environment.SpecialFolder.Windows);
+                var systemDir = Environment.GetFolderPath(Environment.SpecialFolder.System);
+
+                if (!string.IsNullOrEmpty(winDir) && fullPath.StartsWith(winDir, StringComparison.OrdinalIgnoreCase))
+                {
+                    return false;
+                }
+                if (!string.IsNullOrEmpty(systemDir) && fullPath.StartsWith(systemDir, StringComparison.OrdinalIgnoreCase))
+                {
+                    return false;
+                }
+            }
+            else
+            {
+                string[] blockedPrefixes = { "/etc", "/var", "/bin", "/sbin", "/usr/bin", "/usr/sbin", "/proc", "/sys", "/dev" };
+                foreach (var prefix in blockedPrefixes)
+                {
+                    if (fullPath.StartsWith(prefix, StringComparison.OrdinalIgnoreCase))
+                    {
+                        return false;
+                    }
+                }
+            }
+        }
+        catch
+        {
+            return false;
+        }
+
+        return true;
     }
 
     public static WebApplication CreateWebApplication(string[] args, bool isServiceMode = false, string url = "http://0.0.0.0:5246")
@@ -558,30 +640,83 @@ public class Program
 
             if (comfyProcess != null)
             {
-                if (!comfyProcess.HasExited && await orchestrator.IsComfyUiHealthyAsync(comfyUrl))
+                bool isRunning = false;
+                try
+                {
+                    isRunning = !comfyProcess.HasExited;
+                }
+                catch (InvalidOperationException)
+                {
+                    comfyProcess = null;
+                }
+                catch { }
+
+                if (comfyProcess != null && isRunning && await orchestrator.IsComfyUiHealthyAsync(comfyUrl))
                 {
                     return Results.Ok(new { message = "ComfyUI is already running" });
                 }
-                try { comfyProcess.Kill(true); } catch { }
-                comfyProcess = null;
+
+                if (comfyProcess != null)
+                {
+                    try { comfyProcess.Kill(true); } catch { }
+                    comfyProcess = null;
+                }
             }
 
-            var path = ResolvePath(settings.ComfyUiExecutablePath, @"%APPDATA%\AI\ComfyUI\run_nvidia_gpu.bat");
+            var rawPath = settings.ComfyUiExecutablePath;
+            if (!string.IsNullOrWhiteSpace(rawPath) && !IsSafePath(rawPath))
+            {
+                return Results.BadRequest(new { message = $"Invalid or unsafe executable path: {rawPath}" });
+            }
+
+            var path = ResolvePath(rawPath, @"%APPDATA%\AI\ComfyUI\run_nvidia_gpu.bat");
+            if (!IsSafePath(path))
+            {
+                return Results.BadRequest(new { message = $"Invalid or unsafe executable path: {path}" });
+            }
+
             if (!System.IO.File.Exists(path)) return Results.NotFound(new { message = $"ComfyUI executable not found at: {path}" });
 
-            comfyProcess = new System.Diagnostics.Process
+            if (!OperatingSystem.IsWindows())
+            {
+                try
+                {
+                    var mode = System.IO.File.GetUnixFileMode(path);
+                    if (!mode.HasFlag(System.IO.UnixFileMode.UserExecute) &&
+                        !mode.HasFlag(System.IO.UnixFileMode.GroupExecute) &&
+                        !mode.HasFlag(System.IO.UnixFileMode.OtherExecute))
+                    {
+                        try
+                        {
+                            System.IO.File.SetUnixFileMode(path, mode | System.IO.UnixFileMode.UserExecute);
+                        }
+                        catch
+                        {
+                            return Results.BadRequest(new { message = $"File '{path}' does not have execution permissions and they could not be set automatically." });
+                        }
+                    }
+                }
+                catch (Exception ex)
+                {
+                    return Results.BadRequest(new { message = $"Failed to verify execution permissions for: {path}. Error: {ex.Message}" });
+                }
+            }
+
+            var isWindows = OperatingSystem.IsWindows();
+            var localProcess = new System.Diagnostics.Process
             {
                 StartInfo = new System.Diagnostics.ProcessStartInfo
                 {
-                    FileName = OperatingSystem.IsWindows() ? "cmd.exe" : "/bin/sh",
-                    Arguments = OperatingSystem.IsWindows() ? $"/c \"{path}\"" : $"\"{path}\"",
+                    FileName = isWindows ? "cmd.exe" : path,
+                    Arguments = isWindows ? $"/c \"{path}\"" : "",
                     WorkingDirectory = System.IO.Path.GetDirectoryName(path) ?? "",
                     UseShellExecute = false,
                     CreateNoWindow = true,
                     WindowStyle = System.Diagnostics.ProcessWindowStyle.Hidden
                 }
             };
-            comfyProcess.Start();
+            localProcess.Start();
+            comfyProcess = localProcess;
             aiEnginesJob.AddProcess(comfyProcess);
             return Results.Ok(new { message = "ComfyUI Started" });
         });
@@ -599,25 +734,80 @@ public class Program
 
         app.MapPost("/api/forge/start", () =>
         {
-            if (forgeProcess != null && !forgeProcess.HasExited) return Results.Ok(new { message = "SD Forge is already running" });
+            if (forgeProcess != null)
+            {
+                bool isRunning = false;
+                try
+                {
+                    isRunning = !forgeProcess.HasExited;
+                }
+                catch (InvalidOperationException)
+                {
+                    forgeProcess = null;
+                }
+                catch { }
+
+                if (forgeProcess != null && isRunning)
+                {
+                    return Results.Ok(new { message = "SD Forge is already running" });
+                }
+            }
 
             var settings = LoadSettings();
-            var path = ResolvePath(settings.ForgeExecutablePath, @"%APPDATA%\AI\SD_Forge\webui-user.bat");
+            var rawPath = settings.ForgeExecutablePath;
+            if (!string.IsNullOrWhiteSpace(rawPath) && !IsSafePath(rawPath))
+            {
+                return Results.BadRequest(new { message = $"Invalid or unsafe executable path: {rawPath}" });
+            }
+
+            var path = ResolvePath(rawPath, @"%APPDATA%\AI\SD_Forge\webui-user.bat");
+            if (!IsSafePath(path))
+            {
+                return Results.BadRequest(new { message = $"Invalid or unsafe executable path: {path}" });
+            }
+
             if (!System.IO.File.Exists(path)) return Results.NotFound(new { message = $"SD Forge executable not found at: {path}" });
 
-            forgeProcess = new System.Diagnostics.Process
+            if (!OperatingSystem.IsWindows())
+            {
+                try
+                {
+                    var mode = System.IO.File.GetUnixFileMode(path);
+                    if (!mode.HasFlag(System.IO.UnixFileMode.UserExecute) &&
+                        !mode.HasFlag(System.IO.UnixFileMode.GroupExecute) &&
+                        !mode.HasFlag(System.IO.UnixFileMode.OtherExecute))
+                    {
+                        try
+                        {
+                            System.IO.File.SetUnixFileMode(path, mode | System.IO.UnixFileMode.UserExecute);
+                        }
+                        catch
+                        {
+                            return Results.BadRequest(new { message = $"File '{path}' does not have execution permissions and they could not be set automatically." });
+                        }
+                    }
+                }
+                catch (Exception ex)
+                {
+                    return Results.BadRequest(new { message = $"Failed to verify execution permissions for: {path}. Error: {ex.Message}" });
+                }
+            }
+
+            var isWindows = OperatingSystem.IsWindows();
+            var localProcess = new System.Diagnostics.Process
             {
                 StartInfo = new System.Diagnostics.ProcessStartInfo
                 {
-                    FileName = OperatingSystem.IsWindows() ? "cmd.exe" : "/bin/sh",
-                    Arguments = OperatingSystem.IsWindows() ? $"/c \"{path}\"" : $"\"{path}\"",
+                    FileName = isWindows ? "cmd.exe" : path,
+                    Arguments = isWindows ? $"/c \"{path}\"" : "",
                     WorkingDirectory = System.IO.Path.GetDirectoryName(path) ?? "",
                     UseShellExecute = false,
                     CreateNoWindow = true,
                     WindowStyle = System.Diagnostics.ProcessWindowStyle.Hidden
                 }
             };
-            forgeProcess.Start();
+            localProcess.Start();
+            forgeProcess = localProcess;
             aiEnginesJob.AddProcess(forgeProcess);
             return Results.Ok(new { message = "SD Forge Started" });
         });
