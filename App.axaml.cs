@@ -55,15 +55,7 @@ public partial class App : Application
 
     public void OnOpenWebUiClick(object? sender, EventArgs e)
     {
-        try
-        {
-            Process.Start(new ProcessStartInfo
-            {
-                FileName = "http://127.0.0.1:5246",
-                UseShellExecute = true
-            });
-        }
-        catch { }
+        LocalLLMServerManager.Shared.Services.BrowserLauncher.OpenUrl("http://127.0.0.1:5246");
     }
 
     public void OnExitClick(object? sender, EventArgs e)

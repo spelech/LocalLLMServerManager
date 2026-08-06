@@ -469,11 +469,7 @@ public partial class MainViewModel : ObservableObject
     [RelayCommand]
     public void OpenWebUiInBrowser()
     {
-        try
-        {
-            Process.Start(new ProcessStartInfo { FileName = ApiBase, UseShellExecute = true });
-        }
-        catch { }
+        BrowserLauncher.OpenUrl(ApiBase);
     }
 
     [RelayCommand]
