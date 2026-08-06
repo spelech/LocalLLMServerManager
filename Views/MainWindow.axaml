@@ -6,7 +6,7 @@
         mc:Ignorable="d" d:DesignWidth="960" d:DesignHeight="680"
         x:Class="LocalLLMServerManager.Views.MainWindow"
         Icon="avares://LocalLLMServerManager/Assets/app-icon.ico"
-        Title="Local LLM Server Manager v3.0.0"
+        Title="Local LLM Server Manager v3.1.0"
         Width="960" Height="680"
         WindowStartupLocation="CenterScreen"
         Background="#0F172A">
