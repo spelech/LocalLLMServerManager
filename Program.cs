@@ -521,43 +521,57 @@ public class Program
         });
 
         // ComfyUI workflow presets
-        app.MapGet("/api/comfy/workflows", () =>
+        app.MapGet("/api/comfy/workflows", async () =>
         {
             var workflowsDir = Path.Combine(AppContext.BaseDirectory, "Workflows");
-            var result = new List<object>();
 
-            if (Directory.Exists(workflowsDir))
+            if (!Directory.Exists(workflowsDir))
             {
-                var jsonFiles = Directory.GetFiles(workflowsDir, "*.json");
-                foreach (var file in jsonFiles)
-                {
-                    try
-                    {
-                        var content = File.ReadAllText(file);
-                        using var doc = JsonDocument.Parse(content);
-                        var root = doc.RootElement;
-
-                        var name = root.TryGetProperty("name", out var n) ? n.GetString() : Path.GetFileNameWithoutExtension(file);
-                        var type = root.TryGetProperty("type", out var t) ? t.GetString() : "general";
-                        var description = root.TryGetProperty("description", out var d) ? d.GetString() : "";
-
-                        result.Add(new
-                        {
-                            id = Path.GetFileNameWithoutExtension(file),
-                            name,
-                            type,
-                            description,
-                            filePath = file
-                        });
-                    }
-                    catch { }
-                }
+                return Results.Ok(new List<object>());
             }
+
+            var jsonFiles = Directory.GetFiles(workflowsDir, "*.json");
+            using var semaphore = new SemaphoreSlim(16);
+
+            var tasks = jsonFiles.Select(async file =>
+            {
+                await semaphore.WaitAsync();
+                try
+                {
+                    using var stream = new FileStream(file, FileMode.Open, FileAccess.Read, FileShare.Read, 4096, useAsync: true);
+                    using var doc = await JsonDocument.ParseAsync(stream);
+                    var root = doc.RootElement;
+
+                    var name = root.TryGetProperty("name", out var n) ? n.GetString() : Path.GetFileNameWithoutExtension(file);
+                    var type = root.TryGetProperty("type", out var t) ? t.GetString() : "general";
+                    var description = root.TryGetProperty("description", out var d) ? d.GetString() : "";
+
+                    return new
+                    {
+                        id = Path.GetFileNameWithoutExtension(file),
+                        name,
+                        type,
+                        description,
+                        filePath = file
+                    };
+                }
+                catch
+                {
+                    return null;
+                }
+                finally
+                {
+                    semaphore.Release();
+                }
+            });
+
+            var results = await Task.WhenAll(tasks);
+            var result = results.Where(r => r != null).ToList();
 
             return Results.Ok(result);
         });
 
-        app.MapGet("/api/comfy/workflows/{id}", (string id) =>
+        app.MapGet("/api/comfy/workflows/{id}", async (string id) =>
         {
             var workflowsDir = Path.Combine(AppContext.BaseDirectory, "Workflows");
             var filePath = Path.Combine(workflowsDir, $"{id}.json");
@@ -567,7 +581,7 @@ public class Program
                 return Results.NotFound($"Workflow preset '{id}' not found.");
             }
 
-            var content = File.ReadAllText(filePath);
+            var content = await File.ReadAllTextAsync(filePath);
             return Results.Content(content, "application/json");
         });
 
