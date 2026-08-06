@@ -633,25 +633,140 @@ public class Program
             return Results.Ok(new { message = "SD Forge is not running" });
         });
 
-        app.MapPost("/api/service/update", () =>
+        app.MapPost("/api/service/update", async (HttpContext httpContext) =>
         {
-            var repoDir = Directory.GetCurrentDirectory();
-            var script = "$ServiceName = 'LocalLLMServerManager'; Stop-Service -Name $ServiceName -Force -ErrorAction SilentlyContinue; Start-Sleep -Seconds 1; dotnet publish -c Release -o C:\\LocalLLMServerManager --nologo; Start-Service -Name $ServiceName -ErrorAction SilentlyContinue;";
-
-            var psi = new ProcessStartInfo
+            ServiceUpdateRequest? request = null;
+            if (httpContext.Request.HasJsonContentType())
             {
-                FileName = "powershell.exe",
-                Arguments = $"-NoProfile -ExecutionPolicy Bypass -Command \"{script}\"",
-                WorkingDirectory = repoDir,
-                UseShellExecute = true,
-                CreateNoWindow = true
-            };
+                try
+                {
+                    request = await httpContext.Request.ReadFromJsonAsync<ServiceUpdateRequest>();
+                }
+                catch { }
+            }
 
-            Process.Start(psi);
-            return Results.Ok(new { message = "Service update spawned in detached process. Rebuilding and restarting service..." });
+            var repoDir = Directory.GetCurrentDirectory();
+
+            var gitMessage = "";
+            if (request != null && !string.IsNullOrWhiteSpace(request.Branch))
+            {
+                if (!IsValidBranchName(request.Branch))
+                {
+                    return Results.BadRequest(new { message = "Invalid branch name format." });
+                }
+
+                // Step 1: git fetch
+                var fetchResult = await RunCommandAsync("git", new[] { "fetch" }, repoDir);
+                if (!fetchResult.Success)
+                {
+                    gitMessage += $" (Git fetch failed: {fetchResult.Error.Trim()})";
+                }
+                else
+                {
+                    // Step 2: git checkout
+                    var checkoutResult = await RunCommandAsync("git", new[] { "checkout", request.Branch }, repoDir);
+                    if (!checkoutResult.Success)
+                    {
+                        gitMessage += $" (Git checkout failed: {checkoutResult.Error.Trim()})";
+                    }
+                }
+            }
+
+            // Step 3: git pull
+            var pullResult = await RunCommandAsync("git", new[] { "pull" }, repoDir);
+            if (!pullResult.Success && string.IsNullOrEmpty(gitMessage))
+            {
+                gitMessage = $" (Git pull failed: {pullResult.Error.Trim()})";
+            }
+
+            var settings = LoadSettings();
+
+            var serviceName = settings.ServiceName;
+            if (!IsValidServiceName(serviceName))
+            {
+                serviceName = OperatingSystem.IsWindows() ? "LocalLLMServerManager" : "localllmmanager";
+            }
+
+            var publishPath = settings.PublishOutputPath;
+            if (!IsValidPublishPath(publishPath))
+            {
+                publishPath = OperatingSystem.IsWindows() ? "C:\\LocalLLMServerManager" : "/usr/local/share/LocalLLMServerManager";
+            }
+
+            if (OperatingSystem.IsWindows())
+            {
+                var script = $"Stop-Service -Name '{serviceName}' -Force -ErrorAction SilentlyContinue; Start-Sleep -Seconds 1; dotnet publish -c Release -o '{publishPath}' --nologo; Start-Service -Name '{serviceName}' -ErrorAction SilentlyContinue;";
+
+                var psi = new ProcessStartInfo
+                {
+                    FileName = "powershell.exe",
+                    Arguments = $"-NoProfile -ExecutionPolicy Bypass -Command \"{script}\"",
+                    WorkingDirectory = repoDir,
+                    UseShellExecute = false,
+                    CreateNoWindow = true
+                };
+
+                Process.Start(psi);
+            }
+            else
+            {
+                var script = $"sleep 1 && dotnet publish -c Release -o '{publishPath}' --nologo && sudo systemctl restart '{serviceName}'";
+
+                var psi = new ProcessStartInfo
+                {
+                    FileName = "/bin/bash",
+                    Arguments = $"-c \"{script}\"",
+                    WorkingDirectory = repoDir,
+                    UseShellExecute = false,
+                    CreateNoWindow = true
+                };
+
+                Process.Start(psi);
+            }
+
+            return Results.Ok(new { message = $"Service update spawned in detached process. Rebuilding and restarting service...{gitMessage}" });
         });
 
         return app;
+    }
+
+    public static async Task<(bool Success, string Output, string Error)> RunCommandAsync(string fileName, string[] arguments, string workingDir)
+    {
+        try
+        {
+            var psi = new ProcessStartInfo
+            {
+                FileName = fileName,
+                WorkingDirectory = workingDir,
+                RedirectStandardOutput = true,
+                RedirectStandardError = true,
+                UseShellExecute = false,
+                CreateNoWindow = true
+            };
+            foreach (var arg in arguments)
+            {
+                psi.ArgumentList.Add(arg);
+            }
+
+            using var process = Process.Start(psi);
+            if (process == null) return (false, "", "Failed to start process.");
+
+            var stdoutTask = process.StandardOutput.ReadToEndAsync();
+            var stderrTask = process.StandardError.ReadToEndAsync();
+
+            var completed = await Task.WhenAny(process.WaitForExitAsync(), Task.Delay(30000));
+            if (completed != process.WaitForExitAsync())
+            {
+                try { process.Kill(true); } catch { }
+                return (false, "", "Process timed out.");
+            }
+
+            return (process.ExitCode == 0, await stdoutTask, await stderrTask);
+        }
+        catch (Exception ex)
+        {
+            return (false, "", ex.Message);
+        }
     }
 
     public static (string GpuName, long TotalVramBytes, long UsedVramBytes) GetGpuInfo()
@@ -837,4 +952,40 @@ public class Program
 
         return (bestGpuName, bestVramBytes, 0L);
     }
+
+    public static bool IsValidServiceName(string? name)
+    {
+        if (string.IsNullOrWhiteSpace(name)) return false;
+        return System.Text.RegularExpressions.Regex.IsMatch(name, @"^[a-zA-Z0-9_\-\.]+$") && name.Length <= 100;
+    }
+
+    public static bool IsValidPublishPath(string? path)
+    {
+        if (string.IsNullOrWhiteSpace(path)) return false;
+        if (path.Contains("..") || path.Contains('\0') || path.Contains('&') || path.Contains(';') || path.Contains('|') || path.Contains('$') || path.Contains('`'))
+        {
+            return false;
+        }
+
+        if (OperatingSystem.IsWindows())
+        {
+            return System.Text.RegularExpressions.Regex.IsMatch(path, @"^[a-zA-Z]:\\[a-zA-Z0-9_\-\\\s\.]+$");
+        }
+        else
+        {
+            return System.Text.RegularExpressions.Regex.IsMatch(path, @"^\/[a-zA-Z0-9_\-\/\s\.]+$");
+        }
+    }
+
+    public static bool IsValidBranchName(string? branch)
+    {
+        if (string.IsNullOrWhiteSpace(branch)) return true;
+        if (branch.StartsWith(".") || branch.StartsWith("/") || branch.Contains("..") || branch.EndsWith("/") || branch.EndsWith(".lock"))
+        {
+            return false;
+        }
+        return System.Text.RegularExpressions.Regex.IsMatch(branch, @"^[a-zA-Z0-9_\-\./]+$") && branch.Length <= 100;
+    }
 }
+
+public record ServiceUpdateRequest(string? Branch = null);

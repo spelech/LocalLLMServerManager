@@ -11,5 +11,7 @@ public record AppSettings(
     string PreferredImageEngine = "Forge",
     string ComfyUiExecutablePath = "%APPDATA%\\AI\\ComfyUI\\run_nvidia_gpu.bat",
     string ForgeExecutablePath = "%APPDATA%\\AI\\SD_Forge\\webui-user.bat",
-    string OllamaExecutablePath = "ollama"
+    string OllamaExecutablePath = "ollama",
+    string ServiceName = "LocalLLMServerManager",
+    string PublishOutputPath = "C:\\LocalLLMServerManager"
 );
