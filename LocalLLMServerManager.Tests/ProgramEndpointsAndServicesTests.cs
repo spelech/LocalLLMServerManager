@@ -151,6 +151,80 @@ public class ProgramEndpointsAndServicesTests : IClassFixture<AppTestServerFixtu
     }
 
     [Theory]
+    [InlineData("LocalLLMServerManager", true)]
+    [InlineData("my-service.1", true)]
+    [InlineData("MyService; rm -rf /", false)]
+    [InlineData("MyService && command", false)]
+    [InlineData("", false)]
+    [InlineData("   ", false)]
+    [InlineData(null, false)]
+    public void ServiceName_Validation_ReturnsExpectedResult(string? name, bool expected)
+    {
+        Assert.Equal(expected, Program.IsValidServiceName(name));
+    }
+
+    [Theory]
+    [InlineData("C:\\LocalLLMServerManager", true)]
+    [InlineData("D:\\AI\\Server", true)]
+    [InlineData("/usr/local/share/LocalLLMServerManager", true)]
+    [InlineData("/var/lib/my_app", true)]
+    [InlineData("C:\\LocalLLMServerManager\\..\\temp", false)]
+    [InlineData("C:\\LocalLLMServerManager; rm -rf /", false)]
+    [InlineData("/usr/local/share/LocalLLMServerManager && command", false)]
+    [InlineData("", false)]
+    [InlineData("   ", false)]
+    [InlineData(null, false)]
+    public void PublishPath_Validation_ReturnsExpectedResult(string? path, bool expected)
+    {
+        if (OperatingSystem.IsWindows())
+        {
+            if (path != null && (path.StartsWith("/") || path.Contains("rm -rf")))
+            {
+                Assert.False(Program.IsValidPublishPath(path));
+            }
+            else if (path != null && path.StartsWith("C:\\"))
+            {
+                Assert.Equal(expected, Program.IsValidPublishPath(path));
+            }
+        }
+        else
+        {
+            if (path != null && (path.StartsWith("C:\\") || path.Contains("rm -rf")))
+            {
+                Assert.False(Program.IsValidPublishPath(path));
+            }
+            else if (path != null && path.StartsWith("/"))
+            {
+                Assert.Equal(expected, Program.IsValidPublishPath(path));
+            }
+        }
+    }
+
+    [Theory]
+    [InlineData("main", true)]
+    [InlineData("feature/new-ui", true)]
+    [InlineData("release/v3.0.0", true)]
+    [InlineData("main; rm -rf /", false)]
+    [InlineData("main && command", false)]
+    [InlineData("..", false)]
+    [InlineData(".git", false)]
+    [InlineData("/main", false)]
+    [InlineData("main/", false)]
+    [InlineData("main.lock", false)]
+    public void BranchName_Validation_ReturnsExpectedResult(string? branch, bool expected)
+    {
+        Assert.Equal(expected, Program.IsValidBranchName(branch));
+    }
+
+    [Fact]
+    public async Task UpdateEndpoint_WithInvalidBranch_ReturnsBadRequest()
+    {
+        var request = new ServiceUpdateRequest("invalid; branch");
+        var response = await _client.PostAsJsonAsync("/api/service/update", request);
+        Assert.Equal(System.Net.HttpStatusCode.BadRequest, response.StatusCode);
+    }
+
+    [Theory]
     [InlineData("safe_file.bat")]
     [InlineData("AI/SD_Forge/webui-user.bat")]
     public void IsSafePath_WithSafePaths_ReturnsTrue(string path)
