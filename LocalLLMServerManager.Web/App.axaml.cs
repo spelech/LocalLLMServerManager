@@ -14,6 +14,7 @@ public partial class App : Application
 
     public override void OnFrameworkInitializationCompleted()
     {
+        LocalLLMServerManager.Shared.ViewModels.MainViewModel.EnableAutomaticPolling = true;
         if (ApplicationLifetime is ISingleViewApplicationLifetime singleView)
         {
             singleView.MainView = new MainView();

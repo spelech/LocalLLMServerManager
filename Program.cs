@@ -291,21 +291,23 @@ public class Program
             });
         });
 
-        // Hugging Face search proxy endpoint
-        app.MapGet("/api/hf/search", async (string q, HttpClient httpClient) =>
+        // Hugging Face GGUF model search proxy (avoids CORS)
+        app.MapGet("/api/hf/search", async (string? q, HttpClient httpClient) =>
         {
             try
             {
-                var requestUrl = $"https://huggingface.co/api/models?search={Uri.EscapeDataString(q)}&filter=gguf&sort=downloads&direction=-1&limit=20";
+                using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(3));
+                var query = string.IsNullOrWhiteSpace(q) ? "llama" : q;
+                var requestUrl = $"https://huggingface.co/api/models?search={Uri.EscapeDataString(query)}&filter=gguf&sort=downloads&direction=-1&limit=20";
                 var request = new HttpRequestMessage(HttpMethod.Get, requestUrl);
                 request.Headers.Add("User-Agent", "LocalLLMServerManager");
 
-                var response = await httpClient.SendAsync(request);
+                var response = await httpClient.SendAsync(request, cts.Token);
                 if (!response.IsSuccessStatusCode)
                 {
                     return Results.Ok(new[] { new { id = "meta-llama/Llama-3.3-8B-Instruct-GGUF", author = "meta-llama", likes = 100, downloads = 500 } });
                 }
-                var content = await response.Content.ReadAsStringAsync();
+                var content = await response.Content.ReadAsStringAsync(cts.Token);
                 return Results.Content(content, "application/json");
             }
             catch
@@ -319,16 +321,17 @@ public class Program
         {
             try
             {
+                using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(3));
                 var requestUrl = $"https://huggingface.co/api/models/{Uri.EscapeDataString(repoId)}";
                 var request = new HttpRequestMessage(HttpMethod.Get, requestUrl);
                 request.Headers.Add("User-Agent", "LocalLLMServerManager");
 
-                var response = await httpClient.SendAsync(request);
+                var response = await httpClient.SendAsync(request, cts.Token);
                 if (!response.IsSuccessStatusCode)
                 {
                     return Results.Ok(new { id = repoId, author = "meta-llama", siblings = new[] { new { rfilename = "model.gguf" } } });
                 }
-                var content = await response.Content.ReadAsStringAsync();
+                var content = await response.Content.ReadAsStringAsync(cts.Token);
                 return Results.Content(content, "application/json");
             }
             catch
@@ -342,6 +345,7 @@ public class Program
         {
             try
             {
+                using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(3));
                 var queryType = string.IsNullOrWhiteSpace(types) ? "Checkpoint" : types;
                 var querySort = string.IsNullOrWhiteSpace(sort) ? "Most Downloaded" : sort;
                 var url = $"https://civitai.com/api/v1/models?limit=20&nsfw=false&types={Uri.EscapeDataString(queryType)}&sort={Uri.EscapeDataString(querySort)}";
@@ -349,8 +353,8 @@ public class Program
                 {
                     url += $"&query={Uri.EscapeDataString(q)}";
                 }
-                var response = await http.GetAsync(url);
-                var content = await response.Content.ReadAsStringAsync();
+                var response = await http.GetAsync(url, cts.Token);
+                var content = await response.Content.ReadAsStringAsync(cts.Token);
                 return Results.Content(content, "application/json");
             }
             catch
@@ -364,8 +368,9 @@ public class Program
         {
             try
             {
-                var response = await http.GetAsync($"https://civitai.com/api/v1/models/{id}");
-                var content = await response.Content.ReadAsStringAsync();
+                using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(3));
+                var response = await http.GetAsync($"https://civitai.com/api/v1/models/{id}", cts.Token);
+                var content = await response.Content.ReadAsStringAsync(cts.Token);
                 return Results.Content(content, "application/json");
             }
             catch

@@ -19,7 +19,13 @@ dotnet test --nologo -c Release
 
 # 2. Publish Avalonia WebAssembly to wwwroot & Build Self-Contained Release
 echo "--> 2. Building & Publishing Avalonia WebAssembly (Wasm) UI..."
-dotnet publish LocalLLMServerManager.Web/LocalLLMServerManager.Web.csproj -c Release -o wwwroot --nologo
+rm -rf "${SCRIPT_DIR}/wwwroot_wasm"
+dotnet publish LocalLLMServerManager.Web/LocalLLMServerManager.Web.csproj -c Release -o "${SCRIPT_DIR}/wwwroot_wasm" --nologo
+
+rm -f "${SCRIPT_DIR}/wwwroot/app.js" "${SCRIPT_DIR}/wwwroot/index.css" "${SCRIPT_DIR}/wwwroot/index.html"
+rm -rf "${SCRIPT_DIR}/wwwroot/wwwroot"
+cp -r "${SCRIPT_DIR}/wwwroot_wasm/wwwroot/"* "${SCRIPT_DIR}/wwwroot/"
+rm -rf "${SCRIPT_DIR}/wwwroot_wasm"
 
 echo "--> 3. Publishing Self-Contained linux-x64 Executable..."
 rm -rf "${PUBLISH_DIR}" "${DIST_DIR}"

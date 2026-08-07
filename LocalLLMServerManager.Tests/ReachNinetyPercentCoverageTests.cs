@@ -21,7 +21,8 @@ public class ReachNinetyPercentCoverageTests : IClassFixture<AppTestServerFixtur
     [Fact]
     public async Task MainViewModel_CheckHealthOfflineAndOnline_ExecutesBothBranches()
     {
-        var vmOffline = new MainViewModel
+        var fastHttp = new HttpClient { Timeout = TimeSpan.FromMilliseconds(200) };
+        var vmOffline = new MainViewModel(fastHttp)
         {
             ApiBase = "http://127.0.0.1:5999" // Non-existent port
         };

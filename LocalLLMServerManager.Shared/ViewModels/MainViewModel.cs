@@ -60,13 +60,34 @@ public partial class MainViewModel : ObservableObject
         set => _customHttp = value;
     }
 
+    public static bool EnableAutomaticPolling { get; set; } = false;
+
     public MainViewModel(HttpClient? httpClient)
     {
         if (httpClient != null) _customHttp = httpClient;
         DetectLanIp();
         _ = RefreshStatusAsync();
         _ = LoadSettingsAsync();
+        if (EnableAutomaticPolling)
+        {
+            _ = StartBackgroundPollingAsync();
+        }
     }
+
+    private async Task StartBackgroundPollingAsync()
+    {
+        while (EnableAutomaticPolling)
+        {
+            try
+            {
+                await Task.Delay(4000);
+                if (!EnableAutomaticPolling) break;
+                await RefreshStatusAsync();
+            }
+            catch { }
+        }
+    }
+
     public static string DefaultApiBase { get; set; } = "http://127.0.0.1:5246";
     [ObservableProperty] private string _apiBase = DefaultApiBase;
 
@@ -162,7 +183,16 @@ public partial class MainViewModel : ObservableObject
     {
         try
         {
-            var response = await Http.GetAsync("http://127.0.0.1:11434/api/tags");
+            HttpResponseMessage response;
+            try
+            {
+                response = await Http.GetAsync($"{ApiBase}/api/models");
+            }
+            catch
+            {
+                response = await Http.GetAsync("http://127.0.0.1:11434/api/tags");
+            }
+
             if (response.IsSuccessStatusCode)
             {
                 var jsonStr = await response.Content.ReadAsStringAsync();

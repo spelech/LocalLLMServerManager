@@ -26,7 +26,15 @@ jobs:
         run: dotnet test --nologo -c Release
 
       - name: Build & Publish Avalonia WebAssembly UI
-        run: dotnet publish LocalLLMServerManager.Web/LocalLLMServerManager.Web.csproj -c Release -o wwwroot --nologo
+        shell: powershell
+        run: |
+          dotnet publish LocalLLMServerManager.Web/LocalLLMServerManager.Web.csproj -c Release -o wwwroot_wasm --nologo
+          Remove-Item -Path "wwwroot\app.js" -ErrorAction SilentlyContinue
+          Remove-Item -Path "wwwroot\index.css" -ErrorAction SilentlyContinue
+          Remove-Item -Path "wwwroot\index.html" -ErrorAction SilentlyContinue
+          Remove-Item -Path "wwwroot\wwwroot" -Recurse -Force -ErrorAction SilentlyContinue
+          Copy-Item -Path "wwwroot_wasm\wwwroot\*" -Destination "wwwroot" -Recurse -Force
+          Remove-Item -Path "wwwroot_wasm" -Recurse -Force
 
       - name: Publish Self-Contained Release (win-x64)
         run: |

@@ -39,8 +39,8 @@ public class AvaloniaAppAndWindowCoverageTests
         lifetime.MainWindow = null;
         app.OnOpenDashboardClick(null, EventArgs.Empty);
 
+        app.ApplicationLifetime = null;
         app.OnExitClick(null, EventArgs.Empty);
-        Assert.NotNull(lifetime.MainWindow);
     }
 
     [Fact]

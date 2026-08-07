@@ -19,8 +19,19 @@ if ($LASTEXITCODE -ne 0) { throw "dotnet test failed!" }
 
 # 2. Publish Avalonia WebAssembly to wwwroot & Build Self-Contained Release
 Write-Host "--> 2. Building & Publishing Avalonia WebAssembly (Wasm) UI..." -ForegroundColor Yellow
-dotnet publish LocalLLMServerManager.Web/LocalLLMServerManager.Web.csproj -c Release -o wwwroot --nologo
+$WasmTemp = Join-Path $RootDir "wwwroot_wasm"
+if (Test-Path $WasmTemp) { Remove-Item -Path $WasmTemp -Recurse -Force }
+dotnet publish LocalLLMServerManager.Web/LocalLLMServerManager.Web.csproj -c Release -o $WasmTemp --nologo
 if ($LASTEXITCODE -ne 0) { throw "Avalonia Wasm publish failed!" }
+
+# Overwrite wwwroot root with compiled Wasm launcher and assets
+Remove-Item -Path "$RootDir\wwwroot\app.js" -ErrorAction SilentlyContinue
+Remove-Item -Path "$RootDir\wwwroot\index.css" -ErrorAction SilentlyContinue
+Remove-Item -Path "$RootDir\wwwroot\index.html" -ErrorAction SilentlyContinue
+Remove-Item -Path "$RootDir\wwwroot\wwwroot" -Recurse -Force -ErrorAction SilentlyContinue
+
+Copy-Item -Path "$WasmTemp\wwwroot\*" -Destination "$RootDir\wwwroot" -Recurse -Force
+Remove-Item -Path $WasmTemp -Recurse -Force
 
 Write-Host "--> 3. Publishing Self-Contained win-x64 Executable..." -ForegroundColor Yellow
 if (Test-Path $PublishDir) { Remove-Item -Path $PublishDir -Recurse -Force }
