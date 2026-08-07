@@ -1,7 +1,7 @@
 # LocalLLMServerManager v3.1.0 — Release Build & Package Script
 $ErrorActionPreference = "Stop"
 
-$Version = "3.1.0"
+$Version = "3.2.0"
 $RootDir = $PSScriptRoot
 $PublishDir = Join-Path $RootDir "publish"
 $DistDir = Join-Path $RootDir "dist"

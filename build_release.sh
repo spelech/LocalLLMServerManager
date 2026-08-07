@@ -2,7 +2,7 @@
 # LocalLLMServerManager v3.1.0 — Linux Release Build & Package Script
 set -e
 
-VERSION="3.1.0"
+VERSION="3.2.0"
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PUBLISH_DIR="${SCRIPT_DIR}/publish"
 DIST_DIR="${SCRIPT_DIR}/dist"
