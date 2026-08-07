@@ -8,29 +8,17 @@ It tracks GPU VRAM usage in real time via NVML CUDA telemetry, profiles model ca
 
 ## 📸 User Interface Screenshots
 
-### 1. Avalonia UI Native System Tray & Desktop Dashboard (v2.1.0)
-*Fluent Dark Avalonia desktop window showing live VRAM consumption, GPU hardware telemetry, AI engine health badges, and one-click quick actions.*
-![Avalonia Native Desktop Dashboard](Assets/native_dashboard.jpg)
+### 1. Unified Avalonia Desktop UI (v3.1.0)
+*Fluent Dark Avalonia desktop window showing live VRAM consumption, GPU hardware telemetry, AI engine health badges, and model library.*
+![Unified Avalonia Desktop Dashboard](Assets/native_dashboard.jpg)
 
-### 2. Modern Glassmorphism Web UI
-*Responsive web dashboard with real-time model capability tags, KV Cache context calculator, engine status toggles, and mobile-friendly UI layout.*
-![Modern Glassmorphism Web UI](Assets/web_dashboard.jpg)
+### 2. Unified Avalonia WebAssembly (WASM) Web UI
+*Pixel-identical WebAssembly interface running directly in browser via `:5246` with live model capability tags, KV Cache context calculator, and engine controls.*
+![Unified Avalonia WebAssembly Web UI](Assets/web_dashboard.jpg)
 
-### 3. Model Management Dashboard
-*View installed Ollama models, VRAM usage bar, GPU name, active loaded models, and capabilities profiles.*
-![Installed Models Dashboard](screenshots/dashboard.png)
-
-### 4. 3D & ComfyUI Studio (TRELLIS V2 / Hunyuan3D v2 & WebGL Viewer)
-*Select 3D mesh workflows (TRELLIS V2, Hunyuan3D v2), queue generations with auto-VRAM offloading, and inspect 3D assets interactively in WebGL with 360° rotation.*
-![3D & ComfyUI Studio](screenshots/comfyui_3d_studio.png)
-
-### 5. Find & Download Models — Hugging Face Hub
-*Search GGUF repositories on Hugging Face, inspect quantization file sizes, and pull them with live progress tracking.*
-![Discover and Download Models Panel](screenshots/discover.png)
-
-### 6. Stable Diffusion — CivitAI Search & Downloads
-*Browse CivitAI checkpoints with real preview images, ratings, and direct-to-disk downloads.*
-![CivitAI Model Search](screenshots/stable_diffusion.png)
+### 3. Native Windows System Tray Integration
+*Operates quietly in notification area with right-click menu options to launch dashboard, open web interface, or control services.*
+![System Tray Icon & Menu](Assets/app_tray_icon.jpg)
 
 ---
 
