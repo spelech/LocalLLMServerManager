@@ -23,6 +23,7 @@ Compression=lzma2/max
 SolidCompression=yes
 WizardStyle=modern
 PrivilegesRequired=admin
+SetupIconFile=Assets\app-icon.ico
 
 [Languages]
 Name: "english"; MessagesFile: "compiler:Default.isl"
@@ -39,12 +40,13 @@ Source: "publish\*.json"; DestDir: "{app}"; Flags: ignoreversion
 Source: "publish\*.config"; DestDir: "{app}"; Flags: ignoreversion
 Source: "publish\wwwroot\*"; DestDir: "{app}\wwwroot"; Flags: ignoreversion recursesubdirs createallsubdirs
 Source: "publish\Workflows\*"; DestDir: "{app}\Workflows"; Flags: ignoreversion recursesubdirs createallsubdirs
+Source: "Assets\app-icon.ico"; DestDir: "{app}\Assets"; Flags: ignoreversion
 
 [Icons]
-Name: "{group}\{#MyAppName}"; Filename: "{app}\{#MyAppExeName}"
-Name: "{group}\Open Web Dashboard"; Filename: "http://127.0.0.1:5246"
+Name: "{group}\{#MyAppName}"; Filename: "{app}\{#MyAppExeName}"; IconFilename: "{app}\Assets\app-icon.ico"
+Name: "{group}\Open Web Dashboard"; Filename: "http://127.0.0.1:5246"; IconFilename: "{app}\Assets\app-icon.ico"
 Name: "{group}\{cm:UninstallProgram,{#MyAppName}}"; Filename: "{uninstallexe}"
-Name: "{autodesktop}\{#MyAppName}"; Filename: "{app}\{#MyAppExeName}"; Tasks: desktopicon
+Name: "{autodesktop}\{#MyAppName}"; Filename: "{app}\{#MyAppExeName}"; Tasks: desktopicon; IconFilename: "{app}\Assets\app-icon.ico"
 
 [Registry]
 ; Auto-start System Tray App on User Logon
