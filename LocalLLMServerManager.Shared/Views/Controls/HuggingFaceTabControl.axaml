@@ -1,0 +1,40 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:LocalLLMServerManager.Shared.ViewModels"
+             x:Class="LocalLLMServerManager.Shared.Views.Controls.HuggingFaceTabControl"
+             x:DataType="vm:HuggingFaceSearchViewModel">
+
+    <Grid RowDefinitions="Auto, *" Margin="0,12,0,0">
+        <Grid Grid.Row="0" ColumnDefinitions="*, Auto" Margin="0,0,0,12">
+            <TextBox Text="{Binding HfSearchQuery}" Watermark="Search GGUF models (e.g. llama 3.3, qwen2.5-coder)..." 
+                     Background="#1E293B" Foreground="#F8FAFC" BorderBrush="#334155" CornerRadius="6" Padding="10,8"/>
+            <Button Grid.Column="1" Command="{Binding SearchHuggingFaceCommand}" 
+                    Background="#38BDF8" Foreground="#0F172A" FontWeight="Bold" CornerRadius="6" Padding="16,8" Margin="8,0,0,0">
+                🔍 Search Hub
+            </Button>
+        </Grid>
+
+        <ScrollViewer Grid.Row="1">
+            <ItemsControl ItemsSource="{Binding HuggingFaceResults}">
+                <ItemsControl.ItemTemplate>
+                    <DataTemplate DataType="vm:HuggingFaceRepoItem">
+                        <Border Background="#1E293B" CornerRadius="6" BorderBrush="#334155" BorderThickness="1" Padding="12" Margin="0,0,0,8">
+                            <Grid ColumnDefinitions="*, Auto, Auto">
+                                <StackPanel Grid.Column="0">
+                                    <TextBlock Text="{Binding Id}" FontWeight="Bold" FontSize="14" Foreground="#38BDF8"/>
+                                    <TextBlock Text="{Binding Author, StringFormat='Author: {0}'}" FontSize="12" Foreground="#94A3B8" Margin="0,2,0,0"/>
+                                </StackPanel>
+                                <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="12" VerticalAlignment="Center" Margin="0,0,12,0">
+                                    <TextBlock Text="{Binding Downloads}" FontSize="12" Foreground="#CBD5E1"/>
+                                    <Border Background="#0F172A" CornerRadius="4" Padding="6,2">
+                                        <TextBlock Text="{Binding Likes, StringFormat='❤️ {0}'}" FontSize="12" Foreground="#EC4899"/>
+                                    </Border>
+                                </StackPanel>
+                            </Grid>
+                        </Border>
+                    </DataTemplate>
+                </ItemsControl.ItemTemplate>
+            </ItemsControl>
+        </ScrollViewer>
+    </Grid>
+</UserControl>

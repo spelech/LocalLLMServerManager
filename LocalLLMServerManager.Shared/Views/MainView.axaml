@@ -1,6 +1,7 @@
 <UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:vm="using:LocalLLMServerManager.Shared.ViewModels"
+             xmlns:controls="using:LocalLLMServerManager.Shared.Views.Controls"
              xmlns:services="using:LocalLLMServerManager.Shared.Services"
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
@@ -13,272 +14,54 @@
     </Design.DataContext>
 
     <Grid RowDefinitions="Auto, *, Auto" Background="#0F172A">
-            <!-- Top Telemetry Header -->
-            <Border Grid.Row="0" Background="#1E293B" CornerRadius="8" BorderBrush="#334155" BorderThickness="1" Padding="16" Margin="16,16,16,8">
-                <Grid RowDefinitions="Auto, Auto" ColumnDefinitions="*, Auto">
-                    <StackPanel Grid.Row="0" Grid.Column="0">
-                        <TextBlock Text="Local LLM Server Manager" FontSize="20" FontWeight="Bold" Foreground="#F8FAFC"/>
-                        <StackPanel Orientation="Horizontal" Spacing="10" Margin="0,4,0,0">
-                            <TextBlock Text="{Binding GpuName}" FontSize="13" Foreground="#38BDF8" FontWeight="SemiBold"/>
-                            <TextBlock Text="•" Foreground="#64748B"/>
-                            <TextBlock Text="{Binding ServiceModeText}" FontSize="13" Foreground="#94A3B8"/>
-                        </StackPanel>
-                    </StackPanel>
+        <!-- Top Telemetry Header -->
+        <controls:TelemetryHeaderControl Grid.Row="0" DataContext="{Binding Telemetry}"/>
 
-                    <Button Grid.Row="0" Grid.Column="1" Command="{Binding RefreshStatusCommand}" 
-                            Background="#0F172A" Foreground="#38BDF8" BorderBrush="#334155" BorderThickness="1" CornerRadius="6" Padding="12,6" VerticalAlignment="Top">
-                        🔄 Refresh Telemetry
-                    </Button>
+        <!-- Main Content Area: Native Avalonia XAML Tabs -->
+        <TabControl Grid.Row="1" Background="Transparent" Margin="16,0,16,0">
+            <!-- TAB 1: Installed LLM Models & KV Cache Calculator -->
+            <TabItem Header="🦙 Installed Models">
+                <controls:OllamaModelsTabControl DataContext="{Binding Ollama}"/>
+            </TabItem>
 
-                    <!-- VRAM Allocation Gauge Bar -->
-                    <Grid Grid.Row="1" Grid.ColumnSpan="2" RowDefinitions="Auto, Auto" Margin="0,12,0,0">
-                        <Grid Grid.Row="0" ColumnDefinitions="*, Auto" Margin="0,0,0,6">
-                            <TextBlock Text="GPU VRAM Allocation" FontSize="12" Foreground="#94A3B8" FontWeight="Medium"/>
-                            <TextBlock Grid.Column="1" Text="{Binding VramStatusText}" FontSize="12" Foreground="#38BDF8" FontWeight="Bold"/>
-                        </Grid>
-                        <ProgressBar Grid.Row="1" Value="{Binding VramPercentage}" Maximum="100" Height="10" CornerRadius="5" Background="#0F172A" Foreground="#38BDF8"/>
-                    </Grid>
-                </Grid>
-            </Border>
+            <!-- TAB 2: Hugging Face GGUF Hub -->
+            <TabItem Header="🤗 Hugging Face Hub">
+                <controls:HuggingFaceTabControl DataContext="{Binding HuggingFace}"/>
+            </TabItem>
 
-            <!-- Main Content Area: Native Avalonia XAML Tabs -->
-            <TabControl Grid.Row="1" Background="Transparent" Margin="16,0,16,0">
-                <!-- TAB 1: Installed LLM Models & KV Cache Calculator -->
-                <TabItem Header="🦙 Installed Models">
-                    <Grid RowDefinitions="Auto, *, Auto" Margin="0,12,0,0">
-                        <Grid Grid.Row="0" ColumnDefinitions="*, Auto" Margin="0,0,0,10">
-                            <TextBlock Text="Ollama Local Model Library" FontSize="16" FontWeight="Bold" Foreground="#F1F5F9" VerticalAlignment="Center"/>
-                            <Button Grid.Column="1" Command="{Binding UnloadAllVramCommand}" 
-                                    Background="#991B1B" Foreground="#FEF2F2" FontWeight="Bold" CornerRadius="6" Padding="12,6">
-                                🧹 Unload All VRAM
-                            </Button>
-                        </Grid>
+            <!-- TAB 3: CivitAI Stable Diffusion Hub -->
+            <TabItem Header="🎨 CivitAI Models">
+                <controls:CivitaiTabControl DataContext="{Binding Civitai}"/>
+            </TabItem>
 
-                        <ScrollViewer Grid.Row="1" Margin="0,0,0,12">
-                            <ItemsControl ItemsSource="{Binding InstalledModels}">
-                                <ItemsControl.ItemTemplate>
-                                    <DataTemplate DataType="vm:OllamaModelItem">
-                                        <Border Background="#1E293B" CornerRadius="6" BorderBrush="#334155" BorderThickness="1" Padding="12" Margin="0,0,0,8">
-                                            <Grid ColumnDefinitions="*, Auto, Auto">
-                                                <StackPanel Grid.Column="0">
-                                                    <TextBlock Text="{Binding Name}" FontWeight="Bold" FontSize="14" Foreground="#F8FAFC"/>
-                                                    <StackPanel Orientation="Horizontal" Spacing="8" Margin="0,4,0,0">
-                                                        <Border Background="#0F172A" CornerRadius="4" Padding="6,2">
-                                                            <TextBlock Text="{Binding CapabilityTag}" FontSize="11" Foreground="{Binding CapabilityColor}" FontWeight="Bold"/>
-                                                        </Border>
-                                                        <TextBlock Text="{Binding FormatSize}" FontSize="12" Foreground="#94A3B8" VerticalAlignment="Center"/>
-                                                    </StackPanel>
-                                                </StackPanel>
-                                                <TextBlock Grid.Column="1" Text="Installed 🟢" FontSize="12" Foreground="#22C55E" VerticalAlignment="Center" Margin="0,0,12,0"/>
-                                            </Grid>
-                                        </Border>
-                                    </DataTemplate>
-                                </ItemsControl.ItemTemplate>
-                            </ItemsControl>
-                        </ScrollViewer>
+            <!-- TAB 4: Image & 3D AI Engines -->
+            <TabItem Header="📦 3D &amp; ComfyUI Studio">
+                <controls:EngineStudioTabControl DataContext="{Binding}"/>
+            </TabItem>
 
-                        <Border Grid.Row="2" Background="#1E293B" CornerRadius="6" BorderBrush="#334155" BorderThickness="1" Padding="12">
-                            <StackPanel Spacing="6">
-                                <Grid ColumnDefinitions="*, Auto">
-                                    <TextBlock Text="Interactive KV Cache Calculator" FontSize="13" FontWeight="Bold" Foreground="#F1F5F9"/>
-                                    <TextBlock Grid.Column="1" Text="{Binding EstimatedKvCacheText}" FontSize="13" Foreground="#38BDF8" FontWeight="Bold"/>
-                                </Grid>
-                                <Grid ColumnDefinitions="*, Auto">
-                                    <Slider Value="{Binding TargetContextTokens}" Minimum="1024" Maximum="32768" SmallChange="1024" LargeChange="4096"/>
-                                    <TextBlock Grid.Column="1" Text="{Binding TargetContextTokens, StringFormat='{}{0:N0} tokens'}" FontSize="12" Foreground="#94A3B8" VerticalAlignment="Center" Margin="10,0,0,0"/>
-                                </Grid>
-                            </StackPanel>
-                        </Border>
-                    </Grid>
-                </TabItem>
+            <!-- TAB 5: Remote Access & Settings -->
+            <TabItem Header="⚙️ Settings">
+                <controls:SettingsTabControl DataContext="{Binding Settings}"/>
+            </TabItem>
+        </TabControl>
 
-                <!-- TAB 2: Hugging Face GGUF Hub -->
-                <TabItem Header="🤗 Hugging Face Hub">
-                    <Grid RowDefinitions="Auto, *" Margin="0,12,0,0">
-                        <Grid Grid.Row="0" ColumnDefinitions="*, Auto" Margin="0,0,0,12">
-                            <TextBox Text="{Binding HfSearchQuery}" Watermark="Search GGUF models (e.g. llama 3.3, qwen2.5-coder)..." 
-                                     Background="#1E293B" Foreground="#F8FAFC" BorderBrush="#334155" CornerRadius="6" Padding="10,8"/>
-                            <Button Grid.Column="1" Command="{Binding SearchHuggingFaceCommand}" 
-                                    Background="#38BDF8" Foreground="#0F172A" FontWeight="Bold" CornerRadius="6" Padding="16,8" Margin="8,0,0,0">
-                                🔍 Search Hub
-                            </Button>
-                        </Grid>
+        <!-- Floating Toast Notifications Overlay -->
+        <ItemsControl Grid.Row="1" ItemsSource="{Binding Toasts}" VerticalAlignment="Top" HorizontalAlignment="Right" Margin="0,20,24,0" IsHitTestVisible="False">
+            <ItemsControl.ItemTemplate>
+                <DataTemplate DataType="services:ToastItem">
+                    <Border Background="#1E293B" CornerRadius="6" BorderBrush="{Binding BadgeColor}" BorderThickness="2" Padding="12,8" Margin="0,0,0,8" Width="300">
+                        <TextBlock Text="{Binding Message}" Foreground="#F8FAFC" FontSize="12" TextWrapping="Wrap"/>
+                    </Border>
+                </DataTemplate>
+            </ItemsControl.ItemTemplate>
+        </ItemsControl>
 
-                        <ScrollViewer Grid.Row="1">
-                            <ItemsControl ItemsSource="{Binding HuggingFaceResults}">
-                                <ItemsControl.ItemTemplate>
-                                    <DataTemplate DataType="vm:HuggingFaceRepoItem">
-                                        <Border Background="#1E293B" CornerRadius="6" BorderBrush="#334155" BorderThickness="1" Padding="12" Margin="0,0,0,8">
-                                            <Grid ColumnDefinitions="*, Auto, Auto">
-                                                <StackPanel Grid.Column="0">
-                                                    <TextBlock Text="{Binding Id}" FontWeight="Bold" FontSize="14" Foreground="#38BDF8"/>
-                                                    <TextBlock Text="{Binding Author, StringFormat='Author: {0}'}" FontSize="12" Foreground="#94A3B8" Margin="0,2,0,0"/>
-                                                </StackPanel>
-                                                <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="12" VerticalAlignment="Center" Margin="0,0,12,0">
-                                                    <TextBlock Text="{Binding Downloads}" FontSize="12" Foreground="#CBD5E1"/>
-                                                    <Border Background="#0F172A" CornerRadius="4" Padding="6,2">
-                                                        <TextBlock Text="{Binding Likes, StringFormat='❤️ {0}'}" FontSize="12" Foreground="#EC4899"/>
-                                                    </Border>
-                                                </StackPanel>
-                                            </Grid>
-                                        </Border>
-                                    </DataTemplate>
-                                </ItemsControl.ItemTemplate>
-                            </ItemsControl>
-                        </ScrollViewer>
-                    </Grid>
-                </TabItem>
-
-                <!-- TAB 3: CivitAI Stable Diffusion Hub -->
-                <TabItem Header="🎨 CivitAI Models">
-                    <Grid RowDefinitions="Auto, *" Margin="0,12,0,0">
-                        <Grid Grid.Row="0" ColumnDefinitions="*, Auto" Margin="0,0,0,12">
-                            <TextBox Text="{Binding CivitaiSearchQuery}" Watermark="Search Stable Diffusion checkpoints &amp; LoRAs..." 
-                                     Background="#1E293B" Foreground="#F8FAFC" BorderBrush="#334155" CornerRadius="6" Padding="10,8"/>
-                            <Button Grid.Column="1" Command="{Binding SearchCivitaiCommand}" 
-                                    Background="#EC4899" Foreground="#FFFFFF" FontWeight="Bold" CornerRadius="6" Padding="16,8" Margin="8,0,0,0">
-                                🔍 Search CivitAI
-                            </Button>
-                        </Grid>
-
-                        <ScrollViewer Grid.Row="1">
-                            <ItemsControl ItemsSource="{Binding CivitaiResults}">
-                                <ItemsControl.ItemTemplate>
-                                    <DataTemplate DataType="vm:CivitaiModelItem">
-                                        <Border Background="#1E293B" CornerRadius="6" BorderBrush="#334155" BorderThickness="1" Padding="12" Margin="0,0,0,8">
-                                            <Grid ColumnDefinitions="*, Auto">
-                                                <StackPanel Grid.Column="0">
-                                                    <TextBlock Text="{Binding Name}" FontWeight="Bold" FontSize="14" Foreground="#F8FAFC"/>
-                                                    <StackPanel Orientation="Horizontal" Spacing="8" Margin="0,4,0,0">
-                                                        <Border Background="#0F172A" CornerRadius="4" Padding="6,2">
-                                                            <TextBlock Text="{Binding Type}" FontSize="11" Foreground="#EC4899" FontWeight="Bold"/>
-                                                        </Border>
-                                                        <TextBlock Text="{Binding DownloadCount, StringFormat='⬇️ {0:N0} downloads'}" FontSize="12" Foreground="#94A3B8" VerticalAlignment="Center"/>
-                                                    </StackPanel>
-                                                </StackPanel>
-                                            </Grid>
-                                        </Border>
-                                    </DataTemplate>
-                                </ItemsControl.ItemTemplate>
-                            </ItemsControl>
-                        </ScrollViewer>
-                    </Grid>
-                </TabItem>
-
-                <!-- TAB 4: Image & 3D AI Engines -->
-                <TabItem Header="📦 3D &amp; ComfyUI Studio">
-                    <StackPanel Spacing="12" Margin="0,12,0,0">
-                        <TextBlock Text="AI Image &amp; 3D Generation Engines" FontSize="16" FontWeight="Bold" Foreground="#F1F5F9"/>
-
-                        <UniformGrid Columns="2">
-                            <Border Background="#1E293B" CornerRadius="8" BorderBrush="#334155" BorderThickness="1" Padding="16" Margin="0,0,6,0">
-                                <StackPanel Spacing="8">
-                                    <TextBlock Text="🎨 Stable Diffusion / Forge" FontSize="14" FontWeight="Bold" Foreground="#F8FAFC"/>
-                                    <TextBlock Text="{Binding ForgeStatus, StringFormat='Status: {0}'}" FontSize="13" Foreground="#EC4899" FontWeight="SemiBold"/>
-                                    <TextBlock Text="Port 7860 • WebUI &amp; SD API Endpoint" FontSize="12" Foreground="#94A3B8"/>
-                                    <Button Content="▶️ Start Forge Engine" Command="{Binding ToggleEngineCommand}" CommandParameter="forge" 
-                                            Background="#0F172A" Foreground="#38BDF8" CornerRadius="6" Padding="12,6" Margin="0,4,0,0"/>
-                                </StackPanel>
-                            </Border>
-
-                            <Border Background="#1E293B" CornerRadius="8" BorderBrush="#334155" BorderThickness="1" Padding="16" Margin="6,0,0,0">
-                                <StackPanel Spacing="8">
-                                    <TextBlock Text="🧩 ComfyUI 3D Mesh Studio" FontSize="14" FontWeight="Bold" Foreground="#F8FAFC"/>
-                                    <TextBlock Text="{Binding ComfyStatus, StringFormat='Status: {0}'}" FontSize="13" Foreground="#A855F7" FontWeight="SemiBold"/>
-                                    <TextBlock Text="Port 8188 • TRELLIS V2 &amp; Hunyuan3D Pipelines" FontSize="12" Foreground="#94A3B8"/>
-                                    <Button Content="▶️ Start ComfyUI Engine" Command="{Binding ToggleEngineCommand}" CommandParameter="comfy" 
-                                            Background="#0F172A" Foreground="#A855F7" CornerRadius="6" Padding="12,6" Margin="0,4,0,0"/>
-                                </StackPanel>
-                            </Border>
-                        </UniformGrid>
-                    </StackPanel>
-                </TabItem>
-
-                <!-- TAB 5: Remote Access & Settings -->
-                <TabItem Header="⚙️ Settings">
-                    <ScrollViewer Margin="0,12,0,0">
-                        <StackPanel Spacing="16">
-                            <Border Background="#1E293B" CornerRadius="8" BorderBrush="#334155" BorderThickness="1" Padding="18">
-                                <StackPanel Spacing="10">
-                                    <TextBlock Text="🌐 Remote &amp; Mobile Access URL" FontSize="16" FontWeight="Bold" Foreground="#F8FAFC"/>
-                                    <TextBlock Text="Connect to this manager from your smartphone, tablet, or laptop:" FontSize="13" Foreground="#94A3B8"/>
-                                    <Border Background="#0F172A" CornerRadius="6" Padding="12">
-                                        <SelectableTextBlock Text="{Binding LanAccessUrl}" FontSize="16" FontWeight="Bold" Foreground="#38BDF8"/>
-                                    </Border>
-                                    <Button Command="{Binding OpenWebUiInBrowserCommand}" 
-                                            Background="#38BDF8" Foreground="#0F172A" FontWeight="Bold" CornerRadius="6" Padding="16,8" HorizontalAlignment="Left">
-                                        🚀 Launch Web UI in Browser
-                                    </Button>
-                                </StackPanel>
-                            </Border>
-
-                            <Border Background="#1E293B" CornerRadius="8" BorderBrush="#334155" BorderThickness="1" Padding="18">
-                                <StackPanel Spacing="12">
-                                    <TextBlock Text="🛠️ Executable &amp; Directory Paths" FontSize="16" FontWeight="Bold" Foreground="#F8FAFC"/>
-
-                                    <StackPanel Spacing="4">
-                                        <TextBlock Text="ComfyUI Executable Path" FontSize="13" Foreground="#94A3B8" FontWeight="Medium"/>
-                                        <TextBox Text="{Binding ComfyUiExecutablePath, Mode=TwoWay}" Background="#0F172A" Foreground="#F8FAFC" BorderBrush="#334155" CornerRadius="6" Padding="10,8"/>
-                                    </StackPanel>
-
-                                    <StackPanel Spacing="4">
-                                        <TextBlock Text="Forge Executable Path" FontSize="13" Foreground="#94A3B8" FontWeight="Medium"/>
-                                        <TextBox Text="{Binding ForgeExecutablePath, Mode=TwoWay}" Background="#0F172A" Foreground="#F8FAFC" BorderBrush="#334155" CornerRadius="6" Padding="10,8"/>
-                                    </StackPanel>
-
-                                    <StackPanel Spacing="4">
-                                        <TextBlock Text="Forge Models Directory Path" FontSize="13" Foreground="#94A3B8" FontWeight="Medium"/>
-                                        <TextBox Text="{Binding ForgeModelsPath, Mode=TwoWay}" Background="#0F172A" Foreground="#F8FAFC" BorderBrush="#334155" CornerRadius="6" Padding="10,8"/>
-                                    </StackPanel>
-
-                                    <StackPanel Spacing="4">
-                                        <TextBlock Text="3D Models Output Path" FontSize="13" Foreground="#94A3B8" FontWeight="Medium"/>
-                                        <TextBox Text="{Binding ThreeDModelsPath, Mode=TwoWay}" Background="#0F172A" Foreground="#F8FAFC" BorderBrush="#334155" CornerRadius="6" Padding="10,8"/>
-                                    </StackPanel>
-
-                                    <StackPanel Spacing="4">
-                                        <TextBlock Text="Workflows Directory Path" FontSize="13" Foreground="#94A3B8" FontWeight="Medium"/>
-                                        <TextBox Text="{Binding WorkflowsPath, Mode=TwoWay}" Background="#0F172A" Foreground="#F8FAFC" BorderBrush="#334155" CornerRadius="6" Padding="10,8"/>
-                                    </StackPanel>
-
-                                    <StackPanel Spacing="4">
-                                        <TextBlock Text="ComfyUI URL" FontSize="13" Foreground="#94A3B8" FontWeight="Medium"/>
-                                        <TextBox Text="{Binding ComfyUiUrl, Mode=TwoWay}" Background="#0F172A" Foreground="#F8FAFC" BorderBrush="#334155" CornerRadius="6" Padding="10,8"/>
-                                    </StackPanel>
-
-                                    <StackPanel Spacing="4">
-                                        <TextBlock Text="Preferred Image Engine" FontSize="13" Foreground="#94A3B8" FontWeight="Medium"/>
-                                        <TextBox Text="{Binding PreferredImageEngine, Mode=TwoWay}" Background="#0F172A" Foreground="#F8FAFC" BorderBrush="#334155" CornerRadius="6" Padding="10,8"/>
-                                    </StackPanel>
-
-                                    <Button Command="{Binding SaveSettingsAsyncCommand}" 
-                                            Background="#22C55E" Foreground="#0F172A" FontWeight="Bold" CornerRadius="6" Padding="16,8" HorizontalAlignment="Left" Margin="0,8,0,0">
-                                        💾 Save Settings
-                                    </Button>
-                                </StackPanel>
-                            </Border>
-                        </StackPanel>
-                    </ScrollViewer>
-                </TabItem>
-            </TabControl>
-
-            <!-- Floating Toast Notifications Overlay -->
-            <ItemsControl Grid.Row="1" ItemsSource="{Binding Toasts}" VerticalAlignment="Top" HorizontalAlignment="Right" Margin="0,20,24,0" IsHitTestVisible="False">
-                <ItemsControl.ItemTemplate>
-                    <DataTemplate DataType="services:ToastItem">
-                        <Border Background="#1E293B" CornerRadius="6" BorderBrush="{Binding BadgeColor}" BorderThickness="2" Padding="12,8" Margin="0,0,0,8" Width="300">
-                            <TextBlock Text="{Binding Message}" Foreground="#F8FAFC" FontSize="12" TextWrapping="Wrap"/>
-                        </Border>
-                    </DataTemplate>
-                </ItemsControl.ItemTemplate>
-            </ItemsControl>
-
-            <!-- Footer -->
-            <Border Grid.Row="2" BorderBrush="#1E293B" BorderThickness="0,1,0,0" Padding="16,12,16,12" Margin="0,8,0,0">
-                <Grid ColumnDefinitions="*, Auto">
-                    <TextBlock Text="LocalLLMServerManager v3.3.0 — Unified WASM &amp; Desktop UI" FontSize="12" Foreground="#64748B"/>
-                    <TextBlock Grid.Column="1" Text="System Tray Enabled 🟢" FontSize="12" Foreground="#22C55E"/>
-                </Grid>
-            </Border>
+        <!-- Footer -->
+        <Border Grid.Row="2" BorderBrush="#1E293B" BorderThickness="0,1,0,0" Padding="16,12,16,12" Margin="0,8,0,0">
+            <Grid ColumnDefinitions="*, Auto">
+                <TextBlock Text="LocalLLMServerManager v3.3.0 — Unified WASM &amp; Desktop UI" FontSize="12" Foreground="#64748B"/>
+                <TextBlock Grid.Column="1" Text="System Tray Enabled 🟢" FontSize="12" Foreground="#22C55E"/>
+            </Grid>
+        </Border>
     </Grid>
 </UserControl>

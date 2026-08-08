@@ -1,0 +1,66 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:LocalLLMServerManager.Shared.ViewModels"
+             x:Class="LocalLLMServerManager.Shared.Views.Controls.SettingsTabControl"
+             x:DataType="vm:SettingsViewModel">
+
+    <ScrollViewer Margin="0,12,0,0">
+        <StackPanel Spacing="16">
+            <Border Background="#1E293B" CornerRadius="8" BorderBrush="#334155" BorderThickness="1" Padding="18">
+                <StackPanel Spacing="10">
+                    <TextBlock Text="🌐 Remote &amp; Mobile Access URL" FontSize="16" FontWeight="Bold" Foreground="#F8FAFC"/>
+                    <TextBlock Text="Connect to this manager from your smartphone, tablet, or laptop:" FontSize="13" Foreground="#94A3B8"/>
+                    <Border Background="#0F172A" CornerRadius="6" Padding="12">
+                        <SelectableTextBlock Text="{Binding LanAccessUrl}" FontSize="16" FontWeight="Bold" Foreground="#38BDF8"/>
+                    </Border>
+                </StackPanel>
+            </Border>
+
+            <Border Background="#1E293B" CornerRadius="8" BorderBrush="#334155" BorderThickness="1" Padding="18">
+                <StackPanel Spacing="12">
+                    <TextBlock Text="🛠️ Executable &amp; Directory Paths" FontSize="16" FontWeight="Bold" Foreground="#F8FAFC"/>
+
+                    <StackPanel Spacing="4">
+                        <TextBlock Text="ComfyUI Executable Path" FontSize="13" Foreground="#94A3B8" FontWeight="Medium"/>
+                        <TextBox Text="{Binding ComfyUiExecutablePath, Mode=TwoWay}" Background="#0F172A" Foreground="#F8FAFC" BorderBrush="#334155" CornerRadius="6" Padding="10,8"/>
+                    </StackPanel>
+
+                    <StackPanel Spacing="4">
+                        <TextBlock Text="Forge Executable Path" FontSize="13" Foreground="#94A3B8" FontWeight="Medium"/>
+                        <TextBox Text="{Binding ForgeExecutablePath, Mode=TwoWay}" Background="#0F172A" Foreground="#F8FAFC" BorderBrush="#334155" CornerRadius="6" Padding="10,8"/>
+                    </StackPanel>
+
+                    <StackPanel Spacing="4">
+                        <TextBlock Text="Forge Models Directory Path" FontSize="13" Foreground="#94A3B8" FontWeight="Medium"/>
+                        <TextBox Text="{Binding ForgeModelsPath, Mode=TwoWay}" Background="#0F172A" Foreground="#F8FAFC" BorderBrush="#334155" CornerRadius="6" Padding="10,8"/>
+                    </StackPanel>
+
+                    <StackPanel Spacing="4">
+                        <TextBlock Text="3D Models Output Path" FontSize="13" Foreground="#94A3B8" FontWeight="Medium"/>
+                        <TextBox Text="{Binding ThreeDModelsPath, Mode=TwoWay}" Background="#0F172A" Foreground="#F8FAFC" BorderBrush="#334155" CornerRadius="6" Padding="10,8"/>
+                    </StackPanel>
+
+                    <StackPanel Spacing="4">
+                        <TextBlock Text="Workflows Directory Path" FontSize="13" Foreground="#94A3B8" FontWeight="Medium"/>
+                        <TextBox Text="{Binding WorkflowsPath, Mode=TwoWay}" Background="#0F172A" Foreground="#F8FAFC" BorderBrush="#334155" CornerRadius="6" Padding="10,8"/>
+                    </StackPanel>
+
+                    <StackPanel Spacing="4">
+                        <TextBlock Text="ComfyUI URL" FontSize="13" Foreground="#94A3B8" FontWeight="Medium"/>
+                        <TextBox Text="{Binding ComfyUiUrl, Mode=TwoWay}" Background="#0F172A" Foreground="#F8FAFC" BorderBrush="#334155" CornerRadius="6" Padding="10,8"/>
+                    </StackPanel>
+
+                    <StackPanel Spacing="4">
+                        <TextBlock Text="Preferred Image Engine" FontSize="13" Foreground="#94A3B8" FontWeight="Medium"/>
+                        <TextBox Text="{Binding PreferredImageEngine, Mode=TwoWay}" Background="#0F172A" Foreground="#F8FAFC" BorderBrush="#334155" CornerRadius="6" Padding="10,8"/>
+                    </StackPanel>
+
+                    <Button Command="{Binding SaveSettingsCommand}" 
+                            Background="#22C55E" Foreground="#0F172A" FontWeight="Bold" CornerRadius="6" Padding="16,8" HorizontalAlignment="Left" Margin="0,8,0,0">
+                        💾 Save Settings
+                    </Button>
+                </StackPanel>
+            </Border>
+        </StackPanel>
+    </ScrollViewer>
+</UserControl>

@@ -1,0 +1,32 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:LocalLLMServerManager.Shared.ViewModels"
+             x:Class="LocalLLMServerManager.Shared.Views.Controls.EngineStudioTabControl"
+             x:DataType="vm:MainViewModel">
+
+    <StackPanel Spacing="12" Margin="0,12,0,0">
+        <TextBlock Text="AI Image &amp; 3D Generation Engines" FontSize="16" FontWeight="Bold" Foreground="#F1F5F9"/>
+
+        <UniformGrid Columns="2">
+            <Border Background="#1E293B" CornerRadius="8" BorderBrush="#334155" BorderThickness="1" Padding="16" Margin="0,0,6,0">
+                <StackPanel Spacing="8">
+                    <TextBlock Text="🎨 Stable Diffusion / Forge" FontSize="14" FontWeight="Bold" Foreground="#F8FAFC"/>
+                    <TextBlock Text="{Binding ForgeStatus, StringFormat='Status: {0}'}" FontSize="13" Foreground="#EC4899" FontWeight="SemiBold"/>
+                    <TextBlock Text="Port 7860 • WebUI &amp; SD API Endpoint" FontSize="12" Foreground="#94A3B8"/>
+                    <Button Content="▶️ Start Forge Engine" Command="{Binding ToggleEngineCommand}" CommandParameter="forge" 
+                            Background="#0F172A" Foreground="#38BDF8" CornerRadius="6" Padding="12,6" Margin="0,4,0,0"/>
+                </StackPanel>
+            </Border>
+
+            <Border Background="#1E293B" CornerRadius="8" BorderBrush="#334155" BorderThickness="1" Padding="16" Margin="6,0,0,0">
+                <StackPanel Spacing="8">
+                    <TextBlock Text="🧩 ComfyUI 3D Mesh Studio" FontSize="14" FontWeight="Bold" Foreground="#F8FAFC"/>
+                    <TextBlock Text="{Binding ComfyStatus, StringFormat='Status: {0}'}" FontSize="13" Foreground="#A855F7" FontWeight="SemiBold"/>
+                    <TextBlock Text="Port 8188 • TRELLIS V2 &amp; Hunyuan3D Pipelines" FontSize="12" Foreground="#94A3B8"/>
+                    <Button Content="▶️ Start ComfyUI Engine" Command="{Binding ToggleEngineCommand}" CommandParameter="comfy" 
+                            Background="#0F172A" Foreground="#A855F7" CornerRadius="6" Padding="12,6" Margin="0,4,0,0"/>
+                </StackPanel>
+            </Border>
+        </UniformGrid>
+    </StackPanel>
+</UserControl>

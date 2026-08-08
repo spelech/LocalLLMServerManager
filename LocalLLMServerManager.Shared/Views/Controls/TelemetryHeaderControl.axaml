@@ -1,0 +1,33 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:LocalLLMServerManager.Shared.ViewModels"
+             x:Class="LocalLLMServerManager.Shared.Views.Controls.TelemetryHeaderControl"
+             x:DataType="vm:TelemetryViewModel">
+
+    <Border Background="#1E293B" CornerRadius="8" BorderBrush="#334155" BorderThickness="1" Padding="16" Margin="16,16,16,8">
+        <Grid RowDefinitions="Auto, Auto" ColumnDefinitions="*, Auto">
+            <StackPanel Grid.Row="0" Grid.Column="0">
+                <TextBlock Text="Local LLM Server Manager" FontSize="20" FontWeight="Bold" Foreground="#F8FAFC"/>
+                <StackPanel Orientation="Horizontal" Spacing="10" Margin="0,4,0,0">
+                    <TextBlock Text="{Binding GpuName}" FontSize="13" Foreground="#38BDF8" FontWeight="SemiBold"/>
+                    <TextBlock Text="•" Foreground="#64748B"/>
+                    <TextBlock Text="{Binding ServiceModeText}" FontSize="13" Foreground="#94A3B8"/>
+                </StackPanel>
+            </StackPanel>
+
+            <Button Grid.Row="0" Grid.Column="1" Command="{Binding RefreshStatusCommand}" 
+                    Background="#0F172A" Foreground="#38BDF8" BorderBrush="#334155" BorderThickness="1" CornerRadius="6" Padding="12,6" VerticalAlignment="Top">
+                🔄 Refresh Telemetry
+            </Button>
+
+            <!-- VRAM Allocation Gauge Bar -->
+            <Grid Grid.Row="1" Grid.ColumnSpan="2" RowDefinitions="Auto, Auto" Margin="0,12,0,0">
+                <Grid Grid.Row="0" ColumnDefinitions="*, Auto" Margin="0,0,0,6">
+                    <TextBlock Text="GPU VRAM Allocation" FontSize="12" Foreground="#94A3B8" FontWeight="Medium"/>
+                    <TextBlock Grid.Column="1" Text="{Binding VramStatusText}" FontSize="12" Foreground="#38BDF8" FontWeight="Bold"/>
+                </Grid>
+                <ProgressBar Grid.Row="1" Value="{Binding VramPercentage}" Maximum="100" Height="10" CornerRadius="5" Background="#0F172A" Foreground="#38BDF8"/>
+            </Grid>
+        </Grid>
+    </Border>
+</UserControl>
