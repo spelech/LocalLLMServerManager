@@ -13,7 +13,7 @@
         <vm:MainViewModel/>
     </Design.DataContext>
 
-    <Grid RowDefinitions="Auto, *, Auto" Background="#0F172A">
+    <Grid RowDefinitions="Auto, *, Auto" Background="{StaticResource GlassBackgroundBrush}">
         <!-- Top Telemetry Header -->
         <controls:TelemetryHeaderControl Grid.Row="0" DataContext="{Binding Telemetry}"/>
 

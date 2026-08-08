@@ -3,8 +3,16 @@
              xmlns:semi="using:Semi.Avalonia"
              x:Class="LocalLLMServerManager.App"
              RequestedThemeVariant="Dark">
+    <Application.Resources>
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <ResourceInclude Source="avares://LocalLLMServerManager.Shared/Styles/DesignTokens.axaml" />
+            </ResourceDictionary.MergedDictionaries>
+        </ResourceDictionary>
+    </Application.Resources>
     <Application.Styles>
         <semi:SemiTheme Locale="en-US" />
+        <StyleInclude Source="avares://LocalLLMServerManager.Shared/Styles/GlassmorphicTheme.axaml" />
     </Application.Styles>
     <TrayIcon.Icons>
         <TrayIcons>
