@@ -19,6 +19,22 @@ public partial class SettingsViewModel : ObservableObject
     [ObservableProperty] private string _comfyUiExecutablePath = @"C:\AI\ComfyUI\run_nvidia_gpu.bat";
     [ObservableProperty] private string _forgeExecutablePath = @"C:\AI\webui\webui-user.bat";
     [ObservableProperty] private string _lanAccessUrl = "http://127.0.0.1:5246";
+    [ObservableProperty] private string _selectedThemeStyle = "semi";
+
+    [RelayCommand]
+    public void SwitchThemeStyle(string style)
+    {
+        if (string.IsNullOrWhiteSpace(style)) return;
+        SelectedThemeStyle = style;
+        try
+        {
+            var appType = Type.GetType("LocalLLMServerManager.App, LocalLLMServerManager");
+            var method = appType?.GetMethod("SetThemeStyle", System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Static);
+            method?.Invoke(null, new object[] { style });
+            ToastService.Instance.Show($"Switched theme to '{style.ToUpperInvariant()}' style.", ToastType.Info);
+        }
+        catch { }
+    }
 
     public async Task LoadSettingsAsync(string apiBase, HttpClient http)
     {

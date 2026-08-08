@@ -1,13 +1,14 @@
 <Application xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:semi="using:Semi.Avalonia"
              x:Class="LocalLLMServerManager.App"
              RequestedThemeVariant="Dark">
     <Application.Styles>
-        <FluentTheme />
+        <semi:SemiTheme Locale="en-US" />
     </Application.Styles>
     <TrayIcon.Icons>
         <TrayIcons>
-            <TrayIcon Icon="avares://LocalLLMServerManager/Assets/app-icon.ico" ToolTipText="Local LLM Server Manager v3.1.0" IsVisible="True">
+            <TrayIcon Icon="avares://LocalLLMServerManager/Assets/app-icon.ico" ToolTipText="Local LLM Server Manager v3.3.0" IsVisible="True">
                 <TrayIcon.Menu>
                     <NativeMenu>
                         <NativeMenuItem Header="Open Native Dashboard" Click="OnOpenDashboardClick"/>

@@ -6,6 +6,21 @@
 
     <ScrollViewer Margin="0,12,0,0">
         <StackPanel Spacing="16">
+            <!-- Theme & Interface Mode Switcher -->
+            <Border Background="#1E293B" CornerRadius="8" BorderBrush="#334155" BorderThickness="1" Padding="18">
+                <StackPanel Spacing="12">
+                    <TextBlock Text="🎨 Desktop Theme &amp; Web Interface Options" FontSize="16" FontWeight="Bold" Foreground="#F8FAFC"/>
+                    <TextBlock Text="Try switching between desktop themes or launch the browser dashboard:" FontSize="13" Foreground="#94A3B8"/>
+
+                    <StackPanel Orientation="Horizontal" Spacing="10">
+                        <Button Content="✨ Semi Design Dark Theme" Command="{Binding SwitchThemeStyleCommand}" CommandParameter="semi"
+                                Background="#38BDF8" Foreground="#0F172A" FontWeight="Bold" CornerRadius="6" Padding="12,8"/>
+                        <Button Content="⚡ Fluent Dark Theme" Command="{Binding SwitchThemeStyleCommand}" CommandParameter="fluent"
+                                Background="#0F172A" Foreground="#38BDF8" BorderBrush="#334155" BorderThickness="1" CornerRadius="6" Padding="12,8"/>
+                    </StackPanel>
+                </StackPanel>
+            </Border>
+
             <Border Background="#1E293B" CornerRadius="8" BorderBrush="#334155" BorderThickness="1" Padding="18">
                 <StackPanel Spacing="10">
                     <TextBlock Text="🌐 Remote &amp; Mobile Access URL" FontSize="16" FontWeight="Bold" Foreground="#F8FAFC"/>
