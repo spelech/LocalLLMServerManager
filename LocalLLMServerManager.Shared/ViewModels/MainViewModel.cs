@@ -12,6 +12,7 @@ using System.Threading.Tasks;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using LocalLLMServerManager.Shared.Services;
+using LocalLLMServerManager.Shared.Interfaces;
 using LocalLLMServerManager;
 
 namespace LocalLLMServerManager.Shared.ViewModels;
@@ -62,9 +63,29 @@ public partial class MainViewModel : ObservableObject
 
     public static bool EnableAutomaticPolling { get; set; } = false;
 
+    private readonly ITelemetryService _telemetryService;
+    private readonly IOllamaModelService _ollamaModelService;
+    private readonly IHuggingFaceSearchService _hfSearchService;
+    private readonly ICivitaiSearchService _civitaiSearchService;
+
     public MainViewModel(HttpClient? httpClient)
+        : this(httpClient, new TelemetryService(), new OllamaModelService(), new HuggingFaceSearchService(), new CivitaiSearchService())
+    {
+    }
+
+    public MainViewModel(
+        HttpClient? httpClient,
+        ITelemetryService telemetryService,
+        IOllamaModelService ollamaModelService,
+        IHuggingFaceSearchService hfSearchService,
+        ICivitaiSearchService civitaiSearchService)
     {
         if (httpClient != null) _customHttp = httpClient;
+        _telemetryService = telemetryService;
+        _ollamaModelService = ollamaModelService;
+        _hfSearchService = hfSearchService;
+        _civitaiSearchService = civitaiSearchService;
+
         DetectLanIp();
         _ = RefreshStatusAsync();
         _ = LoadSettingsAsync();
@@ -148,13 +169,12 @@ public partial class MainViewModel : ObservableObject
     {
         try
         {
-            foreach (var ip in Dns.GetHostAddresses(Dns.GetHostName()))
+            using var socket = new Socket(AddressFamily.InterNetwork, SocketType.Dgram, 0);
+            socket.Connect("8.8.8.8", 65530);
+            var endPoint = socket.LocalEndPoint as IPEndPoint;
+            if (endPoint != null)
             {
-                if (ip.AddressFamily == AddressFamily.InterNetwork && !IPAddress.IsLoopback(ip))
-                {
-                    LanAccessUrl = $"http://{ip}:5246";
-                    break;
-                }
+                LanAccessUrl = $"http://{endPoint.Address}:5246";
             }
         }
         catch
@@ -181,50 +201,12 @@ public partial class MainViewModel : ObservableObject
     [RelayCommand]
     public async Task LoadInstalledModelsAsync()
     {
-        try
+        var models = await _ollamaModelService.LoadInstalledModelsAsync(ApiBase, Http);
+        InstalledModels.Clear();
+        foreach (var m in models)
         {
-            HttpResponseMessage response;
-            try
-            {
-                response = await Http.GetAsync($"{ApiBase}/api/models");
-                if (!response.IsSuccessStatusCode)
-                {
-                    response = await Http.GetAsync("http://127.0.0.1:11434/api/tags");
-                }
-            }
-            catch
-            {
-                response = await Http.GetAsync("http://127.0.0.1:11434/api/tags");
-            }
-
-            if (response.IsSuccessStatusCode)
-            {
-                var jsonStr = await response.Content.ReadAsStringAsync();
-                var doc = JsonNode.Parse(jsonStr);
-                var models = doc?["models"]?.AsArray();
-
-                InstalledModels.Clear();
-                if (models != null)
-                {
-                    foreach (var m in models)
-                    {
-                        string name = m?["name"]?.ToString() ?? "Unknown";
-                        long size = m?["size"]?.GetValue<long>() ?? 0L;
-                        double sizeGb = Math.Round(size / (1024.0 * 1024.0 * 1024.0), 2);
-                        string formatSize = sizeGb > 0 ? $"{sizeGb} GB" : "N/A";
-
-                        string cap = "💻 Coding & General";
-                        string color = "#38BDF8";
-                        if (name.Contains("math", StringComparison.OrdinalIgnoreCase)) { cap = "🧮 Mathematics"; color = "#C084FC"; }
-                        else if (name.Contains("r1", StringComparison.OrdinalIgnoreCase) || name.Contains("deepseek", StringComparison.OrdinalIgnoreCase)) { cap = "🧠 Reasoning"; color = "#A855F7"; }
-                        else if (name.Contains("gemma", StringComparison.OrdinalIgnoreCase)) { cap = "💎 General Chat"; color = "#FB923C"; }
-
-                        InstalledModels.Add(new OllamaModelItem(name, formatSize, cap, color, false));
-                    }
-                }
-            }
+            InstalledModels.Add(m);
         }
-        catch { }
     }
 
     [RelayCommand]
@@ -233,37 +215,7 @@ public partial class MainViewModel : ObservableObject
         try
         {
             ToastService.Instance.Show("Unloading all models from VRAM...", ToastType.Info);
-            HttpResponseMessage psResp;
-            try
-            {
-                psResp = await Http.GetAsync($"{ApiBase}/api/ollama/ps");
-                if (!psResp.IsSuccessStatusCode) psResp = await Http.GetAsync("http://127.0.0.1:11434/api/ps");
-            }
-            catch
-            {
-                psResp = await Http.GetAsync("http://127.0.0.1:11434/api/ps");
-            }
-            if (psResp.IsSuccessStatusCode)
-            {
-                var doc = JsonNode.Parse(await psResp.Content.ReadAsStringAsync());
-                var models = doc?["models"]?.AsArray();
-                if (models != null)
-                {
-                    foreach (var m in models)
-                    {
-                        string name = m?["name"]?.ToString() ?? "";
-                        if (!string.IsNullOrEmpty(name))
-                        {
-                            var content = new StringContent(
-                                JsonSerializer.Serialize(new { model = name, keep_alive = 0 }),
-                                System.Text.Encoding.UTF8,
-                                "application/json"
-                            );
-                            await Http.PostAsync("http://127.0.0.1:11434/api/generate", content);
-                        }
-                    }
-                }
-            }
+            await _ollamaModelService.UnloadAllVramAsync(ApiBase, Http);
             await Task.Delay(1000);
             await RefreshStatusAsync();
             ToastService.Instance.Show("All models unloaded from VRAM successfully.", ToastType.Success);
@@ -540,59 +492,24 @@ public partial class MainViewModel : ObservableObject
 
     private async Task CheckHealthAsync()
     {
-        try
-        {
-            var response = await Http.GetAsync($"{ApiBase}/health");
-            if (response.IsSuccessStatusCode)
-            {
-                var doc = JsonNode.Parse(await response.Content.ReadAsStringAsync());
-                OllamaStatus = doc?["ollama"]?.ToString() ?? "Offline";
-                ForgeStatus = doc?["stableDiffusion"]?.ToString() ?? "Offline";
-                ComfyStatus = doc?["comfyUI"]?.ToString() ?? "Offline";
-                ServiceModeText = "Connected to Server (:5246)";
-                IsServiceRunning = true;
-            }
-            else
-            {
-                OllamaStatus = "Offline";
-                ForgeStatus = "Offline";
-                ComfyStatus = "Offline";
-                ServiceModeText = "Server Offline";
-                IsServiceRunning = false;
-            }
-        }
-        catch
-        {
-            OllamaStatus = "Offline";
-            ForgeStatus = "Offline";
-            ComfyStatus = "Offline";
-            ServiceModeText = "Connecting...";
-            IsServiceRunning = false;
-        }
+        var (ollama, forge, comfy) = await _telemetryService.CheckServiceHealthAsync(ApiBase, ComfyUiUrl, Http);
+
+        OllamaStatus = ollama ? "Online" : "Offline";
+        ForgeStatus = forge ? "Online" : "Offline";
+        ComfyStatus = comfy ? "Online" : "Offline";
+
+        IsServiceRunning = ollama || forge || comfy;
+        ServiceModeText = IsServiceRunning ? "Service Connected 🟢" : "Connecting...";
     }
 
     private async Task CheckGpuVramAsync()
     {
-        try
-        {
-            var response = await Http.GetAsync($"{ApiBase}/api/gpu/vram");
-            if (response.IsSuccessStatusCode)
-            {
-                var doc = JsonNode.Parse(await response.Content.ReadAsStringAsync());
-                GpuName = doc?["gpuName"]?.ToString() ?? "GPU";
-                long vramBytes = doc?["vramBytes"]?.GetValue<long>() ?? 8589934592L;
-                long usedBytes = doc?["usedVramBytes"]?.GetValue<long>() ?? 0L;
-
-                VramTotalGb = Math.Round(vramBytes / (1024.0 * 1024.0 * 1024.0), 1);
-                VramUsedGb = Math.Round(usedBytes / (1024.0 * 1024.0 * 1024.0), 2);
-                VramPercentage = VramTotalGb > 0 ? Math.Min(100, Math.Round((VramUsedGb / VramTotalGb) * 100, 1)) : 0;
-                VramStatusText = $"{VramUsedGb} GB / {VramTotalGb} GB ({VramPercentage}%)";
-            }
-        }
-        catch
-        {
-            GpuName = "System GPU";
-        }
+        var info = await _telemetryService.QueryGpuVramAsync(ApiBase, Http);
+        GpuName = info.GpuName;
+        VramTotalGb = info.TotalVramGb;
+        VramUsedGb = info.UsedVramGb;
+        VramPercentage = info.Percent;
+        VramStatusText = $"{VramUsedGb} GB / {VramTotalGb} GB ({VramPercentage}%)";
     }
 
     [RelayCommand]
