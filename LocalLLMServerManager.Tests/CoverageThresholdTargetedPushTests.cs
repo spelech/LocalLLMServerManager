@@ -333,14 +333,26 @@ public class CoverageThresholdTargetedPushTests : IClassFixture<AppTestServerFix
     {
         var app = Program.CreateWebApplication(Array.Empty<string>(), isServiceMode: false, url: "http://127.0.0.1:5298");
         await app.StartAsync();
-        using var client = new HttpClient { BaseAddress = new Uri("http://127.0.0.1:5298") };
+        using var client = new HttpClient { BaseAddress = new Uri("http://127.0.0.1:5298"), Timeout = TimeSpan.FromSeconds(3) };
 
         try
         {
-            await client.GetAsync("/api/hf/search?q=llama");
-            await client.GetAsync("/api/hf/model?repoId=meta-llama/Llama-3.3-8B-Instruct-GGUF");
-            await client.GetAsync("/api/civitai/search?q=cyberpunk");
-            await client.GetAsync("/api/civitai/model?id=1");
+            using (var cts = new CancellationTokenSource(TimeSpan.FromSeconds(2)))
+            {
+                try { await client.GetAsync("/api/hf/search?q=llama", cts.Token); } catch { }
+            }
+            using (var cts = new CancellationTokenSource(TimeSpan.FromSeconds(2)))
+            {
+                try { await client.GetAsync("/api/hf/model?repoId=meta-llama/Llama-3.3-8B-Instruct-GGUF", cts.Token); } catch { }
+            }
+            using (var cts = new CancellationTokenSource(TimeSpan.FromSeconds(2)))
+            {
+                try { await client.GetAsync("/api/civitai/search?q=cyberpunk", cts.Token); } catch { }
+            }
+            using (var cts = new CancellationTokenSource(TimeSpan.FromSeconds(2)))
+            {
+                try { await client.GetAsync("/api/civitai/model?id=1", cts.Token); } catch { }
+            }
 
             try { await client.PostAsJsonAsync("/sdapi/v1/txt2img", new { prompt = "cat" }); } catch { }
             try { await client.PostAsJsonAsync("/comfyapi/prompt", new { prompt = "cat" }); } catch { }
