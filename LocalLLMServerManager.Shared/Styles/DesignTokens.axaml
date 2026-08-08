@@ -1,0 +1,35 @@
+<ResourceDictionary xmlns="https://github.com/avaloniaui"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    <!-- Color Definitions -->
+    <Color x:Key="BgDarkColor">#0b0e14</Color>
+    <Color x:Key="BgSurfaceColor">#161b26</Color>
+    <Color x:Key="BgCardColor">#1e2536</Color>
+    <Color x:Key="PrimaryColor">#8b5cf6</Color>
+    <Color x:Key="SecondaryColor">#06b6d4</Color>
+    <Color x:Key="AccentColor">#c084fc</Color>
+
+    <!-- Solid Brushes -->
+    <SolidColorBrush x:Key="BgDarkBrush" Color="{StaticResource BgDarkColor}" />
+    <SolidColorBrush x:Key="BgSurfaceBrush" Color="{StaticResource BgSurfaceColor}" Opacity="0.45" />
+    <SolidColorBrush x:Key="BgCardBrush" Color="{StaticResource BgCardColor}" Opacity="0.65" />
+    <SolidColorBrush x:Key="GlassBorderBrush" Color="#4b5563" Opacity="0.35" />
+    <SolidColorBrush x:Key="BorderGlowBrush" Color="#a78bfa" Opacity="0.25" />
+    <SolidColorBrush x:Key="PrimaryBrush" Color="{StaticResource PrimaryColor}" />
+    <SolidColorBrush x:Key="SecondaryBrush" Color="{StaticResource SecondaryColor}" />
+    <SolidColorBrush x:Key="AccentBrush" Color="{StaticResource AccentColor}" />
+    <SolidColorBrush x:Key="TextMainBrush" Color="#f3f4f6" />
+    <SolidColorBrush x:Key="TextMutedBrush" Color="#9ca3af" />
+    <SolidColorBrush x:Key="OnlineBrush" Color="#22c55e" />
+    <SolidColorBrush x:Key="OfflineBrush" Color="#ef4444" />
+
+    <!-- Gradient Brushes -->
+    <LinearGradientBrush x:Key="PrimaryGradientBrush" StartPoint="0%,50%" EndPoint="100%,50%">
+        <GradientStop Color="#8b5cf6" Offset="0.0" />
+        <GradientStop Color="#06b6d4" Offset="1.0" />
+    </LinearGradientBrush>
+
+    <RadialGradientBrush x:Key="GlassBackgroundBrush" Center="50%,50%" GradientOrigin="50%,50%" RadiusX="0.8" RadiusY="0.8">
+        <GradientStop Color="#1e1b4b" Offset="0.0" />
+        <GradientStop Color="#0b0e14" Offset="1.0" />
+    </RadialGradientBrush>
+</ResourceDictionary>
