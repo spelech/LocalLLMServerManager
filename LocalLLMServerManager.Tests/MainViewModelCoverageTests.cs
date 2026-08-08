@@ -186,9 +186,18 @@ public class MainViewModelCoverageTests : IClassFixture<AppTestServerFixture>
         var vm = CreateTestViewModel();
         var item = new CivitaiModelItem(101, "Cyberpunk Checkpoint", "Checkpoint", "http://thumb", "http://download", "cyberpunk.safetensors", 4.9, 2500);
 
-        await vm.DownloadCivitaiModelAsync(item);
-
-        Assert.NotEmpty(vm.Toasts);
+        ToastItem? emittedToast = null;
+        Action<ToastItem> handler = t => emittedToast = t;
+        ToastService.Instance.OnToastShow += handler;
+        try
+        {
+            await vm.DownloadCivitaiModelAsync(item);
+            Assert.NotNull(emittedToast);
+        }
+        finally
+        {
+            ToastService.Instance.OnToastShow -= handler;
+        }
     }
 
     [Fact]

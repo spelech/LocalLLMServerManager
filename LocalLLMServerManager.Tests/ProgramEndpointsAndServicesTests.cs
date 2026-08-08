@@ -14,7 +14,7 @@ public class AppTestServerFixture : IAsyncLifetime
     public static string TestBaseUrl = "http://127.0.0.1:5299";
     private WebApplication? _app;
 
-    public async Task InitializeAsync()
+    public async ValueTask InitializeAsync()
     {
         for (int port = 5299; port <= 5310; port++)
         {
@@ -33,7 +33,7 @@ public class AppTestServerFixture : IAsyncLifetime
         }
     }
 
-    public async Task DisposeAsync()
+    public async ValueTask DisposeAsync()
     {
         if (_app != null)
         {

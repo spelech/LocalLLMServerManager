@@ -6,7 +6,7 @@
 
     <Grid RowDefinitions="Auto, *" Margin="0,12,0,0">
         <Grid Grid.Row="0" ColumnDefinitions="*, Auto" Margin="0,0,0,12">
-            <TextBox Text="{Binding HfSearchQuery}" Watermark="Search GGUF models (e.g. llama 3.3, qwen2.5-coder)..." 
+            <TextBox Text="{Binding HfSearchQuery}" PlaceholderText="Search GGUF models (e.g. llama 3.3, qwen2.5-coder)..." 
                      Background="#1E293B" Foreground="#F8FAFC" BorderBrush="#334155" CornerRadius="6" Padding="10,8"/>
             <Button Grid.Column="1" Command="{Binding SearchHuggingFaceCommand}" 
                     Background="#38BDF8" Foreground="#0F172A" FontWeight="Bold" CornerRadius="6" Padding="16,8" Margin="8,0,0,0">

@@ -44,6 +44,8 @@ public class ToastService
 
     public ObservableCollection<ToastItem> ActiveToasts { get; } = new();
 
+    public event Action<ToastItem>? OnToastShow;
+
     public void Remove(ToastItem toast)
     {
         try
@@ -71,6 +73,12 @@ public class ToastService
     public void Show(string message, ToastType type = ToastType.Info, int autoRemoveMs = 4000)
     {
         var toast = new ToastItem(message, type);
+        try
+        {
+            OnToastShow?.Invoke(toast);
+        }
+        catch { }
+
         try
         {
             if (Avalonia.Threading.Dispatcher.UIThread.CheckAccess())

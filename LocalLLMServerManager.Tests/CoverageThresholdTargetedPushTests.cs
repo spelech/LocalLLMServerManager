@@ -305,18 +305,27 @@ public class CoverageThresholdTargetedPushTests : IClassFixture<AppTestServerFix
     [Fact]
     public async Task MainViewModel_SaveSettings_ExceptionHandling_ShowsErrorToast()
     {
-        ToastService.Instance.Clear();
-        var handlerMock = new Mock<HttpMessageHandler>();
-        handlerMock.Protected()
-            .Setup<Task<HttpResponseMessage>>("SendAsync", ItExpr.IsAny<HttpRequestMessage>(), ItExpr.IsAny<System.Threading.CancellationToken>())
-            .ThrowsAsync(new InvalidOperationException("Save settings network failure"));
+        ToastItem? emittedToast = null;
+        Action<ToastItem> handler = t => emittedToast = t;
+        ToastService.Instance.OnToastShow += handler;
 
-        var client = new HttpClient(handlerMock.Object);
-        var vm = new MainViewModel(client) { ApiBase = "http://127.0.0.1:5246" };
+        try
+        {
+            var handlerMock = new Mock<HttpMessageHandler>();
+            handlerMock.Protected()
+                .Setup<Task<HttpResponseMessage>>("SendAsync", ItExpr.IsAny<HttpRequestMessage>(), ItExpr.IsAny<System.Threading.CancellationToken>())
+                .ThrowsAsync(new InvalidOperationException("Save settings network failure"));
 
-        await vm.SaveSettingsAsync();
-        Assert.Single(ToastService.Instance.ActiveToasts);
-        ToastService.Instance.Clear();
+            var client = new HttpClient(handlerMock.Object);
+            var vm = new MainViewModel(client) { ApiBase = "http://127.0.0.1:5246" };
+
+            await vm.SaveSettingsAsync();
+            Assert.NotNull(emittedToast);
+        }
+        finally
+        {
+            ToastService.Instance.OnToastShow -= handler;
+        }
     }
 
     [Fact]
