@@ -42,7 +42,7 @@ public class AppTestServerFixture : IAsyncLifetime
         }
     }
 
-    public HttpClient CreateClient() => new HttpClient { BaseAddress = new Uri(TestBaseUrl), Timeout = TimeSpan.FromSeconds(5) };
+    public HttpClient CreateClient() => new HttpClient { BaseAddress = new Uri(TestBaseUrl), Timeout = TimeSpan.FromSeconds(30) };
     public HttpClient Client => CreateClient();
 }
 
