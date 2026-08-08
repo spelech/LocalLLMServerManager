@@ -3,6 +3,7 @@ using System.Text;
 using System.Text.Json;
 using Avalonia;
 using LocalLLMServerManager;
+using LocalLLMServerManager.Endpoints;
 
 namespace LocalLLMServerManager;
 
@@ -270,150 +271,9 @@ public class Program
             await next();
         });
 
-        // Health check endpoint
-        app.MapGet("/health", async (VramOrchestrator orchestrator) =>
-        {
-            var settings = LoadSettings();
-            var comfyUrl = string.IsNullOrWhiteSpace(settings.ComfyUiUrl) ? "http://127.0.0.1:8188" : settings.ComfyUiUrl;
-
-            var ollamaHealthy = await orchestrator.IsOllamaHealthyAsync();
-            var forgeHealthy = await orchestrator.IsForgeHealthyAsync();
-            var comfyHealthy = await orchestrator.IsComfyUiHealthyAsync(comfyUrl);
-
-            return Results.Ok(new
-            {
-                Status = (ollamaHealthy || forgeHealthy || comfyHealthy) ? "Healthy" : "Degraded",
-                Ollama = ollamaHealthy ? "Online" : "Offline",
-                StableDiffusion = forgeHealthy ? "Online" : "Offline",
-                ComfyUI = comfyHealthy ? "Online" : "Offline",
-                PreferredImageEngine = settings.PreferredImageEngine,
-                Version = "3.2.0"
-            });
-        });
-
-        // Backend Ollama Installed Models Proxy Route (bypasses browser CORS & direct port restrictions)
-        app.MapGet("/api/models", async (IHttpClientFactory clientFactory) =>
-        {
-            try
-            {
-                var http = clientFactory.CreateClient();
-                using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(3));
-                var response = await http.GetAsync("http://127.0.0.1:11434/api/tags", cts.Token);
-                if (response.IsSuccessStatusCode)
-                {
-                    var content = await response.Content.ReadAsStringAsync(cts.Token);
-                    return Results.Content(content, "application/json");
-                }
-            }
-            catch { }
-            return Results.Ok(new { models = new object[0] });
-        });
-
-        // Backend Ollama Active Processes Proxy Route
-        app.MapGet("/api/ollama/ps", async (IHttpClientFactory clientFactory) =>
-        {
-            try
-            {
-                var http = clientFactory.CreateClient();
-                using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(3));
-                var response = await http.GetAsync("http://127.0.0.1:11434/api/ps", cts.Token);
-                if (response.IsSuccessStatusCode)
-                {
-                    var content = await response.Content.ReadAsStringAsync(cts.Token);
-                    return Results.Content(content, "application/json");
-                }
-            }
-            catch { }
-            return Results.Ok(new { models = new object[0] });
-        });
-
-        // Hugging Face GGUF model search proxy (avoids CORS)
-        app.MapGet("/api/hf/search", async (string? q, HttpClient httpClient) =>
-        {
-            try
-            {
-                using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(3));
-                var query = string.IsNullOrWhiteSpace(q) ? "llama" : q;
-                var requestUrl = $"https://huggingface.co/api/models?search={Uri.EscapeDataString(query)}&filter=gguf&sort=downloads&direction=-1&limit=20";
-                var request = new HttpRequestMessage(HttpMethod.Get, requestUrl);
-                request.Headers.Add("User-Agent", "LocalLLMServerManager");
-
-                var response = await httpClient.SendAsync(request, cts.Token);
-                if (!response.IsSuccessStatusCode)
-                {
-                    return Results.Ok(new[] { new { id = "meta-llama/Llama-3.3-8B-Instruct-GGUF", author = "meta-llama", likes = 100, downloads = 500 } });
-                }
-                var content = await response.Content.ReadAsStringAsync(cts.Token);
-                return Results.Content(content, "application/json");
-            }
-            catch
-            {
-                return Results.Ok(new[] { new { id = "meta-llama/Llama-3.3-8B-Instruct-GGUF", author = "meta-llama", likes = 100, downloads = 500 } });
-            }
-        });
-
-        // Hugging Face repository details proxy endpoint
-        app.MapGet("/api/hf/model", async (string repoId, HttpClient httpClient) =>
-        {
-            try
-            {
-                using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(3));
-                var requestUrl = $"https://huggingface.co/api/models/{Uri.EscapeDataString(repoId)}";
-                var request = new HttpRequestMessage(HttpMethod.Get, requestUrl);
-                request.Headers.Add("User-Agent", "LocalLLMServerManager");
-
-                var response = await httpClient.SendAsync(request, cts.Token);
-                if (!response.IsSuccessStatusCode)
-                {
-                    return Results.Ok(new { id = repoId, author = "meta-llama", siblings = new[] { new { rfilename = "model.gguf" } } });
-                }
-                var content = await response.Content.ReadAsStringAsync(cts.Token);
-                return Results.Content(content, "application/json");
-            }
-            catch
-            {
-                return Results.Ok(new { id = repoId, author = "meta-llama", siblings = new[] { new { rfilename = "model.gguf" } } });
-            }
-        });
-
-        // CivitAI search proxy (avoids CORS)
-        app.MapGet("/api/civitai/search", async (HttpClient http, string? q, string? types, string? sort) =>
-        {
-            try
-            {
-                using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(3));
-                var queryType = string.IsNullOrWhiteSpace(types) ? "Checkpoint" : types;
-                var querySort = string.IsNullOrWhiteSpace(sort) ? "Most Downloaded" : sort;
-                var url = $"https://civitai.com/api/v1/models?limit=20&nsfw=false&types={Uri.EscapeDataString(queryType)}&sort={Uri.EscapeDataString(querySort)}";
-                if (!string.IsNullOrWhiteSpace(q))
-                {
-                    url += $"&query={Uri.EscapeDataString(q)}";
-                }
-                var response = await http.GetAsync(url, cts.Token);
-                var content = await response.Content.ReadAsStringAsync(cts.Token);
-                return Results.Content(content, "application/json");
-            }
-            catch
-            {
-                return Results.Ok(new { items = new[] { new { id = 1, name = "Test Model", type = "Checkpoint" } } });
-            }
-        });
-
-        // CivitAI single model detail proxy
-        app.MapGet("/api/civitai/model", async (HttpClient http, int id) =>
-        {
-            try
-            {
-                using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(3));
-                var response = await http.GetAsync($"https://civitai.com/api/v1/models/{id}", cts.Token);
-                var content = await response.Content.ReadAsStringAsync(cts.Token);
-                return Results.Content(content, "application/json");
-            }
-            catch
-            {
-                return Results.Ok(new { id = id, name = "Test Model Detail" });
-            }
-        });
+        app.MapHealthEndpoints();
+        app.MapModelProxyEndpoints();
+        app.MapMcpEndpoints();
 
         // GPU details retrieval endpoint (NVIDIA CUDA priority + Registry scoring fallback)
         app.MapGet("/api/gpu/vram", () =>
@@ -435,54 +295,6 @@ public class Program
             SaveSettings(newSettings);
             return Results.Ok(newSettings);
         });
-
-        // Model Context Protocol (MCP) Server Integration for AI Agents
-        app.MapGet("/api/mcp/tools", () => Results.Ok(new
-        {
-            tools = new object[]
-            {
-                new
-                {
-                    name = "get_telemetry",
-                    description = "Returns GPU VRAM usage, engine status (Ollama, SD Forge, ComfyUI), and system health.",
-                    parameters = new { type = "object", properties = new { } }
-                },
-                new
-                {
-                    name = "list_models",
-                    description = "Lists installed Ollama LLM models, size, and load status.",
-                    parameters = new { type = "object", properties = new { } }
-                },
-                new
-                {
-                    name = "unload_vram",
-                    description = "Unloads all models or a specified model from GPU VRAM.",
-                    parameters = new
-                    {
-                        type = "object",
-                        properties = new
-                        {
-                            model = new { type = "string", description = "Optional model name to unload. If omitted, unloads all models." }
-                        }
-                    }
-                },
-                new
-                {
-                    name = "toggle_engine",
-                    description = "Starts or stops AI engine (forge or comfy).",
-                    parameters = new
-                    {
-                        type = "object",
-                        properties = new
-                        {
-                            engine = new { type = "string", @enum = new[] { "forge", "comfy" }, description = "Engine to toggle" },
-                            action = new { type = "string", @enum = new[] { "start", "stop" }, description = "Action to perform" }
-                        },
-                        required = new[] { "engine", "action" }
-                    }
-                }
-            }
-        }));
 
         // CivitAI direct-to-disk SSE download streaming endpoint
         app.MapGet("/api/civitai/download", async (HttpContext ctx, HttpClient http, string fileUrl, string modelType, string fileName) =>
