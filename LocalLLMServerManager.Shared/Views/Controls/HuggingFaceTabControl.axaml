@@ -7,9 +7,9 @@
     <Grid RowDefinitions="Auto, *" Margin="0,12,0,0">
         <Grid Grid.Row="0" ColumnDefinitions="*, Auto" Margin="0,0,0,12">
             <TextBox Text="{Binding HfSearchQuery}" PlaceholderText="Search GGUF models (e.g. llama 3.3, qwen2.5-coder)..." 
-                     Background="#1E293B" Foreground="#F8FAFC" BorderBrush="#334155" CornerRadius="6" Padding="10,8"/>
+                     Classes="glass-input"/>
             <Button Grid.Column="1" Command="{Binding SearchHuggingFaceCommand}" 
-                    Background="#38BDF8" Foreground="#0F172A" FontWeight="Bold" CornerRadius="6" Padding="16,8" Margin="8,0,0,0">
+                    Classes="glass-primary" Margin="8,0,0,0">
                 🔍 Search Hub
             </Button>
         </Grid>
@@ -18,16 +18,16 @@
             <ItemsControl ItemsSource="{Binding HuggingFaceResults}">
                 <ItemsControl.ItemTemplate>
                     <DataTemplate DataType="vm:HuggingFaceRepoItem">
-                        <Border Background="#1E293B" CornerRadius="6" BorderBrush="#334155" BorderThickness="1" Padding="12" Margin="0,0,0,8">
+                        <Border Classes="glass-card" Margin="0,0,0,8">
                             <Grid ColumnDefinitions="*, Auto, Auto">
                                 <StackPanel Grid.Column="0">
-                                    <TextBlock Text="{Binding Id}" FontWeight="Bold" FontSize="14" Foreground="#38BDF8"/>
-                                    <TextBlock Text="{Binding Author, StringFormat='Author: {0}'}" FontSize="12" Foreground="#94A3B8" Margin="0,2,0,0"/>
+                                    <TextBlock Text="{Binding Id}" FontWeight="Bold" FontSize="14" Foreground="{StaticResource SecondaryBrush}"/>
+                                    <TextBlock Text="{Binding Author, StringFormat='Author: {0}'}" FontSize="12" Foreground="{StaticResource TextMutedBrush}" Margin="0,2,0,0"/>
                                 </StackPanel>
                                 <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="12" VerticalAlignment="Center" Margin="0,0,12,0">
-                                    <TextBlock Text="{Binding Downloads}" FontSize="12" Foreground="#CBD5E1"/>
-                                    <Border Background="#0F172A" CornerRadius="4" Padding="6,2">
-                                        <TextBlock Text="{Binding Likes, StringFormat='❤️ {0}'}" FontSize="12" Foreground="#EC4899"/>
+                                    <TextBlock Text="{Binding Downloads}" FontSize="12" Foreground="{StaticResource TextMainBrush}"/>
+                                    <Border Classes="telemetry-pill">
+                                        <TextBlock Text="{Binding Likes, StringFormat='❤️ {0}'}" FontSize="12" Foreground="{StaticResource AccentBrush}"/>
                                     </Border>
                                 </StackPanel>
                             </Grid>
