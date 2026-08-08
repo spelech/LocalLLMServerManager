@@ -1,0 +1,76 @@
+<Styles xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    <!-- Glass Card Style -->
+    <Style Selector="Border.glass-card">
+        <Setter Property="Background" Value="{StaticResource BgCardBrush}" />
+        <Setter Property="BorderBrush" Value="{StaticResource GlassBorderBrush}" />
+        <Setter Property="BorderThickness" Value="1" />
+        <Setter Property="CornerRadius" Value="12" />
+        <Setter Property="Padding" Value="16" />
+        <Setter Property="BoxShadow" Value="0 8 32 0 #20000000" />
+    </Style>
+
+    <!-- Telemetry Pill Style -->
+    <Style Selector="Border.telemetry-pill">
+        <Setter Property="Background" Value="{StaticResource BgSurfaceBrush}" />
+        <Setter Property="BorderBrush" Value="{StaticResource GlassBorderBrush}" />
+        <Setter Property="BorderThickness" Value="1" />
+        <Setter Property="CornerRadius" Value="16" />
+        <Setter Property="Padding" Value="10,6" />
+    </Style>
+
+    <!-- Primary Glowing Button Style -->
+    <Style Selector="Button.glass-primary">
+        <Setter Property="Background" Value="{StaticResource PrimaryGradientBrush}" />
+        <Setter Property="Foreground" Value="#ffffff" />
+        <Setter Property="FontWeight" Value="Bold" />
+        <Setter Property="CornerRadius" Value="8" />
+        <Setter Property="Padding" Value="16,10" />
+        <Setter Property="BorderThickness" Value="0" />
+    </Style>
+    <Style Selector="Button.glass-primary /template/ ContentPresenter#PART_ContentPresenter">
+        <Setter Property="CornerRadius" Value="8" />
+        <Setter Property="BoxShadow" Value="0 4 15 0 #408b5cf6" />
+    </Style>
+    <Style Selector="Button.glass-primary:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+        <Setter Property="BoxShadow" Value="0 6 20 0 #608b5cf6" />
+    </Style>
+
+    <!-- Secondary Glass Button Style -->
+    <Style Selector="Button.glass-secondary">
+        <Setter Property="Background" Value="{StaticResource BgSurfaceBrush}" />
+        <Setter Property="Foreground" Value="{StaticResource TextMainBrush}" />
+        <Setter Property="BorderBrush" Value="{StaticResource GlassBorderBrush}" />
+        <Setter Property="BorderThickness" Value="1" />
+        <Setter Property="CornerRadius" Value="8" />
+        <Setter Property="Padding" Value="14,8" />
+    </Style>
+    <Style Selector="Button.glass-secondary:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+        <Setter Property="Background" Value="{StaticResource BgCardBrush}" />
+        <Setter Property="BorderBrush" Value="{StaticResource BorderGlowBrush}" />
+    </Style>
+
+    <!-- Glass Progress Bar Style -->
+    <Style Selector="ProgressBar.glass-progress">
+        <Setter Property="Background" Value="{StaticResource BgSurfaceBrush}" />
+        <Setter Property="Foreground" Value="{StaticResource PrimaryGradientBrush}" />
+        <Setter Property="BorderBrush" Value="{StaticResource GlassBorderBrush}" />
+        <Setter Property="BorderThickness" Value="1" />
+        <Setter Property="CornerRadius" Value="8" />
+        <Setter Property="MinHeight" Value="10" />
+    </Style>
+
+    <!-- Glass Input TextBox Style -->
+    <Style Selector="TextBox.glass-input">
+        <Setter Property="Background" Value="{StaticResource BgSurfaceBrush}" />
+        <Setter Property="Foreground" Value="{StaticResource TextMainBrush}" />
+        <Setter Property="BorderBrush" Value="{StaticResource GlassBorderBrush}" />
+        <Setter Property="BorderThickness" Value="1" />
+        <Setter Property="CornerRadius" Value="8" />
+        <Setter Property="Padding" Value="10,8" />
+    </Style>
+    <Style Selector="TextBox.glass-input:focus /template/ Border#PART_BorderElement">
+        <Setter Property="BorderBrush" Value="{StaticResource BorderGlowBrush}" />
+        <Setter Property="Background" Value="{StaticResource BgCardBrush}" />
+    </Style>
+</Styles>
