@@ -6,6 +6,11 @@ namespace LocalLLMServerManager.Tests;
 
 public class BrowserLauncherTests
 {
+    public BrowserLauncherTests()
+    {
+        BrowserLauncher.SuppressProcessStart = true;
+    }
+
     [Theory]
     [InlineData("http://localhost:5246")]
     [InlineData("https://google.com")]

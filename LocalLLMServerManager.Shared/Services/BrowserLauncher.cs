@@ -5,6 +5,8 @@ namespace LocalLLMServerManager.Shared.Services;
 
 public static class BrowserLauncher
 {
+    public static bool SuppressProcessStart { get; set; } = false;
+
     public static bool OpenUrl(string? urlString)
     {
         if (string.IsNullOrWhiteSpace(urlString))
@@ -44,6 +46,11 @@ public static class BrowserLauncher
 
         try
         {
+            if (SuppressProcessStart)
+            {
+                return true;
+            }
+
             // We use the validated URI's AbsoluteUri to prevent any shell/argument injections
             var safeUrl = uri.AbsoluteUri;
             Process.Start(new ProcessStartInfo { FileName = safeUrl, UseShellExecute = true });
