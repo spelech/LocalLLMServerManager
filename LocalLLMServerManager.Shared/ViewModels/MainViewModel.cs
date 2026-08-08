@@ -187,6 +187,10 @@ public partial class MainViewModel : ObservableObject
             try
             {
                 response = await Http.GetAsync($"{ApiBase}/api/models");
+                if (!response.IsSuccessStatusCode)
+                {
+                    response = await Http.GetAsync("http://127.0.0.1:11434/api/tags");
+                }
             }
             catch
             {
@@ -229,7 +233,16 @@ public partial class MainViewModel : ObservableObject
         try
         {
             ToastService.Instance.Show("Unloading all models from VRAM...", ToastType.Info);
-            var psResp = await Http.GetAsync("http://127.0.0.1:11434/api/ps");
+            HttpResponseMessage psResp;
+            try
+            {
+                psResp = await Http.GetAsync($"{ApiBase}/api/ollama/ps");
+                if (!psResp.IsSuccessStatusCode) psResp = await Http.GetAsync("http://127.0.0.1:11434/api/ps");
+            }
+            catch
+            {
+                psResp = await Http.GetAsync("http://127.0.0.1:11434/api/ps");
+            }
             if (psResp.IsSuccessStatusCode)
             {
                 var doc = JsonNode.Parse(await psResp.Content.ReadAsStringAsync());

@@ -287,8 +287,44 @@ public class Program
                 StableDiffusion = forgeHealthy ? "Online" : "Offline",
                 ComfyUI = comfyHealthy ? "Online" : "Offline",
                 PreferredImageEngine = settings.PreferredImageEngine,
-                Version = "3.1.0"
+                Version = "3.2.0"
             });
+        });
+
+        // Backend Ollama Installed Models Proxy Route (bypasses browser CORS & direct port restrictions)
+        app.MapGet("/api/models", async (IHttpClientFactory clientFactory) =>
+        {
+            try
+            {
+                var http = clientFactory.CreateClient();
+                using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(3));
+                var response = await http.GetAsync("http://127.0.0.1:11434/api/tags", cts.Token);
+                if (response.IsSuccessStatusCode)
+                {
+                    var content = await response.Content.ReadAsStringAsync(cts.Token);
+                    return Results.Content(content, "application/json");
+                }
+            }
+            catch { }
+            return Results.Ok(new { models = new object[0] });
+        });
+
+        // Backend Ollama Active Processes Proxy Route
+        app.MapGet("/api/ollama/ps", async (IHttpClientFactory clientFactory) =>
+        {
+            try
+            {
+                var http = clientFactory.CreateClient();
+                using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(3));
+                var response = await http.GetAsync("http://127.0.0.1:11434/api/ps", cts.Token);
+                if (response.IsSuccessStatusCode)
+                {
+                    var content = await response.Content.ReadAsStringAsync(cts.Token);
+                    return Results.Content(content, "application/json");
+                }
+            }
+            catch { }
+            return Results.Ok(new { models = new object[0] });
         });
 
         // Hugging Face GGUF model search proxy (avoids CORS)
