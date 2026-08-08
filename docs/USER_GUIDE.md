@@ -6,8 +6,6 @@ Welcome to the **Local LLM Server Manager**. This guide will walk you through th
 
 ## 1. My Models (Dashboard & VRAM Orchestrator)
 
-![Model Management Dashboard](../screenshots/dashboard.png)
-
 The **My Models** tab is your home base for monitoring your system's hardware and active language models.
 
 ### Features:
@@ -22,8 +20,6 @@ To run a model in a frontend chat UI (like Open WebUI or LibreChat), simply sele
 ---
 
 ## 2. Find & Download Models
-
-![Find & Download Models](../screenshots/discover.png)
 
 This tab integrates directly with the **Hugging Face Hub (GGUF)** and the **Ollama Official Library** so you can pull models natively without touching the command line.
 
@@ -42,8 +38,6 @@ Ollama can run multiple models simultaneously. To do this, edit your system envi
 
 ## 3. Stable Diffusion (CivitAI Integration)
 
-![Stable Diffusion Tab](../screenshots/stable_diffusion.png)
-
 The Stable Diffusion tab allows you to configure your Forge engine and seamlessly download new image generation assets from **CivitAI**.
 
 ### Configuring Your Engine:
@@ -53,7 +47,6 @@ The Stable Diffusion tab allows you to configure your Forge engine and seamlessl
 4. You can boot or stop the SD Forge engine directly using the **Boot SD Forge** and **Stop SD Forge** UI controls. The app relies on Win32 Job Objects to manage these background processes cleanly.
 
 ### CivitAI Search & Download:
-![CivitAI Search Grid](../screenshots/civitai.png)
 * **Search:** Look up popular models. *Sample text:* `"RealisticVision"`, `"DreamShaper"`, or `"Flux"`.
 * **Filters:** Use the dropdowns to search by type (*Checkpoint, LoRA, VAE, Embedding*) or Sort by *Highest Rated*.
 * **Download:** Click on a result to view its details and thumbnail. Choose the specific version you want, and click **⬇ Download to Forge**. The file will stream directly to your configured directory.
@@ -61,8 +54,6 @@ The Stable Diffusion tab allows you to configure your Forge engine and seamlessl
 ---
 
 ## 4. 3D, Video & ComfyUI Studio
-
-![3D & ComfyUI Studio](../screenshots/comfyui_3d_studio.png)
 
 This studio tab provides a powerful frontend for interacting with your local ComfyUI installation, complete with a built-in interactive WebGL 3D canvas viewer.
 

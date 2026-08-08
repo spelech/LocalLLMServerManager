@@ -6,21 +6,34 @@ It tracks GPU VRAM usage in real time via NVML CUDA telemetry, profiles model ca
 
 ---
 
-## 📸 User Interface Screenshots
+## 🖥️ User Interface Layout & Dashboard Structure
 
-### 1. Unified Avalonia Desktop UI (v3.1.0)
-*Fluent Dark Avalonia desktop window showing live VRAM consumption, GPU hardware telemetry, AI engine health badges, and model library.*
-![Unified Avalonia Desktop Dashboard](Assets/native_dashboard.jpg)
+The application features a dark Fluent Avalonia UI theme (`#0F172A`) organized into modular tabs:
 
-### 2. Unified Avalonia WebAssembly (WASM) Web UI
-*Pixel-identical WebAssembly interface running directly in browser via `:5246` with live model capability tags, KV Cache context calculator, and engine controls.*
-![Unified Avalonia WebAssembly Web UI](Assets/web_dashboard.jpg)
-
-### 3. Native Windows System Tray Integration
-*Operates quietly in notification area with right-click menu options to launch dashboard, open web interface, or control services.*
-![System Tray Icon & Menu](Assets/app_tray_icon.jpg)
-
----
+```
++-----------------------------------------------------------------------------------------+
+| Local LLM Server Manager                                                                |
+| GPU: NVIDIA GeForce RTX 4070 Ti SUPER -- 16 GB • Service Connected 🟢   [🔄 Refresh]    |
+| GPU VRAM Allocation: 4.2 GB / 16.0 GB (26.3%)                                           |
+| [========================-------------------------------------------------------------] |
++-----------------------------------------------------------------------------------------+
+| [🦙 Installed Models] [🤗 Hugging Face Hub] [🎨 CivitAI Models] [📦 3D Studio] [⚙️ Settings] |
++-----------------------------------------------------------------------------------------+
+| Ollama Local Model Library                                          [🧹 Unload All VRAM] |
+|                                                                                         |
+| +-------------------------------------------------------------------------------------+ |
+| | qwen2.5-coder:7b                         [Coding] [4.7 GB]              Installed 🟢 | |
+| +-------------------------------------------------------------------------------------+ |
+| | llama3.2:latest                          [Chat] [2.0 GB]                Installed 🟢 | |
+| +-------------------------------------------------------------------------------------+ |
+|                                                                                         |
+| Interactive KV Cache Calculator                             ~0.5 GB                     |
+| [====================================------------------------------------------------]  |
+| 8,192 tokens                                                                            |
++-----------------------------------------------------------------------------------------+
+| LocalLLMServerManager v3.3.0 -- Unified WASM & Desktop UI         System Tray Enabled 🟢 |
++-----------------------------------------------------------------------------------------+
+```
 
 ## 🌟 Key Features
 
