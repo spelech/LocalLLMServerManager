@@ -23,7 +23,7 @@ jobs:
           dotnet-version: '10.0.x'
 
       - name: Run Test Suite
-        run: dotnet test --nologo -c Release
+        run: dotnet test LocalLLMServerManager.sln --nologo -c Release
 
       - name: Build & Publish Avalonia WebAssembly UI
         shell: powershell
@@ -54,7 +54,7 @@ jobs:
         run: |
           $iscc = "C:\Program Files (x86)\Inno Setup 6\ISCC.exe"
           if (-not (Test-Path $iscc)) { $iscc = "C:\Program Files\Inno Setup 6\ISCC.exe" }
-          & "$iscc" installer.iss
+          & "$iscc" scripts/installer.iss
 
       - name: Package Installer Executable
         shell: powershell

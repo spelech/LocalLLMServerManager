@@ -16,14 +16,14 @@ AppUpdatesURL={#MyAppURL}
 DefaultDirName={autopf}\LocalLLMServerManager
 DefaultGroupName={#MyAppName}
 AllowNoIcons=yes
-LicenseFile=README.md
+LicenseFile=..\README.md
 OutputBaseFilename=LocalLLMServerManager-v{#MyAppVersion}-Setup
-OutputDir=.
+OutputDir=..\dist
 Compression=lzma2/max
 SolidCompression=yes
 WizardStyle=modern
 PrivilegesRequired=admin
-SetupIconFile=Assets\app-icon.ico
+SetupIconFile=..\Assets\app-icon.ico
 
 [Languages]
 Name: "english"; MessagesFile: "compiler:Default.isl"
@@ -34,13 +34,13 @@ Name: "autostart"; Description: "Auto-start System Tray App on user login"; Grou
 Name: "windowsservice"; Description: "Install background Windows Service (starts automatically on system boot)"; GroupDescription: "System Integration"; Flags: checkedonce
 
 [Files]
-Source: "publish\LocalLLMServerManager.exe"; DestDir: "{app}"; Flags: ignoreversion
-Source: "publish\*.dll"; DestDir: "{app}"; Flags: ignoreversion
-Source: "publish\*.json"; DestDir: "{app}"; Flags: ignoreversion
-Source: "publish\*.config"; DestDir: "{app}"; Flags: ignoreversion
-Source: "publish\wwwroot\*"; DestDir: "{app}\wwwroot"; Flags: ignoreversion recursesubdirs createallsubdirs
-Source: "publish\Workflows\*"; DestDir: "{app}\Workflows"; Flags: ignoreversion recursesubdirs createallsubdirs
-Source: "Assets\app-icon.ico"; DestDir: "{app}\Assets"; Flags: ignoreversion
+Source: "..\publish\LocalLLMServerManager.exe"; DestDir: "{app}"; Flags: ignoreversion
+Source: "..\publish\*.dll"; DestDir: "{app}"; Flags: ignoreversion
+Source: "..\publish\*.json"; DestDir: "{app}"; Flags: ignoreversion
+Source: "..\publish\*.config"; DestDir: "{app}"; Flags: ignoreversion
+Source: "..\publish\wwwroot\*"; DestDir: "{app}\wwwroot"; Flags: ignoreversion recursesubdirs createallsubdirs
+Source: "..\publish\Workflows\*"; DestDir: "{app}\Workflows"; Flags: ignoreversion recursesubdirs createallsubdirs
+Source: "..\Assets\app-icon.ico"; DestDir: "{app}\Assets"; Flags: ignoreversion
 
 [Icons]
 Name: "{group}\{#MyAppName}"; Filename: "{app}\{#MyAppExeName}"; IconFilename: "{app}\Assets\app-icon.ico"

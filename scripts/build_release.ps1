@@ -2,7 +2,7 @@
 $ErrorActionPreference = "Stop"
 
 $Version = "3.2.0"
-$RootDir = $PSScriptRoot
+$RootDir = Split-Path $PSScriptRoot -Parent
 $PublishDir = Join-Path $RootDir "publish"
 $DistDir = Join-Path $RootDir "dist"
 $ZipFile = Join-Path $DistDir "LocalLLMServerManager-v$Version-win-x64.zip"
@@ -14,7 +14,7 @@ Write-Host ""
 
 # 1. Run Verification & Test Suite
 Write-Host "--> 1. Running Test Suite & Verification..." -ForegroundColor Yellow
-dotnet test --nologo -c Release
+dotnet test LocalLLMServerManager.sln --nologo -c Release
 if ($LASTEXITCODE -ne 0) { throw "dotnet test failed!" }
 
 # 2. Publish Avalonia WebAssembly to wwwroot & Build Self-Contained Release
@@ -64,11 +64,10 @@ if (-not $IsccPath) {
 
 if ($IsccPath) {
     Write-Host "--> 5. Compiling Windows Installer (Inno Setup)..." -ForegroundColor Yellow
-    & "$IsccPath" (Join-Path $RootDir "installer.iss")
-    $SetupExe = Join-Path $RootDir "LocalLLMServerManager-v$Version-Setup.exe"
+    & "$IsccPath" (Join-Path $RootDir "scripts\installer.iss")
+    $SetupExe = Join-Path $DistDir "LocalLLMServerManager-v$Version-Setup.exe"
     if (Test-Path $SetupExe) {
-        Move-Item -Path $SetupExe -Destination $DistDir -Force
-        Write-Host "Installer created: $DistDir\LocalLLMServerManager-v$Version-Setup.exe" -ForegroundColor Green
+        Write-Host "Installer created: $SetupExe" -ForegroundColor Green
     }
 } else {
     Write-Host "--> 5. ISCC.exe (Inno Setup) not found. Skipped installer creation." -ForegroundColor Yellow
