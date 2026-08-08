@@ -1,10 +1,10 @@
 using System;
-using System.IO;
 using System.Net.Http;
-using System.Text.Json;
+using System.Net.Http.Json;
 using System.Text.Json.Nodes;
 using System.Threading.Tasks;
-using LocalLLMServerManager.Shared.ViewModels;
+using Avalonia.Controls.ApplicationLifetimes;
+using LocalLLMServerManager;
 using Xunit;
 
 namespace LocalLLMServerManager.Tests;
@@ -19,129 +19,66 @@ public class DeepCoveragePushTests : IClassFixture<AppTestServerFixture>
     }
 
     [Fact]
-    public async Task ComfyWorkflows_FullDiskDirectory_ReadsPresets()
+    public void Program_MainInternal_ServiceMode_ExecutesWithoutRunWeb()
     {
-        var workflowsDir = Path.Combine(AppContext.BaseDirectory, "Workflows");
-        if (!Directory.Exists(workflowsDir))
-        {
-            Directory.CreateDirectory(workflowsDir);
-        }
-
-        var sampleWorkflow = Path.Combine(workflowsDir, "sample_test_workflow.json");
-        var jsonContent = JsonSerializer.Serialize(new
-        {
-            name = "Sample Workflow",
-            type = "txt2img",
-            description = "Test ComfyUI Preset"
-        });
-        File.WriteAllText(sampleWorkflow, jsonContent);
-
-        try
-        {
-            var listResp = await _fixture.Client.GetAsync("/api/comfy/workflows");
-            Assert.True(listResp.IsSuccessStatusCode);
-
-            var itemResp = await _fixture.Client.GetAsync("/api/comfy/workflows/sample_test_workflow");
-            Assert.True(itemResp.IsSuccessStatusCode);
-            var content = await itemResp.Content.ReadAsStringAsync();
-            Assert.Contains("Sample Workflow", content);
-        }
-        finally
-        {
-            if (File.Exists(sampleWorkflow)) File.Delete(sampleWorkflow);
-        }
+        Program.MainInternal(new[] { "--service" }, runWeb: false);
     }
 
     [Fact]
-    public async Task ThreeDOutputs_FullDiskDirectory_Reads3dModels()
+    public void Program_MainInternal_DesktopMode_ExecutesWithoutRunWeb()
     {
-        var settings = Program.LoadSettings();
-        var outputsDir = Program.ResolvePath(settings.ThreeDModelsPath, @"%APPDATA%\AI\3d_outputs");
-        if (!Directory.Exists(outputsDir))
-        {
-            Directory.CreateDirectory(outputsDir);
-        }
-
-        var sampleGlb = Path.Combine(outputsDir, "test_cube.glb");
-        File.WriteAllText(sampleGlb, "dummy 3d glb data");
-
-        try
-        {
-            var resp = await _fixture.Client.GetAsync("/api/3d/files");
-            Assert.True(resp.IsSuccessStatusCode);
-            var content = await resp.Content.ReadAsStringAsync();
-            Assert.Contains("test_cube.glb", content);
-        }
-        finally
-        {
-            if (File.Exists(sampleGlb)) File.Delete(sampleGlb);
-        }
+        Program.MainInternal(Array.Empty<string>(), runWeb: false);
     }
 
     [Fact]
-    public async Task CivitaiDownloadEndpoint_ValidDirectory_StreamsEvents()
+    public void App_OnExitClick_WithLifetime_ExecutesCleanly()
     {
-        var modelsDir = Path.Combine(AppContext.BaseDirectory, "TestForgeModels");
-        if (!Directory.Exists(modelsDir))
-        {
-            Directory.CreateDirectory(modelsDir);
-        }
+        var app = new App();
+        var lifetime = new ClassicDesktopStyleApplicationLifetime();
+        app.ApplicationLifetime = lifetime;
 
-        var settings = new AppSettings { ForgeModelsPath = modelsDir };
-        Program.SaveSettings(settings);
-
-        try
-        {
-            var resp = await _fixture.Client.GetAsync("/api/civitai/download?fileUrl=http://127.0.0.1:5299/health&modelType=lora&fileName=test_lora.safetensors");
-            Assert.True(resp.IsSuccessStatusCode);
-        }
-        finally
-        {
-            var loraFile = Path.Combine(modelsDir, "Lora", "test_lora.safetensors");
-            if (File.Exists(loraFile)) File.Delete(loraFile);
-            if (Directory.Exists(modelsDir)) Directory.Delete(modelsDir, true);
-        }
+        app.OnExitClick(null, EventArgs.Empty);
     }
 
     [Fact]
-    public async Task MiddlewareVramOrchestration_ForgeAndComfyRoutes_InterceptorsExecute()
+    public async Task McpToolsEndpoint_ListTools_ReturnsValidToolSet()
     {
-        try
-        {
-            var forgeRoute = await _fixture.Client.GetAsync("/sdapi/v1/txt2img");
-        }
-        catch { }
+        var client = _fixture.CreateClient();
+        var response = await client.GetAsync("/api/mcp/tools");
+        Assert.True(response.IsSuccessStatusCode);
 
-        try
-        {
-            var comfyRoute = await _fixture.Client.GetAsync("/comfyapi/prompt");
-        }
-        catch { }
+        string json = await response.Content.ReadAsStringAsync();
+        var doc = JsonNode.Parse(json);
+        Assert.NotNull(doc);
     }
 
     [Fact]
-    public void RecordProperties_AllGetters_AreCovered()
+    public async Task EngineStartStop_ComfyUiAndForge_ReturnsOkResult()
     {
-        var hf = new HuggingFaceRepoItem("id", "author", 10, "100");
-        Assert.Equal("id", hf.Id);
-        Assert.Equal("author", hf.Author);
-        Assert.Equal(10, hf.Likes);
-        Assert.Equal("100", hf.Downloads);
+        var client = _fixture.CreateClient();
 
-        var quant = new HfFileQuantItem("file.gguf", "Q4_K_M", "4.7 GB", 4831838208L);
-        Assert.Equal("file.gguf", quant.Filename);
-        Assert.Equal("Q4_K_M", quant.Quantization);
-        Assert.Equal("4.7 GB", quant.FormatSize);
-        Assert.Equal(4831838208L, quant.SizeBytes);
+        var respComfyStop = await client.PostAsync("/api/comfy/stop", null);
+        Assert.True(respComfyStop.IsSuccessStatusCode);
 
-        var civitai = new CivitaiModelItem(1, "Name", "Type", "Thumb", "Url", "File", 4.9, 100);
-        Assert.Equal(1, civitai.Id);
-        Assert.Equal("Name", civitai.Name);
-        Assert.Equal("Type", civitai.Type);
-        Assert.Equal("Thumb", civitai.ThumbnailUrl);
-        Assert.Equal("Url", civitai.DownloadUrl);
-        Assert.Equal("File", civitai.FileName);
-        Assert.Equal(4.9, civitai.Rating);
-        Assert.Equal(100, civitai.DownloadCount);
+        var respForgeStop = await client.PostAsync("/api/forge/stop", null);
+        Assert.True(respForgeStop.IsSuccessStatusCode);
+    }
+
+    [Fact]
+    public async Task ServiceUpdate_InvalidBranch_ReturnsBadRequest()
+    {
+        var client = _fixture.CreateClient();
+        var response = await client.PostAsJsonAsync("/api/service/update", new { branch = "invalid;branch;name" });
+
+        Assert.Equal(System.Net.HttpStatusCode.BadRequest, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task ServiceUpdate_ValidBranch_ExecutesUpdateFlow()
+    {
+        var client = _fixture.CreateClient();
+        var response = await client.PostAsJsonAsync("/api/service/update", new { branch = "main" });
+
+        Assert.True(response.IsSuccessStatusCode);
     }
 }

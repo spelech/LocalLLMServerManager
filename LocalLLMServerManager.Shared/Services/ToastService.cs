@@ -46,18 +46,39 @@ public class ToastService
 
     public void Remove(ToastItem toast)
     {
-        ActiveToasts.Remove(toast);
+        try
+        {
+            if (Avalonia.Threading.Dispatcher.UIThread.CheckAccess())
+                ActiveToasts.Remove(toast);
+            else
+                Avalonia.Threading.Dispatcher.UIThread.Post(() => { try { ActiveToasts.Remove(toast); } catch { } });
+        }
+        catch { }
     }
 
     public void Clear()
     {
-        ActiveToasts.Clear();
+        try
+        {
+            if (Avalonia.Threading.Dispatcher.UIThread.CheckAccess())
+                ActiveToasts.Clear();
+            else
+                Avalonia.Threading.Dispatcher.UIThread.Post(() => { try { ActiveToasts.Clear(); } catch { } });
+        }
+        catch { }
     }
 
     public void Show(string message, ToastType type = ToastType.Info, int autoRemoveMs = 4000)
     {
         var toast = new ToastItem(message, type);
-        ActiveToasts.Add(toast);
+        try
+        {
+            if (Avalonia.Threading.Dispatcher.UIThread.CheckAccess())
+                ActiveToasts.Add(toast);
+            else
+                Avalonia.Threading.Dispatcher.UIThread.Post(() => { try { ActiveToasts.Add(toast); } catch { } });
+        }
+        catch { }
 
         if (autoRemoveMs == 0)
         {
