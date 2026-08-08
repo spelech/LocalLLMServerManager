@@ -22,6 +22,12 @@ public partial class CivitaiSearchViewModel : ObservableObject
         _civitaiSearchService = civitaiSearchService;
     }
 
+    [RelayCommand]
+    public async Task SearchCivitaiAsync()
+    {
+        await SearchCivitaiAsync("http://127.0.0.1:5246", new HttpClient());
+    }
+
     public async Task SearchCivitaiAsync(string apiBase, HttpClient http)
     {
         try

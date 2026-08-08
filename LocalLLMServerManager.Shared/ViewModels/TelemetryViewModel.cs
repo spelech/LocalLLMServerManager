@@ -29,6 +29,12 @@ public partial class TelemetryViewModel : ObservableObject
         _telemetryService = telemetryService;
     }
 
+    [RelayCommand]
+    public async Task RefreshStatusAsync()
+    {
+        await RefreshStatusAsync("http://127.0.0.1:5246", "http://127.0.0.1:8188", new HttpClient());
+    }
+
     public async Task RefreshStatusAsync(string apiBase, string comfyUrl, HttpClient http)
     {
         await CheckHealthAsync(apiBase, comfyUrl, http);

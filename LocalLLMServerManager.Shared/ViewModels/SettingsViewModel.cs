@@ -60,6 +60,12 @@ public partial class SettingsViewModel : ObservableObject
         catch { }
     }
 
+    [RelayCommand]
+    public async Task SaveSettingsAsync()
+    {
+        await SaveSettingsAsync("http://127.0.0.1:5246", new HttpClient());
+    }
+
     public async Task SaveSettingsAsync(string apiBase, HttpClient http)
     {
         try

@@ -25,6 +25,12 @@ public partial class HuggingFaceSearchViewModel : ObservableObject
         _hfSearchService = hfSearchService;
     }
 
+    [RelayCommand]
+    public async Task SearchHuggingFaceAsync()
+    {
+        await SearchHuggingFaceAsync("http://127.0.0.1:5246", new HttpClient());
+    }
+
     public async Task SearchHuggingFaceAsync(string apiBase, HttpClient http)
     {
         try

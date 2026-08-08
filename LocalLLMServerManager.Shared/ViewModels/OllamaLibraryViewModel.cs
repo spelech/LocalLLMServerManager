@@ -49,6 +49,12 @@ public partial class OllamaLibraryViewModel : ObservableObject
         }
     }
 
+    [RelayCommand]
+    public async Task UnloadAllVramAsync()
+    {
+        await UnloadAllVramAsync("http://127.0.0.1:5246", new HttpClient());
+    }
+
     public async Task UnloadAllVramAsync(string apiBase, HttpClient http)
     {
         ToastService.Instance.Show("Unloading all models from VRAM...", ToastType.Info);
