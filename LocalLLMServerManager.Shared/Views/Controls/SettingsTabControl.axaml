@@ -21,16 +21,18 @@
                 </StackPanel>
             </Border>
 
+            <!-- Remote Access -->
             <Border Classes="glass-card">
                 <StackPanel Spacing="10">
                     <TextBlock Text="🌐 Remote &amp; Mobile Access URL" FontSize="16" FontWeight="Bold" Foreground="{StaticResource TextMainBrush}"/>
                     <TextBlock Text="Connect to this manager from your smartphone, tablet, or laptop:" FontSize="13" Foreground="{StaticResource TextMutedBrush}"/>
-                    <Border Classes="telemetry-pill">
-                        <SelectableTextBlock Text="{Binding LanAccessUrl}" FontSize="16" FontWeight="Bold" Foreground="{StaticResource SecondaryBrush}"/>
+                    <Border Classes="telemetry-pill" HorizontalAlignment="Left">
+                        <SelectableTextBlock Text="{Binding LanAccessUrl}" FontSize="15" FontWeight="Bold" Foreground="{StaticResource SecondaryBrush}"/>
                     </Border>
                 </StackPanel>
             </Border>
 
+            <!-- Paths and Settings -->
             <Border Classes="glass-card">
                 <StackPanel Spacing="12">
                     <TextBlock Text="🛠️ Executable &amp; Directory Paths" FontSize="16" FontWeight="Bold" Foreground="{StaticResource TextMainBrush}"/>
