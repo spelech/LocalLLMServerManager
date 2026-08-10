@@ -80,4 +80,60 @@
         <Setter Property="BorderBrush" Value="{StaticResource BorderGlowBrush}" />
         <Setter Property="Background" Value="{StaticResource BgCardBrush}" />
     </Style>
+
+    <!-- Glass TabControl Navigation Bar Style -->
+    <Style Selector="TabControl">
+        <Setter Property="Background" Value="Transparent" />
+        <Setter Property="Padding" Value="0" />
+        <Setter Property="Template">
+            <ControlTemplate>
+                <Border Background="{TemplateBinding Background}"
+                        BorderBrush="{TemplateBinding BorderBrush}"
+                        BorderThickness="{TemplateBinding BorderThickness}"
+                        CornerRadius="{TemplateBinding CornerRadius}">
+                    <DockPanel>
+                        <Border DockPanel.Dock="Top"
+                                Background="{StaticResource BgSurfaceBrush}"
+                                CornerRadius="12"
+                                Margin="0,0,0,16"
+                                Padding="6"
+                                HorizontalAlignment="Left">
+                            <ItemsPresenter Name="PART_ItemsPresenter"
+                                            ItemsPanel="{TemplateBinding ItemsPanel}" />
+                        </Border>
+                        <ContentPresenter Name="PART_SelectedContentHost"
+                                          Margin="{TemplateBinding Padding}"
+                                          HorizontalContentAlignment="{TemplateBinding HorizontalContentAlignment}"
+                                          VerticalContentAlignment="{TemplateBinding VerticalContentAlignment}"
+                                          Content="{TemplateBinding SelectedContent}"
+                                          ContentTemplate="{TemplateBinding SelectedContentTemplate}" />
+                    </DockPanel>
+                </Border>
+            </ControlTemplate>
+        </Setter>
+    </Style>
+
+    <!-- Glass TabItem Style -->
+    <Style Selector="TabItem">
+        <Setter Property="Foreground" Value="{StaticResource TextMutedBrush}" />
+        <Setter Property="FontWeight" Value="SemiBold" />
+        <Setter Property="FontSize" Value="13" />
+        <Setter Property="Padding" Value="16,10" />
+        <Setter Property="CornerRadius" Value="8" />
+        <Setter Property="Margin" Value="2,0" />
+        <Setter Property="MinHeight" Value="38" />
+    </Style>
+    <Style Selector="TabItem:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+        <Setter Property="Background" Value="{StaticResource BgCardBrush}" />
+        <Setter Property="Foreground" Value="{StaticResource TextMainBrush}" />
+    </Style>
+    <Style Selector="TabItem:selected">
+        <Setter Property="Foreground" Value="#ffffff" />
+        <Setter Property="FontWeight" Value="Bold" />
+    </Style>
+    <Style Selector="TabItem:selected /template/ ContentPresenter#PART_ContentPresenter">
+        <Setter Property="Background" Value="{StaticResource PrimaryGradientBrush}" />
+        <Setter Property="Foreground" Value="#ffffff" />
+        <Setter Property="BoxShadow" Value="0 4 12 0 #408b5cf6" />
+    </Style>
 </Styles>
