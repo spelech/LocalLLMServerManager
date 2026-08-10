@@ -1,36 +1,64 @@
 <UserControl xmlns="https://github.com/avaloniaui"
-             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-             xmlns:vm="using:LocalLLMServerManager.Shared.ViewModels"
-             x:Class="LocalLLMServerManager.Shared.Views.Controls.TelemetryHeaderControl"
-             x:DataType="vm:TelemetryViewModel">
+              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+              xmlns:vm="using:LocalLLMServerManager.Shared.ViewModels"
+              x:Class="LocalLLMServerManager.Shared.Views.Controls.TelemetryHeaderControl"
+              x:DataType="vm:TelemetryViewModel">
 
-    <Border Classes="glass-card" Margin="16,16,16,8">
-        <Grid RowDefinitions="Auto, Auto" ColumnDefinitions="*, Auto">
-            <StackPanel Grid.Row="0" Grid.Column="0">
-                <TextBlock Text="Local LLM Server Manager" FontSize="20" FontWeight="Bold" Foreground="{StaticResource TextMainBrush}"/>
-                <StackPanel Orientation="Horizontal" Spacing="8" Margin="0,6,0,0">
-                    <Border Classes="telemetry-pill">
-                        <TextBlock Text="{Binding GpuName}" FontSize="12" Foreground="{StaticResource PrimaryBrush}" FontWeight="SemiBold"/>
-                    </Border>
-                    <Border Classes="telemetry-pill">
-                        <TextBlock Text="{Binding ServiceModeText}" FontSize="12" Foreground="{StaticResource TextMutedBrush}"/>
+    <Grid ColumnDefinitions="*, *, *" Margin="16,16,16,12">
+        <!-- CARD 1: Service Health Badges -->
+        <Border Grid.Column="0" Classes="glass-card" Margin="0,0,8,0">
+            <StackPanel Spacing="8">
+                <TextBlock Text="⚡ Engine Health Status" FontSize="13" FontWeight="Bold" Foreground="{StaticResource TextMainBrush}"/>
+                <UniformGrid Columns="3">
+                    <StackPanel HorizontalAlignment="Center" Spacing="4">
+                        <TextBlock Text="Ollama" FontSize="11" Foreground="{StaticResource TextMutedBrush}" HorizontalAlignment="Center"/>
+                        <Border Classes="telemetry-pill">
+                            <TextBlock Text="{Binding OllamaStatus}" FontSize="11" Foreground="{StaticResource OnlineBrush}" FontWeight="Bold"/>
+                        </Border>
+                    </StackPanel>
+                    <StackPanel HorizontalAlignment="Center" Spacing="4">
+                        <TextBlock Text="Forge SD" FontSize="11" Foreground="{StaticResource TextMutedBrush}" HorizontalAlignment="Center"/>
+                        <Border Classes="telemetry-pill">
+                            <TextBlock Text="{Binding ForgeStatus}" FontSize="11" Foreground="{StaticResource PrimaryBrush}" FontWeight="Bold"/>
+                        </Border>
+                    </StackPanel>
+                    <StackPanel HorizontalAlignment="Center" Spacing="4">
+                        <TextBlock Text="ComfyUI" FontSize="11" Foreground="{StaticResource TextMutedBrush}" HorizontalAlignment="Center"/>
+                        <Border Classes="telemetry-pill">
+                            <TextBlock Text="{Binding ComfyStatus}" FontSize="11" Foreground="{StaticResource AccentBrush}" FontWeight="Bold"/>
+                        </Border>
+                    </StackPanel>
+                </UniformGrid>
+            </StackPanel>
+        </Border>
+
+        <!-- CARD 2: Hero Stacked VRAM Visual Bar -->
+        <Border Grid.Column="1" Classes="glass-card" Margin="4,0,4,0">
+            <StackPanel Spacing="6">
+                <Grid ColumnDefinitions="*, Auto">
+                    <StackPanel Grid.Column="0">
+                        <TextBlock Text="🎮 VRAM Memory Allocation" FontSize="13" FontWeight="Bold" Foreground="{StaticResource TextMainBrush}"/>
+                        <TextBlock Text="{Binding GpuName}" FontSize="11" Foreground="{StaticResource TextMutedBrush}" Margin="0,2,0,0"/>
+                    </StackPanel>
+                    <TextBlock Grid.Column="1" Text="{Binding VramStatusText}" FontSize="12" Foreground="{StaticResource PrimaryBrush}" FontWeight="Bold" VerticalAlignment="Center"/>
+                </Grid>
+                <ProgressBar Value="{Binding VramPercentage}" Maximum="100" Classes="glass-progress" Height="12"/>
+            </StackPanel>
+        </Border>
+
+        <!-- CARD 3: Orchestrator Proxy & Actions -->
+        <Border Grid.Column="2" Classes="glass-card" Margin="8,0,0,0">
+            <Grid ColumnDefinitions="*, Auto">
+                <StackPanel Grid.Column="0" Spacing="4">
+                    <TextBlock Text="🌐 Reverse Proxy Status" FontSize="13" FontWeight="Bold" Foreground="{StaticResource TextMainBrush}"/>
+                    <Border Classes="telemetry-pill" HorizontalAlignment="Left">
+                        <TextBlock Text="{Binding ServiceModeText}" FontSize="11" Foreground="{StaticResource SecondaryBrush}" FontWeight="SemiBold"/>
                     </Border>
                 </StackPanel>
-            </StackPanel>
-
-            <Button Grid.Row="0" Grid.Column="1" Command="{Binding RefreshStatusCommand}" 
-                    Classes="glass-secondary" VerticalAlignment="Top">
-                🔄 Refresh Telemetry
-            </Button>
-
-            <!-- VRAM Allocation Gauge Bar -->
-            <Grid Grid.Row="1" Grid.ColumnSpan="2" RowDefinitions="Auto, Auto" Margin="0,12,0,0">
-                <Grid Grid.Row="0" ColumnDefinitions="*, Auto" Margin="0,0,0,6">
-                    <TextBlock Text="GPU VRAM Allocation" FontSize="12" Foreground="{StaticResource TextMutedBrush}" FontWeight="Medium"/>
-                    <TextBlock Grid.Column="1" Text="{Binding VramStatusText}" FontSize="12" Foreground="{StaticResource PrimaryBrush}" FontWeight="Bold"/>
-                </Grid>
-                <ProgressBar Grid.Row="1" Value="{Binding VramPercentage}" Maximum="100" Classes="glass-progress"/>
+                <Button Grid.Column="1" Command="{Binding RefreshStatusCommand}" Classes="glass-secondary" VerticalAlignment="Center">
+                    🔄 Refresh
+                </Button>
             </Grid>
-        </Grid>
-    </Border>
+        </Border>
+    </Grid>
 </UserControl>
