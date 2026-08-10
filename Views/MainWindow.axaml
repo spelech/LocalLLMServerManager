@@ -3,13 +3,17 @@
         xmlns:sharedViews="using:LocalLLMServerManager.Shared.Views"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-        mc:Ignorable="d" d:DesignWidth="960" d:DesignHeight="680"
+        mc:Ignorable="d" d:DesignWidth="1280" d:DesignHeight="840"
         x:Class="LocalLLMServerManager.Views.MainWindow"
         Icon="avares://LocalLLMServerManager/Assets/app-icon.ico"
         Title="Local LLM Server Manager v3.1.0"
-        Width="960" Height="680"
+        Width="1280" Height="840"
+        MinWidth="1024" MinHeight="700"
         WindowStartupLocation="CenterScreen"
-        Background="#0F172A">
+        TransparencyLevelHint="Mica, AcrylicBlur, Transparent"
+        Background="Transparent"
+        ExtendClientAreaToDecorationsHint="True"
+        ExtendClientAreaTitleBarHeightHint="-1">
 
     <sharedViews:MainView />
 </Window>
