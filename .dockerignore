@@ -1,0 +1,10 @@
+.git
+.gitignore
+.vs
+.superpowers
+bin/
+obj/
+publish/
+dist/
+wwwroot_wasm/
+*.user

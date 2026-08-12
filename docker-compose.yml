@@ -1,0 +1,12 @@
+services:
+  localllmservermanager:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: localllmservermanager:latest
+    container_name: localllmservermanager
+    ports:
+      - "5246:5246"
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Production
+    restart: unless-stopped
