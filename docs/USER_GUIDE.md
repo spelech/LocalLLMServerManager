@@ -1,18 +1,22 @@
 # Local LLM Server Manager — Detailed User Guide
 
-Welcome to the **Local LLM Server Manager**. This guide will walk you through the four main tabs of the dashboard, showing you how to manage your local AI engines (Ollama, Stable Diffusion / Forge, and ComfyUI), configure your settings, and successfully generate text, images, and 3D models.
+Welcome to the **Local LLM Server Manager (v3.4.0)**. This guide will walk you through the main tabs of the dashboard, showing you how to manage your local AI engines (Ollama, Stable Diffusion / Forge, and ComfyUI), configure your settings, and successfully generate text, images, and 3D models.
 
 ---
 
 ## 1. My Models (Dashboard & VRAM Orchestrator)
 
-The **My Models** tab is your home base for monitoring your system's hardware and active language models.
+The **My Models** tab is your home base for monitoring your system's hardware telemetry and active language models.
+
+![Desktop Dashboard Overview](images/dashboard_desktop.png)
 
 ### Features:
 * **VRAM Monitor:** At the top of the screen, you will see a visual representation of your GPU's VRAM. It accurately reads your hardware (e.g. `NVIDIA GeForce RTX 4070 Ti SUPER — 16 GB`) and shows a stacked bar representing free vs. used memory.
 * **Model Capabilities Profile:** Installed models are grouped and tagged with capabilities (e.g., *Coding*, *Reasoning*, *Chat*). 
 * **KV Cache Estimator:** Click on a model to view its details, where you can use the **Context Length Slider** to estimate how much VRAM a specific context length (up to 32K tokens) will require.
 * **VRAM Orchestrator:** If your GPU gets full, the orchestrator will automatically unload idle text models when you try to run heavy image/video generations in the background.
+
+![Ollama Installed Models](images/dashboard_ollama.png)
 
 **How to Use:**
 To run a model in a frontend chat UI (like Open WebUI or LibreChat), simply select the model there. The Local LLM Server Manager proxy will wake up Ollama on port `11434` and transparently route the generation request while updating your VRAM usage bar live.
@@ -22,6 +26,8 @@ To run a model in a frontend chat UI (like Open WebUI or LibreChat), simply sele
 ## 2. Find & Download Models
 
 This tab integrates directly with the **Hugging Face Hub (GGUF)** and the **Ollama Official Library** so you can pull models natively without touching the command line.
+
+![Hugging Face Hub Model Search](images/dashboard_huggingface.png)
 
 ### Sub-tabs:
 * **Hugging Face Hub (GGUF):** Search for community-quantized models. 
@@ -40,6 +46,8 @@ Ollama can run multiple models simultaneously. To do this, edit your system envi
 
 The Stable Diffusion tab allows you to configure your Forge engine and seamlessly download new image generation assets from **CivitAI**.
 
+![CivitAI Stable Diffusion Asset Manager](images/dashboard_civitai.png)
+
 ### Configuring Your Engine:
 1. At the top of the tab, look for **Forge / SD Models Directory**.
 2. Type in your absolute path (e.g. `C:\AI\SD_Forge\models`).
@@ -57,6 +65,8 @@ The Stable Diffusion tab allows you to configure your Forge engine and seamlessl
 
 This studio tab provides a powerful frontend for interacting with your local ComfyUI installation, complete with a built-in interactive WebGL 3D canvas viewer.
 
+![3D ComfyUI Studio & WebGL Canvas](images/dashboard_3d_studio.png)
+
 ### Configuring Your Studio:
 1. Verify the **ComfyUI Service Endpoint** at the top is correct (defaults to `http://127.0.0.1:8188`).
 2. Set your **Preferred Image & Mesh Generator Engine** (toggle between Stable Diffusion/Forge or ComfyUI).
@@ -73,7 +83,20 @@ Behind the scenes, the VRAM orchestrator will automatically free up any LLM mode
 
 ---
 
-## 5. Cross-Platform Linux & Remote SSH Workflow
+## 5. Settings & Application Configuration
+
+The Settings tab provides centralized control over all engine connection endpoints, storage directories, telemetry refresh rates, and background process parameters.
+
+![Application Settings & Environment Configuration](images/dashboard_settings.png)
+
+### Key Settings:
+* **Connection Endpoints:** Configure HTTP ports for Ollama (`:11434`), SD Forge (`:7860`), and ComfyUI (`:8188`).
+* **Storage Paths:** Set custom output directories for generated models, images, and 3D GLB assets.
+* **VRAM Telemetry Interval:** Adjust the polling frequency (in milliseconds) for GPU telemetry hardware monitoring.
+
+---
+
+## 6. Cross-Platform Linux & Remote SSH Workflow
 
 Local LLM Server Manager supports native Linux execution and remote SSH viewing.
 
@@ -96,4 +119,3 @@ To access all features of the manager from a remote machine:
    # or run directly: dotnet run -- --service
    ```
 3. Open `http://localhost:5246` in your local client browser. You get 100% of the UI functionality (VRAM telemetry, Hugging Face search, CivitAI downloader, 3D WebGL viewer) at native speed with zero lag over SSH.
-

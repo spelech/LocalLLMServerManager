@@ -1,8 +1,8 @@
 # LocalLLMServerManager — System Architecture & Component Design
 
-> **v3.3.0 Architecture Specification & Mermaid Diagrams**
+> **v3.4.0 Architecture Specification & Mermaid Diagrams**
 
-This document provides a visual and structural blueprint of **LocalLLMServerManager**, detailing its component decomposition, MVVM hierarchy, Minimal API route modules, Dependency Injection lifecycle, and VRAM orchestration flow.
+This document provides a visual and structural blueprint of **LocalLLMServerManager**, detailing its component decomposition, MVVM hierarchy, Minimal API route modules, Dependency Injection lifecycle, VRAM orchestration flow, WebAssembly static asset pipeline, Playwright E2E testing layer, and Docker containerization architecture.
 
 ---
 
@@ -10,6 +10,11 @@ This document provides a visual and structural blueprint of **LocalLLMServerMana
 
 ```mermaid
 graph TD
+    subgraph TestAndAutomationLayer["E2E Test & Browser Automation Layer"]
+        E2E_Playwright["Playwright Browser Test Runner (PlaywrightWasmE2ETests)"]
+        DocGen["Automated Screenshot Generator (PlaywrightScreenshotGenerator)"]
+    end
+
     subgraph DesktopAndWebLayer["User Interface Layer (Desktop & WebAssembly)"]
         UI_Desktop["Desktop Window (Avalonia UI X11/Wayland/Win32)"]
         UI_Tray["System Tray Notification Icon & Menu"]
@@ -17,38 +22,50 @@ graph TD
         UI_Web["Web Studio & 3D WebGL Canvas (wwwroot)"]
     end
 
-    subgraph HostLayer["ASP.NET Core Minimal API Host (:5246)"]
-        ProgramHost["Program.cs (Host & DI Container)"]
-        
-        subgraph Endpoints["Route Extension Modules"]
-            E_Health["HealthEndpoints (/health)"]
-            E_Proxy["ModelProxyEndpoints (/api/models, /api/hf/*, /api/civitai/*)"]
-            E_Engine["EngineEndpoints (/api/gpu/vram, /api/settings, /api/comfy/*, /api/forge/*)"]
-            E_Workflow["WorkflowEndpoints (/api/comfy/workflows, /api/3d/files)"]
-            E_MCP["McpEndpoints (/api/mcp/tools JSON-RPC)"]
+    subgraph DockerContainer["Docker Container Orchestration (Dockerfile / docker-compose.yml)"]
+        subgraph HostLayer["ASP.NET Core Minimal API Host (:5246)"]
+            ProgramHost["Program.cs (Host & DI Container)"]
+            
+            subgraph WasmPipeline["WASM & Static File Pipeline"]
+                WasmProvider["FileExtensionContentTypeProvider (.wasm, .json, .dat)"]
+                AppBundle["AppBundle Static Web Hosting (/ & /_framework/*)"]
+            end
+
+            subgraph Endpoints["Route Extension Modules"]
+                E_Health["HealthEndpoints (/health)"]
+                E_Proxy["ModelProxyEndpoints (/api/models, /api/hf/*, /api/civitai/*)"]
+                E_Engine["EngineEndpoints (/api/gpu/vram, /api/settings, /api/comfy/*, /api/forge/*)"]
+                E_Workflow["WorkflowEndpoints (/api/comfy/workflows, /api/3d/files)"]
+                E_MCP["McpEndpoints (/api/mcp/tools JSON-RPC)"]
+            end
+
+            subgraph CoreServices["Application Services (DI Container)"]
+                S_VRAM["VramOrchestrator"]
+                S_EngineMgr["AiEngineManager (Win32 JobObject / Linux Process)"]
+                S_Telemetry["GpuTelemetryProvider (nvidia-smi / Linux proc)"]
+                S_Settings["SettingsService (settings.json)"]
+                S_Git["GitUpdateService (Git Commands)"]
+            end
+
+            YARP["YARP Reverse Proxy Engine"]
         end
 
-        subgraph CoreServices["Application Services (DI Container)"]
-            S_VRAM["VramOrchestrator"]
-            S_EngineMgr["AiEngineManager (Win32 JobObject)"]
-            S_Telemetry["GpuTelemetryProvider (nvidia-smi / Linux proc)"]
-            S_Settings["SettingsService (settings.json)"]
-            S_Git["GitUpdateService (Git Commands)"]
+        subgraph ExternalEngineLayer["Managed Engine Processes"]
+            OllamaEngine["Ollama Server (:11434)"]
+            ForgeEngine["Stable Diffusion Forge (:7860)"]
+            ComfyEngine["ComfyUI 3D Studio (:8188)"]
         end
-
-        YARP["YARP Reverse Proxy Engine"]
     end
 
-    subgraph ExternalEngineLayer["Managed Engine Processes"]
-        OllamaEngine["Ollama Server (:11434)"]
-        ForgeEngine["Stable Diffusion Forge (:7860)"]
-        ComfyEngine["ComfyUI 3D Studio (:8188)"]
-    end
+    E2E_Playwright -->|Headless Chromium WebGL| UI_WASM
+    DocGen -->|Capture PNG Screenshots| UI_WASM
 
     UI_Desktop -->|HTTP REST & WS| ProgramHost
-    UI_WASM -->|HTTP REST| ProgramHost
+    UI_WASM -->|HTTP REST & Static Files| WasmProvider
+    WasmProvider --> AppBundle
     UI_Tray -->|Process IPC| ProgramHost
 
+    ProgramHost --> WasmPipeline
     ProgramHost --> Endpoints
     Endpoints --> CoreServices
     ProgramHost --> YARP
@@ -58,8 +75,8 @@ graph TD
     YARP -->|Proxy /comfyapi| ComfyEngine
 
     S_VRAM -->|Unload VRAM HTTP| OllamaEngine
-    S_EngineMgr -->|Win32 JobObject Process Control| ForgeEngine
-    S_EngineMgr -->|Win32 JobObject Process Control| ComfyEngine
+    S_EngineMgr -->|Process Control| ForgeEngine
+    S_EngineMgr -->|Process Control| ComfyEngine
 ```
 
 ---
@@ -168,3 +185,6 @@ sequenceDiagram
 | `IOllamaModelService` | `OllamaModelService` | Singleton | Loads installed models, capabilities, and executes VRAM unload API calls |
 | `IHuggingFaceSearchService` | `HuggingFaceSearchService` | Singleton | Queries Hugging Face Hub API for GGUF model repositories and quantization files |
 | `ICivitaiSearchService` | `CivitaiSearchService` | Singleton | Queries CivitAI REST API for Stable Diffusion checkpoints, LoRAs, and ratings |
+| `IContentTypeProvider` | `FileExtensionContentTypeProvider` | Singleton | Configures WASM MIME mapping (`.wasm`, `.dat`, `.json`) for static file hosting |
+| `IBrowser` / `IPage` | `PlaywrightWasmE2ETests` / `PlaywrightScreenshotGenerator` | Test Lifecycle | Headless Chromium automation for E2E integration testing and screenshot generation |
+| Container Orchestration | `Dockerfile` / `docker-compose.yml` | Container Runtime | Multi-stage Docker packaging, port mapping (`5246`), and volume mounting |
