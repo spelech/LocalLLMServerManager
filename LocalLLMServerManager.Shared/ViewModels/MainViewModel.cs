@@ -83,6 +83,15 @@ public partial class MainViewModel : ObservableObject
     {
         if (httpClient != null) _customHttp = httpClient;
 
+        if (Http.BaseAddress != null)
+        {
+            ApiBase = Http.BaseAddress.ToString().TrimEnd('/');
+        }
+        else if (OperatingSystem.IsBrowser())
+        {
+            ApiBase = GetDefaultApiBase();
+        }
+
         Telemetry = new TelemetryViewModel(telemetryService);
         Ollama = new OllamaLibraryViewModel(ollamaModelService);
         HuggingFace = new HuggingFaceSearchViewModel(hfSearchService);
@@ -97,7 +106,33 @@ public partial class MainViewModel : ObservableObject
         }
     }
 
-    public string ApiBase { get; set; } = "http://127.0.0.1:5246";
+    private static string GetDefaultApiBase()
+    {
+        if (OperatingSystem.IsBrowser())
+        {
+            try
+            {
+                var origin = GetBrowserOrigin();
+                if (!string.IsNullOrWhiteSpace(origin))
+                {
+                    return origin.TrimEnd('/');
+                }
+            }
+            catch { }
+
+            var envBase = Environment.GetEnvironmentVariable("APP_API_BASE");
+            if (!string.IsNullOrWhiteSpace(envBase))
+            {
+                return envBase.TrimEnd('/');
+            }
+        }
+        return "http://127.0.0.1:5246";
+    }
+
+    [System.Runtime.InteropServices.JavaScript.JSImport("globalThis.getOrigin")]
+    internal static partial string GetBrowserOrigin();
+
+    public string ApiBase { get; set; } = GetDefaultApiBase();
 
     // Backward-compatible properties forwarding to sub-ViewModels
     public string GpuName { get => Telemetry.GpuName; set => Telemetry.GpuName = value; }

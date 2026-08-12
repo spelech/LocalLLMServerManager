@@ -36,18 +36,34 @@ public class TelemetryService : ITelemetryService
         bool forge = false;
         bool comfy = false;
 
+        if (OperatingSystem.IsBrowser())
+        {
+            try
+            {
+                var healthResp = await http.GetAsync($"{apiBase}/health");
+                if (healthResp.IsSuccessStatusCode)
+                {
+                    var doc = JsonNode.Parse(await healthResp.Content.ReadAsStringAsync());
+                    ollama = (doc?["ollama"]?.ToString() ?? doc?["Ollama"]?.ToString()) == "Online";
+                    forge = (doc?["stableDiffusion"]?.ToString() ?? doc?["StableDiffusion"]?.ToString()) == "Online";
+                    comfy = (doc?["comfyUI"]?.ToString() ?? doc?["ComfyUI"]?.ToString()) == "Online";
+                }
+            }
+            catch { }
+            return (ollama, forge, comfy);
+        }
+
         try
         {
             var healthResp = await http.GetAsync($"{apiBase}/health");
             if (healthResp.IsSuccessStatusCode)
             {
                 var doc = JsonNode.Parse(await healthResp.Content.ReadAsStringAsync());
-                ollama = doc?["ollama"]?.ToString() == "Online";
-                forge = doc?["stableDiffusion"]?.ToString() == "Online";
-                comfy = doc?["comfyUI"]?.ToString() == "Online";
+                ollama = (doc?["ollama"]?.ToString() ?? doc?["Ollama"]?.ToString()) == "Online";
+                forge = (doc?["stableDiffusion"]?.ToString() ?? doc?["StableDiffusion"]?.ToString()) == "Online";
+                comfy = (doc?["comfyUI"]?.ToString() ?? doc?["ComfyUI"]?.ToString()) == "Online";
                 return (ollama, forge, comfy);
             }
-            return (false, false, false);
         }
         catch { }
 

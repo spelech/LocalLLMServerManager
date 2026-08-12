@@ -5,9 +5,13 @@ if (!is_browser) {
     throw new Error(`Expected to be running in a browser`);
 }
 
-const { setModuleImports, getAssemblyExports, getConfig } = await dotnet
+globalThis.getOrigin = function () {
+    return window.location.origin;
+};
+
+const { runMain } = await dotnet
     .withDiagnosticTracing(false)
     .withApplicationArgumentsFromQuery()
     .create();
 
-await dotnet.run();
+await runMain();

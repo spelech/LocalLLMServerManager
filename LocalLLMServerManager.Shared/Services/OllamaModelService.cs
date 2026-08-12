@@ -20,13 +20,14 @@ public class OllamaModelService : IOllamaModelService
             try
             {
                 response = await http.GetAsync($"{apiBase}/api/models");
-                if (!response.IsSuccessStatusCode)
+                if (!response.IsSuccessStatusCode && !OperatingSystem.IsBrowser())
                 {
                     response = await http.GetAsync("http://127.0.0.1:11434/api/tags");
                 }
             }
             catch
             {
+                if (OperatingSystem.IsBrowser()) return result;
                 response = await http.GetAsync("http://127.0.0.1:11434/api/tags");
             }
 
