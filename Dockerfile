@@ -6,6 +6,10 @@ COPY ["LocalLLMServerManager.slnx", "./"]
 COPY ["LocalLLMServerManager.csproj", "./"]
 COPY ["LocalLLMServerManager.Shared/LocalLLMServerManager.Shared.csproj", "LocalLLMServerManager.Shared/"]
 COPY ["LocalLLMServerManager.Web/LocalLLMServerManager.Web.csproj", "LocalLLMServerManager.Web/"]
+COPY ["LocalLLMServerManager.Tests/LocalLLMServerManager.Tests.csproj", "LocalLLMServerManager.Tests/"]
+
+# Install WASM Workload
+RUN dotnet workload install wasm-tools
 
 # Restore dependencies
 RUN dotnet restore "LocalLLMServerManager.slnx"
