@@ -23,7 +23,7 @@ public static class HealthEndpoints
                 StableDiffusion = forgeHealthy ? "Online" : "Offline",
                 ComfyUI = comfyHealthy ? "Online" : "Offline",
                 PreferredImageEngine = settings.PreferredImageEngine,
-                Version = "3.3.0"
+                Version = "3.4.0"
             });
         });
     }
