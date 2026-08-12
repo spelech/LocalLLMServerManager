@@ -17,14 +17,13 @@ public class EndToEndSystemTests : IClassFixture<AppTestServerFixture>
     }
 
     [Fact]
-    public void WasmStaticAssets_IndexHtml_PointsToAvaloniaJs()
+    public void WasmStaticAssets_IndexHtml_PointsToMainJs()
     {
         string indexHtmlPath = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "index.html");
         Assert.True(File.Exists(indexHtmlPath), "wwwroot/index.html should exist");
 
         string content = File.ReadAllText(indexHtmlPath);
-        Assert.Contains("avalonia.js", content);
-        Assert.DoesNotContain("main.js", content);
+        Assert.Contains("main.js", content);
     }
 
     [Fact]

@@ -3,6 +3,7 @@ using System.Text;
 using System.Text.Json;
 using Avalonia;
 using LocalLLMServerManager;
+using Microsoft.AspNetCore.StaticFiles;
 using LocalLLMServerManager.Endpoints;
 using LocalLLMServerManager.Services;
 
@@ -154,8 +155,21 @@ public class Program
 
         var app = builder.Build();
 
+        var contentTypeProvider = new FileExtensionContentTypeProvider();
+        contentTypeProvider.Mappings[".dat"] = "application/octet-stream";
+        contentTypeProvider.Mappings[".symbols"] = "application/octet-stream";
+        contentTypeProvider.Mappings[".wasm"] = "application/wasm";
+        contentTypeProvider.Mappings[".clr"] = "application/octet-stream";
+        contentTypeProvider.Mappings[".pdb"] = "application/octet-stream";
+        contentTypeProvider.Mappings[".boot.json"] = "application/json";
+
         app.UseDefaultFiles();
-        app.UseStaticFiles();
+        app.UseStaticFiles(new StaticFileOptions
+        {
+            ContentTypeProvider = contentTypeProvider,
+            ServeUnknownFileTypes = true,
+            DefaultContentType = "application/octet-stream"
+        });
 
         // Basic VRAM Orchestration Middleware
         app.Use(async (context, next) =>

@@ -1,8 +1,8 @@
 # LocalLLMServerManager — Developer & Contributor Guide
 
-> **Version 3.3.0** | .NET 10 | Avalonia UI | ASP.NET Core Minimal API | YARP Reverse Proxy
+> **Version 3.4.0** | .NET 10 | Avalonia UI | ASP.NET Core Minimal API | YARP Reverse Proxy | Playwright E2E Browser Automation
 
-This guide provides a comprehensive overview of how to build, develop, extend, and test **LocalLLMServerManager**. It covers the codebase layout, MVVM architecture, Avalonia XAML control composition, styling design tokens, Minimal API endpoints, dependency injection, and testing standards.
+This guide provides a comprehensive overview of how to build, develop, extend, and test **LocalLLMServerManager**. It covers the codebase layout, MVVM architecture, Avalonia XAML control composition, styling design tokens, Minimal API endpoints, dependency injection, Playwright E2E browser testing, and automated screenshot generation.
 
 ---
 
@@ -73,7 +73,10 @@ LocalLLMServerManager/
 ├── LocalLLMServerManager.Web/                # Avalonia WebAssembly (WASM) Project
 │   ├── App.axaml
 │   └── Program.cs
-└── LocalLLMServerManager.Tests/              # Automated Test Suite (133 Unit & Integration Tests)
+└── LocalLLMServerManager.Tests/              # Automated Test Suite (133 Unit, Integration & E2E Tests)
+    ├── PlaywrightWasmE2ETests.cs             # Playwright E2E WebAssembly Browser Automation Tests
+    ├── PlaywrightScreenshotGenerator.cs       # Automated Documentation PNG Screenshot Generator
+    └── AppTestServerFixture.cs               # WebApplication Kestrel Test Host Fixture
 ```
 
 ---
@@ -180,12 +183,42 @@ public static class CustomEndpoints
 
 ## 🧪 Testing & Quality Assurance Guidelines
 
-All code changes must maintain **100% test pass rate** across all 133 unit and integration tests.
+All code changes must maintain **100% test pass rate** across unit, integration, and Playwright E2E browser tests.
 
-### Running Tests Locally
+### 1. Running Unit & Integration Tests
 ```bash
 # Build and run the entire test suite in Release configuration
 dotnet test LocalLLMServerManager.sln --nologo -c Release
+```
+
+### 2. Playwright Chromium Driver Setup
+Playwright E2E testing requires the Chromium browser driver binaries. Run the following command after building the test assembly:
+```powershell
+# Install Playwright Chromium browser binary
+pwsh LocalLLMServerManager.Tests/bin/Release/net10.0/playwright.ps1 install chromium
+```
+
+### 3. Executing Playwright E2E Browser Tests
+To execute end-to-end browser automation tests targeting the WebAssembly web application hosted via Kestrel Minimal API:
+```bash
+# Run Playwright E2E WASM browser tests
+dotnet test --filter "FullyQualifiedName~PlaywrightWasmE2ETests" -c Release
+```
+
+### 4. Automated Documentation Screenshot Generator (`PlaywrightScreenshotGenerator.cs`)
+The project includes an automated Playwright screenshot generator (`PlaywrightScreenshotGenerator.cs`) that launches headless Chromium with WebGL rendering flags (`--use-gl=angle --use-angle=swiftshader --enable-webgl`), boots the WebAssembly host fixture (`AppTestServerFixture`), navigates each dashboard tab, and outputs crisp PNG screenshots directly to `docs/images/`:
+
+- `docs/images/dashboard_desktop.png` — Overview & VRAM Monitor (Tab 1)
+- `docs/images/dashboard_ollama.png` — Ollama Installed Models (Tab 1)
+- `docs/images/dashboard_huggingface.png` — Hugging Face Hub Model Search (Tab 2)
+- `docs/images/dashboard_civitai.png` — CivitAI Stable Diffusion Asset Manager (Tab 3)
+- `docs/images/dashboard_3d_studio.png` — 3D & ComfyUI Studio WebGL Canvas (Tab 4)
+- `docs/images/dashboard_settings.png` — App Settings & Configuration (Tab 5)
+
+To re-generate all user guide screenshots automatically:
+```bash
+# Execute automated screenshot generator
+dotnet test --filter "FullyQualifiedName~PlaywrightScreenshotGenerator" -c Release
 ```
 
 ### Coverage Rule

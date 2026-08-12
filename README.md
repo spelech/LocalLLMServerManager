@@ -1,8 +1,10 @@
 # Local LLM Server Manager
 
-> **v3.3.0** — A unified cross-platform application (.NET 10 + Avalonia UI & WebAssembly), System Tray app, background service/daemon, Model Context Protocol (MCP) AI API, and visual orchestrator dashboard to manage local Large Language Models (**Ollama**), Image Generation (**Stable Diffusion / Forge & ComfyUI**), and **3D Mesh Generation (TRELLIS V2 & Hunyuan3D v2)** on Windows, Linux, Mobile, and Web.
+> **v3.4.0** — A unified cross-platform application (.NET 10 + Avalonia UI & WebAssembly), System Tray app, background service/daemon, Model Context Protocol (MCP) AI API, visual orchestrator dashboard, and automated Playwright E2E testing framework to manage local Large Language Models (**Ollama**), Image Generation (**Stable Diffusion / Forge & ComfyUI**), and **3D Mesh Generation (TRELLIS V2 & Hunyuan3D v2)** on Windows, Linux, Mobile, and Web.
 
 It tracks GPU VRAM usage in real time via NVML CUDA telemetry, profiles model capabilities, computes KV Cache memory footprints, integrates with the **Hugging Face Hub** to discover and pull GGUF models, connects to **CivitAI** to browse and download Stable Diffusion checkpoints directly to disk, features a **3D & ComfyUI Studio** with an interactive WebGL 3D canvas viewer, provides a **Unified Avalonia XAML WebAssembly (WASM)** interface across mobile and desktop browsers, and exposes a **Model Context Protocol (MCP) Server** (`/api/mcp/tools`) for AI assistants (Antigravity, Cursor, Claude).
+
+![Dashboard Overview](docs/images/dashboard_desktop.png)
 
 ---
 
@@ -31,9 +33,11 @@ The application features a dark Fluent Avalonia UI theme (`#0F172A`) organized i
 | [====================================------------------------------------------------]  |
 | 8,192 tokens                                                                            |
 +-----------------------------------------------------------------------------------------+
-| LocalLLMServerManager v3.3.0 -- Unified WASM & Desktop UI         System Tray Enabled 🟢 |
+| LocalLLMServerManager v3.4.0 -- Unified WASM & Desktop UI         System Tray Enabled 🟢 |
 +-----------------------------------------------------------------------------------------+
 ```
+
+---
 
 ## 🌟 Key Features
 
@@ -43,7 +47,7 @@ The application features a dark Fluent Avalonia UI theme (`#0F172A`) organized i
 3. **Headless Background Services** — Runs headlessly on machine boot via Windows Service or Linux `systemd` daemon (`localllmmanager.service`).
 4. **Automated Tray Attachment** — When a user logs in, the Avalonia System Tray app automatically attaches to the running background service instance.
 
-### LLM Management (Ollama)
+### LLM Management (Ollama & Hugging Face Hub)
 5. **Service Health Checks** — Real-time status indicators for Ollama (`11434`), Stable Diffusion / Forge (`7860`), and ComfyUI (`8188`).
 6. **Cross-Platform VRAM Telemetry** — Reads GPU name and VRAM via NVML CUDA (`nvidia-smi`), Windows Registry, or Linux system memory (`/proc/meminfo`). Correctly reports e.g. *NVIDIA GeForce RTX 4070 Ti SUPER — 16 GB*.
 7. **VRAM Usage Visualizer** — Stacked bar showing loaded-model VRAM vs free GPU memory.
@@ -54,6 +58,10 @@ The application features a dark Fluent Avalonia UI theme (`#0F172A`) organized i
 12. **Custom Pull** — Type any `user/model:tag` to pull an arbitrary Ollama model.
 13. **Concurrent Model Preloading** — Trigger indefinite VRAM holds (`keep_alive: -1`) to run multiple models side-by-side.
 
+![Ollama Installed Models](docs/images/dashboard_ollama.png)
+
+![Hugging Face GGUF Search](docs/images/dashboard_huggingface.png)
+
 ### 3D Mesh & ComfyUI Generation (TRELLIS V2 / Hunyuan3D v2)
 14. **ComfyUI Integration** — Proxy ComfyUI workflow execution, API requests, and WebSocket progress directly through port 5246.
 15. **3D Mesh Generation** — Run TRELLIS V2 and Hunyuan3D v2 workflows for Image-to-3D and Text-to-3D mesh generation (.glb / .gltf).
@@ -61,15 +69,24 @@ The application features a dark Fluent Avalonia UI theme (`#0F172A`) organized i
 17. **Bundled API Workflow Presets** — Ships with default ready-to-run API JSON templates for TRELLIS V2, Hunyuan3D v2, and FLUX/SDXL image generation.
 18. **Engine Preference Switcher** — Easily set your preferred default image generator engine (Forge vs ComfyUI).
 
-### Stable Diffusion / Forge
+![3D Mesh & ComfyUI Studio](docs/images/dashboard_3d_studio.png)
+
+### Stable Diffusion / Forge & CivitAI
 19. **CivitAI Integration** — Search by name, type (Checkpoint / LoRA / Embedding / VAE / ControlNet), and sort order. Shows preview thumbnails, download counts, and star ratings.
 20. **Direct-to-Disk Downloads** — Stream CivitAI files directly to disk with live progress bars.
 
+![CivitAI SD Checkpoints](docs/images/dashboard_civitai.png)
+
+### Application Settings & Engine Controls
+21. **Configuration Dashboard** — Customize ports, engine directory paths, auto-unload thresholds, and telemetry refresh intervals.
+
+![Application Settings](docs/images/dashboard_settings.png)
+
 ### Infrastructure & Reverse Proxy
-21. **YARP Reverse Proxy** — Transparently proxies Ollama (`:11434`), Forge (`:7860`), and ComfyUI (`:8188`) traffic through a single endpoint (`:5246`).
-22. **VRAM Orchestrator** — Auto-unloads active LLM models from GPU memory before heavy Stable Diffusion or ComfyUI 3D render jobs to prevent OOM errors.
-23. **Background Engine Management** — UI controls to start/stop engines directly from the dashboard cleanly.
-24. **Lazy Boot** — AI engines can now boot lazily on-demand when first requested, conserving system resources when idle.
+22. **YARP Reverse Proxy** — Transparently proxies Ollama (`:11434`), Forge (`:7860`), and ComfyUI (`:8188`) traffic through a single endpoint (`:5246`).
+23. **VRAM Orchestrator** — Auto-unloads active LLM models from GPU memory before heavy Stable Diffusion or ComfyUI 3D render jobs to prevent OOM errors.
+24. **Background Engine Management** — UI controls to start/stop engines directly from the dashboard cleanly.
+25. **Lazy Boot** — AI engines can now boot lazily on-demand when first requested, conserving system resources when idle.
 
 ---
 
@@ -106,6 +123,119 @@ The application features a dark Fluent Avalonia UI theme (`#0F172A`) organized i
 
 ---
 
+## 🎭 Playwright Automated E2E Browser Testing
+
+LocalLLMServerManager includes automated end-to-end (E2E) browser testing built on `Microsoft.Playwright` and xUnit. The test suite spins up an in-memory ASP.NET Core server (`AppTestServerFixture`) and launches headless Chromium with WebAssembly and WebGL flags (`--use-gl=angle --use-angle=swiftshader --enable-webgl`) to validate application behavior in real browser engines.
+
+### Key Capabilities
+- **WASM Bundle & Static File Validation**: Listens for HTTP responses to verify zero `404 Not Found` errors when serving Avalonia WASM `.dll`, `.dat`, `.wasm`, and `.boot.json` assets.
+- **Console Error Trap**: Monitors browser console output to ensure zero uncaught JavaScript errors occur during WASM startup and canvas rendering.
+- **WebGL 3D Canvas Initialization**: Confirms the `<canvas id="out">` element is initialized and rendered with non-zero dimensions.
+- **Automated Screenshot Generation**: `PlaywrightScreenshotGenerator` navigates the dark Fluent UI dashboard and captures real 1280x800 PNG screenshots stored in `docs/images/`.
+
+### Running Playwright Tests
+```bash
+# Install Playwright browser drivers (Chromium)
+pwsh LocalLLMServerManager.Tests/bin/Release/net10.0/playwright.ps1 install chromium
+
+# Run all Playwright WASM E2E tests
+dotnet test LocalLLMServerManager.Tests/LocalLLMServerManager.Tests.csproj --filter "FullyQualifiedName~PlaywrightWasmE2ETests" -c Release
+
+# Run automated screenshot generator
+dotnet test LocalLLMServerManager.Tests/LocalLLMServerManager.Tests.csproj --filter "FullyQualifiedName~PlaywrightScreenshotGenerator" -c Release
+```
+
+---
+
+## 🐳 Docker & Container Deployment
+
+LocalLLMServerManager can be containerized using Docker for seamless deployment on server infrastructure or home lab setups.
+
+### Multi-Stage `Dockerfile`
+```dockerfile
+# Build Stage
+FROM mcr.microsoft.com/dotnet/sdk:10.0 AS build
+WORKDIR /src
+COPY ["LocalLLMServerManager.csproj", "./"]
+COPY ["LocalLLMServerManager.Shared/LocalLLMServerManager.Shared.csproj", "LocalLLMServerManager.Shared/"]
+COPY ["LocalLLMServerManager.Web/LocalLLMServerManager.Web.csproj", "LocalLLMServerManager.Web/"]
+RUN dotnet restore "LocalLLMServerManager.csproj"
+COPY . .
+RUN dotnet publish "LocalLLMServerManager.csproj" -c Release -o /app/publish
+
+# Runtime Stage
+FROM mcr.microsoft.com/dotnet/aspnet:10.0 AS final
+WORKDIR /app
+EXPOSE 5246
+ENV ASPNETCORE_URLS=http://+:5246
+COPY --from=build /app/publish .
+ENTRYPOINT ["dotnet", "LocalLLMServerManager.dll", "--service"]
+```
+
+### `docker-compose.yml`
+```yaml
+version: '3.8'
+
+services:
+  localllmservermanager:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: localllmservermanager
+    ports:
+      - "5246:5246"
+    volumes:
+      - ./data:/app/data
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Production
+      - ASPNETCORE_URLS=http://+:5246
+    restart: unless-stopped
+```
+
+### Running with Docker CLI
+```bash
+# Build Docker image
+docker build -t localllmservermanager:v3.4.0 .
+
+# Run container exposing port 5246
+docker run -d -p 5246:5246 --name localllmservermanager localllmservermanager:v3.4.0
+
+# Or start using Docker Compose
+docker-compose up -d
+```
+
+---
+
+## 🌐 WebAssembly Static Asset Hosting & Kestrel MIME Mappings
+
+To host Avalonia XAML WebAssembly applications directly within ASP.NET Core Kestrel without runtime loading errors, `Program.cs` configures a custom `FileExtensionContentTypeProvider` for static files.
+
+### Configured MIME Mappings
+```csharp
+var contentTypeProvider = new FileExtensionContentTypeProvider();
+contentTypeProvider.Mappings[".dat"] = "application/octet-stream";
+contentTypeProvider.Mappings[".symbols"] = "application/octet-stream";
+contentTypeProvider.Mappings[".wasm"] = "application/wasm";
+contentTypeProvider.Mappings[".clr"] = "application/octet-stream";
+contentTypeProvider.Mappings[".pdb"] = "application/octet-stream";
+contentTypeProvider.Mappings[".boot.json"] = "application/json";
+
+app.UseDefaultFiles();
+app.UseStaticFiles(new StaticFileOptions
+{
+    ContentTypeProvider = contentTypeProvider,
+    ServeUnknownFileTypes = true,
+    DefaultContentType = "application/octet-stream"
+});
+```
+
+### Technical Benefits
+- **WebAssembly Compatibility**: Ensures `.wasm` files are served with `application/wasm` headers required by web browsers for WebAssembly compilation.
+- **Managed Assembly & Data Stream Support**: `.dat`, `.clr`, and `.pdb` static files are served as `application/octet-stream`, preventing 404/415 media type rejection by ASP.NET Core middleware.
+- **Fallback Type Handling**: `ServeUnknownFileTypes = true` prevents missing static file headers when Avalonia WASM requests dynamic assembly blobs or metadata files.
+
+---
+
 ## 📱 Mobile Responsiveness & Cross-Device Compatibility
 
 The Web Dashboard features a responsive CSS layout engine:
@@ -138,16 +268,17 @@ We use **MAJOR.MINOR.PATCH** (SemVer):
 | `1.5.0` | Lazy boot for AI engines, process job objects, and UI controls for background engine management |
 | `2.0.0` | Major architecture update — Avalonia UI desktop shell, system tray icon, pre-logon Windows Service boot & logon tray attachment |
 | `3.0.0` | Avalonia WebAssembly (Wasm) integration, 3D Canvas Studio, unified multi-platform interface |
-| `3.1.0` | Cross-platform Linux support, Linux release scripts (`build_release.sh`), systemd service installer (`install_linux.sh`), `.desktop` launcher, NVML & `/proc/meminfo` VRAM telemetry, and SSH remote workflow support |
+| `3.1.0` | Cross-Platform Linux support, Linux release scripts (`build_release.sh`), systemd service installer (`install_linux.sh`), `.desktop` launcher, NVML & `/proc/meminfo` VRAM telemetry, and SSH remote workflow support |
 | `3.2.0` | Fixed WASM launcher script routing, added `/api/models` backend proxy, updated high-res 32-bit icon, added end-to-end integration tests, and completed repo housekeeping |
 | `3.3.0` | Major architecture refactoring — decomposed Program.cs and MainViewModel into modular interfaces, services, and endpoint route extensions |
+| `3.4.0` | Added Playwright automated E2E browser testing, real WebAssembly UI screenshot generator, Docker containerization support, and Kestrel WASM static asset MIME type mappings |
 
 ---
 
 ## 🚀 Installation & Downloads
 
 ### Option 1: Official Windows Installer (.exe)
-Download the latest `LocalLLMServerManager-v3.3.0-Setup.exe` from the [GitHub Releases](https://github.com/spelech/LocalLLMServerManager/releases) page.
+Download the latest `LocalLLMServerManager-v3.4.0-Setup.exe` from the [GitHub Releases](https://github.com/spelech/LocalLLMServerManager/releases) page.
 * Includes an installation wizard with options for:
   * 🟢 **Install Windows Service** (Headless pre-logon machine boot)
   * 🟢 **Auto-Start System Tray App** on user login
@@ -164,7 +295,7 @@ sudo ./install_linux.sh
 * Installs desktop launcher (`localllmmanager.desktop`) in your application menu
 
 ### Option 3: Standalone Portable (.zip / .tar.gz)
-Download `LocalLLMServerManager-v3.1.0-win-x64.zip` or `LocalLLMServerManager-v3.1.0-linux-x64.tar.gz` from Releases, extract, and run executable. Includes bundled runtime — no .NET SDK required!
+Download `LocalLLMServerManager-v3.4.0-win-x64.zip` or `LocalLLMServerManager-v3.4.0-linux-x64.tar.gz` from Releases, extract, and run executable. Includes bundled runtime — no .NET SDK required!
 
 ### Option 4: Building Release Packages Locally
 - **Windows:** Run `.\build_release.ps1`

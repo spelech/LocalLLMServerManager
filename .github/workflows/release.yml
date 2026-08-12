@@ -22,8 +22,17 @@ jobs:
         with:
           dotnet-version: '10.0.x'
 
+      - name: Install WASM Workload
+        run: dotnet workload install wasm-tools
+
       - name: Restore Dependencies
         run: dotnet restore LocalLLMServerManager.slnx
+
+      - name: Build Solution
+        run: dotnet build LocalLLMServerManager.slnx -c Release --no-restore
+
+      - name: Install Playwright Browsers
+        run: pwsh LocalLLMServerManager.Tests/bin/Release/net10.0/playwright.ps1 install chromium
 
       - name: Run Test Suite
         run: dotnet test LocalLLMServerManager.Tests/LocalLLMServerManager.Tests.csproj --nologo -c Release --no-restore

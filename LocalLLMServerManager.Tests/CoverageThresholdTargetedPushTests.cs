@@ -97,7 +97,7 @@ public class CoverageThresholdTargetedPushTests : IClassFixture<AppTestServerFix
                 }
 
                 var uri = req.RequestUri?.ToString() ?? "";
-                if (uri.Contains("health") && isHealthError)
+                if (isHealthError)
                     return new HttpResponseMessage { StatusCode = HttpStatusCode.InternalServerError };
                 if (uri.Contains("hf/search"))
                     return new HttpResponseMessage { StatusCode = HttpStatusCode.OK, Content = new StringContent(hfSearchJson, Encoding.UTF8, "application/json") };
