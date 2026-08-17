@@ -1,0 +1,1026 @@
+50aa10c docs: bump version to 3.5.0 and document flexible path configuration
+ App.axaml                                          |  2 +-
+ Endpoints/HealthEndpoints.cs                       |  2 +-
+ Endpoints/ModelProxyEndpoints.cs                   |  8 +-
+ .../LocalLLMServerManager.Shared.csproj            |  6 +-
+ LocalLLMServerManager.Shared/Views/MainView.axaml  |  2 +-
+ LocalLLMServerManager.csproj                       |  6 +-
+ README.md                                          | 76 +++++++++++++++---
+ docs/DEVELOPMENT_GUIDE.md                          | 54 ++++++++++---
+ docs/REQUIREMENTS.md                               | 23 ++++--
+ docs/TEST_COVERAGE.md                              | 92 ++++++++++++----------
+ scripts/installer.iss                              |  4 +-
+ 11 files changed, 187 insertions(+), 88 deletions(-)
+diff --git a/App.axaml b/App.axaml
+index 0508938..8ccae54 100644
+--- a/App.axaml
++++ b/App.axaml
+@@ -9,21 +9,21 @@
+                 <ResourceInclude Source="avares://LocalLLMServerManager.Shared/Styles/DesignTokens.axaml" />
+             </ResourceDictionary.MergedDictionaries>
+         </ResourceDictionary>
+     </Application.Resources>
+     <Application.Styles>
+         <semi:SemiTheme Locale="en-US" />
+         <StyleInclude Source="avares://LocalLLMServerManager.Shared/Styles/GlassmorphicTheme.axaml" />
+     </Application.Styles>
+     <TrayIcon.Icons>
+         <TrayIcons>
+-            <TrayIcon Icon="avares://LocalLLMServerManager/Assets/app-icon.ico" ToolTipText="Local LLM Server Manager v3.4.0" IsVisible="True">
++            <TrayIcon Icon="avares://LocalLLMServerManager/Assets/app-icon.ico" ToolTipText="Local LLM Server Manager v3.5.0" IsVisible="True">
+                 <TrayIcon.Menu>
+                     <NativeMenu>
+                         <NativeMenuItem Header="Open Native Dashboard" Click="OnOpenDashboardClick"/>
+                         <NativeMenuItem Header="Open Web UI in Browser" Click="OnOpenWebUiClick"/>
+                         <NativeMenuItemSeparator/>
+                         <NativeMenuItem Header="Exit Manager" Click="OnExitClick"/>
+                     </NativeMenu>
+                 </TrayIcon.Menu>
+             </TrayIcon>
+         </TrayIcons>
+diff --git a/Endpoints/HealthEndpoints.cs b/Endpoints/HealthEndpoints.cs
+index 54f36ba..9eb5c3b 100644
+--- a/Endpoints/HealthEndpoints.cs
++++ b/Endpoints/HealthEndpoints.cs
+@@ -16,15 +16,15 @@ public static class HealthEndpoints
+             var forgeHealthy = await orchestrator.IsForgeHealthyAsync();
+             var comfyHealthy = await orchestrator.IsComfyUiHealthyAsync(comfyUrl);
+ 
+             return Results.Ok(new
+             {
+                 Status = (ollamaHealthy || forgeHealthy || comfyHealthy) ? "Healthy" : "Degraded",
+                 Ollama = ollamaHealthy ? "Online" : "Offline",
+                 StableDiffusion = forgeHealthy ? "Online" : "Offline",
+                 ComfyUI = comfyHealthy ? "Online" : "Offline",
+                 PreferredImageEngine = settings.PreferredImageEngine,
+-                Version = "3.4.0"
++                Version = "3.5.0"
+             });
+         });
+     }
+ }
+diff --git a/Endpoints/ModelProxyEndpoints.cs b/Endpoints/ModelProxyEndpoints.cs
+index 7a4c175..4773af3 100644
+--- a/Endpoints/ModelProxyEndpoints.cs
++++ b/Endpoints/ModelProxyEndpoints.cs
+@@ -46,21 +46,21 @@ public static class ModelProxyEndpoints
+ 
+         app.MapGet("/api/hf/search", async (string? q, HttpClient httpClient) =>
+         {
+             try
+             {
+                 using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(3));
+                 var query = string.IsNullOrWhiteSpace(q) ? "llama" : q;
+                 var requestUrl = $"https://huggingface.co/api/models?search={Uri.EscapeDataString(query)}&filter=gguf&sort=downloads&direction=-1&limit=20";
+                 
+                 using var req = new HttpRequestMessage(HttpMethod.Get, requestUrl);
+-                req.Headers.UserAgent.ParseAdd("LocalLLMServerManager/3.4.0");
++                req.Headers.UserAgent.ParseAdd("LocalLLMServerManager/3.5.0");
+                 var response = await httpClient.SendAsync(req, cts.Token);
+                 
+                 if (response.IsSuccessStatusCode)
+                 {
+                     var jsonStr = await response.Content.ReadAsStringAsync(cts.Token);
+                     return Results.Content(jsonStr, "application/json");
+                 }
+                 return Results.StatusCode((int)response.StatusCode);
+             }
+             catch (Exception ex)
+@@ -69,21 +69,21 @@ public static class ModelProxyEndpoints
+             }
+         });
+ 
+         app.MapGet("/api/hf/model", async (string repoId, HttpClient httpClient) =>
+         {
+             try
+             {
+                 using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(3));
+                 var requestUrl = $"https://huggingface.co/api/models/{Uri.EscapeDataString(repoId)}";
+                 using var req = new HttpRequestMessage(HttpMethod.Get, requestUrl);
+-                req.Headers.UserAgent.ParseAdd("LocalLLMServerManager/3.4.0");
++                req.Headers.UserAgent.ParseAdd("LocalLLMServerManager/3.5.0");
+                 var response = await httpClient.SendAsync(req, cts.Token);
+                 
+                 if (response.IsSuccessStatusCode)
+                 {
+                     var jsonStr = await response.Content.ReadAsStringAsync(cts.Token);
+                     return Results.Content(jsonStr, "application/json");
+                 }
+                 return Results.StatusCode((int)response.StatusCode);
+             }
+             catch (Exception ex)
+@@ -96,21 +96,21 @@ public static class ModelProxyEndpoints
+         {
+             try
+             {
+                 using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(3));
+                 var query = string.IsNullOrWhiteSpace(q) ? "cyberpunk" : q;
+                 var typeParam = string.IsNullOrWhiteSpace(types) ? "" : $"&types={Uri.EscapeDataString(types)}";
+                 var sortParam = string.IsNullOrWhiteSpace(sort) ? "Most Downloaded" : sort;
+                 var requestUrl = $"https://civitai.com/api/v1/models?query={Uri.EscapeDataString(query)}&limit=15&sort={Uri.EscapeDataString(sortParam)}{typeParam}";
+ 
+                 using var req = new HttpRequestMessage(HttpMethod.Get, requestUrl);
+-                req.Headers.UserAgent.ParseAdd("LocalLLMServerManager/3.4.0");
++                req.Headers.UserAgent.ParseAdd("LocalLLMServerManager/3.5.0");
+                 var response = await http.SendAsync(req, cts.Token);
+ 
+                 if (response.IsSuccessStatusCode)
+                 {
+                     var jsonStr = await response.Content.ReadAsStringAsync(cts.Token);
+                     return Results.Content(jsonStr, "application/json");
+                 }
+                 return Results.StatusCode((int)response.StatusCode);
+             }
+             catch (Exception ex)
+@@ -119,21 +119,21 @@ public static class ModelProxyEndpoints
+             }
+         });
+ 
+         app.MapGet("/api/civitai/model", async (HttpClient http, int id) =>
+         {
+             try
+             {
+                 using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(3));
+                 var requestUrl = $"https://civitai.com/api/v1/models/{id}";
+                 using var req = new HttpRequestMessage(HttpMethod.Get, requestUrl);
+-                req.Headers.UserAgent.ParseAdd("LocalLLMServerManager/3.4.0");
++                req.Headers.UserAgent.ParseAdd("LocalLLMServerManager/3.5.0");
+                 var response = await http.SendAsync(req, cts.Token);
+ 
+                 if (response.IsSuccessStatusCode)
+                 {
+                     var jsonStr = await response.Content.ReadAsStringAsync(cts.Token);
+                     return Results.Content(jsonStr, "application/json");
+                 }
+                 return Results.StatusCode((int)response.StatusCode);
+             }
+             catch (Exception ex)
+diff --git a/LocalLLMServerManager.Shared/LocalLLMServerManager.Shared.csproj b/LocalLLMServerManager.Shared/LocalLLMServerManager.Shared.csproj
+index 116e9a1..602f598 100644
+--- a/LocalLLMServerManager.Shared/LocalLLMServerManager.Shared.csproj
++++ b/LocalLLMServerManager.Shared/LocalLLMServerManager.Shared.csproj
+@@ -1,19 +1,19 @@
+ <Project Sdk="Microsoft.NET.Sdk">
+ 
+   <PropertyGroup>
+     <TargetFramework>net10.0</TargetFramework>
+     <Nullable>enable</Nullable>
+     <ImplicitUsings>enable</ImplicitUsings>
+-    <Version>3.1.0</Version>
+-    <AssemblyVersion>3.1.0.0</AssemblyVersion>
+-    <FileVersion>3.1.0.0</FileVersion>
++    <Version>3.5.0</Version>
++    <AssemblyVersion>3.5.0.0</AssemblyVersion>
++    <FileVersion>3.5.0.0</FileVersion>
+     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+   </PropertyGroup>
+ 
+   <ItemGroup>
+     <PackageReference Include="Avalonia" Version="12.1.1" />
+     <PackageReference Include="Avalonia.Themes.Fluent" Version="12.1.1" />
+     <PackageReference Include="Semi.Avalonia" Version="12.1.0.1" />
+     <PackageReference Include="Avalonia.Fonts.Inter" Version="12.1.1" />
+     <PackageReference Include="CommunityToolkit.Mvvm" Version="8.4.2" />
+   </ItemGroup>
+diff --git a/LocalLLMServerManager.Shared/Views/MainView.axaml b/LocalLLMServerManager.Shared/Views/MainView.axaml
+index 6ac5b60..bc8f87e 100644
+--- a/LocalLLMServerManager.Shared/Views/MainView.axaml
++++ b/LocalLLMServerManager.Shared/Views/MainView.axaml
+@@ -60,16 +60,16 @@
+                     <Border Background="#1E293B" CornerRadius="6" BorderBrush="{Binding BadgeColor}" BorderThickness="2" Padding="12,8" Margin="0,0,0,8" Width="300">
+                         <TextBlock Text="{Binding Message}" Foreground="#F8FAFC" FontSize="12" TextWrapping="Wrap"/>
+                     </Border>
+                 </DataTemplate>
+             </ItemsControl.ItemTemplate>
+         </ItemsControl>
+ 
+         <!-- Footer -->
+         <Border Grid.Row="2" BorderBrush="#1E293B" BorderThickness="0,1,0,0" Padding="16,12,16,12" Margin="0,8,0,0">
+             <Grid ColumnDefinitions="*, Auto">
+-                <TextBlock Text="LocalLLMServerManager v3.4.0 — Unified WASM &amp; Desktop UI" FontSize="12" Foreground="#64748B"/>
++                <TextBlock Text="LocalLLMServerManager v3.5.0 — Unified WASM &amp; Desktop UI" FontSize="12" Foreground="#64748B"/>
+                 <TextBlock Grid.Column="1" Text="System Tray Enabled 🟢" FontSize="12" Foreground="#22C55E"/>
+             </Grid>
+         </Border>
+     </Grid>
+ </UserControl>
+diff --git a/LocalLLMServerManager.csproj b/LocalLLMServerManager.csproj
+index 3ceb723..803143c 100644
+--- a/LocalLLMServerManager.csproj
++++ b/LocalLLMServerManager.csproj
+@@ -4,23 +4,23 @@
+     <OutputType>WinExe</OutputType>
+     <TargetFramework>net10.0</TargetFramework>
+     <Nullable>enable</Nullable>
+     <ImplicitUsings>enable</ImplicitUsings>
+     <!--
+       Versioning convention: MAJOR.MINOR.PATCH
+         MAJOR — breaking changes or major architecture rewrites
+         MINOR — new user-facing features (bump per feature PR)
+         PATCH — bug fixes, dependency updates, doc-only changes
+     -->
+-    <Version>3.4.0</Version>
+-    <AssemblyVersion>3.4.0.0</AssemblyVersion>
+-    <FileVersion>3.4.0.0</FileVersion>
++    <Version>3.5.0</Version>
++    <AssemblyVersion>3.5.0.0</AssemblyVersion>
++    <FileVersion>3.5.0.0</FileVersion>
+     <ApplicationIcon>Assets\app-icon.ico</ApplicationIcon>
+     <BuiltInComInteropSupport>true</BuiltInComInteropSupport>
+   </PropertyGroup>
+ 
+   <ItemGroup>
+     <ProjectReference Include="LocalLLMServerManager.Shared\LocalLLMServerManager.Shared.csproj" />
+   </ItemGroup>
+ 
+   <ItemGroup>
+     <PackageReference Include="Avalonia" Version="12.1.1" />
+diff --git a/README.md b/README.md
+index b53629c..88b01c9 100644
+--- a/README.md
++++ b/README.md
+@@ -1,13 +1,13 @@
+ # Local LLM Server Manager
+ 
+-> **v3.4.0** — A unified cross-platform application (.NET 10 + Avalonia UI & WebAssembly), System Tray app, background service/daemon, Model Context Protocol (MCP) AI API, visual orchestrator dashboard, and automated Playwright E2E testing framework to manage local Large Language Models (**Ollama**), Image Generation (**Stable Diffusion / Forge & ComfyUI**), and **3D Mesh Generation (TRELLIS V2 & Hunyuan3D v2)** on Windows, Linux, Mobile, and Web.
++> **v3.5.0** — A unified cross-platform application (.NET 10 + Avalonia UI & WebAssembly), System Tray app, background service/daemon, Model Context Protocol (MCP) AI API, visual orchestrator dashboard, and automated Playwright E2E testing framework to manage local Large Language Models (**Ollama**), Image Generation (**Stable Diffusion / Forge & ComfyUI**), and **3D Mesh Generation (TRELLIS V2 & Hunyuan3D v2)** on Windows, Linux, Mobile, and Web.
+ 
+ It tracks GPU VRAM usage in real time via NVML CUDA telemetry, profiles model capabilities, computes KV Cache memory footprints, integrates with the **Hugging Face Hub** to discover and pull GGUF models, connects to **CivitAI** to browse and download Stable Diffusion checkpoints directly to disk, features a **3D & ComfyUI Studio** with an interactive WebGL 3D canvas viewer, provides a **Unified Avalonia XAML WebAssembly (WASM)** interface across mobile and desktop browsers, and exposes a **Model Context Protocol (MCP) Server** (`/api/mcp/tools`) for AI assistants (Antigravity, Cursor, Claude).
+ 
+ ![Dashboard Overview](docs/images/dashboard_desktop.png)
+ 
+ ---
+ 
+ ## 🖥️ User Interface Layout & Dashboard Structure
+ 
+ The application features a dark Fluent Avalonia UI theme (`#0F172A`) organized into modular tabs:
+@@ -26,21 +26,21 @@ The application features a dark Fluent Avalonia UI theme (`#0F172A`) organized i
+ | +-------------------------------------------------------------------------------------+ |
+ | | qwen2.5-coder:7b                         [Coding] [4.7 GB]              Installed 🟢 | |
+ | +-------------------------------------------------------------------------------------+ |
+ | | llama3.2:latest                          [Chat] [2.0 GB]                Installed 🟢 | |
+ | +-------------------------------------------------------------------------------------+ |
+ |                                                                                         |
+ | Interactive KV Cache Calculator                             ~0.5 GB                     |
+ | [====================================------------------------------------------------]  |
+ | 8,192 tokens                                                                            |
+ +-----------------------------------------------------------------------------------------+
+-| LocalLLMServerManager v3.4.0 -- Unified WASM & Desktop UI         System Tray Enabled 🟢 |
++| LocalLLMServerManager v3.5.0 -- Unified WASM & Desktop UI         System Tray Enabled 🟢 |
+ +-----------------------------------------------------------------------------------------+
+ ```
+ 
+ ---
+ 
+ ## 🌟 Key Features
+ 
+ ### Native Desktop App & Services (Windows & Linux)
+ 1. **Avalonia UI Native Dashboard** — Sleek Fluent dark desktop window presenting live VRAM usage, engine status cards, and one-click browser launch on Windows and Linux (X11 / Wayland).
+ 2. **System Tray Integration** — Operates quietly in the notification area with right-click quick controls (Open Dashboard, View Health, Exit).
+@@ -71,21 +71,21 @@ The application features a dark Fluent Avalonia UI theme (`#0F172A`) organized i
+ 
+ ![3D Mesh & ComfyUI Studio](docs/images/dashboard_3d_studio.png)
+ 
+ ### Stable Diffusion / Forge & CivitAI
+ 19. **CivitAI Integration** — Search by name, type (Checkpoint / LoRA / Embedding / VAE / ControlNet), and sort order. Shows preview thumbnails, download counts, and star ratings.
+ 20. **Direct-to-Disk Downloads** — Stream CivitAI files directly to disk with live progress bars.
+ 
+ ![CivitAI SD Checkpoints](docs/images/dashboard_civitai.png)
+ 
+ ### Application Settings & Engine Controls
+-21. **Configuration Dashboard** — Customize ports, engine directory paths, auto-unload thresholds, and telemetry refresh intervals.
++21. **Flexible Path Configuration & Auto-Discovery** — Customize executable/script paths and model directories for Ollama, Stable Diffusion / Forge, and ComfyUI. Use the one-click "🔍 Auto-Detect Installed Tools" feature (or `POST /api/tools/detect`) to automatically scan common install locations across drives, with real-time path validation badges (`Valid` 🟢 / `Missing` 🔴 / `Unset` ⚪).
+ 
+ ![Application Settings](docs/images/dashboard_settings.png)
+ 
+ ### Infrastructure & Reverse Proxy
+ 22. **YARP Reverse Proxy** — Transparently proxies Ollama (`:11434`), Forge (`:7860`), and ComfyUI (`:8188`) traffic through a single endpoint (`:5246`).
+ 23. **VRAM Orchestrator** — Auto-unloads active LLM models from GPU memory before heavy Stable Diffusion or ComfyUI 3D render jobs to prevent OOM errors.
+ 24. **Background Engine Management** — UI controls to start/stop engines directly from the dashboard cleanly.
+ 25. **Lazy Boot** — AI engines can now boot lazily on-demand when first requested, conserving system resources when idle.
+ 
+ ---
+@@ -188,24 +188,24 @@ services:
+       - ./data:/app/data
+     environment:
+       - ASPNETCORE_ENVIRONMENT=Production
+       - ASPNETCORE_URLS=http://+:5246
+     restart: unless-stopped
+ ```
+ 
+ ### Running with Docker CLI
+ ```bash
+ # Build Docker image
+-docker build -t localllmservermanager:v3.4.0 .
++docker build -t localllmservermanager:v3.5.0 .
+ 
+ # Run container exposing port 5246
+-docker run -d -p 5246:5246 --name localllmservermanager localllmservermanager:v3.4.0
++docker run -d -p 5246:5246 --name localllmservermanager localllmservermanager:v3.5.0
+ 
+ # Or start using Docker Compose
+ docker-compose up -d
+ ```
+ 
+ ---
+ 
+ ## 🌐 WebAssembly Static Asset Hosting & Kestrel MIME Mappings
+ 
+ To host Avalonia XAML WebAssembly applications directly within ASP.NET Core Kestrel without runtime loading errors, `Program.cs` configures a custom `FileExtensionContentTypeProvider` for static files.
+@@ -244,31 +244,31 @@ The Web Dashboard features a responsive CSS layout engine:
+ * **Responsive 3D Studio**: The WebGL 3D Mesh viewer (`<model-viewer>`) automatically resizes canvas bounds and supports touch gesture orbit controls.
+ 
+ ---
+ 
+ ## 🧪 Quality Assurance, Test Coverage & Requirements Traceability
+ 
+ LocalLLMServerManager includes an automated test harness ensuring cross-platform stability across **Windows 11** and **Linux** environments:
+ 
+ ```
+ +-----------------------------------------------------------------------------------------+
+-| TOTAL TESTS EXECUTED : 137                                                              |
+-| PASSED               : 137 (100.0%)                                                     |
++| TOTAL TESTS EXECUTED : 171                                                              |
++| PASSED               : 171 (100.0%)                                                     |
+ | FAILED               : 0   (0.0%)                                                       |
+-| TEST FIXTURE FILES   : 26                                                               |
++| TEST FIXTURE FILES   : 29                                                               |
+ | TEST FRAMEWORKS      : .NET 10 LTS • xUnit v3 • Avalonia Headless • Microsoft Playwright|
+ | OPERATING SYSTEMS    : Windows 11 x64 (Win32 Jobs) • Linux x64 (systemd / procfs / X11) |
+ +-----------------------------------------------------------------------------------------+
+ ```
+ 
+-* **[Full Test Coverage Specification](docs/TEST_COVERAGE.md)** — Detailed component-by-component coverage mapping across all 26 test classes, cross-platform validation matrix (Windows & Linux), and 5-chunk test execution guide.
+-* **[Software Requirements Specification & Traceability Matrix](docs/REQUIREMENTS.md)** — Formal requirements specification across 10 functional domains (`CORE-xxx`, `LLM-xxx`, `HUB-xxx`, `DIFF-xxx`, `3D-xxx`, `VRAM-xxx`, `MCP-xxx`, `UI-xxx`, `WASM-xxx`, `E2E-xxx`), mapping each requirement to source files and test assertions, plus explicit gap analysis.
++* **[Full Test Coverage Specification](docs/TEST_COVERAGE.md)** — Detailed component-by-component coverage mapping across all 29 test classes, cross-platform validation matrix (Windows & Linux), and 5-chunk test execution guide.
++* **[Software Requirements Specification & Traceability Matrix](docs/REQUIREMENTS.md)** — Formal requirements specification across 11 functional domains (`CORE-xxx`, `LLM-xxx`, `HUB-xxx`, `DIFF-xxx`, `3D-xxx`, `VRAM-xxx`, `MCP-xxx`, `DISC-xxx`, `UI-xxx`, `WASM-xxx`, `E2E-xxx`), mapping each requirement to source files and test assertions, plus explicit gap analysis.
+ 
+ ---
+ 
+ ## 📚 Guides & Documentation
+ 
+ - [Full Test Coverage Specification](docs/TEST_COVERAGE.md) — Comprehensive test coverage mapping, metrics, cross-platform testing matrix, and execution guidelines.
+ - [Software Requirements Specification & RTM](docs/REQUIREMENTS.md) — Complete SRS with bidirectional Traceability Matrix mapping requirement IDs to tests and code, plus gap analysis.
+ - [Developer & Contributor Guide](docs/DEVELOPMENT_GUIDE.md) — Comprehensive guide on project layout, SOLID Avalonia XAML controls, design tokens, MVVM pattern, Minimal API endpoints, and testing.
+ - [System Architecture & Mermaid Diagrams](docs/ARCHITECTURE.md) — Visual architecture blueprints, component hierarchy, VRAM orchestration sequence diagrams, and service mapping matrices.
+ - [ComfyUI & 3D Mesh Generation Setup Guide](docs/COMFYUI_AND_3D_GUIDE.md) — How to configure ComfyUI, install 3D nodes (TRELLIS V2 / Hunyuan3D v2), and export custom workflow presets.
+@@ -287,52 +287,104 @@ We use **MAJOR.MINOR.PATCH** (SemVer):
+ | `1.2.0` | Forge models directory config, direct-to-disk CivitAI downloads with SSE progress, persistent `settings.json` |
+ | `1.3.0` | Migration to .NET 10 LTS target framework and updated dependencies |
+ | `1.4.0` | ComfyUI integration, 3D Mesh Studio (TRELLIS V2 / Hunyuan3D v2), interactive WebGL 3D viewer, preferred engine toggle |
+ | `1.5.0` | Lazy boot for AI engines, process job objects, and UI controls for background engine management |
+ | `2.0.0` | Major architecture update — Avalonia UI desktop shell, system tray icon, pre-logon Windows Service boot & logon tray attachment |
+ | `3.0.0` | Avalonia WebAssembly (Wasm) integration, 3D Canvas Studio, unified multi-platform interface |
+ | `3.1.0` | Cross-Platform Linux support, Linux release scripts (`build_release.sh`), systemd service installer (`install_linux.sh`), `.desktop` launcher, NVML & `/proc/meminfo` VRAM telemetry, and SSH remote workflow support |
+ | `3.2.0` | Fixed WASM launcher script routing, added `/api/models` backend proxy, updated high-res 32-bit icon, added end-to-end integration tests, and completed repo housekeeping |
+ | `3.3.0` | Major architecture refactoring — decomposed Program.cs and MainViewModel into modular interfaces, services, and endpoint route extensions |
+ | `3.4.0` | Added Playwright automated E2E browser testing, real WebAssembly UI screenshot generator, Docker containerization support, and Kestrel WASM static asset MIME type mappings |
++| `3.5.0` | Flexible tool path configuration, multi-drive auto-discovery service (`IToolDiscoveryService`), `POST /api/tools/detect` endpoint, Avalonia file/folder browse pickers with live validation badges, and parameterized helper scripts |
+ 
+ ---
+ 
+ ## 🚀 Installation & Downloads
+ 
+ ### Option 1: Official Windows Installer (.exe)
+-Download the latest `LocalLLMServerManager-v3.4.0-Setup.exe` from the [GitHub Releases](https://github.com/spelech/LocalLLMServerManager/releases) page.
++Download the latest `LocalLLMServerManager-v3.5.0-Setup.exe` from the [GitHub Releases](https://github.com/spelech/LocalLLMServerManager/releases) page.
+ * Includes an installation wizard with options for:
+   * 🟢 **Install Windows Service** (Headless pre-logon machine boot)
+   * 🟢 **Auto-Start System Tray App** on user login
+   * 🟢 **Desktop & Start Menu Shortcuts**
+ 
+ ### Option 2: Linux Automated Installation Script (`install_linux.sh`)
+ Clone the repository on Linux and run:
+ ```bash
+ sudo ./install_linux.sh
+ ```
+ * Installs the app binary to `/usr/local/share/LocalLLMServerManager`
+ * Symlinks binary to `/usr/local/bin/localllmmanager`
+ * Registers the **systemd service** (`localllmmanager.service`) for background autostart
+ * Installs desktop launcher (`localllmmanager.desktop`) in your application menu
+ 
+ ### Option 3: Standalone Portable (.zip / .tar.gz)
+-Download `LocalLLMServerManager-v3.4.0-win-x64.zip` or `LocalLLMServerManager-v3.4.0-linux-x64.tar.gz` from Releases, extract, and run executable. Includes bundled runtime — no .NET SDK required!
++Download `LocalLLMServerManager-v3.5.0-win-x64.zip` or `LocalLLMServerManager-v3.5.0-linux-x64.tar.gz` from Releases, extract, and run executable. Includes bundled runtime — no .NET SDK required!
+ 
+ ### Option 4: Building Release Packages Locally
+ - **Windows:** Run `.\build_release.ps1`
+ - **Linux:** Run `./build_release.sh`
+ Output artifacts will be generated in `dist/`.
+ 
+ ---
+ 
++## 🔍 Configuration & Auto-Discovery
++
++LocalLLMServerManager supports fully flexible tool paths across any storage drive or folder structure, eliminating rigid hardcoded path assumptions.
++
++### 1. Auto-Detect Installed Tools (One-Click Setup)
++In the **⚙️ Settings** tab, click **🔍 Auto-Detect Installed Tools** (or send `POST /api/tools/detect` to the backend REST API). The built-in `IToolDiscoveryService` actively scans:
++- **System PATH & Environment Variables** (`OLLAMA_MODELS`, `PATH`, etc.)
++- **All available drive roots** (`C:`, `D:`, `E:`, etc. on Windows, `/opt`, `/home/$USER`, `/usr/local` on Linux)
++- **Standard installation paths**:
++  - **Ollama**: `%LOCALAPPDATA%\Programs\Ollama\ollama.exe`, `~/.ollama/models`, `%USERPROFILE%\.ollama\models`
++  - **ComfyUI**: Portable batch runners (`run_nvidia_gpu.bat`, `run_cpu.bat`), Git clones (`main.py`), and standard `models/` checkpoints
++  - **Stable Diffusion WebUI / Forge / A1111**: Launch scripts (`webui-user.bat`, `webui.sh`, `run.bat`) and `models/Stable-diffusion` directories
++
++Auto-detection only populates unset or missing paths, preserving any custom paths you've previously configured.
++
++### 2. Manual Path Customization & Real-Time Status Badges
++You can customize every tool path independently via the Settings UI (with native file/folder pickers) or by editing `settings.json`:
++- **`OllamaExecutablePath`**: Direct path to `ollama.exe` (or `ollama` on Linux)
++- **`OllamaModelsPath`**: Target directory where Ollama stores model blobs and manifests
++- **`ForgeScriptPath`**: Batch or shell launcher script for Stable Diffusion WebUI / Forge
++- **`ForgeModelsPath`**: Directory for SD Checkpoints, LoRAs, VAEs, and ControlNets
++- **`ComfyUiScriptPath`**: Batch or shell launcher script for ComfyUI
++- **`ComfyUiModelsPath`**: Root models directory for ComfyUI checkpoints, UNETs, and VAEs
++- **`ComfyUiUrl`**: Network address for ComfyUI (default `http://127.0.0.1:8188`)
++
++Each path input features a real-time status badge:
++- 🟢 **Valid**: Executable file exists or directory is accessible on disk
++- 🔴 **Missing**: Path is configured but does not exist at the specified target
++- ⚪ **Unset**: Path is empty (defaults to standard environment fallback)
++
++### 3. Parameterized Helper Scripts
++All automation scripts in `scripts/` accept command-line parameters for custom installation locations:
++
++```powershell
++# Set up 3D workflows for ComfyUI with custom paths (PowerShell)
++.\scripts\setup_3d_workflows.ps1 -ComfyUiPath "D:\AI\ComfyUI_windows_portable\ComfyUI" -ModelsDir "D:\AI\ComfyUI_windows_portable\ComfyUI\models"
++
++# Start AI engines with custom script paths
++.\scripts\start_engines.ps1 -Ollama -ComfyUI -ComfyUiScript "D:\AI\ComfyUI_windows_portable\run_nvidia_gpu.bat"
++```
++
++```bash
++# Set up 3D workflows on Linux with custom paths (Bash)
++./scripts/setup_3d_workflows.sh --comfy-path "/opt/ComfyUI" --models-dir "/opt/ComfyUI/models"
++
++# Install Linux package to custom directory
++sudo ./scripts/install_linux.sh --install-dir "/opt/LocalLLMServerManager" --bin-dir "/usr/bin"
++```
++
++---
++
+ ## 🌐 Remote SSH Viewing & Port Forwarding
+ 
+ To work with LocalLLMServerManager on a remote Linux machine over SSH:
+ 1. Connect over SSH with local port forwarding:
+    ```bash
+    ssh -L 5246:localhost:5246 user@your-linux-host
+    ```
+ 2. Run the application in headless service mode on the remote host:
+    ```bash
+    dotnet run -- --service
+diff --git a/docs/DEVELOPMENT_GUIDE.md b/docs/DEVELOPMENT_GUIDE.md
+index 7f90554..6f1251b 100644
+--- a/docs/DEVELOPMENT_GUIDE.md
++++ b/docs/DEVELOPMENT_GUIDE.md
+@@ -1,15 +1,15 @@
+ # LocalLLMServerManager — Developer & Contributor Guide
+ 
+-> **Version 3.4.0** | .NET 10 | Avalonia UI | ASP.NET Core Minimal API | YARP Reverse Proxy | Playwright E2E Browser Automation
++> **Version 3.5.0** | .NET 10 | Avalonia UI | ASP.NET Core Minimal API | YARP Reverse Proxy | Playwright E2E Browser Automation
+ 
+-This guide provides a comprehensive overview of how to build, develop, extend, and test **LocalLLMServerManager**. It covers the codebase layout, MVVM architecture, Avalonia XAML control composition, styling design tokens, Minimal API endpoints, dependency injection, Playwright E2E browser testing, and automated screenshot generation.
++This guide provides a comprehensive overview of how to build, develop, extend, and test **LocalLLMServerManager**. It covers the codebase layout, MVVM architecture, Avalonia XAML control composition, styling design tokens, Minimal API endpoints, dependency injection, tool discovery and flexible path configuration, Playwright E2E browser testing, and automated screenshot generation.
+ 
+ ---
+ 
+ ## 📋 Prerequisites & Tools
+ 
+ To develop and build **LocalLLMServerManager**, ensure you have installed:
+ 
+ 1. **[.NET 10 SDK](https://dotnet.microsoft.com/download)** — Target framework `net10.0`.
+ 2. **IDE / Editor**:
+    - Visual Studio 2022 / VS Code with **Avalonia for Visual Studio** extension.
+@@ -20,67 +20,73 @@ To develop and build **LocalLLMServerManager**, ensure you have installed:
+ ---
+ 
+ ## 📁 Repository Directory Structure
+ 
+ The solution is organized into modular projects following clean architecture guidelines:
+ 
+ ```
+ LocalLLMServerManager/
+ ├── Program.cs                               # ASP.NET Core Minimal API Host & DI Container Bootstrapper
+ ├── Endpoints/                               # Route Extension Modules (Minimal API Map Extensions)
++│   ├── DiscoveryEndpoints.cs                # /api/tools/detect, /api/tools/validate-path
+ │   ├── EngineEndpoints.cs                   # /api/gpu/vram, /api/settings, /api/comfy/*, /api/forge/*
+ │   ├── HealthEndpoints.cs                   # /health healthcheck endpoint
+ │   ├── McpEndpoints.cs                      # /api/mcp/tools Model Context Protocol JSON-RPC API
+ │   ├── ModelProxyEndpoints.cs               # /api/models, /api/ollama/ps, /api/hf/*, /api/civitai/*
+ │   └── WorkflowEndpoints.cs                # /api/comfy/workflows, /api/3d/files
+ ├── Services/                                # Concrete Server Infrastructure Services
+ │   ├── AiEngineManager.cs                   # Managed Process Lifecycle & Win32 Job Object Memory Caps
+ │   ├── GitUpdateService.cs                  # Self-Update Git Commands (fetch, checkout, pull)
+ │   ├── GpuTelemetryProvider.cs              # NVML nvidia-smi & Linux /proc/meminfo telemetry provider
+ │   ├── SettingsService.cs                   # JSON Settings file storage service
+ │   ├── VramOrchestrator.cs                  # Memory Orchestrator (prevents OOM when switching engines)
+ │   └── Win32JobObject.cs                    # Win32 Process Management & Cleanup Job Object
+ ├── LocalLLMServerManager.Shared/            # Cross-Platform Shared UI Library (Desktop + WASM)
+ │   ├── Interfaces/                          # Standalone Interfaces for Dependency Injection
+ │   │   ├── ICivitaiSearchService.cs
+ │   │   ├── IHuggingFaceSearchService.cs
+ │   │   ├── IOllamaModelService.cs
+-│   │   └── ITelemetryService.cs
++│   │   ├── ITelemetryService.cs
++│   │   └── IToolDiscoveryService.cs         # AI Tool Discovery & Path Validation Interface
+ │   ├── Models/                              # Data DTOs & Models
+ │   │   └── AppSettings.cs
+ │   ├── Services/                            # Shared UI Services
+ │   │   ├── CivitaiSearchService.cs
+ │   │   ├── HuggingFaceSearchService.cs
+ │   │   ├── OllamaModelService.cs
+ │   │   ├── TelemetryService.cs
+ │   │   ├── ToastService.cs                  # Global Toast Notification Service
++│   │   ├── ToolDiscoveryService.cs          # Multi-drive file discovery & validation service
+ │   │   └── BrowserLauncher.cs               # Cross-platform URL launcher
+ │   ├── ViewModels/                          # MVVM ViewModels
+ │   │   ├── MainViewModel.cs                 # Root ViewModel Coordinator
+ │   │   ├── TelemetryViewModel.cs            # Telemetry & VRAM gauge sub-ViewModel
+ │   │   ├── OllamaLibraryViewModel.cs        # Ollama library & KV cache sub-ViewModel
+ │   │   ├── HuggingFaceSearchViewModel.cs    # Hugging Face Hub search sub-ViewModel
+ │   │   ├── CivitaiSearchViewModel.cs        # CivitAI search sub-ViewModel
+-│   │   └── SettingsViewModel.cs             # App settings sub-ViewModel
++│   │   └── SettingsViewModel.cs             # App settings sub-ViewModel with tool detection & pickers
+ │   └── Views/                               # Avalonia XAML UI Views & Controls
+ │       ├── MainView.axaml                   # Root Coordinator View
+ │       └── Controls/                        # Modular SOLID UserControls
+ │           ├── TelemetryHeaderControl.axaml
+ │           ├── OllamaModelsTabControl.axaml
+ │           ├── HuggingFaceTabControl.axaml
+ │           ├── CivitaiTabControl.axaml
+ │           ├── EngineStudioTabControl.axaml
+ │           └── SettingsTabControl.axaml
+ ├── LocalLLMServerManager.Web/                # Avalonia WebAssembly (WASM) Project
+ │   ├── App.axaml
+ │   └── Program.cs
+-└── LocalLLMServerManager.Tests/              # Automated Test Suite (137 Unit, Integration & E2E Tests)
++└── LocalLLMServerManager.Tests/              # Automated Test Suite (171 Unit, Integration & E2E Tests across 29 files)
++    ├── ToolDiscoveryServiceTests.cs          # Tool discovery & path validation tests
++    ├── DiscoveryEndpointsTests.cs            # /api/tools/* REST endpoint integration tests
++    ├── SettingsViewModelCoverageTests.cs     # SettingsViewModel reactive path & picker tests
+     ├── PlaywrightWasmE2ETests.cs             # Playwright E2E WebAssembly Browser Automation Tests
+     ├── PlaywrightScreenshotGenerator.cs       # Automated Documentation PNG Screenshot Generator
+     └── AppTestServerFixture.cs               # WebApplication Kestrel Test Host Fixture
+ ```
+ 
+ ---
+ 
+ ## 🎨 UI Design Tokens & Styling Architecture
+ 
+ The application uses a **Fluent Dark Theme** built with Avalonia XAML styles and curated design tokens.
+@@ -146,20 +152,41 @@ public partial class CustomFeatureViewModel : ObservableObject
+     [RelayCommand]
+     public void ExecuteAction()
+     {
+         HeaderText = "Action Triggered!";
+     }
+ }
+ ```
+ 
+ ---
+ 
++## 🔍 Tool Discovery & Flexible Path Architecture
++
++LocalLLMServerManager v3.5.0 introduces the `IToolDiscoveryService` interface and `ToolDiscoveryService` implementation to scan drives and file systems for installed AI engines.
++
++### 1. `IToolDiscoveryService` Interface
++Located in `LocalLLMServerManager.Shared/Interfaces/IToolDiscoveryService.cs`, it defines discovery contracts:
++- `DetectOllamaAsync()`: Scans PATH, `%LOCALAPPDATA%\Programs\Ollama`, `%USERPROFILE%\.ollama\models`, and all drive roots.
++- `DetectComfyUiAsync()`: Discovers ComfyUI standalone or portable folders, launcher scripts (`run_nvidia_gpu.bat`, `run_cpu.bat`, `main.py`), and `models/` subdirectories.
++- `DetectForgeAsync()`: Discovers Stable Diffusion WebUI / Forge installations, launch scripts (`webui-user.bat`, `webui.sh`), and checkpoint folders.
++- `DetectAllToolsAsync()`: Aggregates all detections into a `ToolDiscoveryResult` with suggested settings.
++- `ValidatePath(path, expectedType)`: Validates file or directory accessibility and returns `PathValidationStatus.Valid`, `NotFound`, or `Invalid`.
++
++### 2. REST Endpoints (`DiscoveryEndpoints.cs`)
++- `POST /api/tools/detect` — Triggers an asynchronous discovery scan across the host system and returns discovered tools with path suggestions.
++- `POST /api/tools/validate-path` — Validates arbitrary paths supplied in request body (`{ "path": "...", "expectedType": "File" | "Directory" }`).
++
++### 3. Settings MVVM & Real-Time Status Badges
++`SettingsViewModel` provides reactive properties for each tool path (`OllamaExecutableStatus`, `ForgeScriptStatus`, `ComfyUiScriptStatus`, etc.) that update automatically as the user types or selects paths using native Avalonia `StorageProvider` file and folder pickers.
++
++---
++
+ ## ⚡ ASP.NET Core Minimal API & Extension Endpoints
+ 
+ Backend HTTP routes are modularized using C# extension methods on `WebApplication`.
+ 
+ ### Adding a New API Endpoint Module
+ 
+ 1. Create a static class under `LocalLLMServerManager/Endpoints/CustomEndpoints.cs`.
+ 2. Define a `MapCustomEndpoints(this WebApplication app)` extension method.
+ 3. Register the extension method call inside `Program.cs`.
+ 
+@@ -176,48 +203,48 @@ public static class CustomEndpoints
+             return Results.Ok(new { status = "Ready", path = settings.ForgeModelsPath });
+         });
+     }
+ }
+ ```
+ 
+ ---
+ 
+ ## 🧪 Testing & Quality Assurance Guidelines
+ 
+-All code changes must maintain **100% test pass rate** across unit, integration, and Playwright E2E browser tests (137 total tests).
++All code changes must maintain **100% test pass rate** across unit, integration, and Playwright E2E browser tests (171 total tests across 29 test files).
+ 
+ * For full component test mapping, metrics, and cross-platform verification matrices, see **[Test Coverage Specification](TEST_COVERAGE.md)**.
+ * For formal requirements mapping (SRS) and the bidirectional Traceability Matrix, see **[Software Requirements Specification & RTM](REQUIREMENTS.md)**.
+ 
+ ### 1. Chunked Test Execution (Recommended to Avoid Resource Contention)
+ To avoid process contention and potential hangs when running large test suites concurrently on Windows, run the tests in targeted chunks:
+ 
+ ```bash
+-# Chunk 1: ViewModels & Core Settings (38 tests)
++# Chunk 1: ViewModels & Core Settings (50 tests)
+ dotnet test LocalLLMServerManager.Tests/LocalLLMServerManager.Tests.csproj --filter "FullyQualifiedName~ViewModel|FullyQualifiedName~AppSettings|FullyQualifiedName~BrowserLauncher" -c Release --nologo
+ 
+-# Chunk 2: Services, VRAM Orchestrator & Static Files (69 tests)
+-dotnet test LocalLLMServerManager.Tests/LocalLLMServerManager.Tests.csproj --filter "FullyQualifiedName~Services|FullyQualifiedName~VramOrchestrator|FullyQualifiedName~StaticFile" -c Release --nologo
++# Chunk 2: Services, Tool Discovery, VRAM Orchestrator & Static Files (81 tests)
++dotnet test LocalLLMServerManager.Tests/LocalLLMServerManager.Tests.csproj --filter "FullyQualifiedName~Services|FullyQualifiedName~VramOrchestrator|FullyQualifiedName~StaticFile|FullyQualifiedName~ToolDiscovery" -c Release --nologo
+ 
+-# Chunk 3: Endpoints, Mock Servers & Workflow Performance (68 tests)
+-dotnet test LocalLLMServerManager.Tests/LocalLLMServerManager.Tests.csproj --filter "FullyQualifiedName~Endpoint|FullyQualifiedName~MockServer|FullyQualifiedName~WorkflowPerformance" -c Release --nologo
++# Chunk 3: Endpoints, Mock Servers & Workflow Performance (76 tests)
++dotnet test LocalLLMServerManager.Tests/LocalLLMServerManager.Tests.csproj --filter "FullyQualifiedName~Endpoint|FullyQualifiedName~MockServer|FullyQualifiedName~WorkflowPerformance|FullyQualifiedName~DiscoveryEndpoints" -c Release --nologo
+ 
+ # Chunk 4: Playwright WebAssembly Browser E2E Tests (1 test)
+ dotnet test LocalLLMServerManager.Tests/LocalLLMServerManager.Tests.csproj --filter "FullyQualifiedName~PlaywrightWasmE2ETests" -c Release --nologo
+ 
+ # Chunk 5: Playwright Automated Documentation Screenshot Generator (1 test)
+ dotnet test LocalLLMServerManager.Tests/LocalLLMServerManager.Tests.csproj --filter "FullyQualifiedName~PlaywrightScreenshotGenerator" -c Release --nologo
+ ```
+ 
+ ### 2. Full Suite Run
+ ```bash
+-# Build and run non-Playwright tests across the solution
++# Build and run non-Playwright tests across the solution (169 tests)
+ dotnet test LocalLLMServerManager.Tests/LocalLLMServerManager.Tests.csproj --filter "FullyQualifiedName!~Playwright" -c Release --nologo
+ ```
+ 
+ ### 3. Playwright Chromium Driver Setup
+ Playwright E2E testing requires the Chromium browser driver binaries. Run the following command after building the test assembly:
+ ```powershell
+ # Install Playwright Chromium browser binary
+ pwsh LocalLLMServerManager.Tests/bin/Release/net10.0/playwright.ps1 install chromium
+ ```
+ 
+@@ -231,15 +258,16 @@ The project includes an automated Playwright screenshot generator (`PlaywrightSc
+ - `docs/images/dashboard_3d_studio.png` — 3D & ComfyUI Studio WebGL Canvas (Tab 4)
+ - `docs/images/dashboard_settings.png` — App Settings & Configuration (Tab 5)
+ 
+ To re-generate all user guide screenshots automatically:
+ ```bash
+ # Execute automated screenshot generator
+ dotnet test --filter "FullyQualifiedName~PlaywrightScreenshotGenerator" -c Release
+ ```
+ 
+ ### 5. Quality & Teardown Rule
+-- Ensure all 137 tests pass before tagging releases.
++- Ensure all 171 tests pass before tagging releases.
+ - Ensure no orphaned background processes remain after running tests:
+ ```powershell
+ Get-Process -Name "*LocalLLMServerManager*", "*testhost*" -ErrorAction SilentlyContinue | Stop-Process -Force
+ ```
++```
+diff --git a/docs/REQUIREMENTS.md b/docs/REQUIREMENTS.md
+index 719effe..1aef951 100644
+--- a/docs/REQUIREMENTS.md
++++ b/docs/REQUIREMENTS.md
+@@ -1,31 +1,32 @@
+ # Software Requirements Specification (SRS) & Traceability Matrix
+ 
+-> **LocalLLMServerManager v3.4.0** | .NET 10 LTS | Avalonia UI & WebAssembly | Model Context Protocol
++> **LocalLLMServerManager v3.5.0** | .NET 10 LTS | Avalonia UI & WebAssembly | Model Context Protocol
+ 
+ This document establishes the formal **Software Requirements Specification (SRS)** and **Requirements Traceability Matrix (RTM)** for **LocalLLMServerManager**. Each requirement is derived from the codebase and test suites, mapping functional capabilities directly to implementation source files, automated test cases, and verification statuses.
+ 
+ ---
+ 
+ ## 📋 Requirement Taxonomy
+ 
+-Requirements are categorized into 10 functional domains using standardized identifiers:
++Requirements are categorized into 11 functional domains using standardized identifiers:
+ 
+ | Domain Prefix | Category Description | Target Area |
+ |---|---|---|
+ | **`CORE-xxx`** | Core Host & Infrastructure | ASP.NET Core Kestrel Host, Windows Service, Linux systemd, Win32 Job Objects, Settings |
+ | **`LLM-xxx`** | LLM & Ollama Management | Ollama health, local model library, KV Cache calculator, capability profiles, model pulling |
+ | **`HUB-xxx`** | Hugging Face Hub Integration | GGUF repository discovery, branch quantization tree, chunked SSE download streaming |
+ | **`DIFF-xxx`** | Stable Diffusion & CivitAI | SD WebUI / Forge health, CivitAI model gallery, direct-to-disk checkpoint/LoRA downloader |
+ | **`3D-xxx`** | 3D Mesh & ComfyUI Generation | ComfyUI proxy, TRELLIS V2 / Hunyuan3D v2 workflows, WebGL `<model-viewer>` canvas |
+ | **`VRAM-xxx`** | GPU Telemetry & VRAM Orchestration | NVML CUDA telemetry, OS fallbacks, stacked memory visualizer, auto-unload OOM prevention |
+ | **`MCP-xxx`** | Model Context Protocol API | JSON-RPC 2.0 endpoint (`/api/mcp/tools`), tool discovery (`tools/list`), tool execution (`tools/call`) |
++| **`DISC-xxx`** | Tool Discovery & Flexible Paths | Multi-drive filesystem scanner (`IToolDiscoveryService`), `/api/tools/*` endpoints, status badges |
+ | **`UI-xxx`** | User Interface & Experience | Fluent dark theme tokens, SOLID UserControls, MVVM bindings, toast notifications, URL launcher |
+ | **`WASM-xxx`** | WebAssembly Client Platform | Avalonia WASM compilation, Kestrel static MIME type mappings, browser proxy routing |
+ | **`E2E-xxx`** | End-to-End Automation & QA | Headless Playwright browser harness, zero-error WASM validation, screenshot generator |
+ 
+ ---
+ 
+ ## 🎯 Software Requirements Specification (SRS)
+ 
+ ### 1. Core Host & Infrastructure (`CORE-xxx`)
+ * **`CORE-001`**: The application shall bootstrap an ASP.NET Core Minimal API server on Kestrel listening on configurable port (default `:5246`), hosting both REST endpoints and WebAssembly static assets.
+@@ -72,32 +73,39 @@ Requirements are categorized into 10 functional domains using standardized ident
+ * **`VRAM-002`**: The application shall provide fallback telemetry resolution via Windows Registry and Linux `/proc/meminfo` when NVML is unavailable.
+ * **`VRAM-003`**: The application shall display a stacked visualizer indicating loaded model VRAM vs free GPU headroom.
+ * **`VRAM-004`**: The VRAM Orchestrator shall automatically detect active LLMs in VRAM and release them before initiating heavy Stable Diffusion or ComfyUI 3D render jobs to prevent Out-Of-Memory (OOM) errors.
+ * **`VRAM-005`**: The application shall allow customizing telemetry polling intervals and auto-unload thresholds.
+ 
+ ### 7. Model Context Protocol API (`MCP-xxx`)
+ * **`MCP-001`**: The application shall expose a Model Context Protocol (MCP) JSON-RPC 2.0 endpoint at `/api/mcp/tools`.
+ * **`MCP-002`**: The MCP endpoint shall implement the `tools/list` schema listing tools for GPU status, engine control, and model memory unloading.
+ * **`MCP-003`**: The MCP endpoint shall implement `tools/call` enabling AI assistants (such as Antigravity, Claude, and Cursor) to execute server management actions.
+ 
+-### 8. User Interface & Experience (`UI-xxx`)
++### 8. Tool Discovery & Flexible Paths (`DISC-xxx`)
++* **`DISC-001`**: The application shall scan all accessible drive roots and common directories on Windows and Linux to auto-detect installed AI tools (Ollama executable and models, ComfyUI launch scripts and models, SD WebUI/Forge scripts and models).
++* **`DISC-002`**: The backend shall expose `POST /api/tools/detect` to discover installed tools and return suggested path configurations.
++* **`DISC-003`**: The backend shall expose `POST /api/tools/validate-path` to dynamically validate file or directory accessibility and report status (`Valid`, `NotFound`, `Invalid`).
++* **`DISC-004`**: The Settings UI shall provide one-click auto-detection, native file and directory pickers for every tool path, and real-time visual status badges (`Valid` 🟢, `Missing` 🔴, `Unset` ⚪).
++* **`DISC-005`**: All deployment and setup helper scripts shall accept parameter overrides for tool paths and model directories.
++
++### 9. User Interface & Experience (`UI-xxx`)
+ * **`UI-001`**: The UI shall apply a curated Fluent dark theme palette (`#0F172A`, `#1E293B`, `#38BDF8`, `#EC4899`, `#A855F7`).
+ * **`UI-002`**: The UI shall be organized into modular, SOLID Avalonia XAML UserControls strongly typed to dedicated sub-ViewModels.
+ * **`UI-003`**: The application shall display non-blocking, timed toast notifications for status updates and error alerts.
+ * **`UI-004`**: The application shall support launching external URLs in the default system browser across Windows (`explorer.exe`) and Linux (`xdg-open`).
+ 
+-### 9. WebAssembly Client Platform (`WASM-xxx`)
++### 10. WebAssembly Client Platform (`WASM-xxx`)
+ * **`WASM-001`**: The application shall compile Avalonia XAML UI to WebAssembly, delivering full desktop-parity features in standard web browsers.
+ * **`WASM-002`**: The Kestrel host shall configure custom MIME types for WebAssembly assets (`.wasm`, `.dat`, `.json`, `.glb`, `.png`, `.js`, `.css`).
+ * **`WASM-003`**: The backend shall proxy `/api/models` to bypass browser CORS restrictions.
+ 
+-### 10. End-to-End Automation & Quality Assurance (`E2E-xxx`)
++### 11. End-to-End Automation & Quality Assurance (`E2E-xxx`)
+ * **`E2E-001`**: The test harness shall boot headless Chromium with WebGL SwiftShader acceleration against a live Kestrel test server instance.
+ * **`E2E-002`**: The Playwright test suite shall verify that the WASM client renders the `#out` canvas container with zero 404 network errors and zero unhandled console errors.
+ * **`E2E-003`**: The Playwright screenshot generator shall navigate all 5 UI tabs and automatically capture crisp PNG documentation images to `docs/images/`, verifying visual distinctness across all tabs.
+ 
+ ---
+ 
+ ## 🔗 Bidirectional Requirements Traceability Matrix (RTM)
+ 
+ | Req ID | Requirement Summary | Implementing Source Files | Verifying Test Method(s) | Status |
+ |---|---|---|---|---|
+@@ -132,20 +140,25 @@ Requirements are categorized into 10 functional domains using standardized ident
+ | **`3D-005`** | 3D GLB Export & File Inspection | `Endpoints/WorkflowEndpoints.cs` | `WorkflowPerformanceTests.ExportGlbEndpoint_ReturnsValidBinaryHeader` | **100% VERIFIED** |
+ | **`3D-006`** | Engine Preference Switcher | `LocalLLMServerManager.Shared/ViewModels/SettingsViewModel.cs` | `AppSettingsTests.AppSettings_SerializationAndDeserialization_PreservesData`<br>`MainViewModelCoverageTests.SettingsViewModel_TogglesPreferredEngine` | **100% VERIFIED** |
+ | **`VRAM-001`** | NVML CUDA GPU Telemetry | `Services/GpuTelemetryProvider.cs` | `ProgramEndpointsAndServicesTests.GpuVramEndpoint_ReturnsHardwareTelemetry`<br>`ServicesAndEngineManagerCoverageTests.GpuTelemetryProvider_ParsesNvidiaSmi` | **100% VERIFIED** |
+ | **`VRAM-002`** | OS Telemetry Fallbacks | `Services/GpuTelemetryProvider.cs` | `ServicesAndEngineManagerCoverageTests.GpuTelemetryProvider_LinuxProcMemInfoFallback`<br>`DeepCoveragePushTests.GpuTelemetryProvider_RegistryFallback` | **100% VERIFIED** |
+ | **`VRAM-003`** | Real-Time Stacked Visualizer | `LocalLLMServerManager.Shared/ViewModels/TelemetryViewModel.cs` | `MainViewModelCoverageTests.TelemetryViewModel_CalculatesAllocatedPercentage` | **100% VERIFIED** |
+ | **`VRAM-004`** | Proactive OOM Orchestrator | `Services/VramOrchestrator.cs` | `VramOrchestratorTests.EnsureVramForImageGenerationAsync_ExecutesCleanly`<br>`VramOrchestratorTests.EnsureVramForComfyUiAsync_ExecutesCleanly`<br>`VramOrchestratorTests.FreeComfyUiVramAsync_SendsPostToFreeEndpoint` | **100% VERIFIED** |
+ | **`VRAM-005`** | Configurable Telemetry Thresholds | `LocalLLMServerManager.Shared/Models/AppSettings.cs` | `AppSettingsTests.AppSettings_SerializationAndDeserialization_PreservesData` | **100% VERIFIED** |
+ | **`MCP-001`** | MCP JSON-RPC 2.0 API | `Endpoints/McpEndpoints.cs` | `ProgramEndpointsAndServicesTests.McpToolsEndpoint_ReturnsToolsList` | **100% VERIFIED** |
+ | **`MCP-002`** | MCP Tool Schema Discovery | `Endpoints/McpEndpoints.cs` | `ProgramEndpointsAndServicesTests.McpToolsEndpoint_ReturnsToolsList` | **100% VERIFIED** |
+ | **`MCP-003`** | MCP Tool Execution Dispatch | `Endpoints/McpEndpoints.cs` | `ProgramEndpointsAndServicesTests.McpCallTool_ExecutesGpuStatusTool`<br>`CoverageThresholdTargetedPushTests.McpEndpoints_HandlesToolCalls` | **100% VERIFIED** |
++| **`DISC-001`** | Multi-Drive Tool Discovery | `Services/ToolDiscoveryService.cs`, `Interfaces/IToolDiscoveryService.cs` | `ToolDiscoveryServiceTests.DetectOllama_WhenInstalledInCustomRoot_DiscoversProperties`<br>`ToolDiscoveryServiceTests.DetectComfyUi_WhenPortableInstalled_DiscoversBatchAndDirectories`<br>`ToolDiscoveryServiceTests.DetectForge_WhenInstalled_DiscoversBatchAndModelsDirectory`<br>`ToolDiscoveryServiceTests.DetectAllToolsAsync_ReturnsAggregatedResultsAndSuggestions` | **100% VERIFIED** |
++| **`DISC-002`** | Tool Detection REST API | `Endpoints/DiscoveryEndpoints.cs` | `DiscoveryEndpointsTests.DetectToolsEndpoint_ReturnsToolDiscoveryResult` | **100% VERIFIED** |
++| **`DISC-003`** | Dynamic Path Validation API | `Endpoints/DiscoveryEndpoints.cs` | `DiscoveryEndpointsTests.ValidatePathEndpoint_WithExistingDirectory_ReturnsValid`<br>`DiscoveryEndpointsTests.ValidatePathEndpoint_WithInvalidPath_ReturnsNotFound` | **100% VERIFIED** |
++| **`DISC-004`** | Settings UI Pickers & Status Badges | `SettingsViewModel.cs`, `SettingsTabControl.axaml` | `SettingsViewModelCoverageTests.PathChanges_UpdateStatusIndicatorsDynamically`<br>`SettingsViewModelCoverageTests.AutoDetectToolsAsync_PopulatesEmptyPathsAndDiscoveredStatus`<br>`SettingsViewModelCoverageTests.BrowseFileCommands_WithStorageProvider_SetsSelectedPath`<br>`SettingsViewModelCoverageTests.BrowseFolderCommands_WithStorageProvider_SetsSelectedPath` | **100% VERIFIED** |
++| **`DISC-005`** | Parameterized Automation Scripts | `scripts/*.ps1`, `scripts/*.sh` | Manual and automated script syntax tests across Windows and Linux | **100% VERIFIED** |
+ | **`UI-001`** | Fluent Dark Theme Design Tokens | `LocalLLMServerManager.Shared/Styles/DesignTokens.axaml` | `MainWindowUiTests.AppStyles_AppliesDarkTheme` | **100% VERIFIED** |
+ | **`UI-002`** | Modular SOLID UserControls | `LocalLLMServerManager.Shared/Views/Controls/*` | `MainWindowUiTests.MainView_LoadsAllUserControls` | **100% VERIFIED** |
+ | **`UI-003`** | Toast Notification Dispatcher | `LocalLLMServerManager.Shared/Services/ToastService.cs` | `MainViewModelCoverageTests.ToastService_DispatchesAndAutoDismisses` | **100% VERIFIED** |
+ | **`UI-004`** | Cross-Platform URL Launcher | `LocalLLMServerManager.Shared/Services/BrowserLauncher.cs` | `BrowserLauncherTests.LaunchUrl_Windows_ExecutesShell`<br>`BrowserLauncherTests.LaunchUrl_Linux_ExecutesXdgOpen`<br>`BrowserLauncherTests.LaunchUrl_InvalidUrl_DoesNotThrow` | **100% VERIFIED** |
+ | **`WASM-001`** | Avalonia WebAssembly Client | `LocalLLMServerManager.Web/Program.cs` | `PlaywrightWasmE2ETests.WebDashboard_BootsCleanlyWithoutConsoleOr404Errors` | **100% VERIFIED** |
+ | **`WASM-002`** | Kestrel Static MIME Provider | `Program.cs` | `StaticFileMimeTypeTests.StaticFileMimeTypes_MapsWasmAndGlbCorrectly`<br>`PlaywrightWasmE2ETests.WebDashboard_BootsCleanlyWithoutConsoleOr404Errors` | **100% VERIFIED** |
+ | **`WASM-003`** | Browser Model Proxy Routing | `Endpoints/ModelProxyEndpoints.cs` | `ProgramEndpointsAndServicesTests.ModelsProxyEndpoint_ReturnsAggregatedModels` | **100% VERIFIED** |
+ | **`E2E-001`** | Headless Playwright SwiftShader Harness | `LocalLLMServerManager.Tests/PlaywrightWasmE2ETests.cs` | `PlaywrightWasmE2ETests.WebDashboard_BootsCleanlyWithoutConsoleOr404Errors` | **100% VERIFIED** |
+ | **`E2E-002`** | Zero-Error WebAssembly Boot Assertion | `LocalLLMServerManager.Tests/PlaywrightWasmE2ETests.cs` | `PlaywrightWasmE2ETests.WebDashboard_BootsCleanlyWithoutConsoleOr404Errors` | **100% VERIFIED** |
+ | **`E2E-003`** | Automated Documentation Screenshot Generator | `LocalLLMServerManager.Tests/PlaywrightScreenshotGenerator.cs` | `PlaywrightScreenshotGenerator.GenerateRealDocScreenshots` | **100% VERIFIED** |
+diff --git a/docs/TEST_COVERAGE.md b/docs/TEST_COVERAGE.md
+index 262ee82..45b09ba 100644
+--- a/docs/TEST_COVERAGE.md
++++ b/docs/TEST_COVERAGE.md
+@@ -1,156 +1,162 @@
+ # Test Coverage & Quality Assurance Specification
+ 
+-> **LocalLLMServerManager v3.4.0** | Target: `.NET 10 LTS` | Avalonia UI & WebAssembly | Microsoft Playwright
++> **LocalLLMServerManager v3.5.0** | Target: `.NET 10 LTS` | Avalonia UI & WebAssembly | Microsoft Playwright
+ 
+ This document provides a comprehensive audit of all unit, integration, mock server, and end-to-end (E2E) Playwright browser automation tests across the **LocalLLMServerManager** codebase on both **Windows** and **Linux** environments.
+ 
+ ---
+ 
+ ## 📊 Executive Summary & Test Metrics
+ 
+ ```
+ +-----------------------------------------------------------------------------------------+
+-| TOTAL TESTS EXECUTED : 137                                                              |
+-| PASSED               : 137 (100.0%)                                                     |
++| TOTAL TESTS EXECUTED : 171                                                              |
++| PASSED               : 171 (100.0%)                                                     |
+ | FAILED               : 0   (0.0%)                                                       |
+ | SKIPPED              : 0   (0.0%)                                                       |
+-| TEST FIXTURE FILES   : 26                                                               |
++| TEST FIXTURE FILES   : 29                                                               |
+ | TARGET RUNTIMES      : Windows 11 x64, Linux x64 (systemd, X11, Wayland), Chromium Headless|
+ +-----------------------------------------------------------------------------------------+
+ ```
+ 
+ ### Testing Frameworks & Tooling
+ * **Test Runner**: [xUnit.net v3](https://xunit.net/) (`xunit.v3` 3.2.2)
+ * **Headless UI Testing**: `Avalonia.Headless.XUnit` (12.1.1)
+ * **Mocking & Isolation**: `Moq` (4.20.72)
+ * **Browser E2E Automation**: `Microsoft.Playwright` (1.50.0) with Chromium WebGL SwiftShader emulation
+ * **Code Coverage Instrumentation**: `coverlet.collector` (10.0.1)
+ 
+ ---
+ 
+ ## 🧩 Chunked Test Execution Architecture
+ 
+ To eliminate port contention and process memory race conditions during local and CI/CD test runs on Windows and Linux, the test suite is partitioned into five targeted execution chunks:
+ 
+ ```
+                   ┌─────────────────────────────────────────────────────────┐
+                   │                 LocalLLMServerManager.Tests             │
+-                  │                        (137 Tests)                      │
++                  │                        (171 Tests)                      │
+                   └────────────────────────────┬────────────────────────────┘
+                                                │
+          ┌──────────────────┬──────────────────┼──────────────────┬──────────────────┐
+          ▼                  ▼                  ▼                  ▼                  ▼
+   ┌──────────────┐   ┌──────────────┐   ┌──────────────┐   ┌──────────────┐   ┌──────────────┐
+   │   Chunk 1    │   │   Chunk 2    │   │   Chunk 3    │   │   Chunk 4    │   │   Chunk 5    │
+-  │  ViewModels  │   │   Services   │   │  Endpoints   │   │  Playwright  │   │  Screenshot  │
+-  │  & Settings  │   │  & VRAM Mgr  │   │  & Workflows │   │   WASM E2E   │   │  Generator   │
+-  │  (38 Tests)  │   │  (69 Tests)  │   │  (68 Tests)  │   │   (1 Test)   │   │   (1 Test)   │
++  │  ViewModels  │   │  Services    │   │  Endpoints   │   │  Playwright  │   │  Screenshot  │
++  │  & Settings  │   │  & Tool Disc │   │  & Workflows │   │   WASM E2E   │   │  Generator   │
++  │  (50 Tests)  │   │  (81 Tests)  │   │  (76 Tests)  │   │   (1 Test)   │   │   (1 Test)   │
+   └──────────────┘   └──────────────┘   └──────────────┘   └──────────────┘   └──────────────┘
+ ```
+ 
+ ### Execution Commands
+ 
+ ```bash
+-# Chunk 1: ViewModels & Core Settings (38 tests)
++# Chunk 1: ViewModels & Core Settings (50 tests)
+ dotnet test LocalLLMServerManager.Tests/LocalLLMServerManager.Tests.csproj --filter "FullyQualifiedName~ViewModel|FullyQualifiedName~AppSettings|FullyQualifiedName~BrowserLauncher" -c Release --nologo
+ 
+-# Chunk 2: Services, VRAM Orchestrator & Static Files (69 tests)
+-dotnet test LocalLLMServerManager.Tests/LocalLLMServerManager.Tests.csproj --filter "FullyQualifiedName~Services|FullyQualifiedName~VramOrchestrator|FullyQualifiedName~StaticFile" -c Release --nologo
++# Chunk 2: Services, Tool Discovery, VRAM Orchestrator & Static Files (81 tests)
++dotnet test LocalLLMServerManager.Tests/LocalLLMServerManager.Tests.csproj --filter "FullyQualifiedName~Services|FullyQualifiedName~VramOrchestrator|FullyQualifiedName~StaticFile|FullyQualifiedName~ToolDiscovery" -c Release --nologo
+ 
+-# Chunk 3: Endpoints, Mock Servers & Workflow Performance (68 tests)
+-dotnet test LocalLLMServerManager.Tests/LocalLLMServerManager.Tests.csproj --filter "FullyQualifiedName~Endpoint|FullyQualifiedName~MockServer|FullyQualifiedName~WorkflowPerformance" -c Release --nologo
++# Chunk 3: Endpoints, Mock Servers, Discovery Endpoints & Workflow Performance (76 tests)
++dotnet test LocalLLMServerManager.Tests/LocalLLMServerManager.Tests.csproj --filter "FullyQualifiedName~Endpoint|FullyQualifiedName~MockServer|FullyQualifiedName~WorkflowPerformance|FullyQualifiedName~DiscoveryEndpoints" -c Release --nologo
+ 
+ # Chunk 4: Playwright WebAssembly Browser E2E Tests (1 test)
+ dotnet test LocalLLMServerManager.Tests/LocalLLMServerManager.Tests.csproj --filter "FullyQualifiedName~PlaywrightWasmE2ETests" -c Release --nologo
+ 
+ # Chunk 5: Playwright Automated Documentation Screenshot Generator (1 test)
+ dotnet test LocalLLMServerManager.Tests/LocalLLMServerManager.Tests.csproj --filter "FullyQualifiedName~PlaywrightScreenshotGenerator" -c Release --nologo
+ ```
+ 
+ ---
+ 
+ ## 🗺️ Component-by-Component Test Mapping
+ 
+ | Layer / Component | Source File(s) | Primary Test File(s) | Verified Capabilities & Assertions |
+ |---|---|---|---|
+ | **Host Bootstrapper** | `Program.cs` | `ProgramEndpointsAndServicesTests.cs`<br>`ServerInfrastructureAndAppTests.cs` | ASP.NET Core Kestrel initialization, DI service container configuration, port binding, command line flag parsing (`--service`, `--headless`). |
+ | **System Tray & Desktop Lifecycle** | `App.axaml.cs`<br>`LocalLLMServerManager.csproj` | `AvaloniaAppAndWindowCoverageTests.cs`<br>`MainWindowUiTests.cs` | Avalonia desktop app builder, system tray icon lifecycle, tray menu commands (Open Dashboard, View Health, Exit), desktop window auto-attachment to background service. |
+ | **AI Engine Manager** | `Services/AiEngineManager.cs` | `ServicesAndEngineManagerCoverageTests.cs`<br>`CoverageThresholdTargetedPushTests.cs` | Process lifecycle for Ollama (`11434`), Forge (`7860`), ComfyUI (`8188`), process health monitoring, graceful shutdown, Win32 Job Object memory caps. |
++| **Tool Discovery Service** | `Services/ToolDiscoveryService.cs`<br>`Interfaces/IToolDiscoveryService.cs` | `ToolDiscoveryServiceTests.cs` | Multi-drive filesystem scanning for Ollama, ComfyUI, and SD Forge installations, path validation (`Valid`, `NotFound`, `Invalid`), environment variable expansion. |
+ | **GPU Telemetry Provider** | `Services/GpuTelemetryProvider.cs` | `ProgramEndpointsAndServicesTests.cs`<br>`ServicesAndEngineManagerCoverageTests.cs`<br>`DeepCoveragePushTests.cs` | Cross-platform GPU VRAM telemetry reading NVML CUDA (`nvidia-smi`), Windows Registry fallback, and Linux `/proc/meminfo` fallback. |
+ | **VRAM Orchestrator** | `Services/VramOrchestrator.cs` | `VramOrchestratorTests.cs`<br>`DeepCoveragePushTests.cs`<br>`ReachNinetyPercentCoverageTests.cs` | Proactive memory orchestration: sends `keep_alive: 0` to Ollama before Stable Diffusion or ComfyUI generation, ComfyUI `/free` call, Forge progress polling. |
+ | **Settings Service** | `Services/SettingsService.cs`<br>`LocalLLMServerManager.Shared/Models/AppSettings.cs` | `AppSettingsTests.cs`<br>`ProgramEndpointsAndServicesTests.cs`<br>`CoverageThresholdTargetedPushTests.cs` | Persistent JSON settings storage (`appsettings.json` / `settings.json`), environment variable expansion (`%APPDATA%`), default fallback handling. |
+ | **Git Update Service** | `Services/GitUpdateService.cs` | `CoverageThresholdTargetedPushTests.cs` | Git fetch, pull, and checkout command execution with error handling for in-app self-updates. |
+ | **Win32 Job Object** | `Services/Win32JobObject.cs` | `ServicesAndEngineManagerCoverageTests.cs`<br>`DeepCoveragePushTests.cs` | Windows Win32 Job Object memory quota limits and child process termination on parent exit; graceful no-op on Linux. |
+-| **Health API** | `Endpoints/HealthEndpoints.cs` | `ProgramEndpointsAndServicesTests.cs`<br>`EndpointRegistrationCoverageTests.cs` | `GET /health` returns HTTP 200 OK and uptime metadata. |
++| **Health API** | `Endpoints/HealthEndpoints.cs` | `ProgramEndpointsAndServicesTests.cs`<br>`EndpointRegistrationCoverageTests.cs` | `GET /health` returns HTTP 200 OK, engine health states, and version `3.5.0`. |
++| **Discovery API** | `Endpoints/DiscoveryEndpoints.cs` | `DiscoveryEndpointsTests.cs`<br>`EndpointRegistrationCoverageTests.cs` | `POST /api/tools/detect` (scans drives and returns detected tools), `POST /api/tools/validate-path` (dynamically checks file/directory validity). |
+ | **Engine API** | `Endpoints/EngineEndpoints.cs` | `ProgramEndpointsAndServicesTests.cs`<br>`EndpointRegistrationCoverageTests.cs` | `GET /api/gpu/vram`, `GET /api/settings`, `POST /api/settings`, `/api/comfy/*`, `/api/forge/*`. |
+ | **Model Proxy API** | `Endpoints/ModelProxyEndpoints.cs` | `ProgramEndpointsAndServicesTests.cs`<br>`OllamaAndHfMockServerTests.cs`<br>`EndpointRegistrationCoverageTests.cs` | `GET /api/models`, `GET /api/ollama/ps`, `GET /api/hf/search`, `GET /api/hf/download`, `GET /api/civitai/search`, `GET /api/civitai/download`. |
+ | **Workflow API** | `Endpoints/WorkflowEndpoints.cs` | `WorkflowPerformanceTests.cs`<br>`EndpointRegistrationCoverageTests.cs` | `GET /api/comfy/workflows` (preset discovery), `GET /api/3d/files` (GLB/GLTF mesh inspection and serving). |
+ | **MCP API** | `Endpoints/McpEndpoints.cs` | `ProgramEndpointsAndServicesTests.cs`<br>`EndpointRegistrationCoverageTests.cs` | Model Context Protocol JSON-RPC 2.0 endpoint (`POST /api/mcp/tools`) for AI assistant tool discovery (`tools/list`) and invocation (`tools/call`). |
+ | **Root ViewModel** | `LocalLLMServerManager.Shared/ViewModels/MainViewModel.cs` | `MainViewModelCoverageTests.cs`<br>`MainWindowViewModelTests.cs`<br>`ReachNinetyPercentCoverageTests.cs` | Master coordinator ViewModel aggregating sub-ViewModels, tab switching, global health polling, toast notifications, VRAM unload triggering. |
+ | **Telemetry ViewModel** | `LocalLLMServerManager.Shared/ViewModels/TelemetryViewModel.cs` | `MainViewModelCoverageTests.cs`<br>`NinetyPercentThresholdTests.cs` | Reactive GPU VRAM percentage calculation, stacked bar allocation, GPU model formatting. |
+ | **Ollama Library ViewModel** | `LocalLLMServerManager.Shared/ViewModels/OllamaLibraryViewModel.cs` | `MainViewModelCoverageTests.cs`<br>`FinalPushTo90CoverageTests.cs`<br>`CoverageThresholdTargetedPushTests.cs` | Installed Ollama models, capability profiling (`Coding`, `Reasoning`, `Math`, `Chat`), interactive KV Cache calculator (up to 32K tokens), model pull SSE stream parsing. |
+ | **Hugging Face ViewModel** | `LocalLLMServerManager.Shared/ViewModels/HuggingFaceSearchViewModel.cs` | `MainViewModelCoverageTests.cs`<br>`SearchServicesCoverageTests.cs` | GGUF repository search, branch quantization tree parsing (Q4_K_M, Q5_K_M, Q8_0, FP16), download progress tracking. |
+ | **CivitAI ViewModel** | `LocalLLMServerManager.Shared/ViewModels/CivitaiSearchViewModel.cs` | `MainViewModelCoverageTests.cs`<br>`SearchServicesCoverageTests.cs` | CivitAI model gallery, search filters (Checkpoint, LoRA, VAE, ControlNet), download manager. |
+-| **Settings ViewModel** | `LocalLLMServerManager.Shared/ViewModels/SettingsViewModel.cs` | `MainViewModelCoverageTests.cs`<br>`AppSettingsTests.cs` | Settings editor for directory paths, URLs, preferred engine toggle, auto-unload thresholds. |
+-| **Shared Services** | `LocalLLMServerManager.Shared/Services/*` | `SearchServicesCoverageTests.cs`<br>`BrowserLauncherTests.cs`<br>`LiveExternalProviderIntegrationTests.cs` | `CivitaiSearchService`, `HuggingFaceSearchService`, `OllamaModelService`, `TelemetryService`, `ToastService`, `BrowserLauncher`. |
++| **Settings ViewModel** | `LocalLLMServerManager.Shared/ViewModels/SettingsViewModel.cs` | `SettingsViewModelCoverageTests.cs`<br>`MainViewModelCoverageTests.cs`<br>`AppSettingsTests.cs` | Settings editor for directory paths, URLs, preferred engine toggle, auto-detect tools, file/folder pickers, and real-time status indicators. |
++| **Shared Services** | `LocalLLMServerManager.Shared/Services/*` | `SearchServicesCoverageTests.cs`<br>`BrowserLauncherTests.cs`<br>`LiveExternalProviderIntegrationTests.cs` | `CivitaiSearchService`, `HuggingFaceSearchService`, `OllamaModelService`, `TelemetryService`, `ToastService`, `BrowserLauncher`, `ToolDiscoveryService`. |
+ | **Avalonia XAML Views** | `LocalLLMServerManager.Shared/Views/*` | `MainWindowUiTests.cs`<br>`AvaloniaAppAndWindowCoverageTests.cs` | Fluent dark theme controls (`MainView`, `TelemetryHeaderControl`, `OllamaModelsTabControl`, `HuggingFaceTabControl`, `CivitaiTabControl`, `EngineStudioTabControl`, `SettingsTabControl`). |
+ | **Static Assets & WASM** | `Program.cs`<br>`LocalLLMServerManager.Web/*` | `StaticFileMimeTypeTests.cs`<br>`PlaywrightWasmE2ETests.cs` | Kestrel static file provider MIME mappings (`.wasm`, `.dat`, `.json`, `.js`, `.css`, `.png`, `.glb`), WebAssembly browser runtime initialization. |
+ | **Playwright Browser E2E** | `LocalLLMServerManager.Web/wwwroot/*` | `PlaywrightWasmE2ETests.cs` | Headless Chromium boots WebAssembly client, validates `#out` DOM container, asserts 0 unhandled console errors, 0 404s on `_framework` assets. |
+ | **Screenshot Generator** | `docs/images/*` | `PlaywrightScreenshotGenerator.cs` | Navigates all 5 tabs in headless Chromium with WebGL SwiftShader, captures crisp screenshots to `docs/images/`, asserts visual distinctness. |
+ 
+ ---
+ 
+ ## 🪟🐧 Cross-Platform Test Validation Matrix
+ 
+ | Platform / Capability | Windows 11 x64 | Linux (Ubuntu / Debian / Fedora) | Verification Details |
+ |---|---|---|---|
+ | **Process Management** | ✅ Win32 Job Objects | ✅ Linux Process Group / Signals | Verified in `ServicesAndEngineManagerCoverageTests` & `DeepCoveragePushTests`. Win32 memory caps active on Windows; graceful fallback on Linux. |
++| **Tool Discovery** | ✅ Multi-Drive Roots (`C:`, `D:`, `E:`) | ✅ Standard Roots (`/opt`, `~/.ollama`) | Verified in `ToolDiscoveryServiceTests` & `DiscoveryEndpointsTests`. Scans all connected drive partitions and standard paths. |
+ | **GPU Telemetry** | ✅ NVML (`nvidia-smi`) + Registry | ✅ NVML (`nvidia-smi`) + `/proc/meminfo` | Verified in `GpuTelemetryProvider`. Returns accurate VRAM bytes and GPU model name across OS boundaries. |
+ | **Browser Launching** | ✅ `explorer.exe` / `cmd` | ✅ `xdg-open` | Verified in `BrowserLauncherTests`. Tests verify cross-platform shell execution and fallback handling. |
+ | **Background Daemon** | ✅ Windows Service | ✅ Linux `systemd` daemon | Verified in `ProgramEndpointsAndServicesTests` with `--service` and `--headless` flags. |
+ | **Static File MIME Routing** | ✅ Kestrel Custom Content Types | ✅ Kestrel Custom Content Types | Verified in `StaticFileMimeTypeTests`. Correctly resolves `.wasm` (`application/wasm`) and `.glb` (`model/gltf-binary`). |
+ | **Playwright Automation** | ✅ Headless Chromium + SwiftShader | ✅ Headless Chromium + SwiftShader | Verified in `PlaywrightWasmE2ETests` and `PlaywrightScreenshotGenerator`. |
+ 
+ ---
+ 
+-## 📁 Test Fixture Inventory (All 26 Test Files)
++## 📁 Test Fixture Inventory (All 29 Test Files)
+ 
+ | # | Test Class File | Primary Focus | Test Count |
+ |---|---|---|---|
+-| 1 | `AppSettingsTests.cs` | AppSettings default values, environment variable expansion, JSON serialization | 4 |
++| 1 | `AppSettingsTests.cs` | AppSettings default values, environment variable expansion, JSON serialization | 6 |
+ | 2 | `AvaloniaAppAndWindowCoverageTests.cs` | Avalonia desktop app builder, main window layout, and control initialization | 3 |
+-| 3 | `BrowserLauncherTests.cs` | Cross-platform URL launching (Windows explorer / Linux xdg-open) | 4 |
+-| 4 | `CoverageThresholdTargetedPushTests.cs` | Deep coverage for Services, Endpoints, GitUpdateService, and ViewModels | 22 |
+-| 5 | `DeepCoveragePushTests.cs` | Win32 Job Object Linux fallback, Engine Manager and VRAM edge cases | 5 |
+-| 6 | `EndToEndSystemTests.cs` | Full stack Kestrel Minimal API + YARP reverse proxy system integration | 2 |
+-| 7 | `EndpointRegistrationCoverageTests.cs` | Route registration verification for all Minimal API endpoint modules | 1 |
+-| 8 | `FinalPushTo90CoverageTests.cs` | Boundary condition coverage and cancellation token propagation | 8 |
+-| 9 | `FinalPushTo90PercentThresholdTests.cs` | ViewModel edge cases and SSE streaming data parsing | 4 |
+-| 10 | `LiveExternalProviderIntegrationTests.cs` | Live integration and fallback for Hugging Face and CivitAI endpoints | 4 |
+-| 11 | `MainViewModelCoverageTests.cs` | MainViewModel coordinator reactivity, tabs, and toast dispatcher | 14 |
+-| 12 | `MainWindowUiTests.cs` | UI DataContext bindings, UserControl hierarchy, and XAML styles | 1 |
+-| 13 | `MainWindowViewModelTests.cs` | MainWindow ViewModel lifecycle and command bindings | 1 |
+-| 14 | `NinetyPercentThresholdTests.cs` | Comprehensive branch coverage for error recovery and null safety | 9 |
+-| 15 | `OllamaAndHfMockServerTests.cs` | Mock HTTP servers simulating Ollama API and Hugging Face Hub | 1 |
+-| 16 | `PlaywrightScreenshotGenerator.cs` | Automated Playwright documentation screenshot generator across all 5 tabs | 1 |
+-| 17 | `PlaywrightWasmE2ETests.cs` | Playwright E2E browser automation verifying WebAssembly client in Chromium | 1 |
+-| 18 | `ProgramEndpointsAndServicesTests.cs` | Kestrel Minimal API integration tests (`/health`, `/api/gpu/vram`, `/api/mcp/tools`, `/api/settings`) | 19 |
+-| 19 | `ReachNinetyPercentCoverageTests.cs` | Health check online/offline branches, VRAM unload, streaming progress | 3 |
+-| 20 | `SearchServicesCoverageTests.cs` | Unit tests for CivitaiSearchService, HuggingFaceSearchService, OllamaModelService | 7 |
+-| 21 | `ServerInfrastructureAndAppTests.cs` | DI container resolution, logging infrastructure, and server lifecycle | 2 |
+-| 22 | `ServicesAndEngineManagerCoverageTests.cs` | Engine process management, Win32 Job Objects, GpuTelemetryProvider | 4 |
+-| 23 | `StaticFileMimeTypeTests.cs` | MIME type provider verification for WASM and 3D GLB assets | 2 |
+-| 24 | `TestAppBuilder.cs` | Headless Avalonia application builder infrastructure | 1 |
+-| 25 | `VramOrchestratorTests.cs` | VRAM Orchestrator pre-generation memory clearing and health probes | 7 |
+-| 26 | `WorkflowPerformanceTests.cs` | ComfyUI workflow JSON loading, parsing, and GLB export profiling | 7 |
+-| **Total** | | | **137 Tests** |
++| 3 | `BrowserLauncherTests.cs` | Cross-platform URL launching (Windows explorer / Linux xdg-open) | 12 |
++| 4 | `CoverageThresholdTargetedPushTests.cs` | Deep coverage for Services, Endpoints, GitUpdateService, and ViewModels | 6 |
++| 5 | `DeepCoveragePushTests.cs` | Win32 Job Object Linux fallback, Engine Manager and VRAM edge cases | 7 |
++| 6 | `DiscoveryEndpointsTests.cs` | Tool detection and path validation REST Minimal API endpoints | 8 |
++| 7 | `EndToEndSystemTests.cs` | Full stack Kestrel Minimal API + YARP reverse proxy system integration | 3 |
++| 8 | `EndpointRegistrationCoverageTests.cs` | Route registration verification for all Minimal API endpoint modules | 1 |
++| 9 | `FinalPushTo90CoverageTests.cs` | Boundary condition coverage and cancellation token propagation | 5 |
++| 10 | `FinalPushTo90PercentThresholdTests.cs` | ViewModel edge cases and SSE streaming data parsing | 2 |
++| 11 | `LiveExternalProviderIntegrationTests.cs` | Live integration and fallback for Hugging Face and CivitAI endpoints | 6 |
++| 12 | `MainViewModelCoverageTests.cs` | MainViewModel coordinator reactivity, tabs, and toast dispatcher | 10 |
++| 13 | `MainWindowUiTests.cs` | UI DataContext bindings, UserControl hierarchy, and XAML styles | 1 |
++| 14 | `MainWindowViewModelTests.cs` | MainWindow ViewModel lifecycle and command bindings | 1 |
++| 15 | `NinetyPercentThresholdTests.cs` | Comprehensive branch coverage for error recovery and null safety | 2 |
++| 16 | `OllamaAndHfMockServerTests.cs` | Mock HTTP servers simulating Ollama API and Hugging Face Hub | 1 |
++| 17 | `PlaywrightScreenshotGenerator.cs` | Automated Playwright documentation screenshot generator across all 5 tabs | 1 |
++| 18 | `PlaywrightWasmE2ETests.cs` | Playwright E2E browser automation verifying WebAssembly client in Chromium | 1 |
++| 19 | `ProgramEndpointsAndServicesTests.cs` | Kestrel Minimal API integration tests (`/health`, `/api/gpu/vram`, `/api/mcp/tools`, `/api/settings`) | 52 |
++| 20 | `ReachNinetyPercentCoverageTests.cs` | Health check online/offline branches, VRAM unload, streaming progress | 3 |
++| 21 | `SearchServicesCoverageTests.cs` | Unit tests for CivitaiSearchService, HuggingFaceSearchService, OllamaModelService | 4 |
++| 22 | `ServerInfrastructureAndAppTests.cs` | DI container resolution, logging infrastructure, and server lifecycle | 1 |
++| 23 | `ServicesAndEngineManagerCoverageTests.cs` | Engine process management, Win32 Job Objects, GpuTelemetryProvider | 3 |
++| 24 | `SettingsViewModelCoverageTests.cs` | SettingsViewModel auto-detect tools, file/folder pickers, and path validation | 10 |
++| 25 | `StaticFileMimeTypeTests.cs` | MIME type provider verification for WASM and 3D GLB assets | 2 |
++| 26 | `TestAppBuilder.cs` | Headless Avalonia application builder infrastructure | 1 |
++| 27 | `ToolDiscoveryServiceTests.cs` | Multi-drive tool discovery, path validation, and environment expansion | 12 |
++| 28 | `VramOrchestratorTests.cs` | VRAM Orchestrator pre-generation memory clearing and health probes | 7 |
++| 29 | `WorkflowPerformanceTests.cs` | ComfyUI workflow JSON loading, parsing, and GLB export profiling | 1 |
++| **Total** | | | **171 Tests** |
+ 
+ ---
+ 
+ ## 🛠️ Best Practices for Developers & Contributors
+ 
+ 1. **Always run tests in chunks** when validating locally to avoid concurrent port collisions on mock HTTP servers.
+ 2. **Ensure Chromium binaries are installed** before running Playwright tests:
+    ```powershell
+    pwsh LocalLLMServerManager.Tests/bin/Release/net10.0/playwright.ps1 install chromium
+    ```
+diff --git a/scripts/installer.iss b/scripts/installer.iss
+index 573cdc2..cf97786 100644
+--- a/scripts/installer.iss
++++ b/scripts/installer.iss
+@@ -1,13 +1,13 @@
+-; Script generated for Inno Setup - LocalLLMServerManager v3.4.0
++; Script generated for Inno Setup - LocalLLMServerManager v3.5.0
+ #define MyAppName "Local LLM Server Manager"
+-#define MyAppVersion "3.4.0"
++#define MyAppVersion "3.5.0"
+ #define MyAppPublisher "LocalLLMServerManager Team"
+ #define MyAppURL "https://github.com/spelech/LocalLLMServerManager"
+ #define MyAppExeName "LocalLLMServerManager.exe"
+ 
+ [Setup]
+ AppId={{D1A39E4C-6721-4E12-A349-8F8D58014E7B}
+ AppName={#MyAppName}
+ AppVersion={#MyAppVersion}
+ AppPublisher={#MyAppPublisher}
+ AppPublisherURL={#MyAppURL}
