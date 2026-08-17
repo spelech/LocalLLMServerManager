@@ -1,0 +1,631 @@
+42eea3c feat: integrate tool auto-discovery and validation into web dashboard
+ docs/legacy-web-dash/app.js     | 266 +++++++++++++++++++++++++++++++++++++++-
+ docs/legacy-web-dash/index.css  |  60 +++++++++
+ docs/legacy-web-dash/index.html | 156 +++++++++++++++++++++++
+ 3 files changed, 478 insertions(+), 4 deletions(-)
+diff --git a/docs/legacy-web-dash/app.js b/docs/legacy-web-dash/app.js
+index d49ad5c..4a77da1 100644
+--- a/docs/legacy-web-dash/app.js
++++ b/docs/legacy-web-dash/app.js
+@@ -1198,31 +1198,263 @@ const civitaiDlPct = /** @type {HTMLElement} */ (document.getElementById('civita
+ const civitaiDlBytes = /** @type {HTMLElement} */ (document.getElementById('civitai-dl-bytes'));
+ const civitaiDlBar = /** @type {HTMLElement} */ (document.getElementById('civitai-dl-bar'));
+ const civitaiDlStatus = /** @type {HTMLElement} */ (document.getElementById('civitai-dl-status'));
+ 
+ /** @type {string} */
+ let civitaiSelectedFileName = '';
+ /** @type {boolean} */
+ let civitaiForgePathConfigured = false;
+ 
+ // ---------------------------------------------------------------------------
+-// Settings — load on startup
+ // ---------------------------------------------------------------------------
++// Settings, Auto-Discovery & Path Validation
++// ---------------------------------------------------------------------------
++const btnAutoDetectTools = document.getElementById('btn-auto-detect-tools');
++const btnValidatePaths = document.getElementById('btn-validate-paths');
++const btnSaveAllSettings = document.getElementById('btn-save-all-settings');
++const btnSaveSettingsBottom = document.getElementById('btn-save-settings-bottom');
++const autoDetectStatusBanner = document.getElementById('auto-detect-status-banner');
++const autoDetectStatusMessage = document.getElementById('auto-detect-status-message');
++
++const cfgComfyExePath = /** @type {HTMLInputElement} */ (document.getElementById('cfg-comfy-exe-path'));
++const cfgForgeExePath = /** @type {HTMLInputElement} */ (document.getElementById('cfg-forge-exe-path'));
++const cfgOllamaExePath = /** @type {HTMLInputElement} */ (document.getElementById('cfg-ollama-exe-path'));
++const cfgForgeModelsPath = /** @type {HTMLInputElement} */ (document.getElementById('cfg-forge-models-path'));
++const cfgComfyModelsPath = /** @type {HTMLInputElement} */ (document.getElementById('cfg-comfy-models-path'));
++const cfg3dModelsPath = /** @type {HTMLInputElement} */ (document.getElementById('cfg-3d-models-path'));
++const cfgWorkflowsPath = /** @type {HTMLInputElement} */ (document.getElementById('cfg-workflows-path'));
++const cfgComfyUrlSettings = /** @type {HTMLInputElement} */ (document.getElementById('cfg-comfy-url-settings'));
++const cfgPreferredEngineSelect = /** @type {HTMLSelectElement} */ (document.getElementById('cfg-preferred-engine-select'));
++
++function setPathStatusPill(pillId, state, text) {
++    const el = document.getElementById(pillId);
++    if (!el) return;
++    el.className = `path-status-pill ${state}`;
++    el.textContent = text;
++}
++
++function updatePillFromResult(pillId, result, pathValue) {
++    if (!pathValue || !pathValue.trim()) {
++        setPathStatusPill(pillId, 'missing', '⚠️ Missing');
++        return;
++    }
++    if (result && result.isValid) {
++        setPathStatusPill(pillId, 'valid', '🟢 Found');
++    } else {
++        setPathStatusPill(pillId, 'missing', '⚠️ Missing');
++    }
++}
++
++async function validatePaths() {
++    const comfyExe = (cfgComfyExePath ? cfgComfyExePath.value : '').trim();
++    const forgeExe = (cfgForgeExePath ? cfgForgeExePath.value : '').trim();
++    const ollamaExe = (cfgOllamaExePath ? cfgOllamaExePath.value : '').trim();
++    const forgeModels = (cfgForgeModelsPath ? cfgForgeModelsPath.value : (forgePathInput ? forgePathInput.value : '')).trim();
++    const comfyModels = (cfgComfyModelsPath ? cfgComfyModelsPath.value : '').trim();
++    const threeDModels = (cfg3dModelsPath ? cfg3dModelsPath.value : '').trim();
++    const workflows = (cfgWorkflowsPath ? cfgWorkflowsPath.value : '').trim();
++
++    setPathStatusPill('status-comfy-exe', 'checking', 'Checking...');
++    setPathStatusPill('status-forge-exe', 'checking', 'Checking...');
++    setPathStatusPill('status-ollama-exe', 'checking', 'Checking...');
++    setPathStatusPill('status-forge-models', 'checking', 'Checking...');
++    setPathStatusPill('status-comfy-models', 'checking', 'Checking...');
++    setPathStatusPill('status-3d-models', 'checking', 'Checking...');
++    setPathStatusPill('status-workflows', 'checking', 'Checking...');
++
++    try {
++        const payload = {
++            comfyUiExecutablePath: comfyExe,
++            forgeExecutablePath: forgeExe,
++            ollamaExecutablePath: ollamaExe,
++            forgeModelsPath: forgeModels,
++            comfyModelsPath: comfyModels,
++            threeDModelsPath: threeDModels,
++            workflowsPath: workflows
++        };
++
++        const res = await fetch('/api/system/tools/validate', {
++            method: 'POST',
++            headers: { 'Content-Type': 'application/json' },
++            body: JSON.stringify(payload)
++        });
++
++        if (!res.ok) throw new Error('Validation request failed');
++        const data = await res.json();
++        const results = data.results || {};
++
++        updatePillFromResult('status-comfy-exe', results.comfyUiExecutablePath || results.ComfyUiExecutablePath, comfyExe);
++        updatePillFromResult('status-forge-exe', results.forgeExecutablePath || results.ForgeExecutablePath, forgeExe);
++        updatePillFromResult('status-ollama-exe', results.ollamaExecutablePath || results.OllamaExecutablePath, ollamaExe);
++        updatePillFromResult('status-forge-models', results.forgeModelsPath || results.ForgeModelsPath, forgeModels);
++        updatePillFromResult('status-comfy-models', results.comfyModelsPath || results.ComfyModelsPath, comfyModels);
++        updatePillFromResult('status-3d-models', results.threeDModelsPath || results.ThreeDModelsPath, threeDModels);
++        updatePillFromResult('status-workflows', results.workflowsPath || results.WorkflowsPath, workflows);
++
++        const forgeResult = results.forgeModelsPath || results.ForgeModelsPath;
++        if (forgeResult && forgeResult.isValid) {
++            setForgePathStatus(true, forgeModels);
++        } else {
++            setForgePathStatus(false, forgeModels);
++        }
++    } catch {
++        updatePillFromResult('status-comfy-exe', null, comfyExe);
++        updatePillFromResult('status-forge-exe', null, forgeExe);
++        updatePillFromResult('status-ollama-exe', null, ollamaExe);
++        updatePillFromResult('status-forge-models', null, forgeModels);
++        updatePillFromResult('status-comfy-models', null, comfyModels);
++        updatePillFromResult('status-3d-models', null, threeDModels);
++        updatePillFromResult('status-workflows', null, workflows);
++    }
++}
++
++function applySettingsToForm(settings) {
++    if (!settings) return;
++    if (cfgComfyExePath && settings.comfyUiExecutablePath !== undefined) cfgComfyExePath.value = settings.comfyUiExecutablePath || '';
++    if (cfgForgeExePath && settings.forgeExecutablePath !== undefined) cfgForgeExePath.value = settings.forgeExecutablePath || '';
++    if (cfgOllamaExePath && settings.ollamaExecutablePath !== undefined) cfgOllamaExePath.value = settings.ollamaExecutablePath || '';
++    if (cfgForgeModelsPath && settings.forgeModelsPath !== undefined) cfgForgeModelsPath.value = settings.forgeModelsPath || '';
++    if (cfgComfyModelsPath && settings.comfyModelsPath !== undefined) cfgComfyModelsPath.value = settings.comfyModelsPath || '';
++    if (cfg3dModelsPath && settings.threeDModelsPath !== undefined) cfg3dModelsPath.value = settings.threeDModelsPath || '';
++    if (cfgWorkflowsPath && settings.workflowsPath !== undefined) cfgWorkflowsPath.value = settings.workflowsPath || '';
++    if (cfgComfyUrlSettings && settings.comfyUiUrl) cfgComfyUrlSettings.value = settings.comfyUiUrl;
++    if (cfgComfyUrl && settings.comfyUiUrl) cfgComfyUrl.value = settings.comfyUiUrl;
++    if (forgePathInput && settings.forgeModelsPath !== undefined) forgePathInput.value = settings.forgeModelsPath || '';
++
++    if (cfgPreferredEngineSelect && settings.preferredImageEngine) {
++        cfgPreferredEngineSelect.value = settings.preferredImageEngine;
++    }
++
++    if (settings.preferredImageEngine) {
++        const isForge = String(settings.preferredImageEngine).toLowerCase() === 'forge';
++        if (btnEngineForge && btnEngineComfy) {
++            btnEngineForge.classList.toggle('active', isForge);
++            btnEngineComfy.classList.toggle('active', !isForge);
++        }
++    }
++}
++
++async function autoDetectTools() {
++    if (btnAutoDetectTools) {
++        btnAutoDetectTools.disabled = true;
++        btnAutoDetectTools.textContent = '⏳ Detecting...';
++    }
++    if (autoDetectStatusBanner && autoDetectStatusMessage) {
++        autoDetectStatusBanner.style.display = 'block';
++        autoDetectStatusMessage.textContent = 'Scanning system PATH, standard directories, and AppData for AI tools...';
++    }
++
++    try {
++        const res = await fetch('/api/system/tools/apply-detected', {
++            method: 'POST',
++            headers: { 'Content-Type': 'application/json' }
++        });
++
++        if (!res.ok) {
++            const err = await res.text();
++            showToast(`Auto-detection failed: ${err}`, 'error');
++            if (autoDetectStatusMessage) autoDetectStatusMessage.textContent = `Auto-detection failed: ${err}`;
++            return;
++        }
++
++        const settings = await res.json();
++        applySettingsToForm(settings);
++        await validatePaths();
++
++        showToast('Auto-detection complete! Updated settings applied.', 'success');
++        if (autoDetectStatusMessage) {
++            autoDetectStatusMessage.textContent = '✓ Auto-discovery complete. Updated settings applied.';
++        }
++    } catch {
++        showToast('Failed to contact server for auto-detection.', 'error');
++        if (autoDetectStatusMessage) {
++            autoDetectStatusMessage.textContent = 'Failed to communicate with discovery endpoint.';
++        }
++    } finally {
++        if (btnAutoDetectTools) {
++            btnAutoDetectTools.disabled = false;
++            btnAutoDetectTools.textContent = '🔍 Auto-Detect Installed Tools';
++        }
++    }
++}
++
++async function saveAllSettings() {
++    const comfyExe = (cfgComfyExePath ? cfgComfyExePath.value : '').trim();
++    const forgeExe = (cfgForgeExePath ? cfgForgeExePath.value : '').trim();
++    const ollamaExe = (cfgOllamaExePath ? cfgOllamaExePath.value : '').trim();
++    const forgeModels = (cfgForgeModelsPath ? cfgForgeModelsPath.value : (forgePathInput ? forgePathInput.value : '')).trim();
++    const comfyModels = (cfgComfyModelsPath ? cfgComfyModelsPath.value : '').trim();
++    const threeDModels = (cfg3dModelsPath ? cfg3dModelsPath.value : '').trim();
++    const workflows = (cfgWorkflowsPath ? cfgWorkflowsPath.value : '').trim();
++    const comfyUrl = (cfgComfyUrlSettings ? cfgComfyUrlSettings.value : (cfgComfyUrl ? cfgComfyUrl.value : 'http://127.0.0.1:8188')).trim();
++    const preferredEngine = (cfgPreferredEngineSelect ? cfgPreferredEngineSelect.value : 'comfy');
++
++    const saveBtns = [btnSaveAllSettings, btnSaveSettingsBottom].filter(Boolean);
++    saveBtns.forEach(b => {
++        if (b) {
++            b.disabled = true;
++            b.textContent = 'Saving...';
++        }
++    });
++
++    try {
++        const payload = {
++            forgeModelsPath: forgeModels,
++            comfyModelsPath: comfyModels,
++            threeDModelsPath: threeDModels,
++            workflowsPath: workflows,
++            comfyUiExecutablePath: comfyExe,
++            forgeExecutablePath: forgeExe,
++            ollamaExecutablePath: ollamaExe,
++            comfyUiUrl: comfyUrl,
++            preferredImageEngine: preferredEngine
++        };
++
++        const res = await fetch('/api/settings', {
++            method: 'POST',
++            headers: { 'Content-Type': 'application/json' },
++            body: JSON.stringify(payload)
++        });
++
++        if (!res.ok) {
++            const err = await res.text();
++            showToast(`Could not save settings: ${err}`, 'error');
++            return;
++        }
++
++        showToast('Settings saved successfully!', 'success');
++        if (forgePathInput) forgePathInput.value = forgeModels;
++        if (cfgComfyUrl) cfgComfyUrl.value = comfyUrl;
++
++        await validatePaths();
++    } catch {
++        showToast('Failed to save settings.', 'error');
++    } finally {
++        saveBtns.forEach(b => {
++            if (b) {
++                b.disabled = false;
++                b.textContent = '💾 Save Settings';
++            }
++        });
++    }
++}
++
+ async function loadAppSettings() {
+     try {
+         const res = await fetch('/api/settings');
+         if (!res.ok) return;
+         const settings = await res.json();
++        applySettingsToForm(settings);
+         if (settings.forgeModelsPath) {
+-            forgePathInput.value = settings.forgeModelsPath;
+             setForgePathStatus(true, settings.forgeModelsPath);
+         }
++        await validatePaths();
+     } catch { /* ignore */ }
+ }
+ 
+ function setForgePathStatus(configured, path = '') {
+     civitaiForgePathConfigured = configured;
+     if (configured && path) {
+         forgePathStatus.textContent = '✓ Configured';
+         forgePathStatus.style.background = 'rgba(34, 197, 94, 0.15)';
+         forgePathStatus.style.color = 'var(--online)';
+     } else {
+@@ -1246,31 +1478,54 @@ if (btnSaveForgePath) {
+                 method: 'POST',
+                 headers: { 'Content-Type': 'application/json' },
+                 body: JSON.stringify({ forgeModelsPath: path })
+             });
+             if (!res.ok) {
+                 const err = await res.text();
+                 showToast(`Could not save: ${err}`, 'error');
+                 setForgePathStatus(false);
+             } else {
+                 setForgePathStatus(true, path);
++                if (cfgForgeModelsPath) cfgForgeModelsPath.value = path;
+                 showToast('Forge models path saved!', 'success');
++                await validatePaths();
+             }
+         } catch {
+             showToast('Failed to contact server.', 'error');
+         } finally {
+             btnSaveForgePath.disabled = false;
+             btnSaveForgePath.textContent = 'Save Path';
+         }
+     });
+ }
+ 
++if (btnAutoDetectTools) {
++    btnAutoDetectTools.addEventListener('click', autoDetectTools);
++}
++if (btnValidatePaths) {
++    btnValidatePaths.addEventListener('click', validatePaths);
++}
++if (btnSaveAllSettings) {
++    btnSaveAllSettings.addEventListener('click', saveAllSettings);
++}
++if (btnSaveSettingsBottom) {
++    btnSaveSettingsBottom.addEventListener('click', saveAllSettings);
++}
++
++[cfgComfyExePath, cfgForgeExePath, cfgOllamaExePath, cfgForgeModelsPath, cfgComfyModelsPath, cfg3dModelsPath, cfgWorkflowsPath].forEach(input => {
++    if (input) {
++        input.addEventListener('blur', () => {
++            validatePaths();
++        });
++    }
++});
++
+ // Load settings immediately
+ loadAppSettings();
+ 
+ // Type badge colour mapping
+ const civitaiTypeBadgeColor = {
+     Checkpoint: 'hsl(258, 80%, 45%)',
+     LORA: 'hsl(190, 85%, 35%)',
+     TextualInversion: 'hsl(38, 92%, 45%)',
+     VAE: 'hsl(142, 70%, 35%)',
+     Controlnet: 'hsl(0, 75%, 40%)'
+@@ -1830,18 +2085,21 @@ if (btnComfyQueue) {
+                 comfyStatusText.textContent = `Error: ${e.message}`;
+                 comfyStatusText.style.color = 'var(--offline)';
+             }
+             showToast(`Queue error: ${e.message}`, 'error');
+         } finally {
+             btnComfyQueue.disabled = false;
+         }
+     });
+ }
+ 
+-// Tab click hook for 3D Studio tab to refresh gallery
++// Tab click hook for 3D Studio tab and Settings tab
+ document.querySelectorAll('.tab-link').forEach(btn => {
+     btn.addEventListener('click', () => {
+-        if (btn.getAttribute('data-tab') === 'tab-comfy3d') {
++        const tab = btn.getAttribute('data-tab');
++        if (tab === 'tab-comfy3d') {
+             load3dGallery();
++        } else if (tab === 'tab-settings') {
++            validatePaths();
+         }
+     });
+ });
+diff --git a/docs/legacy-web-dash/index.css b/docs/legacy-web-dash/index.css
+index 5226b07..c35a23c 100644
+--- a/docs/legacy-web-dash/index.css
++++ b/docs/legacy-web-dash/index.css
+@@ -1749,10 +1749,70 @@ body {
+     font-weight: 600;
+     transition: var(--transition-smooth);
+ }
+ 
+ .engine-toggle-btn.active {
+     background: rgba(139, 92, 246, 0.25);
+     border-color: #a78bfa;
+     color: var(--text-bright);
+     box-shadow: 0 0 12px rgba(139, 92, 246, 0.3);
+ }
++
++/* Path Status Pills & Settings Field Inputs */
++.path-status-pill {
++    font-size: 0.75rem;
++    padding: 0.2rem 0.65rem;
++    border-radius: 999px;
++    background: rgba(0, 0, 0, 0.25);
++    border: 1px solid var(--border-color);
++    color: var(--text-muted);
++    font-weight: 600;
++    white-space: nowrap;
++    display: inline-flex;
++    align-items: center;
++    gap: 0.35rem;
++    transition: var(--transition-smooth);
++}
++
++.path-status-pill.valid {
++    background: rgba(34, 197, 94, 0.15);
++    border-color: rgba(34, 197, 94, 0.35);
++    color: var(--online);
++}
++
++.path-status-pill.missing {
++    background: rgba(239, 68, 68, 0.15);
++    border-color: rgba(239, 68, 68, 0.35);
++    color: var(--offline);
++}
++
++.path-status-pill.discovered {
++    background: rgba(139, 92, 246, 0.15);
++    border-color: rgba(139, 92, 246, 0.4);
++    color: #c084fc;
++}
++
++.path-status-pill.checking {
++    background: rgba(234, 179, 8, 0.15);
++    border-color: rgba(234, 179, 8, 0.35);
++    color: var(--warning);
++}
++
++.glass-input {
++    background: rgba(15, 23, 42, 0.6);
++    border: 1px solid var(--border-color);
++    color: var(--text-main);
++    padding: 0.6rem 0.9rem;
++    border-radius: var(--radius-sm);
++    font-family: var(--font-mono);
++    font-size: 0.85rem;
++    width: 100%;
++    box-sizing: border-box;
++    transition: var(--transition-smooth);
++}
++
++.glass-input:focus {
++    outline: none;
++    border-color: var(--primary);
++    box-shadow: 0 0 10px var(--primary-glow);
++}
++
+diff --git a/docs/legacy-web-dash/index.html b/docs/legacy-web-dash/index.html
+index 8b59be6..1aaabaa 100644
+--- a/docs/legacy-web-dash/index.html
++++ b/docs/legacy-web-dash/index.html
+@@ -153,20 +153,27 @@
+                 Stable Diffusion
+             </button>
+             <button class="tab-link" data-tab="tab-comfy3d">
+                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="tab-icon">
+                     <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/>
+                     <polyline points="3.27 6.96 12 12.01 20.73 6.96"/>
+                     <line x1="12" y1="22.08" x2="12" y2="12"/>
+                 </svg>
+                 3D &amp; ComfyUI Studio
+             </button>
++            <button class="tab-link" data-tab="tab-settings" id="nav-tab-settings">
++                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="tab-icon">
++                    <circle cx="12" cy="12" r="3"/>
++                    <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/>
++                </svg>
++                Settings &amp; Tools
++            </button>
+         </nav>
+ 
+         <!-- TAB CONTENT: INSTALLED MODELS -->
+         <div id="tab-installed" class="tab-content active">
+             <div class="content-header">
+                 <h2>Installed Models</h2>
+                 <p>Models loaded locally in your Ollama directory. Active models are currently cached in your GPU memory (VRAM).</p>
+             </div>
+             
+             <div class="models-grid" id="installed-models-grid">
+@@ -602,20 +609,169 @@
+ 
+             <!-- Recent Media Gallery -->
+             <div class="glass-card" style="padding: 1.5rem;">
+                 <h3 style="font-size: 1.1rem; font-weight: 700; margin: 0 0 1rem 0; color: var(--text-bright);">Generated Media Assets (3D, Video, Image)</h3>
+                 <div id="gallery-3d-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 1rem;">
+                     <!-- Media items populated dynamically by JS -->
+                     <div style="color: var(--text-muted); font-size: 0.85rem;">Scanning outputs directory...</div>
+                 </div>
+             </div>
+         </div>
++
++        <!-- TAB CONTENT: SETTINGS & TOOL DISCOVERY -->
++        <div id="tab-settings" class="tab-content">
++            <div class="content-header">
++                <h2>Settings &amp; Tool Discovery</h2>
++                <p>Configure executable paths, models directories, workflows, and auto-detect installed AI tools across your system.</p>
++            </div>
++
++            <!-- Auto-Discovery Quick Action Card -->
++            <div class="glass-card" style="padding: 1.5rem; margin-bottom: 1.5rem;">
++                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.75rem; flex-wrap: wrap; gap: 1rem;">
++                    <div>
++                        <h3 style="margin: 0 0 0.3rem; font-size: 1.15rem; color: var(--text-bright); display: flex; align-items: center; gap: 0.5rem;">
++                            <span>🔍</span> AI Ecosystem Auto-Discovery
++                        </h3>
++                        <p style="margin: 0; font-size: 0.85rem; color: var(--text-muted);">
++                            Automatically scan common install directories, drive roots, system PATH, and %LOCALAPPDATA% for Ollama, ComfyUI, and Stable Diffusion Forge.
++                        </p>
++                    </div>
++                    <button class="action-btn pull-btn" id="btn-auto-detect-tools" style="padding: 0.65rem 1.25rem; font-size: 0.9rem; font-weight: 600; white-space: nowrap;">
++                        🔍 Auto-Detect Installed Tools
++                    </button>
++                </div>
++                <div id="auto-detect-status-banner" style="display: none; padding: 0.75rem 1rem; border-radius: var(--radius-sm); font-size: 0.85rem; margin-top: 0.75rem; background: rgba(139, 92, 246, 0.15); border: 1px solid rgba(139, 92, 246, 0.3); color: #c084fc;">
++                    <span id="auto-detect-status-message">Scanning system for tools...</span>
++                </div>
++            </div>
++
++            <!-- Executable & Directory Paths Configuration Card -->
++            <div class="glass-card" style="padding: 1.5rem; margin-bottom: 1.5rem;">
++                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.25rem; flex-wrap: wrap; gap: 0.75rem;">
++                    <h3 style="margin: 0; font-size: 1.15rem; color: var(--text-bright); display: flex; align-items: center; gap: 0.5rem;">
++                        <span>🛠️</span> Executable &amp; Directory Paths
++                    </h3>
++                    <div style="display: flex; gap: 0.5rem;">
++                        <button class="action-btn" id="btn-validate-paths" style="font-size: 0.8rem; padding: 0.4rem 0.85rem;">
++                            🔄 Re-Validate Paths
++                        </button>
++                        <button class="action-btn search-submit-btn" id="btn-save-all-settings" style="font-size: 0.8rem; padding: 0.4rem 1rem;">
++                            💾 Save Settings
++                        </button>
++                    </div>
++                </div>
++
++                <div style="display: flex; flex-direction: column; gap: 1.25rem;">
++                    <!-- ComfyUI Executable Path -->
++                    <div class="settings-field-row">
++                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.35rem;">
++                            <label for="cfg-comfy-exe-path" style="font-size: 0.85rem; font-weight: 600; color: var(--text-muted);">
++                                ComfyUI Executable Path
++                            </label>
++                            <span class="path-status-pill" id="status-comfy-exe">Checking...</span>
++                        </div>
++                        <input type="text" id="cfg-comfy-exe-path" class="glass-input" placeholder="e.g. C:\AI\ComfyUI\run_nvidia_gpu.bat or python.exe">
++                    </div>
++
++                    <!-- SD Forge Executable Path -->
++                    <div class="settings-field-row">
++                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.35rem;">
++                            <label for="cfg-forge-exe-path" style="font-size: 0.85rem; font-weight: 600; color: var(--text-muted);">
++                                SD Forge Executable Path
++                            </label>
++                            <span class="path-status-pill" id="status-forge-exe">Checking...</span>
++                        </div>
++                        <input type="text" id="cfg-forge-exe-path" class="glass-input" placeholder="e.g. C:\AI\stable-diffusion-webui-forge\run.bat">
++                    </div>
++
++                    <!-- Ollama Executable Path -->
++                    <div class="settings-field-row">
++                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.35rem;">
++                            <label for="cfg-ollama-exe-path" style="font-size: 0.85rem; font-weight: 600; color: var(--text-muted);">
++                                Ollama Executable Path
++                            </label>
++                            <span class="path-status-pill" id="status-ollama-exe">Checking...</span>
++                        </div>
++                        <input type="text" id="cfg-ollama-exe-path" class="glass-input" placeholder="e.g. ollama or C:\Users\Username\AppData\Local\Programs\Ollama\ollama.exe">
++                    </div>
++
++                    <!-- Forge Models Directory Path -->
++                    <div class="settings-field-row">
++                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.35rem;">
++                            <label for="cfg-forge-models-path" style="font-size: 0.85rem; font-weight: 600; color: var(--text-muted);">
++                                Forge Models Directory Path
++                            </label>
++                            <span class="path-status-pill" id="status-forge-models">Checking...</span>
++                        </div>
++                        <input type="text" id="cfg-forge-models-path" class="glass-input" placeholder="e.g. C:\AI\stable-diffusion-webui-forge\models">
++                    </div>
++
++                    <!-- ComfyUI Models Directory Path -->
++                    <div class="settings-field-row">
++                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.35rem;">
++                            <label for="cfg-comfy-models-path" style="font-size: 0.85rem; font-weight: 600; color: var(--text-muted);">
++                                ComfyUI Models Directory Path
++                            </label>
++                            <span class="path-status-pill" id="status-comfy-models">Checking...</span>
++                        </div>
++                        <input type="text" id="cfg-comfy-models-path" class="glass-input" placeholder="e.g. C:\AI\ComfyUI\models">
++                    </div>
++
++                    <!-- 3D Models Output Path -->
++                    <div class="settings-field-row">
++                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.35rem;">
++                            <label for="cfg-3d-models-path" style="font-size: 0.85rem; font-weight: 600; color: var(--text-muted);">
++                                3D Models Output Directory Path
++                            </label>
++                            <span class="path-status-pill" id="status-3d-models">Checking...</span>
++                        </div>
++                        <input type="text" id="cfg-3d-models-path" class="glass-input" placeholder="e.g. C:\AI\3d_models">
++                    </div>
++
++                    <!-- Workflows Directory Path -->
++                    <div class="settings-field-row">
++                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.35rem;">
++                            <label for="cfg-workflows-path" style="font-size: 0.85rem; font-weight: 600; color: var(--text-muted);">
++                                Workflows Directory Path
++                            </label>
++                            <span class="path-status-pill" id="status-workflows">Checking...</span>
++                        </div>
++                        <input type="text" id="cfg-workflows-path" class="glass-input" placeholder="e.g. C:\AI\workflows">
++                    </div>
++
++                    <!-- ComfyUI URL & Engine Preferences -->
++                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 1.25rem; margin-top: 0.5rem; padding-top: 1rem; border-top: 1px solid var(--border-color);">
++                        <div class="settings-field-row">
++                            <label for="cfg-comfy-url-settings" style="font-size: 0.85rem; font-weight: 600; color: var(--text-muted); display: block; margin-bottom: 0.35rem;">
++                                ComfyUI Service URL
++                            </label>
++                            <input type="text" id="cfg-comfy-url-settings" class="glass-input" value="http://127.0.0.1:8188">
++                        </div>
++                        <div class="settings-field-row">
++                            <label for="cfg-preferred-engine-select" style="font-size: 0.85rem; font-weight: 600; color: var(--text-muted); display: block; margin-bottom: 0.35rem;">
++                                Preferred Image &amp; Mesh Generator
++                            </label>
++                            <select id="cfg-preferred-engine-select" style="background: rgba(15, 23, 42, 0.6); border: 1px solid var(--border-color); color: var(--text-main); padding: 0.6rem 0.9rem; border-radius: var(--radius-sm); font-size: 0.85rem; width: 100%; box-sizing: border-box;">
++                                <option value="comfy">🧩 ComfyUI Engine</option>
++                                <option value="Forge">⚡ Stable Diffusion / Forge</option>
++                            </select>
++                        </div>
++                    </div>
++
++                    <div style="margin-top: 0.5rem;">
++                        <button class="action-btn pull-btn" id="btn-save-settings-bottom" style="padding: 0.65rem 1.5rem; font-size: 0.9rem; font-weight: 600;">
++                            💾 Save All Settings
++                        </button>
++                    </div>
++                </div>
++            </div>
++        </div>
+     </div>
+ 
+     <!-- PULL PROGRESS FLOATING DRAWER -->
+     <div class="progress-drawer" id="progress-drawer">
+         <div class="drawer-header">
+             <div class="header-main">
+                 <div class="pulse-indicator text-online"></div>
+                 <h4>Active Model Pull</h4>
+             </div>
+             <span class="drawer-status-badge" id="pull-status-badge">Starting...</span>
