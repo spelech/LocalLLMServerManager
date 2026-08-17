@@ -73,7 +73,7 @@ LocalLLMServerManager/
 ├── LocalLLMServerManager.Web/                # Avalonia WebAssembly (WASM) Project
 │   ├── App.axaml
 │   └── Program.cs
-└── LocalLLMServerManager.Tests/              # Automated Test Suite (133 Unit, Integration & E2E Tests)
+└── LocalLLMServerManager.Tests/              # Automated Test Suite (137 Unit, Integration & E2E Tests)
     ├── PlaywrightWasmE2ETests.cs             # Playwright E2E WebAssembly Browser Automation Tests
     ├── PlaywrightScreenshotGenerator.cs       # Automated Documentation PNG Screenshot Generator
     └── AppTestServerFixture.cs               # WebApplication Kestrel Test Host Fixture
@@ -183,26 +183,39 @@ public static class CustomEndpoints
 
 ## 🧪 Testing & Quality Assurance Guidelines
 
-All code changes must maintain **100% test pass rate** across unit, integration, and Playwright E2E browser tests.
+All code changes must maintain **100% test pass rate** across unit, integration, and Playwright E2E browser tests (137 total tests).
 
-### 1. Running Unit & Integration Tests
+### 1. Chunked Test Execution (Recommended to Avoid Resource Contention)
+To avoid process contention and potential hangs when running large test suites concurrently on Windows, run the tests in targeted chunks:
+
 ```bash
-# Build and run the entire test suite in Release configuration
-dotnet test LocalLLMServerManager.sln --nologo -c Release
+# Chunk 1: ViewModels & Core Settings (38 tests)
+dotnet test LocalLLMServerManager.Tests/LocalLLMServerManager.Tests.csproj --filter "FullyQualifiedName~ViewModel|FullyQualifiedName~AppSettings|FullyQualifiedName~BrowserLauncher" -c Release --nologo
+
+# Chunk 2: Services, VRAM Orchestrator & Static Files (69 tests)
+dotnet test LocalLLMServerManager.Tests/LocalLLMServerManager.Tests.csproj --filter "FullyQualifiedName~Services|FullyQualifiedName~VramOrchestrator|FullyQualifiedName~StaticFile" -c Release --nologo
+
+# Chunk 3: Endpoints, Mock Servers & Workflow Performance (68 tests)
+dotnet test LocalLLMServerManager.Tests/LocalLLMServerManager.Tests.csproj --filter "FullyQualifiedName~Endpoint|FullyQualifiedName~MockServer|FullyQualifiedName~WorkflowPerformance" -c Release --nologo
+
+# Chunk 4: Playwright WebAssembly Browser E2E Tests (1 test)
+dotnet test LocalLLMServerManager.Tests/LocalLLMServerManager.Tests.csproj --filter "FullyQualifiedName~PlaywrightWasmE2ETests" -c Release --nologo
+
+# Chunk 5: Playwright Automated Documentation Screenshot Generator (1 test)
+dotnet test LocalLLMServerManager.Tests/LocalLLMServerManager.Tests.csproj --filter "FullyQualifiedName~PlaywrightScreenshotGenerator" -c Release --nologo
 ```
 
-### 2. Playwright Chromium Driver Setup
+### 2. Full Suite Run
+```bash
+# Build and run non-Playwright tests across the solution
+dotnet test LocalLLMServerManager.Tests/LocalLLMServerManager.Tests.csproj --filter "FullyQualifiedName!~Playwright" -c Release --nologo
+```
+
+### 3. Playwright Chromium Driver Setup
 Playwright E2E testing requires the Chromium browser driver binaries. Run the following command after building the test assembly:
 ```powershell
 # Install Playwright Chromium browser binary
 pwsh LocalLLMServerManager.Tests/bin/Release/net10.0/playwright.ps1 install chromium
-```
-
-### 3. Executing Playwright E2E Browser Tests
-To execute end-to-end browser automation tests targeting the WebAssembly web application hosted via Kestrel Minimal API:
-```bash
-# Run Playwright E2E WASM browser tests
-dotnet test --filter "FullyQualifiedName~PlaywrightWasmE2ETests" -c Release
 ```
 
 ### 4. Automated Documentation Screenshot Generator (`PlaywrightScreenshotGenerator.cs`)
@@ -221,6 +234,9 @@ To re-generate all user guide screenshots automatically:
 dotnet test --filter "FullyQualifiedName~PlaywrightScreenshotGenerator" -c Release
 ```
 
-### Coverage Rule
-- Always execute `dotnet test LocalLLMServerManager.sln --nologo -c Release` before committing or tagging releases.
-- Ensure no orphaned background processes remain after running tests.
+### 5. Quality & Teardown Rule
+- Ensure all 137 tests pass before tagging releases.
+- Ensure no orphaned background processes remain after running tests:
+```powershell
+Get-Process -Name "*LocalLLMServerManager*", "*testhost*" -ErrorAction SilentlyContinue | Stop-Process -Force
+```
