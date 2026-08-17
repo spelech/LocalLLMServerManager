@@ -73,9 +73,14 @@ public class Program
 
     public static void SaveSettings(AppSettings settings) => new SettingsService().SaveSettings(settings);
 
-    public static string ResolvePath(string? rawPath, string fallbackRelativePath)
+    public static string ResolvePath(string? rawPath, string fallbackRelativePath = "")
     {
         var target = string.IsNullOrWhiteSpace(rawPath) ? fallbackRelativePath : rawPath;
+        if (string.IsNullOrWhiteSpace(target))
+        {
+            return string.Empty;
+        }
+
         if (!OperatingSystem.IsWindows() && target.Contains("%APPDATA%"))
         {
             var userHome = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
@@ -132,6 +137,7 @@ public class Program
         builder.Services.AddSingleton<VramOrchestrator>();
         builder.Services.AddSingleton<IAiEngineManager, AiEngineManager>();
         builder.Services.AddSingleton<IGitUpdateService, GitUpdateService>();
+        builder.Services.AddSingleton<IToolDiscoveryService, ToolDiscoveryService>();
         builder.Services.AddSingleton<ISettingsService, SettingsService>();
         builder.Services.AddSingleton<IGpuTelemetryProvider, GpuTelemetryProvider>();
 

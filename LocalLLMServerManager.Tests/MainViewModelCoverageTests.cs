@@ -240,13 +240,13 @@ public class MainViewModelCoverageTests : IClassFixture<AppTestServerFixture>
     public void MainViewModel_HasSettingsObservableProperties_DefaultsAreSet()
     {
         var vm = CreateTestViewModel();
-        Assert.Equal(@"%APPDATA%\AI\ComfyUI\run_nvidia_gpu.bat", vm.ComfyUiExecutablePath);
-        Assert.Equal(@"%APPDATA%\AI\SD_Forge\webui-user.bat", vm.ForgeExecutablePath);
-        Assert.Equal(@"%APPDATA%\AI\SD_Forge\models", vm.ForgeModelsPath);
-        Assert.Equal(@"%APPDATA%\AI\3d_outputs", vm.ThreeDModelsPath);
-        Assert.Equal(@"%APPDATA%\AI\Workflows", vm.WorkflowsPath);
+        Assert.Equal("", vm.ComfyUiExecutablePath);
+        Assert.Equal("", vm.ForgeExecutablePath);
+        Assert.Equal("", vm.ForgeModelsPath);
+        Assert.Equal("", vm.ThreeDModelsPath);
+        Assert.Equal("", vm.WorkflowsPath);
         Assert.Equal("http://127.0.0.1:8188", vm.ComfyUiUrl);
-        Assert.Equal("Forge", vm.PreferredImageEngine);
+        Assert.Equal("comfy", vm.PreferredImageEngine);
     }
 
     [Fact]

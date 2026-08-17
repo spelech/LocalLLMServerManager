@@ -1,5 +1,7 @@
+using System.IO;
 using System.Text.Json;
 using LocalLLMServerManager;
+using LocalLLMServerManager.Services;
 using Xunit;
 
 namespace LocalLLMServerManager.Tests;
@@ -7,18 +9,23 @@ namespace LocalLLMServerManager.Tests;
 public class AppSettingsTests
 {
     [Fact]
-    public void AppSettings_DefaultValues_UseAppDataAiPaths()
+    public void AppSettings_DefaultValues_HaveEmptyDynamicPathsAndSensibleDefaults()
     {
         var settings = new AppSettings();
 
-        Assert.Contains("%APPDATA%", settings.ForgeModelsPath);
+        Assert.Equal("", settings.ForgeModelsPath);
         Assert.Equal("http://127.0.0.1:8188", settings.ComfyUiUrl);
-        Assert.Contains("%APPDATA%", settings.ThreeDModelsPath);
-        Assert.Contains("%APPDATA%", settings.WorkflowsPath);
-        Assert.Equal("Forge", settings.PreferredImageEngine);
-        Assert.Contains("%APPDATA%", settings.ComfyUiExecutablePath);
-        Assert.Contains("%APPDATA%", settings.ForgeExecutablePath);
+        Assert.Equal("", settings.ThreeDModelsPath);
+        Assert.Equal("", settings.WorkflowsPath);
+        Assert.Equal("comfy", settings.PreferredImageEngine);
+        Assert.Equal("", settings.ComfyUiExecutablePath);
+        Assert.Equal("", settings.ForgeExecutablePath);
         Assert.Equal("ollama", settings.OllamaExecutablePath);
+        Assert.Equal("LocalLLMServerManager", settings.ServiceName);
+        Assert.Equal(@"C:\LocalLLMServerManager", settings.PublishOutputPath);
+        Assert.Equal("", settings.ComfyModelsPath);
+        Assert.Equal("http://127.0.0.1:5246", settings.LanAccessUrl);
+        Assert.Equal("semi", settings.SelectedThemeStyle);
     }
 
     [Fact]
@@ -43,6 +50,16 @@ public class AppSettingsTests
     }
 
     [Fact]
+    public void ResolvePath_WithNullOrEmpty_AndEmptyFallback_ReturnsEmpty()
+    {
+        var resolvedNull = Program.ResolvePath(null, "");
+        Assert.Equal("", resolvedNull);
+
+        var resolvedEmpty = Program.ResolvePath("  ", "");
+        Assert.Equal("", resolvedEmpty);
+    }
+
+    [Fact]
     public void AppSettings_SerializationAndDeserialization_PreservesData()
     {
         var original = new AppSettings(
@@ -50,10 +67,15 @@ public class AppSettingsTests
             ComfyUiUrl: "http://127.0.0.1:8189",
             ThreeDModelsPath: @"C:\AI\3D",
             WorkflowsPath: @"C:\AI\Workflows",
-            PreferredImageEngine: "ComfyUI",
+            PreferredImageEngine: "comfy",
             ComfyUiExecutablePath: @"C:\AI\ComfyUI\run.bat",
             ForgeExecutablePath: @"C:\AI\Forge\run.bat",
-            OllamaExecutablePath: "ollama"
+            OllamaExecutablePath: "ollama",
+            ServiceName: "CustomService",
+            PublishOutputPath: @"D:\Publish",
+            ComfyModelsPath: @"C:\AI\ComfyUI\models",
+            LanAccessUrl: "http://192.168.1.50:5246",
+            SelectedThemeStyle: "dark"
         );
 
         var json = JsonSerializer.Serialize(original);
@@ -61,5 +83,29 @@ public class AppSettingsTests
 
         Assert.NotNull(deserialized);
         Assert.Equal(original, deserialized);
+    }
+
+    [Fact]
+    public void SettingsService_SaveAndLoad_RoundTripsSuccessfully()
+    {
+        var service = new SettingsService();
+        var original = service.LoadSettings();
+
+        try
+        {
+            var customSettings = new AppSettings(
+                ForgeModelsPath: @"C:\CustomForge",
+                ComfyModelsPath: @"C:\CustomComfy"
+            );
+            service.SaveSettings(customSettings);
+
+            var loaded = service.LoadSettings();
+            Assert.Equal(@"C:\CustomForge", loaded.ForgeModelsPath);
+            Assert.Equal(@"C:\CustomComfy", loaded.ComfyModelsPath);
+        }
+        finally
+        {
+            service.SaveSettings(original);
+        }
     }
 }

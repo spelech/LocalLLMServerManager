@@ -11,13 +11,13 @@ namespace LocalLLMServerManager.Shared.ViewModels;
 
 public partial class SettingsViewModel : ObservableObject
 {
-    [ObservableProperty] private string _forgeModelsPath = @"C:\AI\webui\models\Stable-diffusion";
+    [ObservableProperty] private string _forgeModelsPath = "";
     [ObservableProperty] private string _comfyUiUrl = "http://127.0.0.1:8188";
-    [ObservableProperty] private string _threeDModelsPath = @"C:\AI\3d_outputs";
-    [ObservableProperty] private string _workflowsPath = @"C:\AI\ComfyUI\workflows";
+    [ObservableProperty] private string _threeDModelsPath = "";
+    [ObservableProperty] private string _workflowsPath = "";
     [ObservableProperty] private string _preferredImageEngine = "comfy";
-    [ObservableProperty] private string _comfyUiExecutablePath = @"C:\AI\ComfyUI\run_nvidia_gpu.bat";
-    [ObservableProperty] private string _forgeExecutablePath = @"C:\AI\webui\webui-user.bat";
+    [ObservableProperty] private string _comfyUiExecutablePath = "";
+    [ObservableProperty] private string _forgeExecutablePath = "";
     [ObservableProperty] private string _lanAccessUrl = "http://127.0.0.1:5246";
     [ObservableProperty] private string _selectedThemeStyle = "semi";
 
@@ -54,6 +54,8 @@ public partial class SettingsViewModel : ObservableObject
                     PreferredImageEngine = settings.PreferredImageEngine;
                     ComfyUiExecutablePath = settings.ComfyUiExecutablePath;
                     ForgeExecutablePath = settings.ForgeExecutablePath;
+                    LanAccessUrl = settings.LanAccessUrl;
+                    SelectedThemeStyle = settings.SelectedThemeStyle;
                 }
             }
         }
@@ -77,7 +79,9 @@ public partial class SettingsViewModel : ObservableObject
                 WorkflowsPath: this.WorkflowsPath,
                 PreferredImageEngine: this.PreferredImageEngine,
                 ComfyUiExecutablePath: this.ComfyUiExecutablePath,
-                ForgeExecutablePath: this.ForgeExecutablePath
+                ForgeExecutablePath: this.ForgeExecutablePath,
+                LanAccessUrl: this.LanAccessUrl,
+                SelectedThemeStyle: this.SelectedThemeStyle
             );
 
             var content = new StringContent(
