@@ -15,6 +15,9 @@ public class EndpointRegistrationCoverageTests
         app.MapHealthEndpoints();
         app.MapModelProxyEndpoints();
         app.MapMcpEndpoints();
+        app.MapEngineEndpoints();
+        app.MapWorkflowEndpoints();
+        app.MapDiscoveryEndpoints();
 
         Assert.NotNull(app);
     }

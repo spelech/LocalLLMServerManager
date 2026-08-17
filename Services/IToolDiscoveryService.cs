@@ -35,3 +35,23 @@ public enum PathTargetType
 }
 
 public record PathValidationResult(bool Exists, bool IsValid, string? ErrorMessage);
+
+public record PathValidationItem(string? Path, PathTargetType TargetType = PathTargetType.Directory, string? Key = null);
+
+public record ValidatePathsRequest(
+    List<PathValidationItem>? Items = null,
+    Dictionary<string, PathTargetType>? Paths = null,
+    string? ForgeModelsPath = null,
+    string? ThreeDModelsPath = null,
+    string? WorkflowsPath = null,
+    string? ComfyModelsPath = null,
+    string? ComfyUiExecutablePath = null,
+    string? ForgeExecutablePath = null,
+    string? OllamaExecutablePath = null
+);
+
+public record ValidatePathsResponse(
+    Dictionary<string, PathValidationResult> Results,
+    bool AllValid
+);
+

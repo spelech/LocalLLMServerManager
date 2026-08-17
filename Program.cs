@@ -230,6 +230,7 @@ public class Program
         app.MapMcpEndpoints();
         app.MapEngineEndpoints();
         app.MapWorkflowEndpoints();
+        app.MapDiscoveryEndpoints();
 
         // Service Update Route
         app.MapPost("/api/service/update", async (HttpContext httpContext, IGitUpdateService gitService) =>
