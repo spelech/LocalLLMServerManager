@@ -185,6 +185,9 @@ public static class CustomEndpoints
 
 All code changes must maintain **100% test pass rate** across unit, integration, and Playwright E2E browser tests (137 total tests).
 
+* For full component test mapping, metrics, and cross-platform verification matrices, see **[Test Coverage Specification](TEST_COVERAGE.md)**.
+* For formal requirements mapping (SRS) and the bidirectional Traceability Matrix, see **[Software Requirements Specification & RTM](REQUIREMENTS.md)**.
+
 ### 1. Chunked Test Execution (Recommended to Avoid Resource Contention)
 To avoid process contention and potential hangs when running large test suites concurrently on Windows, run the tests in targeted chunks:
 

@@ -245,8 +245,30 @@ The Web Dashboard features a responsive CSS layout engine:
 
 ---
 
+## 🧪 Quality Assurance, Test Coverage & Requirements Traceability
+
+LocalLLMServerManager includes an automated test harness ensuring cross-platform stability across **Windows 11** and **Linux** environments:
+
+```
++-----------------------------------------------------------------------------------------+
+| TOTAL TESTS EXECUTED : 137                                                              |
+| PASSED               : 137 (100.0%)                                                     |
+| FAILED               : 0   (0.0%)                                                       |
+| TEST FIXTURE FILES   : 26                                                               |
+| TEST FRAMEWORKS      : .NET 10 LTS • xUnit v3 • Avalonia Headless • Microsoft Playwright|
+| OPERATING SYSTEMS    : Windows 11 x64 (Win32 Jobs) • Linux x64 (systemd / procfs / X11) |
++-----------------------------------------------------------------------------------------+
+```
+
+* **[Full Test Coverage Specification](docs/TEST_COVERAGE.md)** — Detailed component-by-component coverage mapping across all 26 test classes, cross-platform validation matrix (Windows & Linux), and 5-chunk test execution guide.
+* **[Software Requirements Specification & Traceability Matrix](docs/REQUIREMENTS.md)** — Formal requirements specification across 10 functional domains (`CORE-xxx`, `LLM-xxx`, `HUB-xxx`, `DIFF-xxx`, `3D-xxx`, `VRAM-xxx`, `MCP-xxx`, `UI-xxx`, `WASM-xxx`, `E2E-xxx`), mapping each requirement to source files and test assertions, plus explicit gap analysis.
+
+---
+
 ## 📚 Guides & Documentation
 
+- [Full Test Coverage Specification](docs/TEST_COVERAGE.md) — Comprehensive test coverage mapping, metrics, cross-platform testing matrix, and execution guidelines.
+- [Software Requirements Specification & RTM](docs/REQUIREMENTS.md) — Complete SRS with bidirectional Traceability Matrix mapping requirement IDs to tests and code, plus gap analysis.
 - [Developer & Contributor Guide](docs/DEVELOPMENT_GUIDE.md) — Comprehensive guide on project layout, SOLID Avalonia XAML controls, design tokens, MVVM pattern, Minimal API endpoints, and testing.
 - [System Architecture & Mermaid Diagrams](docs/ARCHITECTURE.md) — Visual architecture blueprints, component hierarchy, VRAM orchestration sequence diagrams, and service mapping matrices.
 - [ComfyUI & 3D Mesh Generation Setup Guide](docs/COMFYUI_AND_3D_GUIDE.md) — How to configure ComfyUI, install 3D nodes (TRELLIS V2 / Hunyuan3D v2), and export custom workflow presets.

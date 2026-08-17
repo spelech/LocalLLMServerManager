@@ -188,3 +188,21 @@ sequenceDiagram
 | `IContentTypeProvider` | `FileExtensionContentTypeProvider` | Singleton | Configures WASM MIME mapping (`.wasm`, `.dat`, `.json`) for static file hosting |
 | `IBrowser` / `IPage` | `PlaywrightWasmE2ETests` / `PlaywrightScreenshotGenerator` | Test Lifecycle | Headless Chromium automation for E2E integration testing and screenshot generation |
 | Container Orchestration | `Dockerfile` / `docker-compose.yml` | Container Runtime | Multi-stage Docker packaging, port mapping (`5246`), and volume mounting |
+
+---
+
+## 🎯 Architecture-to-Requirements Mapping
+
+Each architectural subsystem maps directly to standardized requirement specifications defined in **[Software Requirements Specification & RTM](REQUIREMENTS.md)** and verified in **[Test Coverage Specification](TEST_COVERAGE.md)**:
+
+| Architecture Layer | Subsystem / Component | Requirement Domain | Key Requirement IDs |
+|---|---|---|---|
+| **Host & Middleware** | ASP.NET Core Kestrel Host, YARP Proxy, Settings | Core Infrastructure | `CORE-001` .. `CORE-008` |
+| **LLM Management** | Ollama Model Service, KV Cache Calculator | LLM & Ollama | `LLM-001` .. `LLM-008` |
+| **Model Hubs** | Hugging Face Hub Service, CivitAI Service | Model Repositories | `HUB-001` .. `HUB-003`, `DIFF-001` .. `DIFF-005` |
+| **3D & Studio** | ComfyUI Proxy, 3D Mesh Studio, WebGL Viewer | 3D Generation | `3D-001` .. `3D-006` |
+| **Hardware & Memory** | GPU Telemetry Provider, VRAM Orchestrator | Telemetry & Memory | `VRAM-001` .. `VRAM-005` |
+| **AI Assistant API** | Model Context Protocol JSON-RPC Endpoint | MCP Integration | `MCP-001` .. `MCP-003` |
+| **Desktop & Web UI** | Avalonia XAML Controls, MVVM Layer, WASM App | User Interface | `UI-001` .. `UI-004`, `WASM-001` .. `WASM-003` |
+| **Quality & Automation**| Playwright Harness, Screenshot Generator | Test & Automation | `E2E-001` .. `E2E-003` |
+
