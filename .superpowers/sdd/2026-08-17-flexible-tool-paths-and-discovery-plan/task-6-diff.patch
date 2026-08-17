@@ -1,0 +1,1393 @@
+commit 9dc37cff1f2ad3799fe8158db28c933b7cf118e6
+Author: Steven Pelech <steven.pelech@gmail.com>
+Date:   Mon Aug 17 11:03:05 2026 -0500
+
+    feat: parameterize helper scripts to read settings.json and accept CLI arguments
+
+diff --git a/scripts/download_all.py b/scripts/download_all.py
+index f525a55..3e5f0b3 100644
+--- a/scripts/download_all.py
++++ b/scripts/download_all.py
+@@ -1,38 +1,136 @@
+-import urllib.request
++import argparse
++import json
+ import os
++import sys
++import urllib.request
++
++def load_settings(settings_path=None):
++    candidates = []
++    if settings_path:
++        candidates.append(settings_path)
++    script_dir = os.path.dirname(os.path.abspath(__file__))
++    candidates.append(os.path.join(script_dir, "settings.json"))
++    candidates.append(os.path.join(os.path.dirname(script_dir), "settings.json"))
++    appdata = os.environ.get("APPDATA")
++    if appdata:
++        candidates.append(os.path.join(appdata, "LocalLLMServerManager", "settings.json"))
++
++    for c in candidates:
++        if c and os.path.exists(c):
++            try:
++                with open(c, "r", encoding="utf-8") as f:
++                    return json.load(f)
++            except Exception as e:
++                print(f"Warning: Could not parse {c}: {e}", file=sys.stderr)
++    return None
++
++def resolve_env_path(path_str):
++    if not path_str:
++        return ""
++    return os.path.expandvars(os.path.expanduser(path_str))
+ 
+-downloads = [
+-    {
+-        "url": "https://huggingface.co/black-forest-labs/FLUX.1-dev/resolve/main/ae.safetensors",
+-        "dest": r"D:\AI\ComfyUI\models\vae\ae.safetensors"
+-    },
+-    {
+-        "url": "https://huggingface.co/black-forest-labs/FLUX.1-dev/resolve/main/flux1-dev.safetensors",
+-        "dest": r"D:\AI\ComfyUI\models\unet\flux1-dev.safetensors"
+-    }
+-]
+-
+-def get_hf_token():
+-    env_path = os.path.join(os.path.dirname(__file__), '.env')
+-    if os.path.exists(env_path):
+-        with open(env_path, 'r') as f:
+-            for line in f:
+-                if line.startswith('HF_TOKEN='):
+-                    return line.strip().split('=', 1)[1]
++def get_hf_token(token_arg=None):
++    if token_arg:
++        return token_arg
++    if os.environ.get("HF_TOKEN"):
++        return os.environ.get("HF_TOKEN")
++    
++    script_dir = os.path.dirname(os.path.abspath(__file__))
++    env_paths = [
++        os.path.join(script_dir, ".env"),
++        os.path.join(os.getcwd(), ".env"),
++        os.path.join(os.path.dirname(script_dir), ".env")
++    ]
++    for env_path in env_paths:
++        if os.path.exists(env_path):
++            with open(env_path, "r", encoding="utf-8") as f:
++                for line in f:
++                    if line.startswith("HF_TOKEN="):
++                        return line.strip().split("=", 1)[1].strip('"\'')
+     return None
+ 
+-hf_token = get_hf_token()
+-
+-for d in downloads:
+-    dest_dir = os.path.dirname(d["dest"])
+-    os.makedirs(dest_dir, exist_ok=True)
+-    print(f"Downloading {d['url']} to {d['dest']}...")
+-    try:
+-        req = urllib.request.Request(d["url"])
+-        if hf_token:
+-            req.add_header("Authorization", f"Bearer {hf_token}")
+-        with urllib.request.urlopen(req) as response, open(d["dest"], 'wb') as out_file:
+-            out_file.write(response.read())
+-        print(f"Successfully downloaded {d['dest']}")
+-    except Exception as e:
+-        print(f"Failed to download {d['dest']}: {e}")
++def main():
++    parser = argparse.ArgumentParser(
++        description="Download FLUX.1 base models (VAE & UNET) to ComfyUI/models directory."
++    )
++    parser.add_argument(
++        "-m", "--models-dir",
++        dest="models_dir",
++        default=None,
++        help="Path to models directory (e.g. C:\\AI\\models or ComfyUI\\models)"
++    )
++    parser.add_argument(
++        "-o", "--output-dir",
++        dest="output_dir",
++        default=None,
++        help="Alias for models-dir"
++    )
++    parser.add_argument(
++        "-s", "--settings-json",
++        dest="settings_json",
++        default=None,
++        help="Path to settings.json file"
++    )
++    parser.add_argument(
++        "-t", "--token",
++        dest="token",
++        default=None,
++        help="Hugging Face API token (or read from HF_TOKEN env / .env)"
++    )
++
++    args = parser.parse_args()
++
++    models_dir = args.models_dir or args.output_dir
++    if not models_dir:
++        settings = load_settings(args.settings_json)
++        if settings:
++            if settings.get("ComfyModelsPath"):
++                models_dir = resolve_env_path(settings["ComfyModelsPath"])
++            elif settings.get("ForgeModelsPath"):
++                models_dir = resolve_env_path(settings["ForgeModelsPath"])
++
++    if not models_dir:
++        fallback = os.path.expanduser(os.path.join("~", "AI", "models"))
++        print(f"No --models-dir or settings.json configuration found. Using default fallback: {fallback}")
++        models_dir = fallback
++
++    models_dir = os.path.abspath(models_dir)
++    print(f"Target Models Directory: {models_dir}")
++
++    downloads = [
++        {
++            "url": "https://huggingface.co/black-forest-labs/FLUX.1-dev/resolve/main/ae.safetensors",
++            "dest": os.path.join(models_dir, "vae", "ae.safetensors")
++        },
++        {
++            "url": "https://huggingface.co/black-forest-labs/FLUX.1-dev/resolve/main/flux1-dev.safetensors",
++            "dest": os.path.join(models_dir, "unet", "flux1-dev.safetensors")
++        }
++    ]
++
++    hf_token = get_hf_token(args.token)
++
++    for d in downloads:
++        dest_dir = os.path.dirname(d["dest"])
++        os.makedirs(dest_dir, exist_ok=True)
++        if os.path.exists(d["dest"]):
++            print(f"File already exists: {d['dest']}")
++            continue
++
++        print(f"Downloading {d['url']} to {d['dest']}...")
++        try:
++            req = urllib.request.Request(d["url"])
++            if hf_token:
++                req.add_header("Authorization", f"Bearer {hf_token}")
++            with urllib.request.urlopen(req) as response, open(d["dest"], "wb") as out_file:
++                while True:
++                    chunk = response.read(1024 * 1024)
++                    if not chunk:
++                        break
++                    out_file.write(chunk)
++            print(f"Successfully downloaded {d['dest']}")
++        except Exception as e:
++            print(f"Failed to download {d['dest']}: {e}", file=sys.stderr)
++
++if __name__ == "__main__":
++    main()
+diff --git a/scripts/download_media_models.ps1 b/scripts/download_media_models.ps1
+index 65dc7e4..37a3cae 100644
+--- a/scripts/download_media_models.ps1
++++ b/scripts/download_media_models.ps1
+@@ -1,12 +1,98 @@
+-# Script to download Video & 3D base models for ComfyUI
++[CmdletBinding()]
++param(
++    [string]$ModelsDir = "",
++    [string]$SettingsJson = "",
++    [string]$HfToken = "",
++    [switch]$Interactive
++)
+ 
+-$modelsDir = "D:\AI\models"
+-$checkpointsDir = Join-Path $modelsDir "checkpoints"
+-$animateDiffDir = Join-Path $modelsDir "animatediff_models"
++function Get-AppSettings {
++    param([string]$Path)
++    
++    $candidates = @()
++    if ($Path) { $candidates += $Path }
++    $candidates += (Join-Path $PSScriptRoot "settings.json")
++    $candidates += (Join-Path $PSScriptRoot "..\settings.json")
++    if ($env:APPDATA) {
++        $candidates += (Join-Path $env:APPDATA "LocalLLMServerManager\settings.json")
++    }
++    
++    foreach ($cand in $candidates) {
++        if ($cand -and (Test-Path $cand)) {
++            try {
++                $raw = Get-Content -Raw -Path $cand -ErrorAction Stop
++                return ($raw | ConvertFrom-Json)
++            } catch {
++                Write-Verbose "Could not parse JSON from $($cand): $_"
++            }
++        }
++    }
++    return $null
++}
++
++function Resolve-PathVariables {
++    param([string]$Path)
++    if (-not $Path) { return "" }
++    return [System.Environment]::ExpandEnvironmentVariables($Path)
++}
++
++function Get-HfToken {
++    param([string]$Token)
++    if ($Token) { return $Token }
++    if ($env:HF_TOKEN) { return $env:HF_TOKEN }
++    
++    $envPaths = @(
++        (Join-Path $PSScriptRoot ".env"),
++        (Join-Path (Get-Location) ".env"),
++        (Join-Path $PSScriptRoot "..\.env")
++    )
++    foreach ($envPath in $envPaths) {
++        if (Test-Path $envPath) {
++            $lines = Get-Content $envPath
++            foreach ($line in $lines) {
++                if ($line.StartsWith("HF_TOKEN=")) {
++                    return $line.Substring(9).Trim().Trim('"').Trim("'")
++                }
++            }
++        }
++    }
++    return ""
++}
++
++# Resolve ModelsDir
++if (-not $ModelsDir) {
++    $settings = Get-AppSettings -Path $SettingsJson
++    if ($settings) {
++        if ($settings.ForgeModelsPath) {
++            $ModelsDir = Resolve-PathVariables $settings.ForgeModelsPath
++        } elseif ($settings.ComfyModelsPath) {
++            $ModelsDir = Resolve-PathVariables $settings.ComfyModelsPath
++        }
++    }
++}
++
++if (-not $ModelsDir -and $Interactive) {
++    $defaultDir = Join-Path $env:USERPROFILE "AI\models"
++    $inputDir = Read-Host "Enter models directory [Default: $defaultDir]"
++    if ($inputDir) {
++        $ModelsDir = $inputDir
++    } else {
++        $ModelsDir = $defaultDir
++    }
++}
++
++if (-not $ModelsDir) {
++    $ModelsDir = Join-Path $env:USERPROFILE "AI\models"
++}
++
++$checkpointsDir = Join-Path $ModelsDir "checkpoints"
++$animateDiffDir = Join-Path $ModelsDir "animatediff_models"
+ 
+ # Ensure directories exist
+-if (-not (Test-Path $checkpointsDir)) { New-Item -ItemType Directory -Path $checkpointsDir -Force }
+-if (-not (Test-Path $animateDiffDir)) { New-Item -ItemType Directory -Path $animateDiffDir -Force }
++if (-not (Test-Path $checkpointsDir)) { New-Item -ItemType Directory -Path $checkpointsDir -Force | Out-Null }
++if (-not (Test-Path $animateDiffDir)) { New-Item -ItemType Directory -Path $animateDiffDir -Force | Out-Null }
++
++Write-Host "Target Models Directory: $ModelsDir" -ForegroundColor Cyan
+ 
+ # 1. AnimateDiff SDXL Motion Module
+ # Allows you to animate the SDXL models you already downloaded (like Juggernaut X and Pony V6 XL)
+@@ -17,7 +103,7 @@ if (-not (Test-Path $adSdxlDest)) {
+     Write-Host "Downloading AnimateDiff SDXL Motion Module (~1.8 GB)..." -ForegroundColor Cyan
+     Invoke-WebRequest -Uri $adSdxlUrl -OutFile $adSdxlDest
+ } else {
+-    Write-Host "AnimateDiff SDXL already exists." -ForegroundColor Yellow
++    Write-Host "AnimateDiff SDXL already exists at $adSdxlDest." -ForegroundColor Yellow
+ }
+ 
+ # 2. Stable Video Diffusion (SVD) XT 1.1
+@@ -27,29 +113,19 @@ $svdDest = Join-Path $checkpointsDir "svd_xt_1_1.safetensors"
+ 
+ if (-not (Test-Path $svdDest)) {
+     Write-Host "Downloading Stable Video Diffusion XT 1.1 (~9.5 GB)..." -ForegroundColor Cyan
+-    # Read HF_TOKEN from .env file
+-    $envPath = Join-Path $PSScriptRoot ".env"
+-    $hfToken = ""
+-    if (Test-Path $envPath) {
+-        $envLines = Get-Content $envPath
+-        foreach ($line in $envLines) {
+-            if ($line.StartsWith("HF_TOKEN=")) {
+-                $hfToken = $line.Substring(9).Trim()
+-            }
+-        }
+-    }
++    $resolvedToken = Get-HfToken -Token $HfToken
+     
+-    if (-not $hfToken) {
+-        Write-Host "WARNING: HF_TOKEN not found in .env. Attempting download without auth..." -ForegroundColor Yellow
++    if (-not $resolvedToken) {
++        Write-Host "WARNING: HF_TOKEN not found. Attempting download without auth..." -ForegroundColor Yellow
+     }
+ 
+     $headers = @{}
+-    if ($hfToken) {
+-        $headers["Authorization"] = "Bearer $hfToken"
++    if ($resolvedToken) {
++        $headers["Authorization"] = "Bearer $resolvedToken"
+     }
+     Invoke-WebRequest -Uri $svdUrl -OutFile $svdDest -Headers $headers
+ } else {
+-    Write-Host "Stable Video Diffusion already exists." -ForegroundColor Yellow
++    Write-Host "Stable Video Diffusion already exists at $svdDest." -ForegroundColor Yellow
+ }
+ 
+ # Note on 3D Models:
+diff --git a/scripts/download_models.ps1 b/scripts/download_models.ps1
+index 2beab3b..ac71615 100644
+--- a/scripts/download_models.ps1
++++ b/scripts/download_models.ps1
+@@ -1,24 +1,95 @@
+-# Script to download starter models for ComfyUI / SD Forge
++[CmdletBinding()]
++param(
++    [string]$ModelsDir = "",
++    [string]$SettingsJson = "",
++    [switch]$Interactive
++)
+ 
+-$checkpointsDir = "D:\AI\models\checkpoints"
++function Get-AppSettings {
++    param([string]$Path)
++    
++    $candidates = @()
++    if ($Path) { $candidates += $Path }
++    $candidates += (Join-Path $PSScriptRoot "settings.json")
++    $candidates += (Join-Path $PSScriptRoot "..\settings.json")
++    if ($env:APPDATA) {
++        $candidates += (Join-Path $env:APPDATA "LocalLLMServerManager\settings.json")
++    }
++    
++    foreach ($cand in $candidates) {
++        if ($cand -and (Test-Path $cand)) {
++            try {
++                $raw = Get-Content -Raw -Path $cand -ErrorAction Stop
++                return ($raw | ConvertFrom-Json)
++            } catch {
++                Write-Verbose "Could not parse JSON from $($cand): $_"
++            }
++        }
++    }
++    return $null
++}
++
++function Resolve-PathVariables {
++    param([string]$Path)
++    if (-not $Path) { return "" }
++    return [System.Environment]::ExpandEnvironmentVariables($Path)
++}
++
++# Resolve ModelsDir
++if (-not $ModelsDir) {
++    $settings = Get-AppSettings -Path $SettingsJson
++    if ($settings) {
++        if ($settings.ForgeModelsPath) {
++            $ModelsDir = Resolve-PathVariables $settings.ForgeModelsPath
++        } elseif ($settings.ComfyModelsPath) {
++            $ModelsDir = Resolve-PathVariables $settings.ComfyModelsPath
++        }
++    }
++}
++
++if (-not $ModelsDir -and $Interactive) {
++    $defaultDir = Join-Path $env:USERPROFILE "AI\models"
++    $inputDir = Read-Host "Enter models directory [Default: $defaultDir]"
++    if ($inputDir) {
++        $ModelsDir = $inputDir
++    } else {
++        $ModelsDir = $defaultDir
++    }
++}
++
++if (-not $ModelsDir) {
++    $ModelsDir = Join-Path $env:USERPROFILE "AI\models"
++}
++
++$checkpointsDir = Join-Path $ModelsDir "checkpoints"
+ 
+ # Ensure the directory exists
+ if (-not (Test-Path $checkpointsDir)) {
+-    New-Item -ItemType Directory -Path $checkpointsDir -Force
++    New-Item -ItemType Directory -Path $checkpointsDir -Force | Out-Null
+ }
+ 
++Write-Host "Target Checkpoints Directory: $checkpointsDir" -ForegroundColor Cyan
++
+ # 1. Juggernaut X (Latest highly realistic SDXL model)
+ $juggernautUrl = "https://huggingface.co/RunDiffusion/Juggernaut-X-v10/resolve/main/Juggernaut-X-RunDiffusion-fp16.safetensors"
+ $juggernautDest = Join-Path $checkpointsDir "Juggernaut-X.safetensors"
+ 
+-Write-Host "Downloading Juggernaut X (~6.5 GB)..."
+-Invoke-WebRequest -Uri $juggernautUrl -OutFile $juggernautDest
++if (-not (Test-Path $juggernautDest)) {
++    Write-Host "Downloading Juggernaut X (~6.5 GB)..." -ForegroundColor Cyan
++    Invoke-WebRequest -Uri $juggernautUrl -OutFile $juggernautDest
++} else {
++    Write-Host "Juggernaut X already exists at $juggernautDest." -ForegroundColor Yellow
++}
+ 
+ # 2. Pony Diffusion V6 XL (The absolute gold standard for explicit/NSFW and stylized content)
+ $ponyUrl = "https://huggingface.co/ponybot/ponyDiffusionV6XL/resolve/main/ponyDiffusionV6XL_v6StartWithThisOne.safetensors"
+ $ponyDest = Join-Path $checkpointsDir "PonyDiffusionV6XL.safetensors"
+ 
+-Write-Host "Downloading Pony Diffusion V6 XL (~6.5 GB)..."
+-Invoke-WebRequest -Uri $ponyUrl -OutFile $ponyDest
++if (-not (Test-Path $ponyDest)) {
++    Write-Host "Downloading Pony Diffusion V6 XL (~6.5 GB)..." -ForegroundColor Cyan
++    Invoke-WebRequest -Uri $ponyUrl -OutFile $ponyDest
++} else {
++    Write-Host "Pony Diffusion V6 XL already exists at $ponyDest." -ForegroundColor Yellow
++}
+ 
+-Write-Host "Starter model downloads complete!"
++Write-Host "Starter model downloads complete!" -ForegroundColor Green
+diff --git a/scripts/fix_comfy.ps1 b/scripts/fix_comfy.ps1
+index 93093c0..b58b311 100644
+--- a/scripts/fix_comfy.ps1
++++ b/scripts/fix_comfy.ps1
+@@ -1,25 +1,172 @@
+-if (Test-Path "D:\AI\ComfyUI_windows_portable") {
+-    if (Test-Path "D:\AI\ComfyUI") { Remove-Item "D:\AI\ComfyUI" -Recurse -Force }
+-    Rename-Item "D:\AI\ComfyUI_windows_portable" -NewName "ComfyUI"
++[CmdletBinding()]
++param(
++    [string]$TargetDir = "",
++    [string]$ModelsDir = "",
++    [string]$ComfyUiPath = "",
++    [string]$SettingsJson = "",
++    [switch]$Interactive
++)
++
++function Get-AppSettings {
++    param([string]$Path)
++    
++    $candidates = @()
++    if ($Path) { $candidates += $Path }
++    $candidates += (Join-Path $PSScriptRoot "settings.json")
++    $candidates += (Join-Path $PSScriptRoot "..\settings.json")
++    if ($env:APPDATA) {
++        $candidates += (Join-Path $env:APPDATA "LocalLLMServerManager\settings.json")
++    }
++    
++    foreach ($cand in $candidates) {
++        if ($cand -and (Test-Path $cand)) {
++            try {
++                $raw = Get-Content -Raw -Path $cand -ErrorAction Stop
++                return ($raw | ConvertFrom-Json)
++            } catch {
++                Write-Verbose "Could not parse JSON from $($cand): $_"
++            }
++        }
++    }
++    return $null
++}
++
++function Resolve-PathVariables {
++    param([string]$Path)
++    if (-not $Path) { return "" }
++    return [System.Environment]::ExpandEnvironmentVariables($Path)
++}
++
++$settings = Get-AppSettings -Path $SettingsJson
++
++# Resolve TargetDir
++if (-not $TargetDir) {
++    if ($ComfyUiPath) {
++        $TargetDir = Split-Path -Path $ComfyUiPath -Parent
++    } elseif ($settings -and $settings.ComfyUiExecutablePath) {
++        $exe = Resolve-PathVariables $settings.ComfyUiExecutablePath
++        $parent = Split-Path -Path $exe -Parent
++        $grandParent = Split-Path -Path $parent -Parent
++        if ($grandParent -and (Test-Path $grandParent)) {
++            $TargetDir = $grandParent
++        } elseif ($parent -and (Test-Path $parent)) {
++            $TargetDir = $parent
++        }
++    }
++}
++
++if (-not $TargetDir -and $Interactive) {
++    $defaultDir = Join-Path $env:USERPROFILE "AI"
++    $inputDir = Read-Host "Enter AI tools base directory [Default: $defaultDir]"
++    if ($inputDir) {
++        $TargetDir = $inputDir
++    } else {
++        $TargetDir = $defaultDir
++    }
++}
++
++if (-not $TargetDir) {
++    $candidates = @(
++        (Join-Path $env:USERPROFILE "AI"),
++        (Join-Path $env:SystemDrive "AI")
++    )
++    foreach ($cand in $candidates) {
++        if (Test-Path $cand) {
++            $TargetDir = $cand
++            break
++        }
++    }
++    if (-not $TargetDir) {
++        $TargetDir = Join-Path $env:USERPROFILE "AI"
++    }
++}
++
++# Resolve ModelsDir
++if (-not $ModelsDir) {
++    if ($settings) {
++        if ($settings.ForgeModelsPath) {
++            $ModelsDir = Resolve-PathVariables $settings.ForgeModelsPath
++        } elseif ($settings.ComfyModelsPath) {
++            $ModelsDir = Resolve-PathVariables $settings.ComfyModelsPath
++        }
++    }
++}
++if (-not $ModelsDir) {
++    $ModelsDir = Join-Path $TargetDir "models"
++}
++
++# Rename legacy portable folders if needed
++$comfyPortable = Join-Path $TargetDir "ComfyUI_windows_portable"
++$comfyFolder = Join-Path $TargetDir "ComfyUI"
++if (Test-Path $comfyPortable) {
++    if (Test-Path $comfyFolder) { Remove-Item $comfyFolder -Recurse -Force }
++    Rename-Item $comfyPortable -NewName "ComfyUI"
++}
++
++$webUiFolder = Join-Path $TargetDir "WebUI"
++$forgeFolder = Join-Path $TargetDir "SD_Forge"
++if (Test-Path $webUiFolder) {
++    if (Test-Path $forgeFolder) { Remove-Item $forgeFolder -Recurse -Force }
++    Rename-Item $webUiFolder -NewName "SD_Forge"
+ }
+ 
+-if (Test-Path "D:\AI\WebUI") {
+-    if (Test-Path "D:\AI\SD_Forge") { Remove-Item "D:\AI\SD_Forge" -Recurse -Force }
+-    Rename-Item "D:\AI\WebUI" -NewName "SD_Forge"
++# Locate ComfyUI directory
++if (-not $ComfyUiPath) {
++    if (Test-Path $comfyFolder) {
++        $ComfyUiPath = $comfyFolder
++    } else {
++        $ComfyUiPath = $TargetDir
++    }
+ }
+ 
++# Configure extra_model_paths.yaml
+ $extraModelPaths = @"
+ comfyui:
+-    base_path: D:\AI\models
++    base_path: $ModelsDir
+     checkpoints: checkpoints
+     loras: loras
+     vae: vae
+     controlnet: controlnet
+ "@
+-$extraModelPaths | Out-File -FilePath "D:\AI\ComfyUI\ComfyUI\extra_model_paths.yaml" -Encoding utf8
+ 
+-if (-not (Test-Path "D:\AI\ComfyUI\ComfyUI\custom_nodes\ComfyUI-Manager")) {
+-    git clone https://github.com/ltdrdata/ComfyUI-Manager.git "D:\AI\ComfyUI\ComfyUI\custom_nodes\ComfyUI-Manager"
++$yamlPaths = @(
++    (Join-Path $ComfyUiPath "ComfyUI\extra_model_paths.yaml"),
++    (Join-Path $ComfyUiPath "extra_model_paths.yaml")
++)
++foreach ($yamlPath in $yamlPaths) {
++    $parent = Split-Path -Path $yamlPath -Parent
++    if (Test-Path $parent) {
++        $extraModelPaths | Out-File -FilePath $yamlPath -Encoding utf8
++        Write-Host "Configured extra_model_paths.yaml at $yamlPath" -ForegroundColor Green
++    }
+ }
+ 
+-.\install_comfy_nodes.ps1
++# ComfyUI-Manager
++$managerPaths = @(
++    (Join-Path $ComfyUiPath "ComfyUI\custom_nodes\ComfyUI-Manager"),
++    (Join-Path $ComfyUiPath "custom_nodes\ComfyUI-Manager")
++)
++$managerInstalled = $false
++foreach ($mgr in $managerPaths) {
++    if (Test-Path $mgr) {
++        $managerInstalled = $true
++        break
++    }
++}
++
++if (-not $managerInstalled) {
++    $destCustomNodes = Join-Path $ComfyUiPath "ComfyUI\custom_nodes"
++    if (-not (Test-Path $destCustomNodes)) {
++        $destCustomNodes = Join-Path $ComfyUiPath "custom_nodes"
++    }
++    if (-not (Test-Path $destCustomNodes)) {
++        New-Item -ItemType Directory -Path $destCustomNodes -Force | Out-Null
++    }
++    git clone https://github.com/ltdrdata/ComfyUI-Manager.git (Join-Path $destCustomNodes "ComfyUI-Manager")
++}
++
++# Run install_comfy_nodes.ps1
++$installScript = Join-Path $PSScriptRoot "install_comfy_nodes.ps1"
++if (Test-Path $installScript) {
++    & $installScript -ComfyUiPath $ComfyUiPath -SettingsJson $SettingsJson
++}
+diff --git a/scripts/hf_download.py b/scripts/hf_download.py
+index a74199d..8e8f464 100644
+--- a/scripts/hf_download.py
++++ b/scripts/hf_download.py
+@@ -1,45 +1,165 @@
++import argparse
++import json
+ import os
++import sys
+ from huggingface_hub import hf_hub_download
+ 
+-checkpoints_dir = r"D:\AI\models\checkpoints"
+-os.makedirs(checkpoints_dir, exist_ok=True)
+-
+-models = [
+-    {
+-        "repo_id": "RunDiffusion/Juggernaut-X-v10",
+-        "filename": "Juggernaut-X-RunDiffusion-fp16.safetensors"
+-    },
+-    {
+-        "repo_id": "LyliaEngine/Pony_Diffusion_V6_XL",
+-        "filename": "ponyDiffusionV6XL_v6StartWithThisOne.safetensors"
+-    }
+-]
+-
+-for m in models:
+-    print(f"Downloading {m['filename']} from {m['repo_id']}...")
+-    try:
+-        # Download and move to the target directory
+-        file_path = hf_hub_download(
+-            repo_id=m["repo_id"],
+-            filename=m["filename"],
+-            local_dir=checkpoints_dir,
+-            local_dir_use_symlinks=False
+-        )
+-        print(f"Successfully downloaded to {file_path}")
+-    except Exception as e:
+-        print(f"Failed to download {m['filename']}: {e}")
+-        # Try alternate common filenames if the first one fails
+-        if "Juggernaut" in m["filename"]:
+-            try:
+-                print("Trying alternative filename Juggernaut-X-v10.safetensors...")
+-                file_path = hf_hub_download(repo_id=m["repo_id"], filename="Juggernaut-X-v10.safetensors", local_dir=checkpoints_dir, local_dir_use_symlinks=False)
+-                print(f"Successfully downloaded to {file_path}")
+-            except Exception as e2:
+-                print(f"Also failed alternative: {e2}")
+-        elif "Pony" in m["filename"]:
++def load_settings(settings_path=None):
++    candidates = []
++    if settings_path:
++        candidates.append(settings_path)
++    script_dir = os.path.dirname(os.path.abspath(__file__))
++    candidates.append(os.path.join(script_dir, "settings.json"))
++    candidates.append(os.path.join(os.path.dirname(script_dir), "settings.json"))
++    appdata = os.environ.get("APPDATA")
++    if appdata:
++        candidates.append(os.path.join(appdata, "LocalLLMServerManager", "settings.json"))
++
++    for c in candidates:
++        if c and os.path.exists(c):
+             try:
+-                print("Trying alternative filename ponyDiffusionV6XL.safetensors...")
+-                file_path = hf_hub_download(repo_id=m["repo_id"], filename="ponyDiffusionV6XL.safetensors", local_dir=checkpoints_dir, local_dir_use_symlinks=False)
+-                print(f"Successfully downloaded to {file_path}")
+-            except Exception as e2:
+-                print(f"Also failed alternative: {e2}")
++                with open(c, "r", encoding="utf-8") as f:
++                    return json.load(f)
++            except Exception as e:
++                print(f"Warning: Could not parse {c}: {e}", file=sys.stderr)
++    return None
++
++def resolve_env_path(path_str):
++    if not path_str:
++        return ""
++    return os.path.expandvars(os.path.expanduser(path_str))
++
++def get_hf_token(token_arg=None):
++    if token_arg:
++        return token_arg
++    if os.environ.get("HF_TOKEN"):
++        return os.environ.get("HF_TOKEN")
++    
++    script_dir = os.path.dirname(os.path.abspath(__file__))
++    env_paths = [
++        os.path.join(script_dir, ".env"),
++        os.path.join(os.getcwd(), ".env"),
++        os.path.join(os.path.dirname(script_dir), ".env")
++    ]
++    for env_path in env_paths:
++        if os.path.exists(env_path):
++            with open(env_path, "r", encoding="utf-8") as f:
++                for line in f:
++                    if line.startswith("HF_TOKEN="):
++                        return line.strip().split("=", 1)[1].strip('"\'')
++    return None
++
++def main():
++    parser = argparse.ArgumentParser(
++        description="Download SDXL checkpoint models from Hugging Face Hub."
++    )
++    parser.add_argument(
++        "-c", "--checkpoints-dir",
++        dest="checkpoints_dir",
++        default=None,
++        help="Directory to save checkpoints (e.g. C:\\AI\\models\\checkpoints)"
++    )
++    parser.add_argument(
++        "-m", "--models-dir",
++        dest="models_dir",
++        default=None,
++        help="Base models directory (checkpoints/ will be created inside)"
++    )
++    parser.add_argument(
++        "-s", "--settings-json",
++        dest="settings_json",
++        default=None,
++        help="Path to settings.json file"
++    )
++    parser.add_argument(
++        "-t", "--token",
++        dest="token",
++        default=None,
++        help="Hugging Face API token (or read from HF_TOKEN env / .env)"
++    )
++
++    args = parser.parse_args()
++
++    checkpoints_dir = args.checkpoints_dir
++    if not checkpoints_dir:
++        if args.models_dir:
++            checkpoints_dir = os.path.join(args.models_dir, "checkpoints")
++        else:
++            settings = load_settings(args.settings_json)
++            if settings:
++                if settings.get("ForgeModelsPath"):
++                    base = resolve_env_path(settings["ForgeModelsPath"])
++                    checkpoints_dir = os.path.join(base, "checkpoints") if not base.endswith("checkpoints") else base
++                elif settings.get("ComfyModelsPath"):
++                    base = resolve_env_path(settings["ComfyModelsPath"])
++                    checkpoints_dir = os.path.join(base, "checkpoints") if not base.endswith("checkpoints") else base
++
++    if not checkpoints_dir:
++        fallback = os.path.expanduser(os.path.join("~", "AI", "models", "checkpoints"))
++        print(f"No checkpoint directory specified. Using default fallback: {fallback}")
++        checkpoints_dir = fallback
++
++    checkpoints_dir = os.path.abspath(checkpoints_dir)
++    os.makedirs(checkpoints_dir, exist_ok=True)
++    print(f"Target Checkpoints Directory: {checkpoints_dir}")
++
++    token = get_hf_token(args.token)
++
++    models = [
++        {
++            "repo_id": "RunDiffusion/Juggernaut-X-v10",
++            "filename": "Juggernaut-X-RunDiffusion-fp16.safetensors"
++        },
++        {
++            "repo_id": "LyliaEngine/Pony_Diffusion_V6_XL",
++            "filename": "ponyDiffusionV6XL_v6StartWithThisOne.safetensors"
++        }
++    ]
++
++    for m in models:
++        dest_file = os.path.join(checkpoints_dir, m["filename"])
++        if os.path.exists(dest_file):
++            print(f"Model already exists: {dest_file}")
++            continue
++
++        print(f"Downloading {m['filename']} from {m['repo_id']}...")
++        try:
++            file_path = hf_hub_download(
++                repo_id=m["repo_id"],
++                filename=m["filename"],
++                local_dir=checkpoints_dir,
++                local_dir_use_symlinks=False,
++                token=token
++            )
++            print(f"Successfully downloaded to {file_path}")
++        except Exception as e:
++            print(f"Failed to download {m['filename']}: {e}", file=sys.stderr)
++            if "Juggernaut" in m["filename"]:
++                try:
++                    print("Trying alternative filename Juggernaut-X-v10.safetensors...")
++                    file_path = hf_hub_download(
++                        repo_id=m["repo_id"],
++                        filename="Juggernaut-X-v10.safetensors",
++                        local_dir=checkpoints_dir,
++                        local_dir_use_symlinks=False,
++                        token=token
++                    )
++                    print(f"Successfully downloaded to {file_path}")
++                except Exception as e2:
++                    print(f"Also failed alternative: {e2}", file=sys.stderr)
++            elif "Pony" in m["filename"]:
++                try:
++                    print("Trying alternative filename ponyDiffusionV6XL.safetensors...")
++                    file_path = hf_hub_download(
++                        repo_id=m["repo_id"],
++                        filename="ponyDiffusionV6XL.safetensors",
++                        local_dir=checkpoints_dir,
++                        local_dir_use_symlinks=False,
++                        token=token
++                    )
++                    print(f"Successfully downloaded to {file_path}")
++                except Exception as e2:
++                    print(f"Also failed alternative: {e2}", file=sys.stderr)
++
++if __name__ == "__main__":
++    main()
+diff --git a/scripts/hf_download_juggernaut.py b/scripts/hf_download_juggernaut.py
+index 28256b9..378f6ef 100644
+--- a/scripts/hf_download_juggernaut.py
++++ b/scripts/hf_download_juggernaut.py
+@@ -1,17 +1,127 @@
++import argparse
++import json
+ import os
++import sys
+ from huggingface_hub import hf_hub_download
+ 
+-checkpoints_dir = r"D:\AI\models\checkpoints"
+-os.makedirs(checkpoints_dir, exist_ok=True)
++def load_settings(settings_path=None):
++    candidates = []
++    if settings_path:
++        candidates.append(settings_path)
++    script_dir = os.path.dirname(os.path.abspath(__file__))
++    candidates.append(os.path.join(script_dir, "settings.json"))
++    candidates.append(os.path.join(os.path.dirname(script_dir), "settings.json"))
++    appdata = os.environ.get("APPDATA")
++    if appdata:
++        candidates.append(os.path.join(appdata, "LocalLLMServerManager", "settings.json"))
+ 
+-print("Downloading Juggernaut XL v9...")
+-try:
+-    file_path = hf_hub_download(
+-        repo_id="RunDiffusion/Juggernaut-XL-v9",
+-        filename="Juggernaut-XL_v9_RunDiffusionPhoto_v2.safetensors",
+-        local_dir=checkpoints_dir,
+-        local_dir_use_symlinks=False
++    for c in candidates:
++        if c and os.path.exists(c):
++            try:
++                with open(c, "r", encoding="utf-8") as f:
++                    return json.load(f)
++            except Exception as e:
++                print(f"Warning: Could not parse {c}: {e}", file=sys.stderr)
++    return None
++
++def resolve_env_path(path_str):
++    if not path_str:
++        return ""
++    return os.path.expandvars(os.path.expanduser(path_str))
++
++def get_hf_token(token_arg=None):
++    if token_arg:
++        return token_arg
++    if os.environ.get("HF_TOKEN"):
++        return os.environ.get("HF_TOKEN")
++    
++    script_dir = os.path.dirname(os.path.abspath(__file__))
++    env_paths = [
++        os.path.join(script_dir, ".env"),
++        os.path.join(os.getcwd(), ".env"),
++        os.path.join(os.path.dirname(script_dir), ".env")
++    ]
++    for env_path in env_paths:
++        if os.path.exists(env_path):
++            with open(env_path, "r", encoding="utf-8") as f:
++                for line in f:
++                    if line.startswith("HF_TOKEN="):
++                        return line.strip().split("=", 1)[1].strip('"\'')
++    return None
++
++def main():
++    parser = argparse.ArgumentParser(
++        description="Download Juggernaut XL v9 checkpoint from Hugging Face Hub."
++    )
++    parser.add_argument(
++        "-c", "--checkpoints-dir",
++        dest="checkpoints_dir",
++        default=None,
++        help="Directory to save checkpoints (e.g. C:\\AI\\models\\checkpoints)"
+     )
+-    print(f"Successfully downloaded to {file_path}")
+-except Exception as e:
+-    print(f"Failed to download Juggernaut XL v9: {e}")
++    parser.add_argument(
++        "-m", "--models-dir",
++        dest="models_dir",
++        default=None,
++        help="Base models directory (checkpoints/ will be created inside)"
++    )
++    parser.add_argument(
++        "-s", "--settings-json",
++        dest="settings_json",
++        default=None,
++        help="Path to settings.json file"
++    )
++    parser.add_argument(
++        "-t", "--token",
++        dest="token",
++        default=None,
++        help="Hugging Face API token (or read from HF_TOKEN env / .env)"
++    )
++
++    args = parser.parse_args()
++
++    checkpoints_dir = args.checkpoints_dir
++    if not checkpoints_dir:
++        if args.models_dir:
++            checkpoints_dir = os.path.join(args.models_dir, "checkpoints")
++        else:
++            settings = load_settings(args.settings_json)
++            if settings:
++                if settings.get("ForgeModelsPath"):
++                    base = resolve_env_path(settings["ForgeModelsPath"])
++                    checkpoints_dir = os.path.join(base, "checkpoints") if not base.endswith("checkpoints") else base
++                elif settings.get("ComfyModelsPath"):
++                    base = resolve_env_path(settings["ComfyModelsPath"])
++                    checkpoints_dir = os.path.join(base, "checkpoints") if not base.endswith("checkpoints") else base
++
++    if not checkpoints_dir:
++        fallback = os.path.expanduser(os.path.join("~", "AI", "models", "checkpoints"))
++        print(f"No checkpoint directory specified. Using default fallback: {fallback}")
++        checkpoints_dir = fallback
++
++    checkpoints_dir = os.path.abspath(checkpoints_dir)
++    os.makedirs(checkpoints_dir, exist_ok=True)
++    print(f"Target Checkpoints Directory: {checkpoints_dir}")
++
++    token = get_hf_token(args.token)
++
++    dest_file = os.path.join(checkpoints_dir, "Juggernaut-XL_v9_RunDiffusionPhoto_v2.safetensors")
++    if os.path.exists(dest_file):
++        print(f"Model already exists: {dest_file}")
++        return
++
++    print("Downloading Juggernaut XL v9...")
++    try:
++        file_path = hf_hub_download(
++            repo_id="RunDiffusion/Juggernaut-XL-v9",
++            filename="Juggernaut-XL_v9_RunDiffusionPhoto_v2.safetensors",
++            local_dir=checkpoints_dir,
++            local_dir_use_symlinks=False,
++            token=token
++        )
++        print(f"Successfully downloaded to {file_path}")
++    except Exception as e:
++        print(f"Failed to download Juggernaut XL v9: {e}", file=sys.stderr)
++
++if __name__ == "__main__":
++    main()
+diff --git a/scripts/install_comfy_nodes.ps1 b/scripts/install_comfy_nodes.ps1
+index c1b49c6..5666cb1 100644
+--- a/scripts/install_comfy_nodes.ps1
++++ b/scripts/install_comfy_nodes.ps1
+@@ -1,10 +1,110 @@
+-# Script to install ComfyUI custom nodes for 3D and Video Generation
++[CmdletBinding()]
++param(
++    [string]$ComfyUiPath = "",
++    [string]$SettingsJson = "",
++    [switch]$Interactive
++)
++
++function Get-AppSettings {
++    param([string]$Path)
++    
++    $candidates = @()
++    if ($Path) { $candidates += $Path }
++    $candidates += (Join-Path $PSScriptRoot "settings.json")
++    $candidates += (Join-Path $PSScriptRoot "..\settings.json")
++    if ($env:APPDATA) {
++        $candidates += (Join-Path $env:APPDATA "LocalLLMServerManager\settings.json")
++    }
++    
++    foreach ($cand in $candidates) {
++        if ($cand -and (Test-Path $cand)) {
++            try {
++                $raw = Get-Content -Raw -Path $cand -ErrorAction Stop
++                return ($raw | ConvertFrom-Json)
++            } catch {
++                Write-Verbose "Could not parse JSON from $($cand): $_"
++            }
++        }
++    }
++    return $null
++}
++
++function Resolve-PathVariables {
++    param([string]$Path)
++    if (-not $Path) { return "" }
++    return [System.Environment]::ExpandEnvironmentVariables($Path)
++}
+ 
+-$customNodesDir = "D:\AI\ComfyUI\ComfyUI\custom_nodes"
++function Find-CustomNodesDir {
++    param([string]$BasePath)
++    if (-not $BasePath) { return "" }
++    
++    if ($BasePath -like "*custom_nodes*" -and (Test-Path $BasePath)) {
++        return $BasePath
++    }
++    
++    $sub1 = Join-Path $BasePath "ComfyUI\custom_nodes"
++    if (Test-Path $sub1) { return $sub1 }
++    
++    $sub2 = Join-Path $BasePath "custom_nodes"
++    if (Test-Path $sub2) { return $sub2 }
++    
++    if (Test-Path (Join-Path $BasePath "ComfyUI")) {
++        return $sub1
++    }
++    
++    return $sub2
++}
++
++# Resolve ComfyUiPath
++if (-not $ComfyUiPath) {
++    $settings = Get-AppSettings -Path $SettingsJson
++    if ($settings -and $settings.ComfyUiExecutablePath) {
++        $exe = Resolve-PathVariables $settings.ComfyUiExecutablePath
++        if ($exe) {
++            $parent = Split-Path -Path $exe -Parent
++            $ComfyUiPath = $parent
++        }
++    }
++}
++
++if (-not $ComfyUiPath -and $Interactive) {
++    $defaultDir = Join-Path $env:USERPROFILE "AI\ComfyUI"
++    $inputDir = Read-Host "Enter ComfyUI directory [Default: $defaultDir]"
++    if ($inputDir) {
++        $ComfyUiPath = $inputDir
++    } else {
++        $ComfyUiPath = $defaultDir
++    }
++}
++
++if (-not $ComfyUiPath) {
++    $candidates = @(
++        (Join-Path $env:USERPROFILE "AI\ComfyUI"),
++        (Join-Path $env:USERPROFILE "ComfyUI"),
++        (Join-Path $env:SystemDrive "AI\ComfyUI"),
++        (Join-Path $env:SystemDrive "ComfyUI")
++    )
++    foreach ($cand in $candidates) {
++        if (Test-Path $cand) {
++            $ComfyUiPath = $cand
++            break
++        }
++    }
++    if (-not $ComfyUiPath) {
++        $ComfyUiPath = Join-Path $env:USERPROFILE "AI\ComfyUI"
++    }
++}
++
++$customNodesDir = Find-CustomNodesDir -BasePath $ComfyUiPath
+ 
+ if (-not (Test-Path $customNodesDir)) {
+-    Write-Host "Error: Custom nodes directory not found at $customNodesDir. Ensure ComfyUI is installed first." -ForegroundColor Red
+-    exit
++    try {
++        New-Item -ItemType Directory -Path $customNodesDir -Force | Out-Null
++    } catch {
++        Write-Host "Error: Could not find or create custom nodes directory at $customNodesDir. Ensure ComfyUI is installed or specify -ComfyUiPath." -ForegroundColor Red
++        exit 1
++    }
+ }
+ 
+ Write-Host "Installing ComfyUI Custom Nodes to $customNodesDir..." -ForegroundColor Cyan
+@@ -21,20 +121,27 @@ $repos = @(
+     "https://github.com/Kijai/ComfyUI-KJNodes.git" # Often useful for mask/video processing
+ )
+ 
+-Set-Location $customNodesDir
+-
+-foreach ($repo in $repos) {
+-    $folderName = ($repo -split '/')[-1] -replace '\.git$', ''
+-    
+-    if (Test-Path $folderName) {
+-        Write-Host "Updating $folderName..."
+-        Set-Location $folderName
+-        git pull
+-        Set-Location $customNodesDir
+-    } else {
+-        Write-Host "Cloning $folderName..."
+-        git clone $repo
++Push-Location $customNodesDir
++try {
++    foreach ($repo in $repos) {
++        $folderName = ($repo -split '/')[-1] -replace '\.git$', ''
++        $targetFolder = Join-Path $customNodesDir $folderName
++        
++        if (Test-Path $targetFolder) {
++            Write-Host "Updating $folderName..."
++            Push-Location $targetFolder
++            try {
++                git pull
++            } finally {
++                Pop-Location
++            }
++        } else {
++            Write-Host "Cloning $folderName..."
++            git clone $repo $folderName
++        }
+     }
++} finally {
++    Pop-Location
+ }
+ 
+ Write-Host "All custom nodes cloned/updated successfully!" -ForegroundColor Green
+diff --git a/scripts/setup_ai_tools.ps1 b/scripts/setup_ai_tools.ps1
+index 2d71262..632d4dc 100644
+--- a/scripts/setup_ai_tools.ps1
++++ b/scripts/setup_ai_tools.ps1
+@@ -1,47 +1,216 @@
+-# Script to download and install ComfyUI and SD Forge to D:\AI
++[CmdletBinding()]
++param(
++    [string]$TargetDir = "",
++    [string]$ModelsDir = "",
++    [string]$SettingsJson = "",
++    [string]$SevenZipPath = "",
++    [switch]$Interactive
++)
+ 
+-$comfyUrl = "https://github.com/comfyanonymous/ComfyUI/releases/latest/download/ComfyUI_windows_portable_nvidia.7z"
+-$comfyZip = "D:\AI\ComfyUI_windows_portable.7z"
++function Get-AppSettings {
++    param([string]$Path)
++    
++    $candidates = @()
++    if ($Path) { $candidates += $Path }
++    $candidates += (Join-Path $PSScriptRoot "settings.json")
++    $candidates += (Join-Path $PSScriptRoot "..\settings.json")
++    if ($env:APPDATA) {
++        $candidates += (Join-Path $env:APPDATA "LocalLLMServerManager\settings.json")
++    }
++    
++    foreach ($cand in $candidates) {
++        if ($cand -and (Test-Path $cand)) {
++            try {
++                $raw = Get-Content -Raw -Path $cand -ErrorAction Stop
++                return ($raw | ConvertFrom-Json)
++            } catch {
++                Write-Verbose "Could not parse JSON from $($cand): $_"
++            }
++        }
++    }
++    return $null
++}
+ 
+-$forgeUrl = "https://github.com/lllyasviel/stable-diffusion-webui-forge/releases/latest/download/WebUI_Forge_cu121_torch231.7z"
+-$forgeZip = "D:\AI\WebUI_Forge.7z"
++function Resolve-PathVariables {
++    param([string]$Path)
++    if (-not $Path) { return "" }
++    return [System.Environment]::ExpandEnvironmentVariables($Path)
++}
++
++# 1. Resolve TargetDir (where ComfyUI and SD_Forge portable folders reside)
++$settings = Get-AppSettings -Path $SettingsJson
++
++if (-not $TargetDir) {
++    if ($settings) {
++        if ($settings.ComfyUiExecutablePath) {
++            $exe = Resolve-PathVariables $settings.ComfyUiExecutablePath
++            $parent = Split-Path -Path $exe -Parent
++            $grandParent = Split-Path -Path $parent -Parent
++            if ($grandParent -and (Test-Path $grandParent)) {
++                $TargetDir = $grandParent
++            } elseif ($parent -and (Test-Path $parent)) {
++                $TargetDir = $parent
++            }
++        } elseif ($settings.ForgeExecutablePath) {
++            $exe = Resolve-PathVariables $settings.ForgeExecutablePath
++            $parent = Split-Path -Path $exe -Parent
++            $grandParent = Split-Path -Path $parent -Parent
++            if ($grandParent -and (Test-Path $grandParent)) {
++                $TargetDir = $grandParent
++            } elseif ($parent -and (Test-Path $parent)) {
++                $TargetDir = $parent
++            }
++        }
++    }
++}
++
++if (-not $TargetDir -and $Interactive) {
++    $defaultDir = Join-Path $env:USERPROFILE "AI"
++    $inputDir = Read-Host "Enter target installation directory for AI tools [Default: $defaultDir]"
++    if ($inputDir) {
++        $TargetDir = $inputDir
++    } else {
++        $TargetDir = $defaultDir
++    }
++}
++
++if (-not $TargetDir) {
++    $candidates = @(
++        (Join-Path $env:USERPROFILE "AI"),
++        (Join-Path $env:SystemDrive "AI")
++    )
++    foreach ($cand in $candidates) {
++        if (Test-Path $cand) {
++            $TargetDir = $cand
++            break
++        }
++    }
++    if (-not $TargetDir) {
++        $TargetDir = Join-Path $env:USERPROFILE "AI"
++    }
++}
++
++# 2. Resolve ModelsDir
++if (-not $ModelsDir) {
++    if ($settings) {
++        if ($settings.ForgeModelsPath) {
++            $ModelsDir = Resolve-PathVariables $settings.ForgeModelsPath
++        } elseif ($settings.ComfyModelsPath) {
++            $ModelsDir = Resolve-PathVariables $settings.ComfyModelsPath
++        }
++    }
++}
++if (-not $ModelsDir) {
++    $ModelsDir = Join-Path $TargetDir "models"
++}
++
++# Ensure base directories exist
++if (-not (Test-Path $TargetDir)) {
++    New-Item -ItemType Directory -Path $TargetDir -Force | Out-Null
++}
++if (-not (Test-Path $ModelsDir)) {
++    New-Item -ItemType Directory -Path $ModelsDir -Force | Out-Null
++}
+ 
+-$7zPath = "C:\Program Files\7-Zip\7z.exe"
+-if (-not (Test-Path $7zPath)) {
+-    Write-Host "7-Zip not found at $7zPath. Please ensure it is installed." -ForegroundColor Red
+-    exit
++# 3. Locate 7-Zip
++if (-not $SevenZipPath) {
++    $sevenZipCmd = Get-Command 7z -ErrorAction SilentlyContinue
++    if ($sevenZipCmd) {
++        $SevenZipPath = $sevenZipCmd.Source
++    } else {
++        $szCandidates = @(
++            "C:\Program Files\7-Zip\7z.exe",
++            "C:\Program Files (x86)\7-Zip\7z.exe",
++            (Join-Path $env:ProgramFiles "7-Zip\7z.exe")
++        )
++        foreach ($sz in $szCandidates) {
++            if ($sz -and (Test-Path $sz)) {
++                $SevenZipPath = $sz
++                break
++            }
++        }
++    }
+ }
+ 
+-Write-Host "Downloading ComfyUI Portable..."
++if (-not $SevenZipPath -or -not (Test-Path $SevenZipPath)) {
++    Write-Host "Error: 7-Zip executable not found. Please install 7-Zip or pass -SevenZipPath." -ForegroundColor Red
++    exit 1
++}
++
++Write-Host "Target Directory: $TargetDir" -ForegroundColor Cyan
++Write-Host "Models Directory: $ModelsDir" -ForegroundColor Cyan
++Write-Host "7-Zip Executable: $SevenZipPath" -ForegroundColor Cyan
++
++$comfyUrl = "https://github.com/comfyanonymous/ComfyUI/releases/latest/download/ComfyUI_windows_portable_nvidia.7z"
++$comfyZip = Join-Path $TargetDir "ComfyUI_windows_portable.7z"
++
++$forgeUrl = "https://github.com/lllyasviel/stable-diffusion-webui-forge/releases/latest/download/WebUI_Forge_cu121_torch231.7z"
++$forgeZip = Join-Path $TargetDir "WebUI_Forge.7z"
++
++Write-Host "Downloading ComfyUI Portable..." -ForegroundColor Cyan
+ Invoke-WebRequest -Uri $comfyUrl -OutFile $comfyZip
+ 
+-Write-Host "Extracting ComfyUI..."
+-& $7zPath x $comfyZip -o"D:\AI\" -y
+-Rename-Item -Path "D:\AI\ComfyUI_windows_portable" -NewName "ComfyUI" -ErrorAction SilentlyContinue
++Write-Host "Extracting ComfyUI to $TargetDir..." -ForegroundColor Cyan
++& $SevenZipPath x $comfyZip "-o$TargetDir" -y
++
++$comfyPortable = Join-Path $TargetDir "ComfyUI_windows_portable"
++$comfyDir = Join-Path $TargetDir "ComfyUI"
++if (Test-Path $comfyPortable) {
++    Rename-Item -Path $comfyPortable -NewName "ComfyUI" -ErrorAction SilentlyContinue
++}
+ 
+-Write-Host "Downloading SD WebUI Forge..."
++Write-Host "Downloading SD WebUI Forge..." -ForegroundColor Cyan
+ Invoke-WebRequest -Uri $forgeUrl -OutFile $forgeZip
+ 
+-Write-Host "Extracting SD Forge..."
+-& $7zPath x $forgeZip -o"D:\AI\" -y
+-Rename-Item -Path "D:\AI\WebUI" -NewName "SD_Forge" -ErrorAction SilentlyContinue
++Write-Host "Extracting SD Forge to $TargetDir..." -ForegroundColor Cyan
++& $SevenZipPath x $forgeZip "-o$TargetDir" -y
+ 
+-Write-Host "Cleaning up archives..."
+-Remove-Item $comfyZip
+-Remove-Item $forgeZip
++$forgeExtracted = Join-Path $TargetDir "WebUI"
++$forgeDir = Join-Path $TargetDir "SD_Forge"
++if (Test-Path $forgeExtracted) {
++    Rename-Item -Path $forgeExtracted -NewName "SD_Forge" -ErrorAction SilentlyContinue
++}
++
++Write-Host "Cleaning up archives..." -ForegroundColor Cyan
++if (Test-Path $comfyZip) { Remove-Item $comfyZip -Force -ErrorAction SilentlyContinue }
++if (Test-Path $forgeZip) { Remove-Item $forgeZip -Force -ErrorAction SilentlyContinue }
+ 
+-Write-Host "Configuring ComfyUI to use shared models..."
++Write-Host "Configuring ComfyUI to use shared models at $ModelsDir..." -ForegroundColor Cyan
+ $extraModelPaths = @"
+ comfyui:
+-    base_path: D:\AI\models
++    base_path: $ModelsDir
+     checkpoints: checkpoints
+     loras: loras
+     vae: vae
+     controlnet: controlnet
+ "@
+-$extraModelPaths | Out-File -FilePath "D:\AI\ComfyUI\ComfyUI\extra_model_paths.yaml" -Encoding utf8
+ 
+-Write-Host "Installing ComfyUI Manager (Essential for installing Trellis and other nodes)..."
+-git clone https://github.com/ltdrdata/ComfyUI-Manager.git "D:\AI\ComfyUI\ComfyUI\custom_nodes\ComfyUI-Manager"
++$yamlPaths = @(
++    (Join-Path $comfyDir "ComfyUI\extra_model_paths.yaml"),
++    (Join-Path $comfyDir "extra_model_paths.yaml")
++)
++foreach ($yamlPath in $yamlPaths) {
++    $parent = Split-Path -Path $yamlPath -Parent
++    if (Test-Path $parent) {
++        $extraModelPaths | Out-File -FilePath $yamlPath -Encoding utf8
++        Write-Host "Saved extra_model_paths.yaml to $yamlPath" -ForegroundColor Green
++    }
++}
++
++Write-Host "Installing ComfyUI Manager..." -ForegroundColor Cyan
++$customNodesDir = Join-Path $comfyDir "ComfyUI\custom_nodes"
++if (-not (Test-Path $customNodesDir)) {
++    $customNodesDir = Join-Path $comfyDir "custom_nodes"
++}
++if (-not (Test-Path $customNodesDir)) {
++    New-Item -ItemType Directory -Path $customNodesDir -Force | Out-Null
++}
++
++$managerDir = Join-Path $customNodesDir "ComfyUI-Manager"
++if (-not (Test-Path $managerDir)) {
++    git clone https://github.com/ltdrdata/ComfyUI-Manager.git $managerDir
++} else {
++    Write-Host "ComfyUI-Manager already present at $managerDir" -ForegroundColor Yellow
++}
+ 
+-Write-Host "Setup Scripts Completed successfully!"
++Write-Host "Setup Scripts Completed successfully!" -ForegroundColor Green
