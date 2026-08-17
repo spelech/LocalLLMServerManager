@@ -1,8 +1,8 @@
 # LocalLLMServerManager — Developer & Contributor Guide
 
-> **Version 3.4.0** | .NET 10 | Avalonia UI | ASP.NET Core Minimal API | YARP Reverse Proxy | Playwright E2E Browser Automation
+> **Version 3.5.0** | .NET 10 | Avalonia UI | ASP.NET Core Minimal API | YARP Reverse Proxy | Playwright E2E Browser Automation
 
-This guide provides a comprehensive overview of how to build, develop, extend, and test **LocalLLMServerManager**. It covers the codebase layout, MVVM architecture, Avalonia XAML control composition, styling design tokens, Minimal API endpoints, dependency injection, Playwright E2E browser testing, and automated screenshot generation.
+This guide provides a comprehensive overview of how to build, develop, extend, and test **LocalLLMServerManager**. It covers the codebase layout, MVVM architecture, Avalonia XAML control composition, styling design tokens, Minimal API endpoints, dependency injection, tool discovery and flexible path configuration, Playwright E2E browser testing, and automated screenshot generation.
 
 ---
 
@@ -27,6 +27,7 @@ The solution is organized into modular projects following clean architecture gui
 LocalLLMServerManager/
 ├── Program.cs                               # ASP.NET Core Minimal API Host & DI Container Bootstrapper
 ├── Endpoints/                               # Route Extension Modules (Minimal API Map Extensions)
+│   ├── DiscoveryEndpoints.cs                # /api/tools/detect, /api/tools/validate-path
 │   ├── EngineEndpoints.cs                   # /api/gpu/vram, /api/settings, /api/comfy/*, /api/forge/*
 │   ├── HealthEndpoints.cs                   # /health healthcheck endpoint
 │   ├── McpEndpoints.cs                      # /api/mcp/tools Model Context Protocol JSON-RPC API
@@ -44,7 +45,8 @@ LocalLLMServerManager/
 │   │   ├── ICivitaiSearchService.cs
 │   │   ├── IHuggingFaceSearchService.cs
 │   │   ├── IOllamaModelService.cs
-│   │   └── ITelemetryService.cs
+│   │   ├── ITelemetryService.cs
+│   │   └── IToolDiscoveryService.cs         # AI Tool Discovery & Path Validation Interface
 │   ├── Models/                              # Data DTOs & Models
 │   │   └── AppSettings.cs
 │   ├── Services/                            # Shared UI Services
@@ -53,6 +55,7 @@ LocalLLMServerManager/
 │   │   ├── OllamaModelService.cs
 │   │   ├── TelemetryService.cs
 │   │   ├── ToastService.cs                  # Global Toast Notification Service
+│   │   ├── ToolDiscoveryService.cs          # Multi-drive file discovery & validation service
 │   │   └── BrowserLauncher.cs               # Cross-platform URL launcher
 │   ├── ViewModels/                          # MVVM ViewModels
 │   │   ├── MainViewModel.cs                 # Root ViewModel Coordinator
@@ -60,7 +63,7 @@ LocalLLMServerManager/
 │   │   ├── OllamaLibraryViewModel.cs        # Ollama library & KV cache sub-ViewModel
 │   │   ├── HuggingFaceSearchViewModel.cs    # Hugging Face Hub search sub-ViewModel
 │   │   ├── CivitaiSearchViewModel.cs        # CivitAI search sub-ViewModel
-│   │   └── SettingsViewModel.cs             # App settings sub-ViewModel
+│   │   └── SettingsViewModel.cs             # App settings sub-ViewModel with tool detection & pickers
 │   └── Views/                               # Avalonia XAML UI Views & Controls
 │       ├── MainView.axaml                   # Root Coordinator View
 │       └── Controls/                        # Modular SOLID UserControls
@@ -73,7 +76,10 @@ LocalLLMServerManager/
 ├── LocalLLMServerManager.Web/                # Avalonia WebAssembly (WASM) Project
 │   ├── App.axaml
 │   └── Program.cs
-└── LocalLLMServerManager.Tests/              # Automated Test Suite (137 Unit, Integration & E2E Tests)
+└── LocalLLMServerManager.Tests/              # Automated Test Suite (171 Unit, Integration & E2E Tests across 29 files)
+    ├── ToolDiscoveryServiceTests.cs          # Tool discovery & path validation tests
+    ├── DiscoveryEndpointsTests.cs            # /api/tools/* REST endpoint integration tests
+    ├── SettingsViewModelCoverageTests.cs     # SettingsViewModel reactive path & picker tests
     ├── PlaywrightWasmE2ETests.cs             # Playwright E2E WebAssembly Browser Automation Tests
     ├── PlaywrightScreenshotGenerator.cs       # Automated Documentation PNG Screenshot Generator
     └── AppTestServerFixture.cs               # WebApplication Kestrel Test Host Fixture
@@ -153,6 +159,27 @@ public partial class CustomFeatureViewModel : ObservableObject
 
 ---
 
+## 🔍 Tool Discovery & Flexible Path Architecture
+
+LocalLLMServerManager v3.5.0 introduces the `IToolDiscoveryService` interface and `ToolDiscoveryService` implementation to scan drives and file systems for installed AI engines.
+
+### 1. `IToolDiscoveryService` Interface
+Located in `LocalLLMServerManager.Shared/Interfaces/IToolDiscoveryService.cs`, it defines discovery contracts:
+- `DetectOllamaAsync()`: Scans PATH, `%LOCALAPPDATA%\Programs\Ollama`, `%USERPROFILE%\.ollama\models`, and all drive roots.
+- `DetectComfyUiAsync()`: Discovers ComfyUI standalone or portable folders, launcher scripts (`run_nvidia_gpu.bat`, `run_cpu.bat`, `main.py`), and `models/` subdirectories.
+- `DetectForgeAsync()`: Discovers Stable Diffusion WebUI / Forge installations, launch scripts (`webui-user.bat`, `webui.sh`), and checkpoint folders.
+- `DetectAllToolsAsync()`: Aggregates all detections into a `ToolDiscoveryResult` with suggested settings.
+- `ValidatePath(path, expectedType)`: Validates file or directory accessibility and returns `PathValidationStatus.Valid`, `NotFound`, or `Invalid`.
+
+### 2. REST Endpoints (`DiscoveryEndpoints.cs`)
+- `POST /api/tools/detect` — Triggers an asynchronous discovery scan across the host system and returns discovered tools with path suggestions.
+- `POST /api/tools/validate-path` — Validates arbitrary paths supplied in request body (`{ "path": "...", "expectedType": "File" | "Directory" }`).
+
+### 3. Settings MVVM & Real-Time Status Badges
+`SettingsViewModel` provides reactive properties for each tool path (`OllamaExecutableStatus`, `ForgeScriptStatus`, `ComfyUiScriptStatus`, etc.) that update automatically as the user types or selects paths using native Avalonia `StorageProvider` file and folder pickers.
+
+---
+
 ## ⚡ ASP.NET Core Minimal API & Extension Endpoints
 
 Backend HTTP routes are modularized using C# extension methods on `WebApplication`.
@@ -183,7 +210,7 @@ public static class CustomEndpoints
 
 ## 🧪 Testing & Quality Assurance Guidelines
 
-All code changes must maintain **100% test pass rate** across unit, integration, and Playwright E2E browser tests (137 total tests).
+All code changes must maintain **100% test pass rate** across unit, integration, and Playwright E2E browser tests (171 total tests across 29 test files).
 
 * For full component test mapping, metrics, and cross-platform verification matrices, see **[Test Coverage Specification](TEST_COVERAGE.md)**.
 * For formal requirements mapping (SRS) and the bidirectional Traceability Matrix, see **[Software Requirements Specification & RTM](REQUIREMENTS.md)**.
@@ -192,14 +219,14 @@ All code changes must maintain **100% test pass rate** across unit, integration,
 To avoid process contention and potential hangs when running large test suites concurrently on Windows, run the tests in targeted chunks:
 
 ```bash
-# Chunk 1: ViewModels & Core Settings (38 tests)
+# Chunk 1: ViewModels & Core Settings (50 tests)
 dotnet test LocalLLMServerManager.Tests/LocalLLMServerManager.Tests.csproj --filter "FullyQualifiedName~ViewModel|FullyQualifiedName~AppSettings|FullyQualifiedName~BrowserLauncher" -c Release --nologo
 
-# Chunk 2: Services, VRAM Orchestrator & Static Files (69 tests)
-dotnet test LocalLLMServerManager.Tests/LocalLLMServerManager.Tests.csproj --filter "FullyQualifiedName~Services|FullyQualifiedName~VramOrchestrator|FullyQualifiedName~StaticFile" -c Release --nologo
+# Chunk 2: Services, Tool Discovery, VRAM Orchestrator & Static Files (81 tests)
+dotnet test LocalLLMServerManager.Tests/LocalLLMServerManager.Tests.csproj --filter "FullyQualifiedName~Services|FullyQualifiedName~VramOrchestrator|FullyQualifiedName~StaticFile|FullyQualifiedName~ToolDiscovery" -c Release --nologo
 
-# Chunk 3: Endpoints, Mock Servers & Workflow Performance (68 tests)
-dotnet test LocalLLMServerManager.Tests/LocalLLMServerManager.Tests.csproj --filter "FullyQualifiedName~Endpoint|FullyQualifiedName~MockServer|FullyQualifiedName~WorkflowPerformance" -c Release --nologo
+# Chunk 3: Endpoints, Mock Servers & Workflow Performance (76 tests)
+dotnet test LocalLLMServerManager.Tests/LocalLLMServerManager.Tests.csproj --filter "FullyQualifiedName~Endpoint|FullyQualifiedName~MockServer|FullyQualifiedName~WorkflowPerformance|FullyQualifiedName~DiscoveryEndpoints" -c Release --nologo
 
 # Chunk 4: Playwright WebAssembly Browser E2E Tests (1 test)
 dotnet test LocalLLMServerManager.Tests/LocalLLMServerManager.Tests.csproj --filter "FullyQualifiedName~PlaywrightWasmE2ETests" -c Release --nologo
@@ -210,7 +237,7 @@ dotnet test LocalLLMServerManager.Tests/LocalLLMServerManager.Tests.csproj --fil
 
 ### 2. Full Suite Run
 ```bash
-# Build and run non-Playwright tests across the solution
+# Build and run non-Playwright tests across the solution (169 tests)
 dotnet test LocalLLMServerManager.Tests/LocalLLMServerManager.Tests.csproj --filter "FullyQualifiedName!~Playwright" -c Release --nologo
 ```
 
@@ -238,8 +265,9 @@ dotnet test --filter "FullyQualifiedName~PlaywrightScreenshotGenerator" -c Relea
 ```
 
 ### 5. Quality & Teardown Rule
-- Ensure all 137 tests pass before tagging releases.
+- Ensure all 171 tests pass before tagging releases.
 - Ensure no orphaned background processes remain after running tests:
 ```powershell
 Get-Process -Name "*LocalLLMServerManager*", "*testhost*" -ErrorAction SilentlyContinue | Stop-Process -Force
+```
 ```

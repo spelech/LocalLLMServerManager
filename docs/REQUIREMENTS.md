@@ -1,6 +1,6 @@
 # Software Requirements Specification (SRS) & Traceability Matrix
 
-> **LocalLLMServerManager v3.4.0** | .NET 10 LTS | Avalonia UI & WebAssembly | Model Context Protocol
+> **LocalLLMServerManager v3.5.0** | .NET 10 LTS | Avalonia UI & WebAssembly | Model Context Protocol
 
 This document establishes the formal **Software Requirements Specification (SRS)** and **Requirements Traceability Matrix (RTM)** for **LocalLLMServerManager**. Each requirement is derived from the codebase and test suites, mapping functional capabilities directly to implementation source files, automated test cases, and verification statuses.
 
@@ -8,7 +8,7 @@ This document establishes the formal **Software Requirements Specification (SRS)
 
 ## 📋 Requirement Taxonomy
 
-Requirements are categorized into 10 functional domains using standardized identifiers:
+Requirements are categorized into 11 functional domains using standardized identifiers:
 
 | Domain Prefix | Category Description | Target Area |
 |---|---|---|
@@ -19,6 +19,7 @@ Requirements are categorized into 10 functional domains using standardized ident
 | **`3D-xxx`** | 3D Mesh & ComfyUI Generation | ComfyUI proxy, TRELLIS V2 / Hunyuan3D v2 workflows, WebGL `<model-viewer>` canvas |
 | **`VRAM-xxx`** | GPU Telemetry & VRAM Orchestration | NVML CUDA telemetry, OS fallbacks, stacked memory visualizer, auto-unload OOM prevention |
 | **`MCP-xxx`** | Model Context Protocol API | JSON-RPC 2.0 endpoint (`/api/mcp/tools`), tool discovery (`tools/list`), tool execution (`tools/call`) |
+| **`DISC-xxx`** | Tool Discovery & Flexible Paths | Multi-drive filesystem scanner (`IToolDiscoveryService`), `/api/tools/*` endpoints, status badges |
 | **`UI-xxx`** | User Interface & Experience | Fluent dark theme tokens, SOLID UserControls, MVVM bindings, toast notifications, URL launcher |
 | **`WASM-xxx`** | WebAssembly Client Platform | Avalonia WASM compilation, Kestrel static MIME type mappings, browser proxy routing |
 | **`E2E-xxx`** | End-to-End Automation & QA | Headless Playwright browser harness, zero-error WASM validation, screenshot generator |
@@ -79,18 +80,25 @@ Requirements are categorized into 10 functional domains using standardized ident
 * **`MCP-002`**: The MCP endpoint shall implement the `tools/list` schema listing tools for GPU status, engine control, and model memory unloading.
 * **`MCP-003`**: The MCP endpoint shall implement `tools/call` enabling AI assistants (such as Antigravity, Claude, and Cursor) to execute server management actions.
 
-### 8. User Interface & Experience (`UI-xxx`)
+### 8. Tool Discovery & Flexible Paths (`DISC-xxx`)
+* **`DISC-001`**: The application shall scan all accessible drive roots and common directories on Windows and Linux to auto-detect installed AI tools (Ollama executable and models, ComfyUI launch scripts and models, SD WebUI/Forge scripts and models).
+* **`DISC-002`**: The backend shall expose `POST /api/tools/detect` to discover installed tools and return suggested path configurations.
+* **`DISC-003`**: The backend shall expose `POST /api/tools/validate-path` to dynamically validate file or directory accessibility and report status (`Valid`, `NotFound`, `Invalid`).
+* **`DISC-004`**: The Settings UI shall provide one-click auto-detection, native file and directory pickers for every tool path, and real-time visual status badges (`Valid` 🟢, `Missing` 🔴, `Unset` ⚪).
+* **`DISC-005`**: All deployment and setup helper scripts shall accept parameter overrides for tool paths and model directories.
+
+### 9. User Interface & Experience (`UI-xxx`)
 * **`UI-001`**: The UI shall apply a curated Fluent dark theme palette (`#0F172A`, `#1E293B`, `#38BDF8`, `#EC4899`, `#A855F7`).
 * **`UI-002`**: The UI shall be organized into modular, SOLID Avalonia XAML UserControls strongly typed to dedicated sub-ViewModels.
 * **`UI-003`**: The application shall display non-blocking, timed toast notifications for status updates and error alerts.
 * **`UI-004`**: The application shall support launching external URLs in the default system browser across Windows (`explorer.exe`) and Linux (`xdg-open`).
 
-### 9. WebAssembly Client Platform (`WASM-xxx`)
+### 10. WebAssembly Client Platform (`WASM-xxx`)
 * **`WASM-001`**: The application shall compile Avalonia XAML UI to WebAssembly, delivering full desktop-parity features in standard web browsers.
 * **`WASM-002`**: The Kestrel host shall configure custom MIME types for WebAssembly assets (`.wasm`, `.dat`, `.json`, `.glb`, `.png`, `.js`, `.css`).
 * **`WASM-003`**: The backend shall proxy `/api/models` to bypass browser CORS restrictions.
 
-### 10. End-to-End Automation & Quality Assurance (`E2E-xxx`)
+### 11. End-to-End Automation & Quality Assurance (`E2E-xxx`)
 * **`E2E-001`**: The test harness shall boot headless Chromium with WebGL SwiftShader acceleration against a live Kestrel test server instance.
 * **`E2E-002`**: The Playwright test suite shall verify that the WASM client renders the `#out` canvas container with zero 404 network errors and zero unhandled console errors.
 * **`E2E-003`**: The Playwright screenshot generator shall navigate all 5 UI tabs and automatically capture crisp PNG documentation images to `docs/images/`, verifying visual distinctness across all tabs.
@@ -139,6 +147,11 @@ Requirements are categorized into 10 functional domains using standardized ident
 | **`MCP-001`** | MCP JSON-RPC 2.0 API | `Endpoints/McpEndpoints.cs` | `ProgramEndpointsAndServicesTests.McpToolsEndpoint_ReturnsToolsList` | **100% VERIFIED** |
 | **`MCP-002`** | MCP Tool Schema Discovery | `Endpoints/McpEndpoints.cs` | `ProgramEndpointsAndServicesTests.McpToolsEndpoint_ReturnsToolsList` | **100% VERIFIED** |
 | **`MCP-003`** | MCP Tool Execution Dispatch | `Endpoints/McpEndpoints.cs` | `ProgramEndpointsAndServicesTests.McpCallTool_ExecutesGpuStatusTool`<br>`CoverageThresholdTargetedPushTests.McpEndpoints_HandlesToolCalls` | **100% VERIFIED** |
+| **`DISC-001`** | Multi-Drive Tool Discovery | `Services/ToolDiscoveryService.cs`, `Interfaces/IToolDiscoveryService.cs` | `ToolDiscoveryServiceTests.DetectOllama_WhenInstalledInCustomRoot_DiscoversProperties`<br>`ToolDiscoveryServiceTests.DetectComfyUi_WhenPortableInstalled_DiscoversBatchAndDirectories`<br>`ToolDiscoveryServiceTests.DetectForge_WhenInstalled_DiscoversBatchAndModelsDirectory`<br>`ToolDiscoveryServiceTests.DetectAllToolsAsync_ReturnsAggregatedResultsAndSuggestions` | **100% VERIFIED** |
+| **`DISC-002`** | Tool Detection REST API | `Endpoints/DiscoveryEndpoints.cs` | `DiscoveryEndpointsTests.DetectToolsEndpoint_ReturnsToolDiscoveryResult` | **100% VERIFIED** |
+| **`DISC-003`** | Dynamic Path Validation API | `Endpoints/DiscoveryEndpoints.cs` | `DiscoveryEndpointsTests.ValidatePathEndpoint_WithExistingDirectory_ReturnsValid`<br>`DiscoveryEndpointsTests.ValidatePathEndpoint_WithInvalidPath_ReturnsNotFound` | **100% VERIFIED** |
+| **`DISC-004`** | Settings UI Pickers & Status Badges | `SettingsViewModel.cs`, `SettingsTabControl.axaml` | `SettingsViewModelCoverageTests.PathChanges_UpdateStatusIndicatorsDynamically`<br>`SettingsViewModelCoverageTests.AutoDetectToolsAsync_PopulatesEmptyPathsAndDiscoveredStatus`<br>`SettingsViewModelCoverageTests.BrowseFileCommands_WithStorageProvider_SetsSelectedPath`<br>`SettingsViewModelCoverageTests.BrowseFolderCommands_WithStorageProvider_SetsSelectedPath` | **100% VERIFIED** |
+| **`DISC-005`** | Parameterized Automation Scripts | `scripts/*.ps1`, `scripts/*.sh` | Manual and automated script syntax tests across Windows and Linux | **100% VERIFIED** |
 | **`UI-001`** | Fluent Dark Theme Design Tokens | `LocalLLMServerManager.Shared/Styles/DesignTokens.axaml` | `MainWindowUiTests.AppStyles_AppliesDarkTheme` | **100% VERIFIED** |
 | **`UI-002`** | Modular SOLID UserControls | `LocalLLMServerManager.Shared/Views/Controls/*` | `MainWindowUiTests.MainView_LoadsAllUserControls` | **100% VERIFIED** |
 | **`UI-003`** | Toast Notification Dispatcher | `LocalLLMServerManager.Shared/Services/ToastService.cs` | `MainViewModelCoverageTests.ToastService_DispatchesAndAutoDismisses` | **100% VERIFIED** |

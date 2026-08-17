@@ -53,7 +53,7 @@ public static class ModelProxyEndpoints
                 var requestUrl = $"https://huggingface.co/api/models?search={Uri.EscapeDataString(query)}&filter=gguf&sort=downloads&direction=-1&limit=20";
                 
                 using var req = new HttpRequestMessage(HttpMethod.Get, requestUrl);
-                req.Headers.UserAgent.ParseAdd("LocalLLMServerManager/3.4.0");
+                req.Headers.UserAgent.ParseAdd("LocalLLMServerManager/3.5.0");
                 var response = await httpClient.SendAsync(req, cts.Token);
                 
                 if (response.IsSuccessStatusCode)
@@ -76,7 +76,7 @@ public static class ModelProxyEndpoints
                 using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(3));
                 var requestUrl = $"https://huggingface.co/api/models/{Uri.EscapeDataString(repoId)}";
                 using var req = new HttpRequestMessage(HttpMethod.Get, requestUrl);
-                req.Headers.UserAgent.ParseAdd("LocalLLMServerManager/3.4.0");
+                req.Headers.UserAgent.ParseAdd("LocalLLMServerManager/3.5.0");
                 var response = await httpClient.SendAsync(req, cts.Token);
                 
                 if (response.IsSuccessStatusCode)
@@ -103,7 +103,7 @@ public static class ModelProxyEndpoints
                 var requestUrl = $"https://civitai.com/api/v1/models?query={Uri.EscapeDataString(query)}&limit=15&sort={Uri.EscapeDataString(sortParam)}{typeParam}";
 
                 using var req = new HttpRequestMessage(HttpMethod.Get, requestUrl);
-                req.Headers.UserAgent.ParseAdd("LocalLLMServerManager/3.4.0");
+                req.Headers.UserAgent.ParseAdd("LocalLLMServerManager/3.5.0");
                 var response = await http.SendAsync(req, cts.Token);
 
                 if (response.IsSuccessStatusCode)
@@ -126,7 +126,7 @@ public static class ModelProxyEndpoints
                 using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(3));
                 var requestUrl = $"https://civitai.com/api/v1/models/{id}";
                 using var req = new HttpRequestMessage(HttpMethod.Get, requestUrl);
-                req.Headers.UserAgent.ParseAdd("LocalLLMServerManager/3.4.0");
+                req.Headers.UserAgent.ParseAdd("LocalLLMServerManager/3.5.0");
                 var response = await http.SendAsync(req, cts.Token);
 
                 if (response.IsSuccessStatusCode)

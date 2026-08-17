@@ -16,7 +16,7 @@
     </Application.Styles>
     <TrayIcon.Icons>
         <TrayIcons>
-            <TrayIcon Icon="avares://LocalLLMServerManager/Assets/app-icon.ico" ToolTipText="Local LLM Server Manager v3.4.0" IsVisible="True">
+            <TrayIcon Icon="avares://LocalLLMServerManager/Assets/app-icon.ico" ToolTipText="Local LLM Server Manager v3.5.0" IsVisible="True">
                 <TrayIcon.Menu>
                     <NativeMenu>
                         <NativeMenuItem Header="Open Native Dashboard" Click="OnOpenDashboardClick"/>

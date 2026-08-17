@@ -67,7 +67,7 @@
         <!-- Footer -->
         <Border Grid.Row="2" BorderBrush="#1E293B" BorderThickness="0,1,0,0" Padding="16,12,16,12" Margin="0,8,0,0">
             <Grid ColumnDefinitions="*, Auto">
-                <TextBlock Text="LocalLLMServerManager v3.4.0 — Unified WASM &amp; Desktop UI" FontSize="12" Foreground="#64748B"/>
+                <TextBlock Text="LocalLLMServerManager v3.5.0 — Unified WASM &amp; Desktop UI" FontSize="12" Foreground="#64748B"/>
                 <TextBlock Grid.Column="1" Text="System Tray Enabled 🟢" FontSize="12" Foreground="#22C55E"/>
             </Grid>
         </Border>

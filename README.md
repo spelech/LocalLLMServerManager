@@ -1,6 +1,6 @@
 # Local LLM Server Manager
 
-> **v3.4.0** — A unified cross-platform application (.NET 10 + Avalonia UI & WebAssembly), System Tray app, background service/daemon, Model Context Protocol (MCP) AI API, visual orchestrator dashboard, and automated Playwright E2E testing framework to manage local Large Language Models (**Ollama**), Image Generation (**Stable Diffusion / Forge & ComfyUI**), and **3D Mesh Generation (TRELLIS V2 & Hunyuan3D v2)** on Windows, Linux, Mobile, and Web.
+> **v3.5.0** — A unified cross-platform application (.NET 10 + Avalonia UI & WebAssembly), System Tray app, background service/daemon, Model Context Protocol (MCP) AI API, visual orchestrator dashboard, and automated Playwright E2E testing framework to manage local Large Language Models (**Ollama**), Image Generation (**Stable Diffusion / Forge & ComfyUI**), and **3D Mesh Generation (TRELLIS V2 & Hunyuan3D v2)** on Windows, Linux, Mobile, and Web.
 
 It tracks GPU VRAM usage in real time via NVML CUDA telemetry, profiles model capabilities, computes KV Cache memory footprints, integrates with the **Hugging Face Hub** to discover and pull GGUF models, connects to **CivitAI** to browse and download Stable Diffusion checkpoints directly to disk, features a **3D & ComfyUI Studio** with an interactive WebGL 3D canvas viewer, provides a **Unified Avalonia XAML WebAssembly (WASM)** interface across mobile and desktop browsers, and exposes a **Model Context Protocol (MCP) Server** (`/api/mcp/tools`) for AI assistants (Antigravity, Cursor, Claude).
 
@@ -33,7 +33,7 @@ The application features a dark Fluent Avalonia UI theme (`#0F172A`) organized i
 | [====================================------------------------------------------------]  |
 | 8,192 tokens                                                                            |
 +-----------------------------------------------------------------------------------------+
-| LocalLLMServerManager v3.4.0 -- Unified WASM & Desktop UI         System Tray Enabled 🟢 |
+| LocalLLMServerManager v3.5.0 -- Unified WASM & Desktop UI         System Tray Enabled 🟢 |
 +-----------------------------------------------------------------------------------------+
 ```
 
@@ -78,7 +78,7 @@ The application features a dark Fluent Avalonia UI theme (`#0F172A`) organized i
 ![CivitAI SD Checkpoints](docs/images/dashboard_civitai.png)
 
 ### Application Settings & Engine Controls
-21. **Configuration Dashboard** — Customize ports, engine directory paths, auto-unload thresholds, and telemetry refresh intervals.
+21. **Flexible Path Configuration & Auto-Discovery** — Customize executable/script paths and model directories for Ollama, Stable Diffusion / Forge, and ComfyUI. Use the one-click "🔍 Auto-Detect Installed Tools" feature (or `POST /api/tools/detect`) to automatically scan common install locations across drives, with real-time path validation badges (`Valid` 🟢 / `Missing` 🔴 / `Unset` ⚪).
 
 ![Application Settings](docs/images/dashboard_settings.png)
 
@@ -195,10 +195,10 @@ services:
 ### Running with Docker CLI
 ```bash
 # Build Docker image
-docker build -t localllmservermanager:v3.4.0 .
+docker build -t localllmservermanager:v3.5.0 .
 
 # Run container exposing port 5246
-docker run -d -p 5246:5246 --name localllmservermanager localllmservermanager:v3.4.0
+docker run -d -p 5246:5246 --name localllmservermanager localllmservermanager:v3.5.0
 
 # Or start using Docker Compose
 docker-compose up -d
@@ -251,17 +251,17 @@ LocalLLMServerManager includes an automated test harness ensuring cross-platform
 
 ```
 +-----------------------------------------------------------------------------------------+
-| TOTAL TESTS EXECUTED : 137                                                              |
-| PASSED               : 137 (100.0%)                                                     |
+| TOTAL TESTS EXECUTED : 171                                                              |
+| PASSED               : 171 (100.0%)                                                     |
 | FAILED               : 0   (0.0%)                                                       |
-| TEST FIXTURE FILES   : 26                                                               |
+| TEST FIXTURE FILES   : 29                                                               |
 | TEST FRAMEWORKS      : .NET 10 LTS • xUnit v3 • Avalonia Headless • Microsoft Playwright|
 | OPERATING SYSTEMS    : Windows 11 x64 (Win32 Jobs) • Linux x64 (systemd / procfs / X11) |
 +-----------------------------------------------------------------------------------------+
 ```
 
-* **[Full Test Coverage Specification](docs/TEST_COVERAGE.md)** — Detailed component-by-component coverage mapping across all 26 test classes, cross-platform validation matrix (Windows & Linux), and 5-chunk test execution guide.
-* **[Software Requirements Specification & Traceability Matrix](docs/REQUIREMENTS.md)** — Formal requirements specification across 10 functional domains (`CORE-xxx`, `LLM-xxx`, `HUB-xxx`, `DIFF-xxx`, `3D-xxx`, `VRAM-xxx`, `MCP-xxx`, `UI-xxx`, `WASM-xxx`, `E2E-xxx`), mapping each requirement to source files and test assertions, plus explicit gap analysis.
+* **[Full Test Coverage Specification](docs/TEST_COVERAGE.md)** — Detailed component-by-component coverage mapping across all 29 test classes, cross-platform validation matrix (Windows & Linux), and 5-chunk test execution guide.
+* **[Software Requirements Specification & Traceability Matrix](docs/REQUIREMENTS.md)** — Formal requirements specification across 11 functional domains (`CORE-xxx`, `LLM-xxx`, `HUB-xxx`, `DIFF-xxx`, `3D-xxx`, `VRAM-xxx`, `MCP-xxx`, `DISC-xxx`, `UI-xxx`, `WASM-xxx`, `E2E-xxx`), mapping each requirement to source files and test assertions, plus explicit gap analysis.
 
 ---
 
@@ -294,13 +294,14 @@ We use **MAJOR.MINOR.PATCH** (SemVer):
 | `3.2.0` | Fixed WASM launcher script routing, added `/api/models` backend proxy, updated high-res 32-bit icon, added end-to-end integration tests, and completed repo housekeeping |
 | `3.3.0` | Major architecture refactoring — decomposed Program.cs and MainViewModel into modular interfaces, services, and endpoint route extensions |
 | `3.4.0` | Added Playwright automated E2E browser testing, real WebAssembly UI screenshot generator, Docker containerization support, and Kestrel WASM static asset MIME type mappings |
+| `3.5.0` | Flexible tool path configuration, multi-drive auto-discovery service (`IToolDiscoveryService`), `POST /api/tools/detect` endpoint, Avalonia file/folder browse pickers with live validation badges, and parameterized helper scripts |
 
 ---
 
 ## 🚀 Installation & Downloads
 
 ### Option 1: Official Windows Installer (.exe)
-Download the latest `LocalLLMServerManager-v3.4.0-Setup.exe` from the [GitHub Releases](https://github.com/spelech/LocalLLMServerManager/releases) page.
+Download the latest `LocalLLMServerManager-v3.5.0-Setup.exe` from the [GitHub Releases](https://github.com/spelech/LocalLLMServerManager/releases) page.
 * Includes an installation wizard with options for:
   * 🟢 **Install Windows Service** (Headless pre-logon machine boot)
   * 🟢 **Auto-Start System Tray App** on user login
@@ -317,12 +318,63 @@ sudo ./install_linux.sh
 * Installs desktop launcher (`localllmmanager.desktop`) in your application menu
 
 ### Option 3: Standalone Portable (.zip / .tar.gz)
-Download `LocalLLMServerManager-v3.4.0-win-x64.zip` or `LocalLLMServerManager-v3.4.0-linux-x64.tar.gz` from Releases, extract, and run executable. Includes bundled runtime — no .NET SDK required!
+Download `LocalLLMServerManager-v3.5.0-win-x64.zip` or `LocalLLMServerManager-v3.5.0-linux-x64.tar.gz` from Releases, extract, and run executable. Includes bundled runtime — no .NET SDK required!
 
 ### Option 4: Building Release Packages Locally
 - **Windows:** Run `.\build_release.ps1`
 - **Linux:** Run `./build_release.sh`
 Output artifacts will be generated in `dist/`.
+
+---
+
+## 🔍 Configuration & Auto-Discovery
+
+LocalLLMServerManager supports fully flexible tool paths across any storage drive or folder structure, eliminating rigid hardcoded path assumptions.
+
+### 1. Auto-Detect Installed Tools (One-Click Setup)
+In the **⚙️ Settings** tab, click **🔍 Auto-Detect Installed Tools** (or send `POST /api/tools/detect` to the backend REST API). The built-in `IToolDiscoveryService` actively scans:
+- **System PATH & Environment Variables** (`OLLAMA_MODELS`, `PATH`, etc.)
+- **All available drive roots** (`C:`, `D:`, `E:`, etc. on Windows, `/opt`, `/home/$USER`, `/usr/local` on Linux)
+- **Standard installation paths**:
+  - **Ollama**: `%LOCALAPPDATA%\Programs\Ollama\ollama.exe`, `~/.ollama/models`, `%USERPROFILE%\.ollama\models`
+  - **ComfyUI**: Portable batch runners (`run_nvidia_gpu.bat`, `run_cpu.bat`), Git clones (`main.py`), and standard `models/` checkpoints
+  - **Stable Diffusion WebUI / Forge / A1111**: Launch scripts (`webui-user.bat`, `webui.sh`, `run.bat`) and `models/Stable-diffusion` directories
+
+Auto-detection only populates unset or missing paths, preserving any custom paths you've previously configured.
+
+### 2. Manual Path Customization & Real-Time Status Badges
+You can customize every tool path independently via the Settings UI (with native file/folder pickers) or by editing `settings.json`:
+- **`OllamaExecutablePath`**: Direct path to `ollama.exe` (or `ollama` on Linux)
+- **`OllamaModelsPath`**: Target directory where Ollama stores model blobs and manifests
+- **`ForgeScriptPath`**: Batch or shell launcher script for Stable Diffusion WebUI / Forge
+- **`ForgeModelsPath`**: Directory for SD Checkpoints, LoRAs, VAEs, and ControlNets
+- **`ComfyUiScriptPath`**: Batch or shell launcher script for ComfyUI
+- **`ComfyUiModelsPath`**: Root models directory for ComfyUI checkpoints, UNETs, and VAEs
+- **`ComfyUiUrl`**: Network address for ComfyUI (default `http://127.0.0.1:8188`)
+
+Each path input features a real-time status badge:
+- 🟢 **Valid**: Executable file exists or directory is accessible on disk
+- 🔴 **Missing**: Path is configured but does not exist at the specified target
+- ⚪ **Unset**: Path is empty (defaults to standard environment fallback)
+
+### 3. Parameterized Helper Scripts
+All automation scripts in `scripts/` accept command-line parameters for custom installation locations:
+
+```powershell
+# Set up 3D workflows for ComfyUI with custom paths (PowerShell)
+.\scripts\setup_3d_workflows.ps1 -ComfyUiPath "D:\AI\ComfyUI_windows_portable\ComfyUI" -ModelsDir "D:\AI\ComfyUI_windows_portable\ComfyUI\models"
+
+# Start AI engines with custom script paths
+.\scripts\start_engines.ps1 -Ollama -ComfyUI -ComfyUiScript "D:\AI\ComfyUI_windows_portable\run_nvidia_gpu.bat"
+```
+
+```bash
+# Set up 3D workflows on Linux with custom paths (Bash)
+./scripts/setup_3d_workflows.sh --comfy-path "/opt/ComfyUI" --models-dir "/opt/ComfyUI/models"
+
+# Install Linux package to custom directory
+sudo ./scripts/install_linux.sh --install-dir "/opt/LocalLLMServerManager" --bin-dir "/usr/bin"
+```
 
 ---
 
