@@ -1,12 +1,98 @@
-# Script to download Video & 3D base models for ComfyUI
+[CmdletBinding()]
+param(
+    [string]$ModelsDir = "",
+    [string]$SettingsJson = "",
+    [string]$HfToken = "",
+    [switch]$Interactive
+)
 
-$modelsDir = "D:\AI\models"
-$checkpointsDir = Join-Path $modelsDir "checkpoints"
-$animateDiffDir = Join-Path $modelsDir "animatediff_models"
+function Get-AppSettings {
+    param([string]$Path)
+    
+    $candidates = @()
+    if ($Path) { $candidates += $Path }
+    $candidates += (Join-Path $PSScriptRoot "settings.json")
+    $candidates += (Join-Path $PSScriptRoot "..\settings.json")
+    if ($env:APPDATA) {
+        $candidates += (Join-Path $env:APPDATA "LocalLLMServerManager\settings.json")
+    }
+    
+    foreach ($cand in $candidates) {
+        if ($cand -and (Test-Path $cand)) {
+            try {
+                $raw = Get-Content -Raw -Path $cand -ErrorAction Stop
+                return ($raw | ConvertFrom-Json)
+            } catch {
+                Write-Verbose "Could not parse JSON from $($cand): $_"
+            }
+        }
+    }
+    return $null
+}
+
+function Resolve-PathVariables {
+    param([string]$Path)
+    if (-not $Path) { return "" }
+    return [System.Environment]::ExpandEnvironmentVariables($Path)
+}
+
+function Get-HfToken {
+    param([string]$Token)
+    if ($Token) { return $Token }
+    if ($env:HF_TOKEN) { return $env:HF_TOKEN }
+    
+    $envPaths = @(
+        (Join-Path $PSScriptRoot ".env"),
+        (Join-Path (Get-Location) ".env"),
+        (Join-Path $PSScriptRoot "..\.env")
+    )
+    foreach ($envPath in $envPaths) {
+        if (Test-Path $envPath) {
+            $lines = Get-Content $envPath
+            foreach ($line in $lines) {
+                if ($line.StartsWith("HF_TOKEN=")) {
+                    return $line.Substring(9).Trim().Trim('"').Trim("'")
+                }
+            }
+        }
+    }
+    return ""
+}
+
+# Resolve ModelsDir
+if (-not $ModelsDir) {
+    $settings = Get-AppSettings -Path $SettingsJson
+    if ($settings) {
+        if ($settings.ForgeModelsPath) {
+            $ModelsDir = Resolve-PathVariables $settings.ForgeModelsPath
+        } elseif ($settings.ComfyModelsPath) {
+            $ModelsDir = Resolve-PathVariables $settings.ComfyModelsPath
+        }
+    }
+}
+
+if (-not $ModelsDir -and $Interactive) {
+    $defaultDir = Join-Path $env:USERPROFILE "AI\models"
+    $inputDir = Read-Host "Enter models directory [Default: $defaultDir]"
+    if ($inputDir) {
+        $ModelsDir = $inputDir
+    } else {
+        $ModelsDir = $defaultDir
+    }
+}
+
+if (-not $ModelsDir) {
+    $ModelsDir = Join-Path $env:USERPROFILE "AI\models"
+}
+
+$checkpointsDir = Join-Path $ModelsDir "checkpoints"
+$animateDiffDir = Join-Path $ModelsDir "animatediff_models"
 
 # Ensure directories exist
-if (-not (Test-Path $checkpointsDir)) { New-Item -ItemType Directory -Path $checkpointsDir -Force }
-if (-not (Test-Path $animateDiffDir)) { New-Item -ItemType Directory -Path $animateDiffDir -Force }
+if (-not (Test-Path $checkpointsDir)) { New-Item -ItemType Directory -Path $checkpointsDir -Force | Out-Null }
+if (-not (Test-Path $animateDiffDir)) { New-Item -ItemType Directory -Path $animateDiffDir -Force | Out-Null }
+
+Write-Host "Target Models Directory: $ModelsDir" -ForegroundColor Cyan
 
 # 1. AnimateDiff SDXL Motion Module
 # Allows you to animate the SDXL models you already downloaded (like Juggernaut X and Pony V6 XL)
@@ -17,7 +103,7 @@ if (-not (Test-Path $adSdxlDest)) {
     Write-Host "Downloading AnimateDiff SDXL Motion Module (~1.8 GB)..." -ForegroundColor Cyan
     Invoke-WebRequest -Uri $adSdxlUrl -OutFile $adSdxlDest
 } else {
-    Write-Host "AnimateDiff SDXL already exists." -ForegroundColor Yellow
+    Write-Host "AnimateDiff SDXL already exists at $adSdxlDest." -ForegroundColor Yellow
 }
 
 # 2. Stable Video Diffusion (SVD) XT 1.1
@@ -27,29 +113,19 @@ $svdDest = Join-Path $checkpointsDir "svd_xt_1_1.safetensors"
 
 if (-not (Test-Path $svdDest)) {
     Write-Host "Downloading Stable Video Diffusion XT 1.1 (~9.5 GB)..." -ForegroundColor Cyan
-    # Read HF_TOKEN from .env file
-    $envPath = Join-Path $PSScriptRoot ".env"
-    $hfToken = ""
-    if (Test-Path $envPath) {
-        $envLines = Get-Content $envPath
-        foreach ($line in $envLines) {
-            if ($line.StartsWith("HF_TOKEN=")) {
-                $hfToken = $line.Substring(9).Trim()
-            }
-        }
-    }
+    $resolvedToken = Get-HfToken -Token $HfToken
     
-    if (-not $hfToken) {
-        Write-Host "WARNING: HF_TOKEN not found in .env. Attempting download without auth..." -ForegroundColor Yellow
+    if (-not $resolvedToken) {
+        Write-Host "WARNING: HF_TOKEN not found. Attempting download without auth..." -ForegroundColor Yellow
     }
 
     $headers = @{}
-    if ($hfToken) {
-        $headers["Authorization"] = "Bearer $hfToken"
+    if ($resolvedToken) {
+        $headers["Authorization"] = "Bearer $resolvedToken"
     }
     Invoke-WebRequest -Uri $svdUrl -OutFile $svdDest -Headers $headers
 } else {
-    Write-Host "Stable Video Diffusion already exists." -ForegroundColor Yellow
+    Write-Host "Stable Video Diffusion already exists at $svdDest." -ForegroundColor Yellow
 }
 
 # Note on 3D Models:
