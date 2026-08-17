@@ -160,6 +160,13 @@
                 </svg>
                 3D &amp; ComfyUI Studio
             </button>
+            <button class="tab-link" data-tab="tab-settings" id="nav-tab-settings">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="tab-icon">
+                    <circle cx="12" cy="12" r="3"/>
+                    <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+                </svg>
+                Settings &amp; Tools
+            </button>
         </nav>
 
         <!-- TAB CONTENT: INSTALLED MODELS -->
@@ -606,6 +613,155 @@
                 <div id="gallery-3d-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 1rem;">
                     <!-- Media items populated dynamically by JS -->
                     <div style="color: var(--text-muted); font-size: 0.85rem;">Scanning outputs directory...</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- TAB CONTENT: SETTINGS & TOOL DISCOVERY -->
+        <div id="tab-settings" class="tab-content">
+            <div class="content-header">
+                <h2>Settings &amp; Tool Discovery</h2>
+                <p>Configure executable paths, models directories, workflows, and auto-detect installed AI tools across your system.</p>
+            </div>
+
+            <!-- Auto-Discovery Quick Action Card -->
+            <div class="glass-card" style="padding: 1.5rem; margin-bottom: 1.5rem;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.75rem; flex-wrap: wrap; gap: 1rem;">
+                    <div>
+                        <h3 style="margin: 0 0 0.3rem; font-size: 1.15rem; color: var(--text-bright); display: flex; align-items: center; gap: 0.5rem;">
+                            <span>🔍</span> AI Ecosystem Auto-Discovery
+                        </h3>
+                        <p style="margin: 0; font-size: 0.85rem; color: var(--text-muted);">
+                            Automatically scan common install directories, drive roots, system PATH, and %LOCALAPPDATA% for Ollama, ComfyUI, and Stable Diffusion Forge.
+                        </p>
+                    </div>
+                    <button class="action-btn pull-btn" id="btn-auto-detect-tools" style="padding: 0.65rem 1.25rem; font-size: 0.9rem; font-weight: 600; white-space: nowrap;">
+                        🔍 Auto-Detect Installed Tools
+                    </button>
+                </div>
+                <div id="auto-detect-status-banner" style="display: none; padding: 0.75rem 1rem; border-radius: var(--radius-sm); font-size: 0.85rem; margin-top: 0.75rem; background: rgba(139, 92, 246, 0.15); border: 1px solid rgba(139, 92, 246, 0.3); color: #c084fc;">
+                    <span id="auto-detect-status-message">Scanning system for tools...</span>
+                </div>
+            </div>
+
+            <!-- Executable & Directory Paths Configuration Card -->
+            <div class="glass-card" style="padding: 1.5rem; margin-bottom: 1.5rem;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.25rem; flex-wrap: wrap; gap: 0.75rem;">
+                    <h3 style="margin: 0; font-size: 1.15rem; color: var(--text-bright); display: flex; align-items: center; gap: 0.5rem;">
+                        <span>🛠️</span> Executable &amp; Directory Paths
+                    </h3>
+                    <div style="display: flex; gap: 0.5rem;">
+                        <button class="action-btn" id="btn-validate-paths" style="font-size: 0.8rem; padding: 0.4rem 0.85rem;">
+                            🔄 Re-Validate Paths
+                        </button>
+                        <button class="action-btn search-submit-btn" id="btn-save-all-settings" style="font-size: 0.8rem; padding: 0.4rem 1rem;">
+                            💾 Save Settings
+                        </button>
+                    </div>
+                </div>
+
+                <div style="display: flex; flex-direction: column; gap: 1.25rem;">
+                    <!-- ComfyUI Executable Path -->
+                    <div class="settings-field-row">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.35rem;">
+                            <label for="cfg-comfy-exe-path" style="font-size: 0.85rem; font-weight: 600; color: var(--text-muted);">
+                                ComfyUI Executable Path
+                            </label>
+                            <span class="path-status-pill" id="status-comfy-exe">Checking...</span>
+                        </div>
+                        <input type="text" id="cfg-comfy-exe-path" class="glass-input" placeholder="e.g. C:\AI\ComfyUI\run_nvidia_gpu.bat or python.exe">
+                    </div>
+
+                    <!-- SD Forge Executable Path -->
+                    <div class="settings-field-row">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.35rem;">
+                            <label for="cfg-forge-exe-path" style="font-size: 0.85rem; font-weight: 600; color: var(--text-muted);">
+                                SD Forge Executable Path
+                            </label>
+                            <span class="path-status-pill" id="status-forge-exe">Checking...</span>
+                        </div>
+                        <input type="text" id="cfg-forge-exe-path" class="glass-input" placeholder="e.g. C:\AI\stable-diffusion-webui-forge\run.bat">
+                    </div>
+
+                    <!-- Ollama Executable Path -->
+                    <div class="settings-field-row">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.35rem;">
+                            <label for="cfg-ollama-exe-path" style="font-size: 0.85rem; font-weight: 600; color: var(--text-muted);">
+                                Ollama Executable Path
+                            </label>
+                            <span class="path-status-pill" id="status-ollama-exe">Checking...</span>
+                        </div>
+                        <input type="text" id="cfg-ollama-exe-path" class="glass-input" placeholder="e.g. ollama or C:\Users\Username\AppData\Local\Programs\Ollama\ollama.exe">
+                    </div>
+
+                    <!-- Forge Models Directory Path -->
+                    <div class="settings-field-row">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.35rem;">
+                            <label for="cfg-forge-models-path" style="font-size: 0.85rem; font-weight: 600; color: var(--text-muted);">
+                                Forge Models Directory Path
+                            </label>
+                            <span class="path-status-pill" id="status-forge-models">Checking...</span>
+                        </div>
+                        <input type="text" id="cfg-forge-models-path" class="glass-input" placeholder="e.g. C:\AI\stable-diffusion-webui-forge\models">
+                    </div>
+
+                    <!-- ComfyUI Models Directory Path -->
+                    <div class="settings-field-row">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.35rem;">
+                            <label for="cfg-comfy-models-path" style="font-size: 0.85rem; font-weight: 600; color: var(--text-muted);">
+                                ComfyUI Models Directory Path
+                            </label>
+                            <span class="path-status-pill" id="status-comfy-models">Checking...</span>
+                        </div>
+                        <input type="text" id="cfg-comfy-models-path" class="glass-input" placeholder="e.g. C:\AI\ComfyUI\models">
+                    </div>
+
+                    <!-- 3D Models Output Path -->
+                    <div class="settings-field-row">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.35rem;">
+                            <label for="cfg-3d-models-path" style="font-size: 0.85rem; font-weight: 600; color: var(--text-muted);">
+                                3D Models Output Directory Path
+                            </label>
+                            <span class="path-status-pill" id="status-3d-models">Checking...</span>
+                        </div>
+                        <input type="text" id="cfg-3d-models-path" class="glass-input" placeholder="e.g. C:\AI\3d_models">
+                    </div>
+
+                    <!-- Workflows Directory Path -->
+                    <div class="settings-field-row">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.35rem;">
+                            <label for="cfg-workflows-path" style="font-size: 0.85rem; font-weight: 600; color: var(--text-muted);">
+                                Workflows Directory Path
+                            </label>
+                            <span class="path-status-pill" id="status-workflows">Checking...</span>
+                        </div>
+                        <input type="text" id="cfg-workflows-path" class="glass-input" placeholder="e.g. C:\AI\workflows">
+                    </div>
+
+                    <!-- ComfyUI URL & Engine Preferences -->
+                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 1.25rem; margin-top: 0.5rem; padding-top: 1rem; border-top: 1px solid var(--border-color);">
+                        <div class="settings-field-row">
+                            <label for="cfg-comfy-url-settings" style="font-size: 0.85rem; font-weight: 600; color: var(--text-muted); display: block; margin-bottom: 0.35rem;">
+                                ComfyUI Service URL
+                            </label>
+                            <input type="text" id="cfg-comfy-url-settings" class="glass-input" value="http://127.0.0.1:8188">
+                        </div>
+                        <div class="settings-field-row">
+                            <label for="cfg-preferred-engine-select" style="font-size: 0.85rem; font-weight: 600; color: var(--text-muted); display: block; margin-bottom: 0.35rem;">
+                                Preferred Image &amp; Mesh Generator
+                            </label>
+                            <select id="cfg-preferred-engine-select" style="background: rgba(15, 23, 42, 0.6); border: 1px solid var(--border-color); color: var(--text-main); padding: 0.6rem 0.9rem; border-radius: var(--radius-sm); font-size: 0.85rem; width: 100%; box-sizing: border-box;">
+                                <option value="comfy">🧩 ComfyUI Engine</option>
+                                <option value="Forge">⚡ Stable Diffusion / Forge</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div style="margin-top: 0.5rem;">
+                        <button class="action-btn pull-btn" id="btn-save-settings-bottom" style="padding: 0.65rem 1.5rem; font-size: 0.9rem; font-weight: 600;">
+                            💾 Save All Settings
+                        </button>
+                    </div>
                 </div>
             </div>
         </div>

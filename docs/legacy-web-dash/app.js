@@ -1205,17 +1205,249 @@ let civitaiSelectedFileName = '';
 let civitaiForgePathConfigured = false;
 
 // ---------------------------------------------------------------------------
-// Settings — load on startup
 // ---------------------------------------------------------------------------
+// Settings, Auto-Discovery & Path Validation
+// ---------------------------------------------------------------------------
+const btnAutoDetectTools = document.getElementById('btn-auto-detect-tools');
+const btnValidatePaths = document.getElementById('btn-validate-paths');
+const btnSaveAllSettings = document.getElementById('btn-save-all-settings');
+const btnSaveSettingsBottom = document.getElementById('btn-save-settings-bottom');
+const autoDetectStatusBanner = document.getElementById('auto-detect-status-banner');
+const autoDetectStatusMessage = document.getElementById('auto-detect-status-message');
+
+const cfgComfyExePath = /** @type {HTMLInputElement} */ (document.getElementById('cfg-comfy-exe-path'));
+const cfgForgeExePath = /** @type {HTMLInputElement} */ (document.getElementById('cfg-forge-exe-path'));
+const cfgOllamaExePath = /** @type {HTMLInputElement} */ (document.getElementById('cfg-ollama-exe-path'));
+const cfgForgeModelsPath = /** @type {HTMLInputElement} */ (document.getElementById('cfg-forge-models-path'));
+const cfgComfyModelsPath = /** @type {HTMLInputElement} */ (document.getElementById('cfg-comfy-models-path'));
+const cfg3dModelsPath = /** @type {HTMLInputElement} */ (document.getElementById('cfg-3d-models-path'));
+const cfgWorkflowsPath = /** @type {HTMLInputElement} */ (document.getElementById('cfg-workflows-path'));
+const cfgComfyUrlSettings = /** @type {HTMLInputElement} */ (document.getElementById('cfg-comfy-url-settings'));
+const cfgPreferredEngineSelect = /** @type {HTMLSelectElement} */ (document.getElementById('cfg-preferred-engine-select'));
+
+function setPathStatusPill(pillId, state, text) {
+    const el = document.getElementById(pillId);
+    if (!el) return;
+    el.className = `path-status-pill ${state}`;
+    el.textContent = text;
+}
+
+function updatePillFromResult(pillId, result, pathValue) {
+    if (!pathValue || !pathValue.trim()) {
+        setPathStatusPill(pillId, 'missing', '⚠️ Missing');
+        return;
+    }
+    if (result && result.isValid) {
+        setPathStatusPill(pillId, 'valid', '🟢 Found');
+    } else {
+        setPathStatusPill(pillId, 'missing', '⚠️ Missing');
+    }
+}
+
+async function validatePaths() {
+    const comfyExe = (cfgComfyExePath ? cfgComfyExePath.value : '').trim();
+    const forgeExe = (cfgForgeExePath ? cfgForgeExePath.value : '').trim();
+    const ollamaExe = (cfgOllamaExePath ? cfgOllamaExePath.value : '').trim();
+    const forgeModels = (cfgForgeModelsPath ? cfgForgeModelsPath.value : (forgePathInput ? forgePathInput.value : '')).trim();
+    const comfyModels = (cfgComfyModelsPath ? cfgComfyModelsPath.value : '').trim();
+    const threeDModels = (cfg3dModelsPath ? cfg3dModelsPath.value : '').trim();
+    const workflows = (cfgWorkflowsPath ? cfgWorkflowsPath.value : '').trim();
+
+    setPathStatusPill('status-comfy-exe', 'checking', 'Checking...');
+    setPathStatusPill('status-forge-exe', 'checking', 'Checking...');
+    setPathStatusPill('status-ollama-exe', 'checking', 'Checking...');
+    setPathStatusPill('status-forge-models', 'checking', 'Checking...');
+    setPathStatusPill('status-comfy-models', 'checking', 'Checking...');
+    setPathStatusPill('status-3d-models', 'checking', 'Checking...');
+    setPathStatusPill('status-workflows', 'checking', 'Checking...');
+
+    try {
+        const payload = {
+            comfyUiExecutablePath: comfyExe,
+            forgeExecutablePath: forgeExe,
+            ollamaExecutablePath: ollamaExe,
+            forgeModelsPath: forgeModels,
+            comfyModelsPath: comfyModels,
+            threeDModelsPath: threeDModels,
+            workflowsPath: workflows
+        };
+
+        const res = await fetch('/api/system/tools/validate', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+        });
+
+        if (!res.ok) throw new Error('Validation request failed');
+        const data = await res.json();
+        const results = data.results || {};
+
+        updatePillFromResult('status-comfy-exe', results.comfyUiExecutablePath || results.ComfyUiExecutablePath, comfyExe);
+        updatePillFromResult('status-forge-exe', results.forgeExecutablePath || results.ForgeExecutablePath, forgeExe);
+        updatePillFromResult('status-ollama-exe', results.ollamaExecutablePath || results.OllamaExecutablePath, ollamaExe);
+        updatePillFromResult('status-forge-models', results.forgeModelsPath || results.ForgeModelsPath, forgeModels);
+        updatePillFromResult('status-comfy-models', results.comfyModelsPath || results.ComfyModelsPath, comfyModels);
+        updatePillFromResult('status-3d-models', results.threeDModelsPath || results.ThreeDModelsPath, threeDModels);
+        updatePillFromResult('status-workflows', results.workflowsPath || results.WorkflowsPath, workflows);
+
+        const forgeResult = results.forgeModelsPath || results.ForgeModelsPath;
+        if (forgeResult && forgeResult.isValid) {
+            setForgePathStatus(true, forgeModels);
+        } else {
+            setForgePathStatus(false, forgeModels);
+        }
+    } catch {
+        updatePillFromResult('status-comfy-exe', null, comfyExe);
+        updatePillFromResult('status-forge-exe', null, forgeExe);
+        updatePillFromResult('status-ollama-exe', null, ollamaExe);
+        updatePillFromResult('status-forge-models', null, forgeModels);
+        updatePillFromResult('status-comfy-models', null, comfyModels);
+        updatePillFromResult('status-3d-models', null, threeDModels);
+        updatePillFromResult('status-workflows', null, workflows);
+    }
+}
+
+function applySettingsToForm(settings) {
+    if (!settings) return;
+    if (cfgComfyExePath && settings.comfyUiExecutablePath !== undefined) cfgComfyExePath.value = settings.comfyUiExecutablePath || '';
+    if (cfgForgeExePath && settings.forgeExecutablePath !== undefined) cfgForgeExePath.value = settings.forgeExecutablePath || '';
+    if (cfgOllamaExePath && settings.ollamaExecutablePath !== undefined) cfgOllamaExePath.value = settings.ollamaExecutablePath || '';
+    if (cfgForgeModelsPath && settings.forgeModelsPath !== undefined) cfgForgeModelsPath.value = settings.forgeModelsPath || '';
+    if (cfgComfyModelsPath && settings.comfyModelsPath !== undefined) cfgComfyModelsPath.value = settings.comfyModelsPath || '';
+    if (cfg3dModelsPath && settings.threeDModelsPath !== undefined) cfg3dModelsPath.value = settings.threeDModelsPath || '';
+    if (cfgWorkflowsPath && settings.workflowsPath !== undefined) cfgWorkflowsPath.value = settings.workflowsPath || '';
+    if (cfgComfyUrlSettings && settings.comfyUiUrl) cfgComfyUrlSettings.value = settings.comfyUiUrl;
+    if (cfgComfyUrl && settings.comfyUiUrl) cfgComfyUrl.value = settings.comfyUiUrl;
+    if (forgePathInput && settings.forgeModelsPath !== undefined) forgePathInput.value = settings.forgeModelsPath || '';
+
+    if (cfgPreferredEngineSelect && settings.preferredImageEngine) {
+        cfgPreferredEngineSelect.value = settings.preferredImageEngine;
+    }
+
+    if (settings.preferredImageEngine) {
+        const isForge = String(settings.preferredImageEngine).toLowerCase() === 'forge';
+        if (btnEngineForge && btnEngineComfy) {
+            btnEngineForge.classList.toggle('active', isForge);
+            btnEngineComfy.classList.toggle('active', !isForge);
+        }
+    }
+}
+
+async function autoDetectTools() {
+    if (btnAutoDetectTools) {
+        btnAutoDetectTools.disabled = true;
+        btnAutoDetectTools.textContent = '⏳ Detecting...';
+    }
+    if (autoDetectStatusBanner && autoDetectStatusMessage) {
+        autoDetectStatusBanner.style.display = 'block';
+        autoDetectStatusMessage.textContent = 'Scanning system PATH, standard directories, and AppData for AI tools...';
+    }
+
+    try {
+        const res = await fetch('/api/system/tools/apply-detected', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' }
+        });
+
+        if (!res.ok) {
+            const err = await res.text();
+            showToast(`Auto-detection failed: ${err}`, 'error');
+            if (autoDetectStatusMessage) autoDetectStatusMessage.textContent = `Auto-detection failed: ${err}`;
+            return;
+        }
+
+        const settings = await res.json();
+        applySettingsToForm(settings);
+        await validatePaths();
+
+        showToast('Auto-detection complete! Updated settings applied.', 'success');
+        if (autoDetectStatusMessage) {
+            autoDetectStatusMessage.textContent = '✓ Auto-discovery complete. Updated settings applied.';
+        }
+    } catch {
+        showToast('Failed to contact server for auto-detection.', 'error');
+        if (autoDetectStatusMessage) {
+            autoDetectStatusMessage.textContent = 'Failed to communicate with discovery endpoint.';
+        }
+    } finally {
+        if (btnAutoDetectTools) {
+            btnAutoDetectTools.disabled = false;
+            btnAutoDetectTools.textContent = '🔍 Auto-Detect Installed Tools';
+        }
+    }
+}
+
+async function saveAllSettings() {
+    const comfyExe = (cfgComfyExePath ? cfgComfyExePath.value : '').trim();
+    const forgeExe = (cfgForgeExePath ? cfgForgeExePath.value : '').trim();
+    const ollamaExe = (cfgOllamaExePath ? cfgOllamaExePath.value : '').trim();
+    const forgeModels = (cfgForgeModelsPath ? cfgForgeModelsPath.value : (forgePathInput ? forgePathInput.value : '')).trim();
+    const comfyModels = (cfgComfyModelsPath ? cfgComfyModelsPath.value : '').trim();
+    const threeDModels = (cfg3dModelsPath ? cfg3dModelsPath.value : '').trim();
+    const workflows = (cfgWorkflowsPath ? cfgWorkflowsPath.value : '').trim();
+    const comfyUrl = (cfgComfyUrlSettings ? cfgComfyUrlSettings.value : (cfgComfyUrl ? cfgComfyUrl.value : 'http://127.0.0.1:8188')).trim();
+    const preferredEngine = (cfgPreferredEngineSelect ? cfgPreferredEngineSelect.value : 'comfy');
+
+    const saveBtns = [btnSaveAllSettings, btnSaveSettingsBottom].filter(Boolean);
+    saveBtns.forEach(b => {
+        if (b) {
+            b.disabled = true;
+            b.textContent = 'Saving...';
+        }
+    });
+
+    try {
+        const payload = {
+            forgeModelsPath: forgeModels,
+            comfyModelsPath: comfyModels,
+            threeDModelsPath: threeDModels,
+            workflowsPath: workflows,
+            comfyUiExecutablePath: comfyExe,
+            forgeExecutablePath: forgeExe,
+            ollamaExecutablePath: ollamaExe,
+            comfyUiUrl: comfyUrl,
+            preferredImageEngine: preferredEngine
+        };
+
+        const res = await fetch('/api/settings', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+        });
+
+        if (!res.ok) {
+            const err = await res.text();
+            showToast(`Could not save settings: ${err}`, 'error');
+            return;
+        }
+
+        showToast('Settings saved successfully!', 'success');
+        if (forgePathInput) forgePathInput.value = forgeModels;
+        if (cfgComfyUrl) cfgComfyUrl.value = comfyUrl;
+
+        await validatePaths();
+    } catch {
+        showToast('Failed to save settings.', 'error');
+    } finally {
+        saveBtns.forEach(b => {
+            if (b) {
+                b.disabled = false;
+                b.textContent = '💾 Save Settings';
+            }
+        });
+    }
+}
+
 async function loadAppSettings() {
     try {
         const res = await fetch('/api/settings');
         if (!res.ok) return;
         const settings = await res.json();
+        applySettingsToForm(settings);
         if (settings.forgeModelsPath) {
-            forgePathInput.value = settings.forgeModelsPath;
             setForgePathStatus(true, settings.forgeModelsPath);
         }
+        await validatePaths();
     } catch { /* ignore */ }
 }
 
@@ -1253,7 +1485,9 @@ if (btnSaveForgePath) {
                 setForgePathStatus(false);
             } else {
                 setForgePathStatus(true, path);
+                if (cfgForgeModelsPath) cfgForgeModelsPath.value = path;
                 showToast('Forge models path saved!', 'success');
+                await validatePaths();
             }
         } catch {
             showToast('Failed to contact server.', 'error');
@@ -1263,6 +1497,27 @@ if (btnSaveForgePath) {
         }
     });
 }
+
+if (btnAutoDetectTools) {
+    btnAutoDetectTools.addEventListener('click', autoDetectTools);
+}
+if (btnValidatePaths) {
+    btnValidatePaths.addEventListener('click', validatePaths);
+}
+if (btnSaveAllSettings) {
+    btnSaveAllSettings.addEventListener('click', saveAllSettings);
+}
+if (btnSaveSettingsBottom) {
+    btnSaveSettingsBottom.addEventListener('click', saveAllSettings);
+}
+
+[cfgComfyExePath, cfgForgeExePath, cfgOllamaExePath, cfgForgeModelsPath, cfgComfyModelsPath, cfg3dModelsPath, cfgWorkflowsPath].forEach(input => {
+    if (input) {
+        input.addEventListener('blur', () => {
+            validatePaths();
+        });
+    }
+});
 
 // Load settings immediately
 loadAppSettings();
@@ -1837,11 +2092,14 @@ if (btnComfyQueue) {
     });
 }
 
-// Tab click hook for 3D Studio tab to refresh gallery
+// Tab click hook for 3D Studio tab and Settings tab
 document.querySelectorAll('.tab-link').forEach(btn => {
     btn.addEventListener('click', () => {
-        if (btn.getAttribute('data-tab') === 'tab-comfy3d') {
+        const tab = btn.getAttribute('data-tab');
+        if (tab === 'tab-comfy3d') {
             load3dGallery();
+        } else if (tab === 'tab-settings') {
+            validatePaths();
         }
     });
 });
