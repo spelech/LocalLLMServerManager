@@ -12,7 +12,7 @@
     </Application.Resources>
     <Application.Styles>
         <semi:SemiTheme Locale="en-US" />
-        <StyleInclude Source="avares://LocalLLMServerManager.Shared/Styles/GlassmorphicTheme.axaml" />
+        <StyleInclude Source="avares://LocalLLMServerManager.Shared/Styles/MatteTheme.axaml" />
     </Application.Styles>
     <TrayIcon.Icons>
         <TrayIcons>
