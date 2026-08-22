@@ -1,62 +1,84 @@
 <UserControl xmlns="https://github.com/avaloniaui"
-              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-              xmlns:vm="using:LocalLLMServerManager.Shared.ViewModels"
-              x:Class="LocalLLMServerManager.Shared.Views.Controls.TelemetryHeaderControl"
-              x:DataType="vm:TelemetryViewModel">
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:LocalLLMServerManager.Shared.ViewModels"
+             x:Class="LocalLLMServerManager.Shared.Views.Controls.TelemetryHeaderControl"
+             x:DataType="vm:TelemetryViewModel">
 
-    <Grid ColumnDefinitions="*, *, *" Margin="16,16,16,12">
+    <Grid ColumnDefinitions="*, 1.3*, *" Margin="16,14,16,10">
         <!-- CARD 1: Service Health Badges -->
-        <Border Grid.Column="0" Classes="glass-card" Margin="0,0,8,0">
+        <Border Grid.Column="0" Classes="matte-card" Margin="0,0,8,0" Padding="14,10">
             <StackPanel Spacing="8">
-                <TextBlock Text="⚡ Engine Health Status" FontSize="13" FontWeight="Bold" Foreground="{StaticResource TextMainBrush}"/>
+                <Grid ColumnDefinitions="*, Auto">
+                    <TextBlock Grid.Column="0" Text="⚡ Engine Health Status" FontSize="12" FontWeight="SemiBold" Foreground="{StaticResource TextMutedBrush}"/>
+                    <Border Grid.Column="1" Classes="matte-pill" Padding="6,2">
+                        <TextBlock Text="Services" FontSize="10" Foreground="{StaticResource TextMutedBrush}" FontWeight="SemiBold"/>
+                    </Border>
+                </Grid>
                 <UniformGrid Columns="3">
-                    <StackPanel HorizontalAlignment="Center" Spacing="4">
+                    <StackPanel HorizontalAlignment="Center" Spacing="3">
                         <TextBlock Text="Ollama" FontSize="11" Foreground="{StaticResource TextMutedBrush}" HorizontalAlignment="Center"/>
-                        <Border Classes="telemetry-pill">
-                            <TextBlock Text="{Binding OllamaStatus}" FontSize="11" Foreground="{StaticResource OnlineBrush}" FontWeight="Bold"/>
+                        <Border Classes="matte-pill" Padding="8,3">
+                            <StackPanel Orientation="Horizontal" Spacing="4" HorizontalAlignment="Center">
+                                <Ellipse Width="6" Height="6" Fill="{StaticResource OnlineBrush}" VerticalAlignment="Center"/>
+                                <TextBlock Text="{Binding OllamaStatus}" FontSize="11" Foreground="{StaticResource TextMainBrush}" FontWeight="Bold"/>
+                            </StackPanel>
                         </Border>
                     </StackPanel>
-                    <StackPanel HorizontalAlignment="Center" Spacing="4">
+                    <StackPanel HorizontalAlignment="Center" Spacing="3">
                         <TextBlock Text="Forge SD" FontSize="11" Foreground="{StaticResource TextMutedBrush}" HorizontalAlignment="Center"/>
-                        <Border Classes="telemetry-pill">
-                            <TextBlock Text="{Binding ForgeStatus}" FontSize="11" Foreground="{StaticResource PrimaryBrush}" FontWeight="Bold"/>
+                        <Border Classes="matte-pill" Padding="8,3">
+                            <StackPanel Orientation="Horizontal" Spacing="4" HorizontalAlignment="Center">
+                                <Ellipse Width="6" Height="6" Fill="{StaticResource PrimaryBrush}" VerticalAlignment="Center"/>
+                                <TextBlock Text="{Binding ForgeStatus}" FontSize="11" Foreground="{StaticResource TextMainBrush}" FontWeight="Bold"/>
+                            </StackPanel>
                         </Border>
                     </StackPanel>
-                    <StackPanel HorizontalAlignment="Center" Spacing="4">
+                    <StackPanel HorizontalAlignment="Center" Spacing="3">
                         <TextBlock Text="ComfyUI" FontSize="11" Foreground="{StaticResource TextMutedBrush}" HorizontalAlignment="Center"/>
-                        <Border Classes="telemetry-pill">
-                            <TextBlock Text="{Binding ComfyStatus}" FontSize="11" Foreground="{StaticResource AccentBrush}" FontWeight="Bold"/>
+                        <Border Classes="matte-pill" Padding="8,3">
+                            <StackPanel Orientation="Horizontal" Spacing="4" HorizontalAlignment="Center">
+                                <Ellipse Width="6" Height="6" Fill="{StaticResource AccentBrush}" VerticalAlignment="Center"/>
+                                <TextBlock Text="{Binding ComfyStatus}" FontSize="11" Foreground="{StaticResource TextMainBrush}" FontWeight="Bold"/>
+                            </StackPanel>
                         </Border>
                     </StackPanel>
                 </UniformGrid>
             </StackPanel>
         </Border>
 
-        <!-- CARD 2: Hero Stacked VRAM Visual Bar -->
-        <Border Grid.Column="1" Classes="glass-card" Margin="4,0,4,0">
-            <StackPanel Spacing="6">
+        <!-- CARD 2: GPU VRAM Memory Telemetry Chip -->
+        <Border Grid.Column="1" Classes="matte-card" Margin="4,0,4,0" Padding="14,10">
+            <StackPanel Spacing="6" VerticalAlignment="Center">
                 <Grid ColumnDefinitions="*, Auto">
-                    <StackPanel Grid.Column="0">
-                        <TextBlock Text="🎮 VRAM Memory Allocation" FontSize="13" FontWeight="Bold" Foreground="{StaticResource TextMainBrush}"/>
-                        <TextBlock Text="{Binding GpuName}" FontSize="11" Foreground="{StaticResource TextMutedBrush}" Margin="0,2,0,0"/>
+                    <StackPanel Grid.Column="0" Spacing="1">
+                        <TextBlock Text="🎮 VRAM Allocation" FontSize="12" FontWeight="SemiBold" Foreground="{StaticResource TextMutedBrush}"/>
+                        <TextBlock Text="{Binding GpuName}" FontSize="11" Foreground="{StaticResource TextMainBrush}" FontWeight="Medium"/>
                     </StackPanel>
-                    <TextBlock Grid.Column="1" Text="{Binding VramStatusText}" FontSize="12" Foreground="{StaticResource PrimaryBrush}" FontWeight="Bold" VerticalAlignment="Center"/>
+                    <Border Grid.Column="1" Classes="matte-pill" Padding="8,3" VerticalAlignment="Center">
+                        <TextBlock Text="{Binding VramStatusText}" FontSize="11" Foreground="{StaticResource PrimaryBrush}" FontWeight="Bold"/>
+                    </Border>
                 </Grid>
-                <ProgressBar Value="{Binding VramPercentage}" Maximum="100" Classes="glass-progress" Height="12"/>
+                <ProgressBar Value="{Binding VramPercentage}" Maximum="100" Classes="matte-progress" Height="8" Margin="0,2,0,0"/>
             </StackPanel>
         </Border>
 
-        <!-- CARD 3: Orchestrator Proxy & Actions -->
-        <Border Grid.Column="2" Classes="glass-card" Margin="8,0,0,0">
-            <Grid ColumnDefinitions="*, Auto">
+        <!-- CARD 3: Reverse Proxy & Quick Actions -->
+        <Border Grid.Column="2" Classes="matte-card" Margin="8,0,0,0" Padding="14,10">
+            <Grid ColumnDefinitions="*, Auto" VerticalAlignment="Center">
                 <StackPanel Grid.Column="0" Spacing="4">
-                    <TextBlock Text="🌐 Reverse Proxy Status" FontSize="13" FontWeight="Bold" Foreground="{StaticResource TextMainBrush}"/>
-                    <Border Classes="telemetry-pill" HorizontalAlignment="Left">
-                        <TextBlock Text="{Binding ServiceModeText}" FontSize="11" Foreground="{StaticResource SecondaryBrush}" FontWeight="SemiBold"/>
+                    <TextBlock Text="🌐 Orchestrator Proxy" FontSize="12" FontWeight="SemiBold" Foreground="{StaticResource TextMutedBrush}"/>
+                    <Border Classes="matte-pill" HorizontalAlignment="Left" Padding="8,3">
+                        <StackPanel Orientation="Horizontal" Spacing="4">
+                            <Ellipse Width="6" Height="6" Fill="{StaticResource SecondaryBrush}" VerticalAlignment="Center"/>
+                            <TextBlock Text="{Binding ServiceModeText}" FontSize="11" Foreground="{StaticResource TextMainBrush}" FontWeight="SemiBold"/>
+                        </StackPanel>
                     </Border>
                 </StackPanel>
-                <Button Grid.Column="1" Command="{Binding RefreshStatusCommand}" Classes="glass-secondary" VerticalAlignment="Center">
-                    🔄 Refresh
+                <Button Grid.Column="1" Command="{Binding RefreshStatusCommand}" Classes="matte-secondary" VerticalAlignment="Center" Padding="10,6">
+                    <StackPanel Orientation="Horizontal" Spacing="4">
+                        <TextBlock Text="🔄" FontSize="11"/>
+                        <TextBlock Text="Refresh" FontSize="11" FontWeight="SemiBold"/>
+                    </StackPanel>
                 </Button>
             </Grid>
         </Border>

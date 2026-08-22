@@ -11,7 +11,7 @@
                 <TextBlock Text="Manage installed LLMs and GGUF quantizations" FontSize="12" Foreground="{StaticResource TextMutedBrush}"/>
             </StackPanel>
             <Button Grid.Column="1" Command="{Binding UnloadAllVramCommand}" 
-                    Classes="glass-secondary" VerticalAlignment="Center">
+                    Classes="matte-secondary" VerticalAlignment="Center">
                 🧹 Unload All VRAM
             </Button>
         </Grid>
@@ -20,23 +20,23 @@
             <ItemsControl ItemsSource="{Binding InstalledModels}">
                 <ItemsControl.ItemTemplate>
                     <DataTemplate DataType="vm:OllamaModelItem">
-                        <Border Classes="glass-card" Margin="0,0,0,8">
+                        <Border Classes="matte-card" Margin="0,0,0,8" Padding="14,12">
                             <Grid ColumnDefinitions="*, Auto">
                                 <StackPanel Grid.Column="0" Spacing="6">
                                     <TextBlock Text="{Binding Name}" FontWeight="Bold" FontSize="14" Foreground="{StaticResource TextMainBrush}"/>
                                     <StackPanel Orientation="Horizontal" Spacing="8">
-                                        <Border Classes="telemetry-pill">
+                                        <Border Classes="matte-pill">
                                             <TextBlock Text="GGUF" FontSize="11" Foreground="{StaticResource SecondaryBrush}" FontWeight="Bold"/>
                                         </Border>
-                                        <Border Classes="telemetry-pill">
+                                        <Border Classes="matte-pill">
                                             <TextBlock Text="{Binding CapabilityTag}" FontSize="11" Foreground="{Binding CapabilityColor}" FontWeight="Bold"/>
                                         </Border>
-                                        <Border Classes="telemetry-pill">
+                                        <Border Classes="matte-pill">
                                             <TextBlock Text="{Binding FormatSize}" FontSize="11" Foreground="{StaticResource TextMutedBrush}" FontWeight="SemiBold"/>
                                         </Border>
                                     </StackPanel>
                                 </StackPanel>
-                                <Border Grid.Column="1" Classes="telemetry-pill" VerticalAlignment="Center">
+                                <Border Grid.Column="1" Classes="matte-pill" VerticalAlignment="Center" Padding="10,4">
                                     <TextBlock Text="Installed 🟢" FontSize="11" Foreground="{StaticResource OnlineBrush}" FontWeight="Bold"/>
                                 </Border>
                             </Grid>
@@ -46,15 +46,19 @@
             </ItemsControl>
         </ScrollViewer>
 
-        <Border Grid.Row="2" Classes="glass-card">
-            <StackPanel Spacing="8">
+        <Border Grid.Row="2" Classes="matte-card" Padding="16,14">
+            <StackPanel Spacing="10">
                 <Grid ColumnDefinitions="*, Auto">
                     <TextBlock Text="🧮 Interactive KV Cache Calculator" FontSize="13" FontWeight="Bold" Foreground="{StaticResource TextMainBrush}"/>
-                    <TextBlock Grid.Column="1" Text="{Binding EstimatedKvCacheText}" FontSize="13" Foreground="{StaticResource SecondaryBrush}" FontWeight="Bold"/>
+                    <Border Grid.Column="1" Classes="matte-pill" Padding="8,3">
+                        <TextBlock Text="{Binding EstimatedKvCacheText}" FontSize="12" Foreground="{StaticResource SecondaryBrush}" FontWeight="Bold"/>
+                    </Border>
                 </Grid>
                 <Grid ColumnDefinitions="*, Auto">
-                    <Slider Value="{Binding TargetContextTokens}" Minimum="1024" Maximum="32768" SmallChange="1024" LargeChange="4096"/>
-                    <TextBlock Grid.Column="1" Text="{Binding TargetContextTokens, StringFormat='{}{0:N0} tokens'}" FontSize="12" Foreground="{StaticResource TextMutedBrush}" VerticalAlignment="Center" Margin="10,0,0,0"/>
+                    <Slider Grid.Column="0" Value="{Binding TargetContextTokens}" Minimum="1024" Maximum="32768" SmallChange="1024" LargeChange="4096"/>
+                    <Border Grid.Column="1" Classes="matte-pill" Margin="12,0,0,0" Padding="8,4" VerticalAlignment="Center">
+                        <TextBlock Text="{Binding TargetContextTokens, StringFormat='{}{0:N0} tokens'}" FontSize="12" Foreground="{StaticResource TextMainBrush}" FontWeight="SemiBold"/>
+                    </Border>
                 </Grid>
             </StackPanel>
         </Border>
