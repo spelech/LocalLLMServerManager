@@ -15,12 +15,12 @@ using Xunit;
 
 namespace LocalLLMServerManager.Tests;
 
-public class SettingsViewModelCoverageTests
+public class SettingsViewModelTests
 {
     private readonly string _tempDir;
     private readonly string _tempFile;
 
-    public SettingsViewModelCoverageTests()
+    public SettingsViewModelTests()
     {
         _tempDir = Path.Combine(Path.GetTempPath(), "LLMServerManager_TestDir_" + Guid.NewGuid().ToString("N"));
         Directory.CreateDirectory(_tempDir);

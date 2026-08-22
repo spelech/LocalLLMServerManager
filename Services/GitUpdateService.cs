@@ -36,6 +36,9 @@ public class GitUpdateService : IGitUpdateService
             CreateNoWindow = true
         };
 
+        psi.EnvironmentVariables["GIT_TERMINAL_PROMPT"] = "0";
+        psi.EnvironmentVariables["GIT_ASKPASS"] = "echo";
+
         foreach (var arg in args)
         {
             psi.ArgumentList.Add(arg);
@@ -54,9 +57,14 @@ public class GitUpdateService : IGitUpdateService
             process.BeginOutputReadLine();
             process.BeginErrorReadLine();
 
-            using var cts = new CancellationTokenSource(TimeSpan.FromMinutes(2));
+            using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(15));
             await process.WaitForExitAsync(cts.Token);
             return (process.ExitCode == 0, outputBuilder.ToString(), errorBuilder.ToString());
+        }
+        catch (OperationCanceledException)
+        {
+            try { process.Kill(entireProcessTree: true); } catch { }
+            return (false, outputBuilder.ToString(), "Process timed out after 15 seconds.");
         }
         catch (Exception ex)
         {

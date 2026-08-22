@@ -8,7 +8,7 @@ using Xunit;
 
 namespace LocalLLMServerManager.Tests;
 
-public class AvaloniaAppAndWindowCoverageTests
+public class AvaloniaUiTests
 {
     [AvaloniaFact]
     public void MainWindow_Instantiates_AndHidesOnClosing()

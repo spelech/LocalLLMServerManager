@@ -9,7 +9,7 @@ using Xunit;
 
 namespace LocalLLMServerManager.Tests;
 
-public class SearchServicesCoverageTests
+public class SearchServicesTests
 {
     [Fact]
     public async Task CivitaiSearchService_SearchModelsAsync_ParsesJsonResponse()

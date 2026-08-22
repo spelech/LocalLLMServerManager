@@ -9,7 +9,7 @@ namespace LocalLLMServerManager.Tests;
 
 public class LiveExternalProviderIntegrationTests
 {
-    private static readonly HttpClient _client = new() { Timeout = TimeSpan.FromSeconds(5) };
+    private static readonly HttpClient _client = new() { Timeout = TimeSpan.FromMilliseconds(200) };
     private const string LocalServerUrl = "http://127.0.0.1:5246";
     private const string OllamaUrl = "http://127.0.0.1:11434";
 

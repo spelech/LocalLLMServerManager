@@ -15,12 +15,12 @@ public class PlaywrightScreenshotGenerator : IClassFixture<AppTestServerFixture>
         _fixture = fixture;
     }
 
-    [Fact]
+    [Fact(Skip = "Run manually when generating doc screenshots")]
     public async Task GenerateRealDocScreenshots()
     {
         var baseDir = AppContext.BaseDirectory;
         var dir = new DirectoryInfo(baseDir);
-        while (dir != null && !File.Exists(Path.Combine(dir.FullName, "LocalLLMServerManager.sln")))
+        while (dir != null && !File.Exists(Path.Combine(dir.FullName, "LocalLLMServerManager.slnx")) && !File.Exists(Path.Combine(dir.FullName, "LocalLLMServerManager.sln")))
         {
             dir = dir.Parent;
         }

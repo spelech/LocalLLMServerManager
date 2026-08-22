@@ -9,52 +9,43 @@ using Xunit;
 
 namespace LocalLLMServerManager.Tests;
 
-public class AppTestServerFixture : IAsyncLifetime
-{
-    public static string TestBaseUrl = "http://127.0.0.1:5299";
-    private WebApplication? _app;
-
-    public async ValueTask InitializeAsync()
-    {
-        for (int port = 5299; port <= 5310; port++)
-        {
-            try
-            {
-                TestBaseUrl = $"http://127.0.0.1:{port}";
-                _app = Program.CreateWebApplication(Array.Empty<string>(), isServiceMode: false, url: TestBaseUrl);
-                await _app.StartAsync();
-                return;
-            }
-            catch (System.IO.IOException)
-            {
-                if (_app != null) { try { await _app.DisposeAsync(); } catch { } }
-                if (port == 5310) throw;
-            }
-        }
-    }
-
-    public async ValueTask DisposeAsync()
-    {
-        if (_app != null)
-        {
-            await _app.StopAsync();
-            await _app.DisposeAsync();
-        }
-    }
-
-    public HttpClient CreateClient() => new HttpClient { BaseAddress = new Uri(TestBaseUrl), Timeout = TimeSpan.FromSeconds(30) };
-    public HttpClient Client => CreateClient();
-}
-
-public class ProgramEndpointsAndServicesTests : IClassFixture<AppTestServerFixture>
+public class ServerEndpointsTests : IClassFixture<AppTestServerFixture>
 {
     private readonly AppTestServerFixture _fixture;
     private readonly HttpClient _client;
 
-    public ProgramEndpointsAndServicesTests(AppTestServerFixture fixture)
+    public ServerEndpointsTests(AppTestServerFixture fixture)
     {
         _fixture = fixture;
         _client = fixture.CreateClient();
+    }
+
+    [Fact]
+    public void Program_MainInternal_ServiceMode_ExecutesWithoutRunWeb()
+    {
+        Program.MainInternal(new[] { "--service" }, runWeb: false);
+    }
+
+    [Fact]
+    public void Program_MainInternal_DesktopMode_ExecutesWithoutRunWeb()
+    {
+        Program.MainInternal(Array.Empty<string>(), runWeb: false);
+    }
+
+    [Fact]
+    public void MapAllEndpoints_InvokesStaticRegistrationMethods()
+    {
+        var builder = WebApplication.CreateBuilder();
+        var app = builder.Build();
+
+        LocalLLMServerManager.Endpoints.HealthEndpoints.MapHealthEndpoints(app);
+        LocalLLMServerManager.Endpoints.ModelProxyEndpoints.MapModelProxyEndpoints(app);
+        LocalLLMServerManager.Endpoints.McpEndpoints.MapMcpEndpoints(app);
+        LocalLLMServerManager.Endpoints.EngineEndpoints.MapEngineEndpoints(app);
+        LocalLLMServerManager.Endpoints.WorkflowEndpoints.MapWorkflowEndpoints(app);
+        LocalLLMServerManager.Endpoints.DiscoveryEndpoints.MapDiscoveryEndpoints(app);
+
+        Assert.NotNull(app);
     }
 
     [Fact]

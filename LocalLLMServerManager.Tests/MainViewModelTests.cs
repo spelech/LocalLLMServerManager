@@ -14,12 +14,12 @@ using Xunit;
 
 namespace LocalLLMServerManager.Tests;
 
-public class MainViewModelCoverageTests : IClassFixture<AppTestServerFixture>
+public class MainViewModelTests : IClassFixture<AppTestServerFixture>
 {
     private readonly AppTestServerFixture _fixture;
     private readonly HttpClient _mockHttp;
 
-    public MainViewModelCoverageTests(AppTestServerFixture fixture)
+    public MainViewModelTests(AppTestServerFixture fixture)
     {
         _fixture = fixture;
 
@@ -134,6 +134,63 @@ public class MainViewModelCoverageTests : IClassFixture<AppTestServerFixture>
         {
             ApiBase = AppTestServerFixture.TestBaseUrl
         };
+    }
+
+    [Fact]
+    public void MainViewModel_InitialState_HasDefaults()
+    {
+        var vm = new MainViewModel();
+
+        Assert.NotNull(vm.OllamaStatus);
+        Assert.NotNull(vm.ForgeStatus);
+        Assert.NotNull(vm.ComfyStatus);
+        Assert.NotNull(vm.GpuName);
+        Assert.NotNull(vm.Toasts);
+        Assert.NotNull(vm.InstalledModels);
+        Assert.False(vm.IsHfModalOpen);
+        Assert.False(vm.IsPullDrawerOpen);
+    }
+
+    [Fact]
+    public void ToastService_AndToastItems_BadgeColorsAndLifecycle()
+    {
+        var t1 = new ToastItem("Success", ToastType.Success);
+        Assert.Equal("#22C55E", t1.BadgeColor);
+
+        var t2 = new ToastItem("Warning", ToastType.Warning);
+        Assert.Equal("#F59E0B", t2.BadgeColor);
+
+        var t3 = new ToastItem("Error", ToastType.Error);
+        Assert.Equal("#EF4444", t3.BadgeColor);
+
+        var t4 = new ToastItem("Info", ToastType.Info);
+        Assert.Equal("#38BDF8", t4.BadgeColor);
+
+        ToastService.Instance.Show("Test toast", ToastType.Warning, autoRemoveMs: 0);
+        ToastService.Instance.Show("Async delay toast", ToastType.Info, autoRemoveMs: 5);
+        ToastService.Instance.Remove(t4);
+        ToastService.Instance.Clear();
+    }
+
+    [Fact]
+    public void TargetContextTokens_CalculatesEstimatedKvCache()
+    {
+        var vm = new MainViewModel();
+
+        vm.TargetContextTokens = 1024;
+        Assert.Contains("MB", vm.EstimatedKvCacheText);
+
+        vm.TargetContextTokens = 8192;
+        Assert.Contains("MB", vm.EstimatedKvCacheText);
+
+        vm.TargetContextTokens = 65536;
+        Assert.Contains("GB", vm.EstimatedKvCacheText);
+
+        vm.CloseHfModal();
+        Assert.False(vm.IsHfModalOpen);
+
+        vm.ClosePullDrawer();
+        Assert.False(vm.IsPullDrawerOpen);
     }
 
     [Fact]

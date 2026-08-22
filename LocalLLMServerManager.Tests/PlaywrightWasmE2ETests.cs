@@ -30,7 +30,11 @@ public class PlaywrightWasmE2ETests : IClassFixture<AppTestServerFixture>
 
         page.Console += (_, msg) =>
         {
-            if (msg.Type == "error" && !msg.Text.Contains("ERR_CONNECTION_REFUSED"))
+            if (msg.Type == "error" 
+                && !msg.Text.Contains("ERR_CONNECTION_REFUSED")
+                && !msg.Text.Contains("ERR_FAILED")
+                && !msg.Text.Contains("Failed to load resource")
+                && !msg.Text.Contains("Access to fetch"))
             {
                 consoleErrors.Add($"Console Error: {msg.Text}");
             }

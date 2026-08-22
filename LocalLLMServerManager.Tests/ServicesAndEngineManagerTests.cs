@@ -7,8 +7,31 @@ using Xunit;
 
 namespace LocalLLMServerManager.Tests;
 
-public class ServicesAndEngineManagerCoverageTests
+public class ServicesAndEngineManagerTests
 {
+    [Fact]
+    public void GpuTelemetryProvider_ParsesVariousTelemetrySources()
+    {
+        var (gpuName, totalVram, usedVram) = Program.GetGpuInfo();
+        Assert.NotNull(gpuName);
+
+        var regInfo = Program.GetGpuInfoFromRegistry();
+        Assert.NotNull(regInfo.GpuName);
+
+        var linuxInfo = Program.GetLinuxMemoryInfo();
+        // May be null on Windows, should not throw
+        if (OperatingSystem.IsLinux())
+        {
+            Assert.NotNull(linuxInfo);
+        }
+
+        var sampleNvidiaSmi = "NVIDIA GeForce RTX 4070 Ti SUPER, 16376, 1024";
+        var parsed = Program.ParseNvidiaSmiOutput(sampleNvidiaSmi);
+        Assert.NotNull(parsed);
+        Assert.Contains("4070 Ti SUPER", parsed.Value.GpuName);
+        Assert.True(parsed.Value.TotalVramBytes > 0);
+        Assert.True(parsed.Value.UsedVramBytes > 0);
+    }
     [Fact]
     public void GitUpdateService_IsValidBranchName_ValidatesCorrectly()
     {
