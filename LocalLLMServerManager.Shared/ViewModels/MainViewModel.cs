@@ -174,6 +174,8 @@ public partial class MainViewModel : ObservableObject
     public string ComfyUiExecutablePath { get => Settings.ComfyUiExecutablePath; set => Settings.ComfyUiExecutablePath = value; }
     public string ForgeExecutablePath { get => Settings.ForgeExecutablePath; set => Settings.ForgeExecutablePath = value; }
     public string LanAccessUrl { get => Settings.LanAccessUrl; set => Settings.LanAccessUrl = value; }
+    public string SelectedTheme { get => Settings.SelectedTheme; set => Settings.SelectedTheme = value; }
+    public System.Collections.Generic.IReadOnlyList<string> AvailableThemes => Settings.AvailableThemes;
 
     private async Task StartBackgroundPollingAsync()
     {

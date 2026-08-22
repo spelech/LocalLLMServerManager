@@ -25,8 +25,17 @@
             <Border Classes="matte-card" Padding="16">
                 <StackPanel Spacing="12">
                     <TextBlock Text="🎨 Desktop Theme &amp; Web Interface Options" FontSize="16" FontWeight="Bold" Foreground="{StaticResource TextMainBrush}"/>
-                    <TextBlock Text="Try switching between desktop themes or launch the browser dashboard:" FontSize="13" Foreground="{StaticResource TextMutedBrush}"/>
+                    <TextBlock Text="Select dynamic theme palette or switch framework theme styles:" FontSize="13" Foreground="{StaticResource TextMutedBrush}"/>
 
+                    <StackPanel Spacing="6">
+                        <TextBlock Text="Theme Palette" FontSize="13" Foreground="{StaticResource TextMutedBrush}" FontWeight="Medium"/>
+                        <ComboBox ItemsSource="{Binding AvailableThemes}"
+                                  SelectedItem="{Binding SelectedTheme, Mode=TwoWay}"
+                                  HorizontalAlignment="Left"
+                                  MinWidth="240"/>
+                    </StackPanel>
+
+                    <TextBlock Text="Framework Theme Style:" FontSize="13" Foreground="{StaticResource TextMutedBrush}" Margin="0,4,0,0"/>
                     <StackPanel Orientation="Horizontal" Spacing="10">
                         <Button Content="✨ Semi Design Dark Theme" Command="{Binding SwitchThemeStyleCommand}" CommandParameter="semi"
                                 Classes="matte-primary"/>
