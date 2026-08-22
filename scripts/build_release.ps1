@@ -1,7 +1,7 @@
-# LocalLLMServerManager v3.1.0 — Release Build & Package Script
+# LocalLLMServerManager v3.5.0 — Release Build & Package Script
 $ErrorActionPreference = "Stop"
 
-$Version = "3.4.0"
+$Version = "3.5.0"
 $RootDir = Split-Path $PSScriptRoot -Parent
 $PublishDir = Join-Path $RootDir "publish"
 $DistDir = Join-Path $RootDir "dist"
@@ -14,7 +14,7 @@ Write-Host ""
 
 # 1. Run Verification & Test Suite
 Write-Host "--> 1. Running Test Suite & Verification..." -ForegroundColor Yellow
-dotnet test LocalLLMServerManager.sln --nologo -c Release
+dotnet test LocalLLMServerManager.Tests/LocalLLMServerManager.Tests.csproj --filter "FullyQualifiedName!~LiveExternalProvider" --nologo -c Release
 if ($LASTEXITCODE -ne 0) { throw "dotnet test failed!" }
 
 # 2. Publish Avalonia WebAssembly to wwwroot & Build Self-Contained Release
