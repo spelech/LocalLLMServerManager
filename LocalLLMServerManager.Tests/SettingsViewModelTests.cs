@@ -37,6 +37,8 @@ public class SettingsViewModelTests
         Assert.Equal("http://127.0.0.1:8188", vm.ComfyUiUrl);
         Assert.Equal("semi", vm.SelectedThemeStyle);
         Assert.Equal("http://127.0.0.1:5246", vm.LanAccessUrl);
+        Assert.Equal("Matte Carbon (Default)", vm.SelectedTheme);
+        Assert.Equal(3, vm.AvailableThemes.Count);
 
         Assert.Contains("Missing", vm.ForgeModelsStatus);
         Assert.Contains("Missing", vm.ThreeDModelsStatus);

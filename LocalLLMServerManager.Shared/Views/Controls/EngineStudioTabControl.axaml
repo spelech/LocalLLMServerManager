@@ -12,46 +12,46 @@
 
         <UniformGrid Columns="2">
             <!-- Forge Card -->
-            <Border Classes="glass-card" Margin="0,0,8,0">
+            <Border Classes="matte-card" Margin="0,0,8,0" Padding="16">
                 <StackPanel Spacing="12">
                     <Grid ColumnDefinitions="*, Auto">
                         <TextBlock Text="🎨 Stable Diffusion / Forge" FontSize="14" FontWeight="Bold" Foreground="{StaticResource TextMainBrush}" VerticalAlignment="Center"/>
-                        <Border Grid.Column="1" Classes="telemetry-pill">
+                        <Border Grid.Column="1" Classes="matte-pill" Padding="8,4">
                             <TextBlock Text="{Binding ForgeStatus}" FontSize="11" Foreground="{StaticResource PrimaryBrush}" FontWeight="Bold"/>
                         </Border>
                     </Grid>
                     
                     <StackPanel Spacing="4">
                         <TextBlock Text="WebUI &amp; SD API Endpoint" FontSize="12" Foreground="{StaticResource TextMutedBrush}"/>
-                        <Border Classes="telemetry-pill" HorizontalAlignment="Left">
+                        <Border Classes="matte-pill" HorizontalAlignment="Left" Padding="8,4">
                             <TextBlock Text="Port 7860 • Localhost" FontSize="11" Foreground="{StaticResource SecondaryBrush}" FontWeight="SemiBold"/>
                         </Border>
                     </StackPanel>
 
                     <Button Content="▶️ Toggle Forge Engine" Command="{Binding ToggleEngineCommand}" CommandParameter="forge" 
-                            Classes="glass-primary" HorizontalAlignment="Stretch" HorizontalContentAlignment="Center" Margin="0,4,0,0"/>
+                            Classes="matte-primary" HorizontalAlignment="Stretch" HorizontalContentAlignment="Center" Margin="0,4,0,0"/>
                 </StackPanel>
             </Border>
 
             <!-- ComfyUI Card -->
-            <Border Classes="glass-card" Margin="8,0,0,0">
+            <Border Classes="matte-card" Margin="8,0,0,0" Padding="16">
                 <StackPanel Spacing="12">
                     <Grid ColumnDefinitions="*, Auto">
                         <TextBlock Text="🧩 ComfyUI 3D Mesh Studio" FontSize="14" FontWeight="Bold" Foreground="{StaticResource TextMainBrush}" VerticalAlignment="Center"/>
-                        <Border Grid.Column="1" Classes="telemetry-pill">
+                        <Border Grid.Column="1" Classes="matte-pill" Padding="8,4">
                             <TextBlock Text="{Binding ComfyStatus}" FontSize="11" Foreground="{StaticResource AccentBrush}" FontWeight="Bold"/>
                         </Border>
                     </Grid>
 
                     <StackPanel Spacing="4">
                         <TextBlock Text="TRELLIS V2 &amp; Hunyuan3D Pipelines" FontSize="12" Foreground="{StaticResource TextMutedBrush}"/>
-                        <Border Classes="telemetry-pill" HorizontalAlignment="Left">
+                        <Border Classes="matte-pill" HorizontalAlignment="Left" Padding="8,4">
                             <TextBlock Text="Port 8188 • Localhost" FontSize="11" Foreground="{StaticResource SecondaryBrush}" FontWeight="SemiBold"/>
                         </Border>
                     </StackPanel>
 
                     <Button Content="▶️ Toggle ComfyUI Engine" Command="{Binding ToggleEngineCommand}" CommandParameter="comfy" 
-                            Classes="glass-primary" HorizontalAlignment="Stretch" HorizontalContentAlignment="Center" Margin="0,4,0,0"/>
+                            Classes="matte-primary" HorizontalAlignment="Stretch" HorizontalContentAlignment="Center" Margin="0,4,0,0"/>
                 </StackPanel>
             </Border>
         </UniformGrid>

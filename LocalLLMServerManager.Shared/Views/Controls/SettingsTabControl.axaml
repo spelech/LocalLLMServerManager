@@ -5,9 +5,9 @@
              x:DataType="vm:SettingsViewModel">
 
     <ScrollViewer Margin="0,12,0,0">
-        <StackPanel Spacing="16">
+        <StackPanel Spacing="16" Margin="0,0,0,16">
             <!-- Auto-Discovery Quick Action -->
-            <Border Classes="glass-card">
+            <Border Classes="matte-card" Padding="16">
                 <StackPanel Spacing="12">
                     <StackPanel Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
                         <TextBlock Text="🔍 AI Ecosystem Auto-Discovery" FontSize="16" FontWeight="Bold" Foreground="{StaticResource TextMainBrush}"/>
@@ -16,39 +16,48 @@
 
                     <Button Content="🔍 Auto-Detect Installed Tools" 
                             Command="{Binding AutoDetectToolsCommand}"
-                            Classes="glass-primary" 
+                            Classes="matte-primary" 
                             HorizontalAlignment="Left"/>
                 </StackPanel>
             </Border>
 
             <!-- Theme & Interface Mode Switcher -->
-            <Border Classes="glass-card">
+            <Border Classes="matte-card" Padding="16">
                 <StackPanel Spacing="12">
                     <TextBlock Text="🎨 Desktop Theme &amp; Web Interface Options" FontSize="16" FontWeight="Bold" Foreground="{StaticResource TextMainBrush}"/>
-                    <TextBlock Text="Try switching between desktop themes or launch the browser dashboard:" FontSize="13" Foreground="{StaticResource TextMutedBrush}"/>
+                    <TextBlock Text="Select dynamic theme palette or switch framework theme styles:" FontSize="13" Foreground="{StaticResource TextMutedBrush}"/>
 
+                    <StackPanel Spacing="6">
+                        <TextBlock Text="Theme Palette" FontSize="13" Foreground="{StaticResource TextMutedBrush}" FontWeight="Medium"/>
+                        <ComboBox ItemsSource="{Binding AvailableThemes}"
+                                  SelectedItem="{Binding SelectedTheme, Mode=TwoWay}"
+                                  HorizontalAlignment="Left"
+                                  MinWidth="240"/>
+                    </StackPanel>
+
+                    <TextBlock Text="Framework Theme Style:" FontSize="13" Foreground="{StaticResource TextMutedBrush}" Margin="0,4,0,0"/>
                     <StackPanel Orientation="Horizontal" Spacing="10">
                         <Button Content="✨ Semi Design Dark Theme" Command="{Binding SwitchThemeStyleCommand}" CommandParameter="semi"
-                                Classes="glass-primary"/>
+                                Classes="matte-primary"/>
                         <Button Content="⚡ Fluent Dark Theme" Command="{Binding SwitchThemeStyleCommand}" CommandParameter="fluent"
-                                Classes="glass-secondary"/>
+                                Classes="matte-secondary"/>
                     </StackPanel>
                 </StackPanel>
             </Border>
 
             <!-- Remote Access -->
-            <Border Classes="glass-card">
+            <Border Classes="matte-card" Padding="16">
                 <StackPanel Spacing="10">
                     <TextBlock Text="🌐 Remote &amp; Mobile Access URL" FontSize="16" FontWeight="Bold" Foreground="{StaticResource TextMainBrush}"/>
                     <TextBlock Text="Connect to this manager from your smartphone, tablet, or laptop:" FontSize="13" Foreground="{StaticResource TextMutedBrush}"/>
-                    <Border Classes="telemetry-pill" HorizontalAlignment="Left">
-                        <SelectableTextBlock Text="{Binding LanAccessUrl}" FontSize="15" FontWeight="Bold" Foreground="{StaticResource SecondaryBrush}"/>
+                    <Border Classes="matte-pill" HorizontalAlignment="Left" Padding="10,6">
+                        <SelectableTextBlock Text="{Binding LanAccessUrl}" FontSize="14" FontWeight="Bold" Foreground="{StaticResource SecondaryBrush}"/>
                     </Border>
                 </StackPanel>
             </Border>
 
             <!-- Paths and Settings -->
-            <Border Classes="glass-card">
+            <Border Classes="matte-card" Padding="16">
                 <StackPanel Spacing="14">
                     <TextBlock Text="🛠️ Executable &amp; Directory Paths" FontSize="16" FontWeight="Bold" Foreground="{StaticResource TextMainBrush}"/>
 
@@ -56,13 +65,13 @@
                     <StackPanel Spacing="4">
                         <StackPanel Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
                             <TextBlock Text="ComfyUI Executable Path" FontSize="13" Foreground="{StaticResource TextMutedBrush}" FontWeight="Medium"/>
-                            <Border Classes="telemetry-pill" Padding="6,2">
+                            <Border Classes="matte-pill" Padding="6,2">
                                 <TextBlock Text="{Binding ComfyUiExecutableStatus}" FontSize="11" FontWeight="Bold"/>
                             </Border>
                         </StackPanel>
                         <Grid ColumnDefinitions="*,Auto">
-                            <TextBox Grid.Column="0" Text="{Binding ComfyUiExecutablePath, Mode=TwoWay}" Classes="glass-input"/>
-                            <Button Grid.Column="1" Content="📁 Browse..." Command="{Binding BrowseComfyExecutableCommand}" Margin="8,0,0,0" Classes="glass-secondary"/>
+                            <TextBox Grid.Column="0" Text="{Binding ComfyUiExecutablePath, Mode=TwoWay}" Classes="matte-input"/>
+                            <Button Grid.Column="1" Content="📁 Browse..." Command="{Binding BrowseComfyExecutableCommand}" Margin="8,0,0,0" Classes="matte-secondary"/>
                         </Grid>
                     </StackPanel>
 
@@ -70,13 +79,13 @@
                     <StackPanel Spacing="4">
                         <StackPanel Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
                             <TextBlock Text="Forge Executable Path" FontSize="13" Foreground="{StaticResource TextMutedBrush}" FontWeight="Medium"/>
-                            <Border Classes="telemetry-pill" Padding="6,2">
+                            <Border Classes="matte-pill" Padding="6,2">
                                 <TextBlock Text="{Binding ForgeExecutableStatus}" FontSize="11" FontWeight="Bold"/>
                             </Border>
                         </StackPanel>
                         <Grid ColumnDefinitions="*,Auto">
-                            <TextBox Grid.Column="0" Text="{Binding ForgeExecutablePath, Mode=TwoWay}" Classes="glass-input"/>
-                            <Button Grid.Column="1" Content="📁 Browse..." Command="{Binding BrowseForgeExecutableCommand}" Margin="8,0,0,0" Classes="glass-secondary"/>
+                            <TextBox Grid.Column="0" Text="{Binding ForgeExecutablePath, Mode=TwoWay}" Classes="matte-input"/>
+                            <Button Grid.Column="1" Content="📁 Browse..." Command="{Binding BrowseForgeExecutableCommand}" Margin="8,0,0,0" Classes="matte-secondary"/>
                         </Grid>
                     </StackPanel>
 
@@ -84,13 +93,13 @@
                     <StackPanel Spacing="4">
                         <StackPanel Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
                             <TextBlock Text="Ollama Executable Path" FontSize="13" Foreground="{StaticResource TextMutedBrush}" FontWeight="Medium"/>
-                            <Border Classes="telemetry-pill" Padding="6,2">
+                            <Border Classes="matte-pill" Padding="6,2">
                                 <TextBlock Text="{Binding OllamaStatus}" FontSize="11" FontWeight="Bold"/>
                             </Border>
                         </StackPanel>
                         <Grid ColumnDefinitions="*,Auto">
-                            <TextBox Grid.Column="0" Text="{Binding OllamaExecutablePath, Mode=TwoWay}" Classes="glass-input"/>
-                            <Button Grid.Column="1" Content="📁 Browse..." Command="{Binding BrowseOllamaExecutableCommand}" Margin="8,0,0,0" Classes="glass-secondary"/>
+                            <TextBox Grid.Column="0" Text="{Binding OllamaExecutablePath, Mode=TwoWay}" Classes="matte-input"/>
+                            <Button Grid.Column="1" Content="📁 Browse..." Command="{Binding BrowseOllamaExecutableCommand}" Margin="8,0,0,0" Classes="matte-secondary"/>
                         </Grid>
                     </StackPanel>
 
@@ -98,13 +107,13 @@
                     <StackPanel Spacing="4">
                         <StackPanel Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
                             <TextBlock Text="Forge Models Directory Path" FontSize="13" Foreground="{StaticResource TextMutedBrush}" FontWeight="Medium"/>
-                            <Border Classes="telemetry-pill" Padding="6,2">
+                            <Border Classes="matte-pill" Padding="6,2">
                                 <TextBlock Text="{Binding ForgeModelsStatus}" FontSize="11" FontWeight="Bold"/>
                             </Border>
                         </StackPanel>
                         <Grid ColumnDefinitions="*,Auto">
-                            <TextBox Grid.Column="0" Text="{Binding ForgeModelsPath, Mode=TwoWay}" Classes="glass-input"/>
-                            <Button Grid.Column="1" Content="📁 Browse..." Command="{Binding BrowseForgeModelsCommand}" Margin="8,0,0,0" Classes="glass-secondary"/>
+                            <TextBox Grid.Column="0" Text="{Binding ForgeModelsPath, Mode=TwoWay}" Classes="matte-input"/>
+                            <Button Grid.Column="1" Content="📁 Browse..." Command="{Binding BrowseForgeModelsCommand}" Margin="8,0,0,0" Classes="matte-secondary"/>
                         </Grid>
                     </StackPanel>
 
@@ -112,13 +121,13 @@
                     <StackPanel Spacing="4">
                         <StackPanel Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
                             <TextBlock Text="ComfyUI Models Directory Path" FontSize="13" Foreground="{StaticResource TextMutedBrush}" FontWeight="Medium"/>
-                            <Border Classes="telemetry-pill" Padding="6,2">
+                            <Border Classes="matte-pill" Padding="6,2">
                                 <TextBlock Text="{Binding ComfyModelsStatus}" FontSize="11" FontWeight="Bold"/>
                             </Border>
                         </StackPanel>
                         <Grid ColumnDefinitions="*,Auto">
-                            <TextBox Grid.Column="0" Text="{Binding ComfyModelsPath, Mode=TwoWay}" Classes="glass-input"/>
-                            <Button Grid.Column="1" Content="📁 Browse..." Command="{Binding BrowseComfyModelsCommand}" Margin="8,0,0,0" Classes="glass-secondary"/>
+                            <TextBox Grid.Column="0" Text="{Binding ComfyModelsPath, Mode=TwoWay}" Classes="matte-input"/>
+                            <Button Grid.Column="1" Content="📁 Browse..." Command="{Binding BrowseComfyModelsCommand}" Margin="8,0,0,0" Classes="matte-secondary"/>
                         </Grid>
                     </StackPanel>
 
@@ -126,13 +135,13 @@
                     <StackPanel Spacing="4">
                         <StackPanel Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
                             <TextBlock Text="3D Models Output Path" FontSize="13" Foreground="{StaticResource TextMutedBrush}" FontWeight="Medium"/>
-                            <Border Classes="telemetry-pill" Padding="6,2">
+                            <Border Classes="matte-pill" Padding="6,2">
                                 <TextBlock Text="{Binding ThreeDModelsStatus}" FontSize="11" FontWeight="Bold"/>
                             </Border>
                         </StackPanel>
                         <Grid ColumnDefinitions="*,Auto">
-                            <TextBox Grid.Column="0" Text="{Binding ThreeDModelsPath, Mode=TwoWay}" Classes="glass-input"/>
-                            <Button Grid.Column="1" Content="📁 Browse..." Command="{Binding BrowseThreeDModelsCommand}" Margin="8,0,0,0" Classes="glass-secondary"/>
+                            <TextBox Grid.Column="0" Text="{Binding ThreeDModelsPath, Mode=TwoWay}" Classes="matte-input"/>
+                            <Button Grid.Column="1" Content="📁 Browse..." Command="{Binding BrowseThreeDModelsCommand}" Margin="8,0,0,0" Classes="matte-secondary"/>
                         </Grid>
                     </StackPanel>
 
@@ -140,30 +149,30 @@
                     <StackPanel Spacing="4">
                         <StackPanel Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
                             <TextBlock Text="Workflows Directory Path" FontSize="13" Foreground="{StaticResource TextMutedBrush}" FontWeight="Medium"/>
-                            <Border Classes="telemetry-pill" Padding="6,2">
+                            <Border Classes="matte-pill" Padding="6,2">
                                 <TextBlock Text="{Binding WorkflowsStatus}" FontSize="11" FontWeight="Bold"/>
                             </Border>
                         </StackPanel>
                         <Grid ColumnDefinitions="*,Auto">
-                            <TextBox Grid.Column="0" Text="{Binding WorkflowsPath, Mode=TwoWay}" Classes="glass-input"/>
-                            <Button Grid.Column="1" Content="📁 Browse..." Command="{Binding BrowseWorkflowsCommand}" Margin="8,0,0,0" Classes="glass-secondary"/>
+                            <TextBox Grid.Column="0" Text="{Binding WorkflowsPath, Mode=TwoWay}" Classes="matte-input"/>
+                            <Button Grid.Column="1" Content="📁 Browse..." Command="{Binding BrowseWorkflowsCommand}" Margin="8,0,0,0" Classes="matte-secondary"/>
                         </Grid>
                     </StackPanel>
 
                     <!-- ComfyUI URL -->
                     <StackPanel Spacing="4">
                         <TextBlock Text="ComfyUI URL" FontSize="13" Foreground="{StaticResource TextMutedBrush}" FontWeight="Medium"/>
-                        <TextBox Text="{Binding ComfyUiUrl, Mode=TwoWay}" Classes="glass-input"/>
+                        <TextBox Text="{Binding ComfyUiUrl, Mode=TwoWay}" Classes="matte-input"/>
                     </StackPanel>
 
                     <!-- Preferred Image Engine -->
                     <StackPanel Spacing="4">
                         <TextBlock Text="Preferred Image Engine" FontSize="13" Foreground="{StaticResource TextMutedBrush}" FontWeight="Medium"/>
-                        <TextBox Text="{Binding PreferredImageEngine, Mode=TwoWay}" Classes="glass-input"/>
+                        <TextBox Text="{Binding PreferredImageEngine, Mode=TwoWay}" Classes="matte-input"/>
                     </StackPanel>
 
                     <Button Command="{Binding SaveSettingsCommand}" 
-                            Classes="glass-primary" HorizontalAlignment="Left" Margin="0,8,0,0">
+                            Classes="matte-primary" HorizontalAlignment="Left" Margin="0,8,0,0">
                         💾 Save Settings
                     </Button>
                 </StackPanel>

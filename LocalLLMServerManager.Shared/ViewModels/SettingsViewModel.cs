@@ -41,8 +41,25 @@ public partial class SettingsViewModel : ObservableObject
 
     public string OllamaExecutableStatus => OllamaStatus;
 
-    public SettingsViewModel()
+    private readonly IThemeService _themeService;
+
+    public IReadOnlyList<string> AvailableThemes { get; } = new[]
     {
+        "Matte Carbon (Default)",
+        "OLED Pure Black",
+        "Clean Light"
+    };
+
+    [ObservableProperty] private string _selectedTheme = "Matte Carbon (Default)";
+
+    public SettingsViewModel() : this(ThemeService.Instance)
+    {
+    }
+
+    public SettingsViewModel(IThemeService themeService)
+    {
+        _themeService = themeService ?? ThemeService.Instance;
+        _selectedTheme = MapThemeToString(_themeService.CurrentTheme);
         RefreshAllStatuses();
     }
 
@@ -57,6 +74,26 @@ public partial class SettingsViewModel : ObservableObject
         OllamaStatus = EvaluateExecutableStatus(value);
         OnPropertyChanged(nameof(OllamaExecutableStatus));
     }
+
+    partial void OnSelectedThemeChanged(string value)
+    {
+        var theme = MapStringToTheme(value);
+        _themeService?.SetTheme(theme);
+    }
+
+    public static string MapThemeToString(AppTheme theme) => theme switch
+    {
+        AppTheme.OledBlack => "OLED Pure Black",
+        AppTheme.Light => "Clean Light",
+        _ => "Matte Carbon (Default)"
+    };
+
+    public static AppTheme MapStringToTheme(string? themeName) => themeName switch
+    {
+        "OLED Pure Black" => AppTheme.OledBlack,
+        "Clean Light" => AppTheme.Light,
+        _ => AppTheme.MatteCarbon
+    };
 
     public void RefreshAllStatuses()
     {
