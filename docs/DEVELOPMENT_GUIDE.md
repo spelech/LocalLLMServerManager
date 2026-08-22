@@ -30,7 +30,7 @@ LocalLLMServerManager/
 │   ├── DiscoveryEndpoints.cs                # /api/tools/detect, /api/tools/validate-path
 │   ├── EngineEndpoints.cs                   # /api/gpu/vram, /api/settings, /api/comfy/*, /api/forge/*
 │   ├── HealthEndpoints.cs                   # /health healthcheck endpoint
-│   ├── McpEndpoints.cs                      # /api/mcp/tools Model Context Protocol JSON-RPC API
+│   ├── McpEndpoints.cs                      # /mcp Model Context Protocol Streamable HTTP / SSE Endpoint
 │   ├── ModelProxyEndpoints.cs               # /api/models, /api/ollama/ps, /api/hf/*, /api/civitai/*
 │   └── WorkflowEndpoints.cs                # /api/comfy/workflows, /api/3d/files
 ├── Services/                                # Concrete Server Infrastructure Services

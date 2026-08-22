@@ -41,7 +41,7 @@ graph TD
                 E_Engine["EngineEndpoints (/api/gpu/vram, /api/settings, /api/comfy/*, /api/forge/*)"]
                 E_Workflow["WorkflowEndpoints (/api/comfy/workflows, /api/3d/files)"]
                 E_Disc["DiscoveryEndpoints (/api/tools/detect, /api/tools/validate-path)"]
-                E_MCP["McpEndpoints (/mcp Streamable HTTP / SSE, /api/mcp/tools)"]
+                E_MCP["McpEndpoints (/mcp Streamable HTTP / SSE)"]
             end
 
             subgraph CoreServices["Application Services (DI Container)"]
@@ -64,7 +64,7 @@ graph TD
         end
     end
 
-    ClaudeAgent -->|JSON-RPC 2.0 /mcp & /api/mcp/tools| E_MCP
+    ClaudeAgent -->|JSON-RPC 2.0 /mcp| E_MCP
     E_MCP --> S_MCP
     S_MCP --> S_Telemetry
     S_MCP --> S_EngineMgr

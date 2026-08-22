@@ -359,43 +359,9 @@ public class McpServerIntegrationTests : IClassFixture<AppTestServerFixture>
     }
 
     [Fact]
-    public async Task LegacyMcpToolsEndpoint_ReturnsAllToolMetadata()
-    {
-        var response = await _client.GetAsync("/api/mcp/tools");
-        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
-
-        var json = await response.Content.ReadAsStringAsync();
-        var doc = JsonNode.Parse(json);
-        Assert.NotNull(doc);
-
-        Assert.Equal("mcp", doc?["protocol"]?.ToString());
-        Assert.Equal("2024-11-05", doc?["version"]?.ToString());
-        Assert.Equal("/mcp", doc?["endpoint"]?.ToString());
-
-        var tools = doc?["tools"]?.AsArray();
-        Assert.NotNull(tools);
-        Assert.Equal(8, tools.Count);
-
-        var toolNames = tools.Select(t => t?["name"]?.ToString()).ToList();
-        Assert.Contains("get_gpu_vram", toolNames);
-        Assert.Contains("check_health", toolNames);
-        Assert.Contains("list_models", toolNames);
-        Assert.Contains("pull_model", toolNames);
-        Assert.Contains("unload_vram", toolNames);
-        Assert.Contains("start_engine", toolNames);
-        Assert.Contains("stop_engine", toolNames);
-        Assert.Contains("detect_tools", toolNames);
-
-        foreach (var tool in tools)
-        {
-            Assert.False(string.IsNullOrWhiteSpace(tool?["description"]?.ToString()));
-        }
-    }
-
-    [Fact]
     public async Task McpEndpoint_IsRegisteredAndAccessible()
     {
-        // MCP HTTP transport in ModelContextProtocol.AspNetCore accepts POST (JSON-RPC)
+        // Standard MCP HTTP transport in ModelContextProtocol.AspNetCore accepts POST (JSON-RPC)
         var postContent = new StringContent("{\"jsonrpc\":\"2.0\",\"id\":1,\"method\":\"tools/list\"}", System.Text.Encoding.UTF8, "application/json");
         var response = await _client.PostAsync("/mcp", postContent);
         Assert.NotEqual(HttpStatusCode.NotFound, response.StatusCode);

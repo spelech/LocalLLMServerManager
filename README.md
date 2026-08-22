@@ -1,8 +1,7 @@
 # Local LLM Server Manager
 
 > **v3.5.0** — A unified cross-platform application (.NET 10 + Avalonia UI & WebAssembly), System Tray app, background service/daemon, Model Context Protocol (MCP) AI API, visual orchestrator dashboard, and automated Playwright E2E testing framework to manage local Large Language Models (**Ollama**), Image Generation (**Stable Diffusion / Forge & ComfyUI**), and **3D Mesh Generation (TRELLIS V2 & Hunyuan3D v2)** on Windows, Linux, Mobile, and Web.
-
-It tracks GPU VRAM usage in real time via NVML CUDA telemetry, profiles model capabilities, computes KV Cache memory footprints, integrates with the **Hugging Face Hub** to discover and pull GGUF models, connects to **CivitAI** to browse and download Stable Diffusion checkpoints directly to disk, features a **3D & ComfyUI Studio** with an interactive WebGL 3D canvas viewer, provides a **Unified Avalonia XAML WebAssembly (WASM)** interface across mobile and desktop browsers, exposes a compliant **Model Context Protocol (MCP) Server** (`/mcp` and `/api/mcp/tools`) for AI assistants (Antigravity, Claude Desktop, Cursor), and supports seamless **in-place upgrades** across Windows and Linux installers.
+It tracks GPU VRAM usage in real time via NVML CUDA telemetry, profiles model capabilities, computes KV Cache memory footprints, integrates with the **Hugging Face Hub** to discover and pull GGUF models, connects to **CivitAI** to browse and download Stable Diffusion checkpoints directly to disk, features a **3D & ComfyUI Studio** with an interactive WebGL 3D canvas viewer, provides a **Unified Avalonia XAML WebAssembly (WASM)** interface across mobile and desktop browsers, exposes a compliant **Model Context Protocol (MCP) Server** (`/mcp`) for AI assistants (Antigravity, Claude Desktop, Cursor), and supports seamless **in-place upgrades** across Windows and Linux installers.
 
 ![Dashboard Overview](docs/images/dashboard_desktop.png)
 
@@ -51,48 +50,47 @@ The application features a dark Fluent Avalonia UI theme (`#0F172A`) organized i
 ### Model Context Protocol (MCP) AI Automation
 6. **Official MCP Streamable HTTP / SSE Endpoint (`/mcp`)** — Fully compliant Model Context Protocol (MCP) server built with `ModelContextProtocol.AspNetCore` enabling AI assistants (Antigravity, Claude Desktop, Cursor, Open WebUI) to automate server operations over JSON-RPC 2.0.
 7. **8 Native MCP AI Tools** — Exposes comprehensive tools for telemetry (`get_gpu_vram`), health probing (`check_health`), model management (`list_models`, `pull_model`, `unload_vram`), process control (`start_engine`, `stop_engine`), and filesystem tool auto-discovery (`detect_tools`).
-8. **Backward-Compatible Discovery (`GET /api/mcp/tools`)** — Preserves lightweight JSON schema discovery for REST-only agents and custom tooling.
 
 ### LLM Management (Ollama & Hugging Face Hub)
-9. **Service Health Checks** — Real-time status indicators for Ollama (`11434`), Stable Diffusion / Forge (`7860`), and ComfyUI (`8188`).
-10. **Cross-Platform VRAM Telemetry** — Reads GPU name and VRAM via NVML CUDA (`nvidia-smi`), Windows Registry, or Linux system memory (`/proc/meminfo`). Correctly reports e.g. *NVIDIA GeForce RTX 4070 Ti SUPER — 16 GB*.
-11. **VRAM Usage Visualizer** — Stacked bar showing loaded-model VRAM vs free GPU memory.
-12. **KV Cache Context Calculator** — Slide target token length (up to 32 K tokens) to preview weights + KV cache sizes and warn when context exceeds VRAM.
-13. **Model Capabilities Profile** — Tags model families (Llama, Gemma, Qwen, Phi, Mistral, DeepSeek) with use-case badges (`Coding`, `Reasoning`, `Math`, `Chat`).
-14. **Hugging Face Hub Integration** — Search GGUF repos, select quantization, inspect file sizes, and download with a live SSE progress stream.
-15. **Ollama Library Quick-Pull** — Pre-populated cards for popular models (gemma2, llama3.2, qwen2.5-coder, phi3) with size estimates and one-click pull.
-16. **Custom Pull** — Type any `user/model:tag` to pull an arbitrary Ollama model.
-17. **Concurrent Model Preloading** — Trigger indefinite VRAM holds (`keep_alive: -1`) to run multiple models side-by-side.
+8. **Service Health Checks** — Real-time status indicators for Ollama (`11434`), Stable Diffusion / Forge (`7860`), and ComfyUI (`8188`).
+9. **Cross-Platform VRAM Telemetry** — Reads GPU name and VRAM via NVML CUDA (`nvidia-smi`), Windows Registry, or Linux system memory (`/proc/meminfo`). Correctly reports e.g. *NVIDIA GeForce RTX 4070 Ti SUPER — 16 GB*.
+10. **VRAM Usage Visualizer** — Stacked bar showing loaded-model VRAM vs free GPU memory.
+11. **KV Cache Context Calculator** — Slide target token length (up to 32 K tokens) to preview weights + KV cache sizes and warn when context exceeds VRAM.
+12. **Model Capabilities Profile** — Tags model families (Llama, Gemma, Qwen, Phi, Mistral, DeepSeek) with use-case badges (`Coding`, `Reasoning`, `Math`, `Chat`).
+13. **Hugging Face Hub Integration** — Search GGUF repos, select quantization, inspect file sizes, and download with a live SSE progress stream.
+14. **Ollama Library Quick-Pull** — Pre-populated cards for popular models (gemma2, llama3.2, qwen2.5-coder, phi3) with size estimates and one-click pull.
+15. **Custom Pull** — Type any `user/model:tag` to pull an arbitrary Ollama model.
+16. **Concurrent Model Preloading** — Trigger indefinite VRAM holds (`keep_alive: -1`) to run multiple models side-by-side.
 
 ![Ollama Installed Models](docs/images/dashboard_ollama.png)
 
 ![Hugging Face GGUF Search](docs/images/dashboard_huggingface.png)
 
 ### 3D Mesh & ComfyUI Generation (TRELLIS V2 / Hunyuan3D v2)
-18. **ComfyUI Integration** — Proxy ComfyUI workflow execution, API requests, and WebSocket progress directly through port 5246.
-19. **3D Mesh Generation** — Run TRELLIS V2 and Hunyuan3D v2 workflows for Image-to-3D and Text-to-3D mesh generation (.glb / .gltf).
-20. **Interactive WebGL 3D Canvas** — Render generated 3D meshes natively in-browser using `<model-viewer>` with 360° orbital controls, wireframe toggles, lighting options, and GLB export.
-21. **Bundled API Workflow Presets** — Ships with default ready-to-run API JSON templates for TRELLIS V2, Hunyuan3D v2, and FLUX/SDXL image generation.
-22. **Engine Preference Switcher** — Easily set your preferred default image generator engine (Forge vs ComfyUI).
+17. **ComfyUI Integration** — Proxy ComfyUI workflow execution, API requests, and WebSocket progress directly through port 5246.
+18. **3D Mesh Generation** — Run TRELLIS V2 and Hunyuan3D v2 workflows for Image-to-3D and Text-to-3D mesh generation (.glb / .gltf).
+19. **Interactive WebGL 3D Canvas** — Render generated 3D meshes natively in-browser using `<model-viewer>` with 360° orbital controls, wireframe toggles, lighting options, and GLB export.
+20. **Bundled API Workflow Presets** — Ships with default ready-to-run API JSON templates for TRELLIS V2, Hunyuan3D v2, and FLUX/SDXL image generation.
+21. **Engine Preference Switcher** — Easily set your preferred default image generator engine (Forge vs ComfyUI).
 
 ![3D Mesh & ComfyUI Studio](docs/images/dashboard_3d_studio.png)
 
 ### Stable Diffusion / Forge & CivitAI
-23. **CivitAI Integration** — Search by name, type (Checkpoint / LoRA / Embedding / VAE / ControlNet), and sort order. Shows preview thumbnails, download counts, and star ratings.
-24. **Direct-to-Disk Downloads** — Stream CivitAI files directly to disk with live progress bars.
+22. **CivitAI Integration** — Search by name, type (Checkpoint / LoRA / Embedding / VAE / ControlNet), and sort order. Shows preview thumbnails, download counts, and star ratings.
+23. **Direct-to-Disk Downloads** — Stream CivitAI files directly to disk with live progress bars.
 
 ![CivitAI SD Checkpoints](docs/images/dashboard_civitai.png)
 
 ### Application Settings & Engine Controls
-25. **Flexible Path Configuration & Auto-Discovery** — Customize executable/script paths and model directories for Ollama, Stable Diffusion / Forge, and ComfyUI. Use the one-click "🔍 Auto-Detect Installed Tools" feature (or `POST /api/tools/detect`) to automatically scan common install locations across drives, with real-time path validation badges (`Valid` 🟢 / `Missing` 🔴 / `Unset` ⚪).
+24. **Flexible Path Configuration & Auto-Discovery** — Customize executable/script paths and model directories for Ollama, Stable Diffusion / Forge, and ComfyUI. Use the one-click "🔍 Auto-Detect Installed Tools" feature (or `POST /api/tools/detect`) to automatically scan common install locations across drives, with real-time path validation badges (`Valid` 🟢 / `Missing` 🔴 / `Unset` ⚪).
 
 ![Application Settings](docs/images/dashboard_settings.png)
 
 ### Infrastructure & Reverse Proxy
-26. **YARP Reverse Proxy** — Transparently proxies Ollama (`:11434`), Forge (`:7860`), and ComfyUI (`:8188`) traffic through a single endpoint (`:5246`).
-27. **VRAM Orchestrator** — Auto-unloads active LLM models from GPU memory before heavy Stable Diffusion or ComfyUI 3D render jobs to prevent OOM errors.
-28. **Background Engine Management** — UI controls to start/stop engines directly from the dashboard cleanly.
-29. **Lazy Boot** — AI engines can now boot lazily on-demand when first requested, conserving system resources when idle.
+25. **YARP Reverse Proxy** — Transparently proxies Ollama (`:11434`), Forge (`:7860`), and ComfyUI (`:8188`) traffic through a single endpoint (`:5246`).
+26. **VRAM Orchestrator** — Auto-unloads active LLM models from GPU memory before heavy Stable Diffusion or ComfyUI 3D render jobs to prevent OOM errors.
+27. **Background Engine Management** — UI controls to start/stop engines directly from the dashboard cleanly.
+28. **Lazy Boot** — AI engines can now boot lazily on-demand when first requested, conserving system resources when idle.
 
 ---
 
@@ -104,7 +102,7 @@ The application features a dark Fluent Avalonia UI theme (`#0F172A`) organized i
                   | - Claude Desktop / Antigravity / Cursor / Agents|
                   | - Model Context Protocol Streamable HTTP / SSE  |
                   +------------------------+------------------------+
-                                           | JSON-RPC 2.0 (/mcp, /api/mcp/tools)
+                                           | JSON-RPC 2.0 (/mcp)
                                            v
                   +----------------------------------------------+
                   |  Desktop Session (User Logon - Win/Linux)    |
@@ -117,7 +115,7 @@ The application features a dark Fluent Avalonia UI theme (`#0F172A`) organized i
 +-----------------------------------------------------------------------------------+
 |  Local HTTP Server & Reverse Proxy Host                                           |
 |  - ASP.NET Core Web API + YARP Reverse Proxy (:5246)                              |
-|  - Model Context Protocol (MCP) Server (/mcp & /api/mcp/tools)                    |
+|  - Model Context Protocol (MCP) Server (/mcp)                                     |
 |  - VRAM Orchestrator & Process Management                                         |
 |  - Responsive Web Dashboard & WebGL 3D Studio (wwwroot)                           |
 +------------------------------------+----------------------------------------------+
@@ -143,7 +141,6 @@ LocalLLMServerManager includes a native **Model Context Protocol (MCP)** server 
 
 ### Endpoints
 * **`/mcp` (Streamable HTTP / SSE)**: Standard JSON-RPC 2.0 endpoint implementing the official Model Context Protocol (2024-11-05 specification) via `ModelContextProtocol.AspNetCore`. Supports session streaming, `tools/list`, and `tools/call`.
-* **`/api/mcp/tools` (REST Discovery)**: Lightweight JSON endpoint returning tool signatures and capability metadata for REST clients.
 
 ### Available MCP Tools (8 Tools)
 
@@ -156,7 +153,7 @@ LocalLLMServerManager includes a native **Model Context Protocol (MCP)** server 
 | **`unload_vram`** | *none* | Releases all loaded LLM models from GPU VRAM (`keep_alive: 0`) to free memory for diffusion or 3D generation. | `VramOrchestrator` / Ollama |
 | **`start_engine`** | `engine` *('forge' \| 'comfyui')* | Spawns and supervises an AI backend engine process. | `IAiEngineManager` (Win32 Job / Process) |
 | **`stop_engine`** | `engine` *('forge' \| 'comfyui')* | Gracefully terminates an AI backend engine process. | `IAiEngineManager` |
-| **`detect_tools`** | *none* | Scans system drives, environment variables, and default paths for Ollama, ComfyUI, and SD Forge. | `IToolDiscoveryService` |
+| **`detect_tools`** | *none* | Scans system drives, environment variables, and default paths for Ollama, ComfyUI, and SD Forge. | `IToolDiscoveryService` || Scans system drives, environment variables, and default paths for Ollama, ComfyUI, and SD Forge. | `IToolDiscoveryService` |
 
 ### Connecting AI Assistants to LocalLLMServerManager
 
@@ -352,7 +349,7 @@ We use **MAJOR.MINOR.PATCH** (SemVer):
 | `3.2.0` | Fixed WASM launcher script routing, added `/api/models` backend proxy, updated high-res 32-bit icon, added end-to-end integration tests, and completed repo housekeeping |
 | `3.3.0` | Major architecture refactoring — decomposed Program.cs and MainViewModel into modular interfaces, services, and endpoint route extensions |
 | `3.4.0` | Added Playwright automated E2E browser testing, real WebAssembly UI screenshot generator, Docker containerization support, and Kestrel WASM static asset MIME type mappings |
-| `3.5.0` | Flexible tool path configuration, multi-drive auto-discovery service (`IToolDiscoveryService`), `POST /api/tools/detect`, official Model Context Protocol (MCP) server endpoints (`/mcp` and `/api/mcp/tools`) with 8 AI automation tools, and graceful in-place update support across Windows Inno Setup and shell installers |
+| `3.5.0` | Flexible tool path configuration, multi-drive auto-discovery service (`IToolDiscoveryService`), `POST /api/tools/detect`, official Model Context Protocol (MCP) server endpoint (`/mcp`) with 8 AI automation tools, and graceful in-place update support across Windows Inno Setup and shell installers |
 
 ---
 
