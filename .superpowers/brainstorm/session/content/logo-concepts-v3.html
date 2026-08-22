@@ -1,0 +1,301 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Local LLM Server Manager — L³M² Brand Identity</title>
+  <style>
+    :root {
+      --bg: #0f1115;
+      --card-bg: #171a21;
+      --border: #262b35;
+      --text: #f0f2f5;
+      --text-muted: #8b93a4;
+      --accent: #10b981;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      padding: 48px 24px;
+    }
+    header {
+      text-align: center;
+      max-width: 760px;
+      margin: 0 auto 40px auto;
+    }
+    .badge-pill {
+      display: inline-block;
+      font-size: 0.75rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      padding: 5px 12px;
+      border-radius: 999px;
+      background: #202632;
+      color: #38bdf8;
+      border: 1px solid #334155;
+      margin-bottom: 16px;
+    }
+    h1 {
+      font-size: 2.2rem;
+      font-weight: 700;
+      color: #ffffff;
+      margin-bottom: 12px;
+      letter-spacing: -0.02em;
+    }
+    p.subtitle {
+      color: var(--text-muted);
+      font-size: 1.05rem;
+      line-height: 1.6;
+    }
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(360px, 1fr));
+      gap: 32px;
+      max-width: 1100px;
+      margin: 0 auto 50px auto;
+    }
+    .card {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      transition: border-color 0.2s ease, transform 0.2s ease;
+    }
+    .card:hover {
+      border-color: #475569;
+      transform: translateY(-4px);
+    }
+    .image-wrapper {
+      background: #090a0d;
+      padding: 32px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-bottom: 1px solid var(--border);
+    }
+    .image-wrapper img {
+      width: 100%;
+      max-width: 280px;
+      aspect-ratio: 1/1;
+      border-radius: 20px;
+      object-fit: cover;
+      border: 1px solid rgba(255, 255, 255, 0.06);
+    }
+    .card-content {
+      padding: 24px;
+      display: flex;
+      flex-direction: column;
+      flex-grow: 1;
+    }
+    h2 {
+      font-size: 1.3rem;
+      font-weight: 600;
+      margin-bottom: 8px;
+      color: #ffffff;
+    }
+    p.desc {
+      color: var(--text-muted);
+      font-size: 0.92rem;
+      line-height: 1.55;
+      margin-bottom: 18px;
+    }
+
+    /* Live Vector Playground */
+    .playground-section {
+      max-width: 1100px;
+      margin: 0 auto 50px auto;
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 32px;
+    }
+    .playground-header {
+      margin-bottom: 24px;
+    }
+    .playground-header h3 {
+      font-size: 1.25rem;
+      margin-bottom: 6px;
+    }
+    .controls {
+      display: flex;
+      gap: 12px;
+      align-items: center;
+      flex-wrap: wrap;
+      margin-bottom: 28px;
+    }
+    .btn-color {
+      border: 1px solid #374151;
+      background: #1e2430;
+      color: #e5e7eb;
+      padding: 8px 14px;
+      border-radius: 8px;
+      font-size: 0.85rem;
+      font-weight: 600;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      transition: background 0.15s ease;
+    }
+    .btn-color:hover { background: #2b3344; }
+    .dot { width: 10px; height: 10px; border-radius: 50%; display: inline-block; }
+    .dot-mint { background: #10b981; }
+    .dot-amber { background: #f59e0b; }
+    .dot-cyan { background: #06b6d4; }
+    .dot-white { background: #f3f4f6; }
+
+    .size-test-row {
+      display: flex;
+      align-items: flex-end;
+      gap: 36px;
+      flex-wrap: wrap;
+      background: #090a0d;
+      padding: 32px;
+      border-radius: 12px;
+      border: 1px solid var(--border);
+    }
+    .size-box {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 10px;
+    }
+    .size-label {
+      font-size: 0.78rem;
+      color: var(--text-muted);
+      font-family: monospace;
+    }
+
+    footer {
+      text-align: center;
+      color: var(--text-muted);
+      font-size: 0.85rem;
+      border-top: 1px solid var(--border);
+      padding-top: 24px;
+      max-width: 600px;
+      margin: 0 auto;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="badge-pill">Local LLM Server Manager • L³M²</div>
+    <h1>L³M² Monogram Exploration</h1>
+    <p class="subtitle">Swiss bold typography representing <strong>L</strong>ocal <strong>LLM</strong> <strong>M</strong>odel <strong>M</strong>anager (L³M²) with precision status accent.</p>
+  </header>
+
+  <div class="grid">
+    <!-- Concept 1 -->
+    <div class="card">
+      <div class="image-wrapper">
+        <img src="/logo_l3m2_swiss.jpg" alt="L³M² Swiss Bold Minimal">
+      </div>
+      <div class="card-content">
+        <h2>Concept 1: Swiss Bold L³M² (Clean Offset)</h2>
+        <p class="desc">
+          Ultra-bold, solid Swiss lettermark with prominent superscript exponents ³ and ² on a dark slate canvas with a subtle bottom-right status indicator.
+        </p>
+      </div>
+    </div>
+
+    <!-- Concept 2 -->
+    <div class="card">
+      <div class="image-wrapper">
+        <img src="/logo_l3m2_arch.jpg" alt="L³M² Architectural Interlock">
+      </div>
+      <div class="card-content">
+        <h2>Concept 2: Geometric L³M² (In-Nest Exponent)</h2>
+        <p class="desc">
+          Tight geometric spacing where the ³ is nested comfortably in the crook of the L, with a trailing status indicator beside M².
+        </p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Live Vector Playground & Scale Testing -->
+  <div class="playground-section">
+    <div class="playground-header">
+      <h3>Live Vector Scale & Status Accent Test</h3>
+      <p class="desc">Testing visual legibility across typical OS sizes (128px app icon down to 24px/16px tray icon).</p>
+    </div>
+
+    <div class="controls">
+      <span style="font-size:0.85rem; color:var(--text-muted); font-weight:600;">Accent Color:</span>
+      <button class="btn-color" onclick="setAccent('#10b981')"><span class="dot dot-mint"></span> Mint Green</button>
+      <button class="btn-color" onclick="setAccent('#f59e0b')"><span class="dot dot-amber"></span> Warm Amber</button>
+      <button class="btn-color" onclick="setAccent('#06b6d4')"><span class="dot dot-cyan"></span> Electric Cyan</button>
+      <button class="btn-color" onclick="setAccent('#f3f4f6')"><span class="dot dot-white"></span> Crisp Monochrome</button>
+    </div>
+
+    <div class="size-test-row">
+      <!-- 128px -->
+      <div class="size-box">
+        <svg width="128" height="128" viewBox="0 0 128 128" style="background:#14171d; border-radius:24px; border:1px solid #262b35;">
+          <text x="18" y="86" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-weight="900" font-size="52" fill="#ffffff">L</text>
+          <text x="44" y="58" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-weight="800" font-size="24" fill="#ffffff">3</text>
+          <text x="56" y="86" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-weight="900" font-size="52" fill="#ffffff">M</text>
+          <text x="96" y="58" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-weight="800" font-size="24" fill="#ffffff">2</text>
+          <circle id="dot-128" cx="108" cy="80" r="5.5" fill="#10b981" />
+        </svg>
+        <span class="size-label">128px (App Icon)</span>
+      </div>
+
+      <!-- 64px -->
+      <div class="size-box">
+        <svg width="64" height="64" viewBox="0 0 128 128" style="background:#14171d; border-radius:14px; border:1px solid #262b35;">
+          <text x="18" y="86" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-weight="900" font-size="52" fill="#ffffff">L</text>
+          <text x="44" y="58" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-weight="800" font-size="24" fill="#ffffff">3</text>
+          <text x="56" y="86" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-weight="900" font-size="52" fill="#ffffff">M</text>
+          <text x="96" y="58" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-weight="800" font-size="24" fill="#ffffff">2</text>
+          <circle class="live-dot" cx="108" cy="80" r="5.5" fill="#10b981" />
+        </svg>
+        <span class="size-label">64px (Dock/Tile)</span>
+      </div>
+
+      <!-- 32px -->
+      <div class="size-box">
+        <svg width="32" height="32" viewBox="0 0 128 128" style="background:#14171d; border-radius:8px; border:1px solid #262b35;">
+          <text x="18" y="86" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-weight="900" font-size="52" fill="#ffffff">L</text>
+          <text x="44" y="58" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-weight="800" font-size="24" fill="#ffffff">3</text>
+          <text x="56" y="86" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-weight="900" font-size="52" fill="#ffffff">M</text>
+          <text x="96" y="58" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-weight="800" font-size="24" fill="#ffffff">2</text>
+          <circle class="live-dot" cx="108" cy="80" r="5.5" fill="#10b981" />
+        </svg>
+        <span class="size-label">32px (Header)</span>
+      </div>
+
+      <!-- 20px Tray Icon -->
+      <div class="size-box">
+        <div style="background:#1f242e; padding:6px 10px; border-radius:6px; display:flex; align-items:center; gap:8px;">
+          <svg width="20" height="20" viewBox="0 0 128 128">
+            <text x="16" y="90" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-weight="900" font-size="58" fill="#ffffff">L</text>
+            <text x="46" y="56" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-weight="800" font-size="26" fill="#ffffff">3</text>
+            <text x="58" y="90" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-weight="900" font-size="58" fill="#ffffff">M</text>
+            <text x="100" y="56" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-weight="800" font-size="26" fill="#ffffff">2</text>
+            <circle class="live-dot" cx="112" cy="84" r="6" fill="#10b981" />
+          </svg>
+          <span style="font-size:0.75rem; color:#9ca3af; font-family:sans-serif;">LocalLLM</span>
+        </div>
+        <span class="size-label">20px (Tray Bar)</span>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    function setAccent(color) {
+      document.getElementById('dot-128').setAttribute('fill', color);
+      document.querySelectorAll('.live-dot').forEach(el => el.setAttribute('fill', color));
+    }
+  </script>
+
+  <footer>
+    <p>Local LLM Server Manager • Visual Companion</p>
+  </footer>
+</body>
+</html>

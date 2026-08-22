@@ -67,7 +67,7 @@
         <!-- Footer -->
         <Border Grid.Row="2" Background="{StaticResource BgSurfaceBrush}" BorderBrush="{StaticResource GlassBorderBrush}" BorderThickness="0,1,0,0" Padding="16,10,16,10" Margin="0,8,0,0">
             <Grid ColumnDefinitions="*, Auto">
-                <TextBlock Grid.Column="0" Text="LocalLLMServerManager v3.5.0 — Unified WASM &amp; Desktop UI" FontSize="12" Foreground="{StaticResource TextMutedBrush}" VerticalAlignment="Center"/>
+                <TextBlock Grid.Column="0" Text="LocalLLMServerManager v3.6.0 — Unified WASM &amp; Desktop UI" FontSize="12" Foreground="{StaticResource TextMutedBrush}" VerticalAlignment="Center"/>
                 <TextBlock Grid.Column="1" Text="System Tray Enabled 🟢" FontSize="12" Foreground="{StaticResource OnlineBrush}" FontWeight="SemiBold" VerticalAlignment="Center"/>
             </Grid>
         </Border>

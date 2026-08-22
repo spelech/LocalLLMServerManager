@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Local LLM Server Manager — Logo & Brand Concepts</title>
+  <style>
+    :root {
+      --bg-dark: #0b0e14;
+      --bg-surface: #161b26;
+      --bg-card: #1e2536;
+      --primary: #8b5cf6;
+      --secondary: #06b6d4;
+      --accent: #c084fc;
+      --text-main: #f3f4f6;
+      --text-muted: #9ca3af;
+      --border-glow: rgba(167, 139, 250, 0.3);
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+      background: radial-gradient(circle at top center, #1e1b4b 0%, #0b0e14 70%);
+      color: var(--text-main);
+      min-height: 100vh;
+      padding: 40px 24px;
+    }
+    header {
+      text-align: center;
+      margin-bottom: 40px;
+    }
+    h1 {
+      font-size: 2.25rem;
+      background: linear-gradient(135deg, #c084fc 0%, #8b5cf6 50%, #06b6d4 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      margin-bottom: 12px;
+      letter-spacing: -0.02em;
+    }
+    p.subtitle {
+      color: var(--text-muted);
+      font-size: 1.1rem;
+      max-width: 680px;
+      margin: 0 auto;
+      line-height: 1.5;
+    }
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(360px, 1fr));
+      gap: 32px;
+      max-width: 1100px;
+      margin: 0 auto 50px auto;
+    }
+    .card {
+      background: rgba(30, 37, 54, 0.7);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 20px;
+      overflow: hidden;
+      box-shadow: 0 12px 36px rgba(0, 0, 0, 0.5), 0 0 20px var(--border-glow);
+      transition: transform 0.25s ease, border-color 0.25s ease, box-shadow 0.25s ease;
+      display: flex;
+      flex-direction: column;
+    }
+    .card:hover {
+      transform: translateY(-6px);
+      border-color: var(--primary);
+      box-shadow: 0 20px 48px rgba(0, 0, 0, 0.7), 0 0 30px rgba(139, 92, 246, 0.5);
+    }
+    .image-wrapper {
+      background: #090c12;
+      padding: 24px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    }
+    .image-wrapper img {
+      width: 100%;
+      max-width: 320px;
+      aspect-ratio: 1/1;
+      border-radius: 24px;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.6);
+      object-fit: cover;
+    }
+    .card-content {
+      padding: 24px;
+      display: flex;
+      flex-direction: column;
+      flex-grow: 1;
+    }
+    .badge {
+      display: inline-block;
+      align-self: flex-start;
+      font-size: 0.75rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      padding: 4px 10px;
+      border-radius: 999px;
+      margin-bottom: 12px;
+    }
+    .badge-purple { background: rgba(139, 92, 246, 0.2); color: #c084fc; border: 1px solid rgba(139, 92, 246, 0.4); }
+    .badge-cyan { background: rgba(6, 182, 212, 0.2); color: #38bdf8; border: 1px solid rgba(6, 182, 212, 0.4); }
+    h2 {
+      font-size: 1.4rem;
+      margin-bottom: 10px;
+      color: #ffffff;
+    }
+    p.desc {
+      color: var(--text-muted);
+      font-size: 0.95rem;
+      line-height: 1.6;
+      margin-bottom: 20px;
+    }
+    .pros-list {
+      list-style: none;
+      border-top: 1px solid rgba(255, 255, 255, 0.08);
+      padding-top: 16px;
+      margin-top: auto;
+    }
+    .pros-list li {
+      font-size: 0.88rem;
+      color: #d1d5db;
+      margin-bottom: 8px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .pros-list li::before {
+      content: "✦";
+      color: var(--secondary);
+    }
+    footer {
+      text-align: center;
+      color: var(--text-muted);
+      font-size: 0.9rem;
+      border-top: 1px solid rgba(255, 255, 255, 0.08);
+      padding-top: 24px;
+      max-width: 600px;
+      margin: 0 auto;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Local LLM Server Manager — Logo Exploration</h1>
+    <p class="subtitle">Initial visual concepts generated for internal review and feedback.</p>
+  </header>
+
+  <div class="grid">
+    <!-- Concept A -->
+    <div class="card">
+      <div class="image-wrapper">
+        <img src="/logo_control_center.jpg" alt="Concept A: Cybernetic Server Hub">
+      </div>
+      <div class="card-content">
+        <span class="badge badge-purple">Concept 2 — Control Hub</span>
+        <h2>Cybernetic Orchestrator Core</h2>
+        <p class="desc">
+          Focuses on local orchestration power: a glowing LLM compute core with concentric orbital tracking rings, telemetry circuits, and futuristic neon accents.
+        </p>
+        <ul class="pros-list">
+          <li>Instantly recognizable as high-performance compute / AI server</li>
+          <li>Strong dark-mode presence for tray and window titlebars</li>
+          <li>Matches the telemetry and GPU monitoring identity</li>
+        </ul>
+      </div>
+    </div>
+
+    <!-- Concept B -->
+    <div class="card">
+      <div class="image-wrapper">
+        <img src="/logo_abstract_prism.jpg" alt="Concept B: Interlocking Glassmorphic Monogram">
+      </div>
+      <div class="card-content">
+        <span class="badge badge-cyan">Concept 3 — Geometric Minimalist</span>
+        <h2>Glassmorphic 'LM' Monogram</h2>
+        <p class="desc">
+          Clean architectural lettermark: isometric 3D interlocking <strong>L</strong> and <strong>M</strong> with frosted glass refraction and vivid ultraviolet / cyan edge lighting.
+        </p>
+        <ul class="pros-list">
+          <li>Extremely clean, modern developer tool / product aesthetic</li>
+          <li>Scales down gracefully to small icon sizes (16x16, 32x32)</li>
+          <li>Harmonizes directly with the glassmorphism UI theme</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <footer>
+    <p>Local LLM Server Manager • Visual Companion</p>
+  </footer>
+</body>
+</html>

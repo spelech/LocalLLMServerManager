@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Local LLM Server Manager — All-Isometric L³M²</title>
+  <style>
+    :root {
+      --bg: #000000;
+      --card-bg: #0d0f14;
+      --border: #1f242e;
+      --text: #f0f3f8;
+      --text-muted: #848d9f;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+      background: radial-gradient(circle at center, #161a22 0%, #000000 100%);
+      color: var(--text);
+      min-height: 100vh;
+      padding: 48px 24px;
+    }
+    header {
+      text-align: center;
+      max-width: 760px;
+      margin: 0 auto 48px auto;
+    }
+    .badge {
+      display: inline-block;
+      font-size: 0.72rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      padding: 5px 12px;
+      border-radius: 999px;
+      background: #181d26;
+      color: #f1f5f9;
+      border: 1px solid #2e3848;
+      margin-bottom: 16px;
+    }
+    h1 {
+      font-size: 2.2rem;
+      font-weight: 700;
+      color: #ffffff;
+      margin-bottom: 12px;
+      letter-spacing: -0.02em;
+    }
+    p.subtitle {
+      color: var(--text-muted);
+      font-size: 1.05rem;
+      line-height: 1.6;
+    }
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(380px, 1fr));
+      gap: 32px;
+      max-width: 960px;
+      margin: 0 auto 60px auto;
+    }
+    .card {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      transition: border-color 0.2s ease, transform 0.2s ease;
+    }
+    .card:hover {
+      border-color: #475569;
+      transform: translateY(-4px);
+    }
+    .image-wrapper {
+      background: #000000;
+      padding: 32px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-bottom: 1px solid var(--border);
+    }
+    .image-wrapper img {
+      width: 100%;
+      max-width: 340px;
+      aspect-ratio: 1/1;
+      border-radius: 16px;
+      object-fit: cover;
+    }
+    .card-content {
+      padding: 24px;
+      display: flex;
+      flex-direction: column;
+      flex-grow: 1;
+    }
+    h2 {
+      font-size: 1.3rem;
+      font-weight: 600;
+      margin-bottom: 8px;
+      color: #ffffff;
+    }
+    p.desc {
+      color: var(--text-muted);
+      font-size: 0.92rem;
+      line-height: 1.55;
+      margin-bottom: 18px;
+    }
+    .features {
+      list-style: none;
+      border-top: 1px solid var(--border);
+      padding-top: 14px;
+      margin-top: auto;
+    }
+    .features li {
+      font-size: 0.85rem;
+      color: #cbd5e1;
+      margin-bottom: 6px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .features li::before {
+      content: "—";
+      color: #64748b;
+    }
+    footer {
+      text-align: center;
+      color: var(--text-muted);
+      font-size: 0.85rem;
+      border-top: 1px solid var(--border);
+      padding-top: 24px;
+      max-width: 600px;
+      margin: 0 auto;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="badge">Fully 3D Isometric Construction (Letters + Numbers)</div>
+    <h1>L³M² All-Isometric Glyphs</h1>
+    <p class="subtitle">Both letters and numbers extruded as solid white 3D blocks in matching 30° isometric perspective on black gradient.</p>
+  </header>
+
+  <div class="grid">
+    <!-- Version 1 -->
+    <div class="card">
+      <div class="image-wrapper">
+        <img src="/logo_iso_all_3d.jpg" alt="All-Isometric L³ and M²">
+      </div>
+      <div class="card-content">
+        <h2>Paired Exponents: L³ + M²</h2>
+        <p class="desc">
+          Extruded isometric <strong>L</strong> paired with an isometric superscript <strong>³</strong>, followed by extruded isometric <strong>M</strong> paired with an isometric superscript <strong>²</strong>.
+        </p>
+        <ul class="features">
+          <li>All four characters (L, 3, M, 2) share exact same 3D isometric angle and light direction</li>
+          <li>Subtle soft contact shadows on pure dark radial gradient</li>
+          <li>No glow, no blur — crisp architectural finish</li>
+        </ul>
+      </div>
+    </div>
+
+    <!-- Version 2 -->
+    <div class="card">
+      <div class="image-wrapper">
+        <img src="/logo_iso_all_3d_v2.jpg" alt="Trailing Isometric 32">
+      </div>
+      <div class="card-content">
+        <h2>Grouped Exponents: LM³²</h2>
+        <p class="desc">
+          Solid isometric <strong>L</strong> and <strong>M</strong> with trailing paired isometric exponents <strong>³²</strong> clustered at the top right.
+        </p>
+        <ul class="features">
+          <li>Tighter central lettermark grouping</li>
+          <li>Clustered isometric exponent numbers</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <footer>
+    <p>Local LLM Server Manager • Visual Companion</p>
+  </footer>
+</body>
+</html>

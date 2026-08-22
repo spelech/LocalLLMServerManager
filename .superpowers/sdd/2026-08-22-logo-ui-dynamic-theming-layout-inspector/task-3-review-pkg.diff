@@ -1,0 +1,655 @@
+﻿857706a feat(ui): streamline telemetry header, tab navigation, and card layouts
+ .../Views/Controls/CivitaiTabControl.axaml         | 12 +--
+ .../Views/Controls/EngineStudioTabControl.axaml    | 16 ++--
+ .../Views/Controls/HuggingFaceTabControl.axaml     | 16 ++--
+ .../Views/Controls/OllamaModelsTabControl.axaml    | 26 ++++---
+ .../Views/Controls/SettingsTabControl.axaml        | 68 ++++++++---------
+ .../Views/Controls/TelemetryHeaderControl.axaml    | 86 ++++++++++++++--------
+ LocalLLMServerManager.Shared/Views/MainView.axaml  | 12 +--
+ 7 files changed, 131 insertions(+), 105 deletions(-)
+diff --git a/LocalLLMServerManager.Shared/Views/Controls/CivitaiTabControl.axaml b/LocalLLMServerManager.Shared/Views/Controls/CivitaiTabControl.axaml
+index c0d9246..6b58aaf 100644
+--- a/LocalLLMServerManager.Shared/Views/Controls/CivitaiTabControl.axaml
++++ b/LocalLLMServerManager.Shared/Views/Controls/CivitaiTabControl.axaml
+@@ -1,39 +1,39 @@
+ <UserControl xmlns="https://github.com/avaloniaui"
+              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+              xmlns:vm="using:LocalLLMServerManager.Shared.ViewModels"
+              x:Class="LocalLLMServerManager.Shared.Views.Controls.CivitaiTabControl"
+              x:DataType="vm:CivitaiSearchViewModel">
+ 
+     <Grid RowDefinitions="Auto, *" Margin="0,12,0,0">
+         <Grid Grid.Row="0" ColumnDefinitions="*, Auto" Margin="0,0,0,12">
+-            <TextBox Text="{Binding CivitaiSearchQuery}" PlaceholderText="Search Stable Diffusion checkpoints &amp; LoRAs..." 
+-                     Classes="glass-input" VerticalAlignment="Center"/>
++            <TextBox Grid.Column="0" Text="{Binding CivitaiSearchQuery}" PlaceholderText="Search Stable Diffusion checkpoints &amp; LoRAs..." 
++                     Classes="matte-input" VerticalAlignment="Center"/>
+             <Button Grid.Column="1" Command="{Binding SearchCivitaiCommand}" 
+-                    Classes="glass-primary" Margin="8,0,0,0">
++                    Classes="matte-primary" Margin="8,0,0,0" VerticalAlignment="Center">
+                 🔍 Search CivitAI
+             </Button>
+         </Grid>
+ 
+         <ScrollViewer Grid.Row="1">
+             <ItemsControl ItemsSource="{Binding CivitaiResults}">
+                 <ItemsControl.ItemTemplate>
+                     <DataTemplate DataType="vm:CivitaiModelItem">
+-                        <Border Classes="glass-card" Margin="0,0,0,8">
++                        <Border Classes="matte-card" Margin="0,0,0,8" Padding="14,12">
+                             <Grid ColumnDefinitions="*, Auto">
+                                 <StackPanel Grid.Column="0" Spacing="4">
+                                     <TextBlock Text="{Binding Name}" FontWeight="Bold" FontSize="14" Foreground="{StaticResource TextMainBrush}"/>
+                                     <StackPanel Orientation="Horizontal" Spacing="8" Margin="0,2,0,0">
+-                                        <Border Classes="telemetry-pill">
++                                        <Border Classes="matte-pill" Padding="8,4">
+                                             <TextBlock Text="{Binding Type}" FontSize="11" Foreground="{StaticResource AccentBrush}" FontWeight="Bold"/>
+                                         </Border>
+-                                        <Border Classes="telemetry-pill">
++                                        <Border Classes="matte-pill" Padding="8,4">
+                                             <TextBlock Text="{Binding DownloadCount, StringFormat='⬇️ {0:N0} downloads'}" FontSize="11" Foreground="{StaticResource TextMutedBrush}" FontWeight="SemiBold"/>
+                                         </Border>
+                                     </StackPanel>
+                                 </StackPanel>
+                             </Grid>
+                         </Border>
+                     </DataTemplate>
+                 </ItemsControl.ItemTemplate>
+             </ItemsControl>
+         </ScrollViewer>
+diff --git a/LocalLLMServerManager.Shared/Views/Controls/EngineStudioTabControl.axaml b/LocalLLMServerManager.Shared/Views/Controls/EngineStudioTabControl.axaml
+index 2ef09ea..04b0135 100644
+--- a/LocalLLMServerManager.Shared/Views/Controls/EngineStudioTabControl.axaml
++++ b/LocalLLMServerManager.Shared/Views/Controls/EngineStudioTabControl.axaml
+@@ -5,55 +5,55 @@
+              x:DataType="vm:MainViewModel">
+ 
+     <StackPanel Spacing="16" Margin="0,12,0,0">
+         <StackPanel Spacing="2">
+             <TextBlock Text="🎨 AI Image &amp; 3D Generation Engines" FontSize="16" FontWeight="Bold" Foreground="{StaticResource TextMainBrush}"/>
+             <TextBlock Text="Manage background engine processes and web interfaces" FontSize="12" Foreground="{StaticResource TextMutedBrush}"/>
+         </StackPanel>
+ 
+         <UniformGrid Columns="2">
+             <!-- Forge Card -->
+-            <Border Classes="glass-card" Margin="0,0,8,0">
++            <Border Classes="matte-card" Margin="0,0,8,0" Padding="16">
+                 <StackPanel Spacing="12">
+                     <Grid ColumnDefinitions="*, Auto">
+                         <TextBlock Text="🎨 Stable Diffusion / Forge" FontSize="14" FontWeight="Bold" Foreground="{StaticResource TextMainBrush}" VerticalAlignment="Center"/>
+-                        <Border Grid.Column="1" Classes="telemetry-pill">
++                        <Border Grid.Column="1" Classes="matte-pill" Padding="8,4">
+                             <TextBlock Text="{Binding ForgeStatus}" FontSize="11" Foreground="{StaticResource PrimaryBrush}" FontWeight="Bold"/>
+                         </Border>
+                     </Grid>
+                     
+                     <StackPanel Spacing="4">
+                         <TextBlock Text="WebUI &amp; SD API Endpoint" FontSize="12" Foreground="{StaticResource TextMutedBrush}"/>
+-                        <Border Classes="telemetry-pill" HorizontalAlignment="Left">
++                        <Border Classes="matte-pill" HorizontalAlignment="Left" Padding="8,4">
+                             <TextBlock Text="Port 7860 • Localhost" FontSize="11" Foreground="{StaticResource SecondaryBrush}" FontWeight="SemiBold"/>
+                         </Border>
+                     </StackPanel>
+ 
+                     <Button Content="▶️ Toggle Forge Engine" Command="{Binding ToggleEngineCommand}" CommandParameter="forge" 
+-                            Classes="glass-primary" HorizontalAlignment="Stretch" HorizontalContentAlignment="Center" Margin="0,4,0,0"/>
++                            Classes="matte-primary" HorizontalAlignment="Stretch" HorizontalContentAlignment="Center" Margin="0,4,0,0"/>
+                 </StackPanel>
+             </Border>
+ 
+             <!-- ComfyUI Card -->
+-            <Border Classes="glass-card" Margin="8,0,0,0">
++            <Border Classes="matte-card" Margin="8,0,0,0" Padding="16">
+                 <StackPanel Spacing="12">
+                     <Grid ColumnDefinitions="*, Auto">
+                         <TextBlock Text="🧩 ComfyUI 3D Mesh Studio" FontSize="14" FontWeight="Bold" Foreground="{StaticResource TextMainBrush}" VerticalAlignment="Center"/>
+-                        <Border Grid.Column="1" Classes="telemetry-pill">
++                        <Border Grid.Column="1" Classes="matte-pill" Padding="8,4">
+                             <TextBlock Text="{Binding ComfyStatus}" FontSize="11" Foreground="{StaticResource AccentBrush}" FontWeight="Bold"/>
+                         </Border>
+                     </Grid>
+ 
+                     <StackPanel Spacing="4">
+                         <TextBlock Text="TRELLIS V2 &amp; Hunyuan3D Pipelines" FontSize="12" Foreground="{StaticResource TextMutedBrush}"/>
+-                        <Border Classes="telemetry-pill" HorizontalAlignment="Left">
++                        <Border Classes="matte-pill" HorizontalAlignment="Left" Padding="8,4">
+                             <TextBlock Text="Port 8188 • Localhost" FontSize="11" Foreground="{StaticResource SecondaryBrush}" FontWeight="SemiBold"/>
+                         </Border>
+                     </StackPanel>
+ 
+                     <Button Content="▶️ Toggle ComfyUI Engine" Command="{Binding ToggleEngineCommand}" CommandParameter="comfy" 
+-                            Classes="glass-primary" HorizontalAlignment="Stretch" HorizontalContentAlignment="Center" Margin="0,4,0,0"/>
++                            Classes="matte-primary" HorizontalAlignment="Stretch" HorizontalContentAlignment="Center" Margin="0,4,0,0"/>
+                 </StackPanel>
+             </Border>
+         </UniformGrid>
+     </StackPanel>
+ </UserControl>
+diff --git a/LocalLLMServerManager.Shared/Views/Controls/HuggingFaceTabControl.axaml b/LocalLLMServerManager.Shared/Views/Controls/HuggingFaceTabControl.axaml
+index 8f827fe..7a2cf8b 100644
+--- a/LocalLLMServerManager.Shared/Views/Controls/HuggingFaceTabControl.axaml
++++ b/LocalLLMServerManager.Shared/Views/Controls/HuggingFaceTabControl.axaml
+@@ -1,42 +1,42 @@
+ <UserControl xmlns="https://github.com/avaloniaui"
+              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+              xmlns:vm="using:LocalLLMServerManager.Shared.ViewModels"
+              x:Class="LocalLLMServerManager.Shared.Views.Controls.HuggingFaceTabControl"
+              x:DataType="vm:HuggingFaceSearchViewModel">
+ 
+     <Grid RowDefinitions="Auto, *" Margin="0,12,0,0">
+         <Grid Grid.Row="0" ColumnDefinitions="*, Auto" Margin="0,0,0,12">
+-            <TextBox Text="{Binding HfSearchQuery}" PlaceholderText="Search GGUF models (e.g. llama 3.3, qwen2.5-coder)..." 
+-                     Classes="glass-input" VerticalAlignment="Center"/>
++            <TextBox Grid.Column="0" Text="{Binding HfSearchQuery}" PlaceholderText="Search GGUF models (e.g. llama 3.3, qwen2.5-coder)..." 
++                     Classes="matte-input" VerticalAlignment="Center"/>
+             <Button Grid.Column="1" Command="{Binding SearchHuggingFaceCommand}" 
+-                    Classes="glass-primary" Margin="8,0,0,0">
++                    Classes="matte-primary" Margin="8,0,0,0" VerticalAlignment="Center">
+                 🔍 Search Hub
+             </Button>
+         </Grid>
+ 
+         <ScrollViewer Grid.Row="1">
+             <ItemsControl ItemsSource="{Binding HuggingFaceResults}">
+                 <ItemsControl.ItemTemplate>
+                     <DataTemplate DataType="vm:HuggingFaceRepoItem">
+-                        <Border Classes="glass-card" Margin="0,0,0,8">
++                        <Border Classes="matte-card" Margin="0,0,0,8" Padding="14,12">
+                             <Grid ColumnDefinitions="*, Auto">
+                                 <StackPanel Grid.Column="0" Spacing="4">
+                                     <TextBlock Text="{Binding Id}" FontWeight="Bold" FontSize="14" Foreground="{StaticResource SecondaryBrush}"/>
+                                     <TextBlock Text="{Binding Author, StringFormat='Author: {0}'}" FontSize="12" Foreground="{StaticResource TextMutedBrush}"/>
+                                 </StackPanel>
+                                 <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+-                                    <Border Classes="telemetry-pill">
+-                                        <TextBlock Text="{Binding Downloads, StringFormat='⬇️ {0}'}" FontSize="11" Foreground="{StaticResource TextMainBrush}" FontWeight="SemiBold"/>
++                                    <Border Classes="matte-pill" Padding="8,4">
++                                        <TextBlock Text="{Binding Downloads, StringFormat='⬇️ {0:N0}'}" FontSize="11" Foreground="{StaticResource TextMainBrush}" FontWeight="SemiBold"/>
+                                     </Border>
+-                                    <Border Classes="telemetry-pill">
+-                                        <TextBlock Text="{Binding Likes, StringFormat='❤️ {0}'}" FontSize="11" Foreground="{StaticResource AccentBrush}" FontWeight="Bold"/>
++                                    <Border Classes="matte-pill" Padding="8,4">
++                                        <TextBlock Text="{Binding Likes, StringFormat='❤️ {0:N0}'}" FontSize="11" Foreground="{StaticResource AccentBrush}" FontWeight="Bold"/>
+                                     </Border>
+                                 </StackPanel>
+                             </Grid>
+                         </Border>
+                     </DataTemplate>
+                 </ItemsControl.ItemTemplate>
+             </ItemsControl>
+         </ScrollViewer>
+     </Grid>
+ </UserControl>
+diff --git a/LocalLLMServerManager.Shared/Views/Controls/OllamaModelsTabControl.axaml b/LocalLLMServerManager.Shared/Views/Controls/OllamaModelsTabControl.axaml
+index 695a8b5..bd408ba 100644
+--- a/LocalLLMServerManager.Shared/Views/Controls/OllamaModelsTabControl.axaml
++++ b/LocalLLMServerManager.Shared/Views/Controls/OllamaModelsTabControl.axaml
+@@ -4,59 +4,63 @@
+              x:Class="LocalLLMServerManager.Shared.Views.Controls.OllamaModelsTabControl"
+              x:DataType="vm:OllamaLibraryViewModel">
+ 
+     <Grid RowDefinitions="Auto, *, Auto" Margin="0,12,0,0">
+         <Grid Grid.Row="0" ColumnDefinitions="*, Auto" Margin="0,0,0,12">
+             <StackPanel Grid.Column="0" Spacing="2">
+                 <TextBlock Text="🦙 Ollama Local Model Library" FontSize="16" FontWeight="Bold" Foreground="{StaticResource TextMainBrush}" VerticalAlignment="Center"/>
+                 <TextBlock Text="Manage installed LLMs and GGUF quantizations" FontSize="12" Foreground="{StaticResource TextMutedBrush}"/>
+             </StackPanel>
+             <Button Grid.Column="1" Command="{Binding UnloadAllVramCommand}" 
+-                    Classes="glass-secondary" VerticalAlignment="Center">
++                    Classes="matte-secondary" VerticalAlignment="Center">
+                 🧹 Unload All VRAM
+             </Button>
+         </Grid>
+ 
+         <ScrollViewer Grid.Row="1" Margin="0,0,0,12">
+             <ItemsControl ItemsSource="{Binding InstalledModels}">
+                 <ItemsControl.ItemTemplate>
+                     <DataTemplate DataType="vm:OllamaModelItem">
+-                        <Border Classes="glass-card" Margin="0,0,0,8">
++                        <Border Classes="matte-card" Margin="0,0,0,8" Padding="14,12">
+                             <Grid ColumnDefinitions="*, Auto">
+                                 <StackPanel Grid.Column="0" Spacing="6">
+                                     <TextBlock Text="{Binding Name}" FontWeight="Bold" FontSize="14" Foreground="{StaticResource TextMainBrush}"/>
+                                     <StackPanel Orientation="Horizontal" Spacing="8">
+-                                        <Border Classes="telemetry-pill">
++                                        <Border Classes="matte-pill">
+                                             <TextBlock Text="GGUF" FontSize="11" Foreground="{StaticResource SecondaryBrush}" FontWeight="Bold"/>
+                                         </Border>
+-                                        <Border Classes="telemetry-pill">
++                                        <Border Classes="matte-pill">
+                                             <TextBlock Text="{Binding CapabilityTag}" FontSize="11" Foreground="{Binding CapabilityColor}" FontWeight="Bold"/>
+                                         </Border>
+-                                        <Border Classes="telemetry-pill">
++                                        <Border Classes="matte-pill">
+                                             <TextBlock Text="{Binding FormatSize}" FontSize="11" Foreground="{StaticResource TextMutedBrush}" FontWeight="SemiBold"/>
+                                         </Border>
+                                     </StackPanel>
+                                 </StackPanel>
+-                                <Border Grid.Column="1" Classes="telemetry-pill" VerticalAlignment="Center">
++                                <Border Grid.Column="1" Classes="matte-pill" VerticalAlignment="Center" Padding="10,4">
+                                     <TextBlock Text="Installed 🟢" FontSize="11" Foreground="{StaticResource OnlineBrush}" FontWeight="Bold"/>
+                                 </Border>
+                             </Grid>
+                         </Border>
+                     </DataTemplate>
+                 </ItemsControl.ItemTemplate>
+             </ItemsControl>
+         </ScrollViewer>
+ 
+-        <Border Grid.Row="2" Classes="glass-card">
+-            <StackPanel Spacing="8">
++        <Border Grid.Row="2" Classes="matte-card" Padding="16,14">
++            <StackPanel Spacing="10">
+                 <Grid ColumnDefinitions="*, Auto">
+                     <TextBlock Text="🧮 Interactive KV Cache Calculator" FontSize="13" FontWeight="Bold" Foreground="{StaticResource TextMainBrush}"/>
+-                    <TextBlock Grid.Column="1" Text="{Binding EstimatedKvCacheText}" FontSize="13" Foreground="{StaticResource SecondaryBrush}" FontWeight="Bold"/>
++                    <Border Grid.Column="1" Classes="matte-pill" Padding="8,3">
++                        <TextBlock Text="{Binding EstimatedKvCacheText}" FontSize="12" Foreground="{StaticResource SecondaryBrush}" FontWeight="Bold"/>
++                    </Border>
+                 </Grid>
+                 <Grid ColumnDefinitions="*, Auto">
+-                    <Slider Value="{Binding TargetContextTokens}" Minimum="1024" Maximum="32768" SmallChange="1024" LargeChange="4096"/>
+-                    <TextBlock Grid.Column="1" Text="{Binding TargetContextTokens, StringFormat='{}{0:N0} tokens'}" FontSize="12" Foreground="{StaticResource TextMutedBrush}" VerticalAlignment="Center" Margin="10,0,0,0"/>
++                    <Slider Grid.Column="0" Value="{Binding TargetContextTokens}" Minimum="1024" Maximum="32768" SmallChange="1024" LargeChange="4096"/>
++                    <Border Grid.Column="1" Classes="matte-pill" Margin="12,0,0,0" Padding="8,4" VerticalAlignment="Center">
++                        <TextBlock Text="{Binding TargetContextTokens, StringFormat='{}{0:N0} tokens'}" FontSize="12" Foreground="{StaticResource TextMainBrush}" FontWeight="SemiBold"/>
++                    </Border>
+                 </Grid>
+             </StackPanel>
+         </Border>
+     </Grid>
+ </UserControl>
+diff --git a/LocalLLMServerManager.Shared/Views/Controls/SettingsTabControl.axaml b/LocalLLMServerManager.Shared/Views/Controls/SettingsTabControl.axaml
+index d225b58..454d4db 100644
+--- a/LocalLLMServerManager.Shared/Views/Controls/SettingsTabControl.axaml
++++ b/LocalLLMServerManager.Shared/Views/Controls/SettingsTabControl.axaml
+@@ -1,173 +1,173 @@
+ <UserControl xmlns="https://github.com/avaloniaui"
+              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+              xmlns:vm="using:LocalLLMServerManager.Shared.ViewModels"
+              x:Class="LocalLLMServerManager.Shared.Views.Controls.SettingsTabControl"
+              x:DataType="vm:SettingsViewModel">
+ 
+     <ScrollViewer Margin="0,12,0,0">
+-        <StackPanel Spacing="16">
++        <StackPanel Spacing="16" Margin="0,0,0,16">
+             <!-- Auto-Discovery Quick Action -->
+-            <Border Classes="glass-card">
++            <Border Classes="matte-card" Padding="16">
+                 <StackPanel Spacing="12">
+                     <StackPanel Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+                         <TextBlock Text="🔍 AI Ecosystem Auto-Discovery" FontSize="16" FontWeight="Bold" Foreground="{StaticResource TextMainBrush}"/>
+                     </StackPanel>
+                     <TextBlock Text="Automatically scan common install directories, drive roots, PATH, and AppData for Ollama, ComfyUI, and Stable Diffusion Forge:" FontSize="13" Foreground="{StaticResource TextMutedBrush}"/>
+ 
+                     <Button Content="🔍 Auto-Detect Installed Tools" 
+                             Command="{Binding AutoDetectToolsCommand}"
+-                            Classes="glass-primary" 
++                            Classes="matte-primary" 
+                             HorizontalAlignment="Left"/>
+                 </StackPanel>
+             </Border>
+ 
+             <!-- Theme & Interface Mode Switcher -->
+-            <Border Classes="glass-card">
++            <Border Classes="matte-card" Padding="16">
+                 <StackPanel Spacing="12">
+                     <TextBlock Text="🎨 Desktop Theme &amp; Web Interface Options" FontSize="16" FontWeight="Bold" Foreground="{StaticResource TextMainBrush}"/>
+                     <TextBlock Text="Try switching between desktop themes or launch the browser dashboard:" FontSize="13" Foreground="{StaticResource TextMutedBrush}"/>
+ 
+                     <StackPanel Orientation="Horizontal" Spacing="10">
+                         <Button Content="✨ Semi Design Dark Theme" Command="{Binding SwitchThemeStyleCommand}" CommandParameter="semi"
+-                                Classes="glass-primary"/>
++                                Classes="matte-primary"/>
+                         <Button Content="⚡ Fluent Dark Theme" Command="{Binding SwitchThemeStyleCommand}" CommandParameter="fluent"
+-                                Classes="glass-secondary"/>
++                                Classes="matte-secondary"/>
+                     </StackPanel>
+                 </StackPanel>
+             </Border>
+ 
+             <!-- Remote Access -->
+-            <Border Classes="glass-card">
++            <Border Classes="matte-card" Padding="16">
+                 <StackPanel Spacing="10">
+                     <TextBlock Text="🌐 Remote &amp; Mobile Access URL" FontSize="16" FontWeight="Bold" Foreground="{StaticResource TextMainBrush}"/>
+                     <TextBlock Text="Connect to this manager from your smartphone, tablet, or laptop:" FontSize="13" Foreground="{StaticResource TextMutedBrush}"/>
+-                    <Border Classes="telemetry-pill" HorizontalAlignment="Left">
+-                        <SelectableTextBlock Text="{Binding LanAccessUrl}" FontSize="15" FontWeight="Bold" Foreground="{StaticResource SecondaryBrush}"/>
++                    <Border Classes="matte-pill" HorizontalAlignment="Left" Padding="10,6">
++                        <SelectableTextBlock Text="{Binding LanAccessUrl}" FontSize="14" FontWeight="Bold" Foreground="{StaticResource SecondaryBrush}"/>
+                     </Border>
+                 </StackPanel>
+             </Border>
+ 
+             <!-- Paths and Settings -->
+-            <Border Classes="glass-card">
++            <Border Classes="matte-card" Padding="16">
+                 <StackPanel Spacing="14">
+                     <TextBlock Text="🛠️ Executable &amp; Directory Paths" FontSize="16" FontWeight="Bold" Foreground="{StaticResource TextMainBrush}"/>
+ 
+                     <!-- ComfyUI Executable -->
+                     <StackPanel Spacing="4">
+                         <StackPanel Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+                             <TextBlock Text="ComfyUI Executable Path" FontSize="13" Foreground="{StaticResource TextMutedBrush}" FontWeight="Medium"/>
+-                            <Border Classes="telemetry-pill" Padding="6,2">
++                            <Border Classes="matte-pill" Padding="6,2">
+                                 <TextBlock Text="{Binding ComfyUiExecutableStatus}" FontSize="11" FontWeight="Bold"/>
+                             </Border>
+                         </StackPanel>
+                         <Grid ColumnDefinitions="*,Auto">
+-                            <TextBox Grid.Column="0" Text="{Binding ComfyUiExecutablePath, Mode=TwoWay}" Classes="glass-input"/>
+-                            <Button Grid.Column="1" Content="📁 Browse..." Command="{Binding BrowseComfyExecutableCommand}" Margin="8,0,0,0" Classes="glass-secondary"/>
++                            <TextBox Grid.Column="0" Text="{Binding ComfyUiExecutablePath, Mode=TwoWay}" Classes="matte-input"/>
++                            <Button Grid.Column="1" Content="📁 Browse..." Command="{Binding BrowseComfyExecutableCommand}" Margin="8,0,0,0" Classes="matte-secondary"/>
+                         </Grid>
+                     </StackPanel>
+ 
+                     <!-- Forge Executable -->
+                     <StackPanel Spacing="4">
+                         <StackPanel Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+                             <TextBlock Text="Forge Executable Path" FontSize="13" Foreground="{StaticResource TextMutedBrush}" FontWeight="Medium"/>
+-                            <Border Classes="telemetry-pill" Padding="6,2">
++                            <Border Classes="matte-pill" Padding="6,2">
+                                 <TextBlock Text="{Binding ForgeExecutableStatus}" FontSize="11" FontWeight="Bold"/>
+                             </Border>
+                         </StackPanel>
+                         <Grid ColumnDefinitions="*,Auto">
+-                            <TextBox Grid.Column="0" Text="{Binding ForgeExecutablePath, Mode=TwoWay}" Classes="glass-input"/>
+-                            <Button Grid.Column="1" Content="📁 Browse..." Command="{Binding BrowseForgeExecutableCommand}" Margin="8,0,0,0" Classes="glass-secondary"/>
++                            <TextBox Grid.Column="0" Text="{Binding ForgeExecutablePath, Mode=TwoWay}" Classes="matte-input"/>
++                            <Button Grid.Column="1" Content="📁 Browse..." Command="{Binding BrowseForgeExecutableCommand}" Margin="8,0,0,0" Classes="matte-secondary"/>
+                         </Grid>
+                     </StackPanel>
+ 
+                     <!-- Ollama Executable -->
+                     <StackPanel Spacing="4">
+                         <StackPanel Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+                             <TextBlock Text="Ollama Executable Path" FontSize="13" Foreground="{StaticResource TextMutedBrush}" FontWeight="Medium"/>
+-                            <Border Classes="telemetry-pill" Padding="6,2">
++                            <Border Classes="matte-pill" Padding="6,2">
+                                 <TextBlock Text="{Binding OllamaStatus}" FontSize="11" FontWeight="Bold"/>
+                             </Border>
+                         </StackPanel>
+                         <Grid ColumnDefinitions="*,Auto">
+-                            <TextBox Grid.Column="0" Text="{Binding OllamaExecutablePath, Mode=TwoWay}" Classes="glass-input"/>
+-                            <Button Grid.Column="1" Content="📁 Browse..." Command="{Binding BrowseOllamaExecutableCommand}" Margin="8,0,0,0" Classes="glass-secondary"/>
++                            <TextBox Grid.Column="0" Text="{Binding OllamaExecutablePath, Mode=TwoWay}" Classes="matte-input"/>
++                            <Button Grid.Column="1" Content="📁 Browse..." Command="{Binding BrowseOllamaExecutableCommand}" Margin="8,0,0,0" Classes="matte-secondary"/>
+                         </Grid>
+                     </StackPanel>
+ 
+                     <!-- Forge Models -->
+                     <StackPanel Spacing="4">
+                         <StackPanel Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+                             <TextBlock Text="Forge Models Directory Path" FontSize="13" Foreground="{StaticResource TextMutedBrush}" FontWeight="Medium"/>
+-                            <Border Classes="telemetry-pill" Padding="6,2">
++                            <Border Classes="matte-pill" Padding="6,2">
+                                 <TextBlock Text="{Binding ForgeModelsStatus}" FontSize="11" FontWeight="Bold"/>
+                             </Border>
+                         </StackPanel>
+                         <Grid ColumnDefinitions="*,Auto">
+-                            <TextBox Grid.Column="0" Text="{Binding ForgeModelsPath, Mode=TwoWay}" Classes="glass-input"/>
+-                            <Button Grid.Column="1" Content="📁 Browse..." Command="{Binding BrowseForgeModelsCommand}" Margin="8,0,0,0" Classes="glass-secondary"/>
++                            <TextBox Grid.Column="0" Text="{Binding ForgeModelsPath, Mode=TwoWay}" Classes="matte-input"/>
++                            <Button Grid.Column="1" Content="📁 Browse..." Command="{Binding BrowseForgeModelsCommand}" Margin="8,0,0,0" Classes="matte-secondary"/>
+                         </Grid>
+                     </StackPanel>
+ 
+                     <!-- ComfyUI Models -->
+                     <StackPanel Spacing="4">
+                         <StackPanel Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+                             <TextBlock Text="ComfyUI Models Directory Path" FontSize="13" Foreground="{StaticResource TextMutedBrush}" FontWeight="Medium"/>
+-                            <Border Classes="telemetry-pill" Padding="6,2">
++                            <Border Classes="matte-pill" Padding="6,2">
+                                 <TextBlock Text="{Binding ComfyModelsStatus}" FontSize="11" FontWeight="Bold"/>
+                             </Border>
+                         </StackPanel>
+                         <Grid ColumnDefinitions="*,Auto">
+-                            <TextBox Grid.Column="0" Text="{Binding ComfyModelsPath, Mode=TwoWay}" Classes="glass-input"/>
+-                            <Button Grid.Column="1" Content="📁 Browse..." Command="{Binding BrowseComfyModelsCommand}" Margin="8,0,0,0" Classes="glass-secondary"/>
++                            <TextBox Grid.Column="0" Text="{Binding ComfyModelsPath, Mode=TwoWay}" Classes="matte-input"/>
++                            <Button Grid.Column="1" Content="📁 Browse..." Command="{Binding BrowseComfyModelsCommand}" Margin="8,0,0,0" Classes="matte-secondary"/>
+                         </Grid>
+                     </StackPanel>
+ 
+                     <!-- 3D Models Output -->
+                     <StackPanel Spacing="4">
+                         <StackPanel Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+                             <TextBlock Text="3D Models Output Path" FontSize="13" Foreground="{StaticResource TextMutedBrush}" FontWeight="Medium"/>
+-                            <Border Classes="telemetry-pill" Padding="6,2">
++                            <Border Classes="matte-pill" Padding="6,2">
+                                 <TextBlock Text="{Binding ThreeDModelsStatus}" FontSize="11" FontWeight="Bold"/>
+                             </Border>
+                         </StackPanel>
+                         <Grid ColumnDefinitions="*,Auto">
+-                            <TextBox Grid.Column="0" Text="{Binding ThreeDModelsPath, Mode=TwoWay}" Classes="glass-input"/>
+-                            <Button Grid.Column="1" Content="📁 Browse..." Command="{Binding BrowseThreeDModelsCommand}" Margin="8,0,0,0" Classes="glass-secondary"/>
++                            <TextBox Grid.Column="0" Text="{Binding ThreeDModelsPath, Mode=TwoWay}" Classes="matte-input"/>
++                            <Button Grid.Column="1" Content="📁 Browse..." Command="{Binding BrowseThreeDModelsCommand}" Margin="8,0,0,0" Classes="matte-secondary"/>
+                         </Grid>
+                     </StackPanel>
+ 
+                     <!-- Workflows Directory -->
+                     <StackPanel Spacing="4">
+                         <StackPanel Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+                             <TextBlock Text="Workflows Directory Path" FontSize="13" Foreground="{StaticResource TextMutedBrush}" FontWeight="Medium"/>
+-                            <Border Classes="telemetry-pill" Padding="6,2">
++                            <Border Classes="matte-pill" Padding="6,2">
+                                 <TextBlock Text="{Binding WorkflowsStatus}" FontSize="11" FontWeight="Bold"/>
+                             </Border>
+                         </StackPanel>
+                         <Grid ColumnDefinitions="*,Auto">
+-                            <TextBox Grid.Column="0" Text="{Binding WorkflowsPath, Mode=TwoWay}" Classes="glass-input"/>
+-                            <Button Grid.Column="1" Content="📁 Browse..." Command="{Binding BrowseWorkflowsCommand}" Margin="8,0,0,0" Classes="glass-secondary"/>
++                            <TextBox Grid.Column="0" Text="{Binding WorkflowsPath, Mode=TwoWay}" Classes="matte-input"/>
++                            <Button Grid.Column="1" Content="📁 Browse..." Command="{Binding BrowseWorkflowsCommand}" Margin="8,0,0,0" Classes="matte-secondary"/>
+                         </Grid>
+                     </StackPanel>
+ 
+                     <!-- ComfyUI URL -->
+                     <StackPanel Spacing="4">
+                         <TextBlock Text="ComfyUI URL" FontSize="13" Foreground="{StaticResource TextMutedBrush}" FontWeight="Medium"/>
+-                        <TextBox Text="{Binding ComfyUiUrl, Mode=TwoWay}" Classes="glass-input"/>
++                        <TextBox Text="{Binding ComfyUiUrl, Mode=TwoWay}" Classes="matte-input"/>
+                     </StackPanel>
+ 
+                     <!-- Preferred Image Engine -->
+                     <StackPanel Spacing="4">
+                         <TextBlock Text="Preferred Image Engine" FontSize="13" Foreground="{StaticResource TextMutedBrush}" FontWeight="Medium"/>
+-                        <TextBox Text="{Binding PreferredImageEngine, Mode=TwoWay}" Classes="glass-input"/>
++                        <TextBox Text="{Binding PreferredImageEngine, Mode=TwoWay}" Classes="matte-input"/>
+                     </StackPanel>
+ 
+                     <Button Command="{Binding SaveSettingsCommand}" 
+-                            Classes="glass-primary" HorizontalAlignment="Left" Margin="0,8,0,0">
++                            Classes="matte-primary" HorizontalAlignment="Left" Margin="0,8,0,0">
+                         💾 Save Settings
+                     </Button>
+                 </StackPanel>
+             </Border>
+         </StackPanel>
+     </ScrollViewer>
+ </UserControl>
+diff --git a/LocalLLMServerManager.Shared/Views/Controls/TelemetryHeaderControl.axaml b/LocalLLMServerManager.Shared/Views/Controls/TelemetryHeaderControl.axaml
+index f985f0d..af9dede 100644
+--- a/LocalLLMServerManager.Shared/Views/Controls/TelemetryHeaderControl.axaml
++++ b/LocalLLMServerManager.Shared/Views/Controls/TelemetryHeaderControl.axaml
+@@ -1,64 +1,86 @@
+ <UserControl xmlns="https://github.com/avaloniaui"
+-              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+-              xmlns:vm="using:LocalLLMServerManager.Shared.ViewModels"
+-              x:Class="LocalLLMServerManager.Shared.Views.Controls.TelemetryHeaderControl"
+-              x:DataType="vm:TelemetryViewModel">
++             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
++             xmlns:vm="using:LocalLLMServerManager.Shared.ViewModels"
++             x:Class="LocalLLMServerManager.Shared.Views.Controls.TelemetryHeaderControl"
++             x:DataType="vm:TelemetryViewModel">
+ 
+-    <Grid ColumnDefinitions="*, *, *" Margin="16,16,16,12">
++    <Grid ColumnDefinitions="*, 1.3*, *" Margin="16,14,16,10">
+         <!-- CARD 1: Service Health Badges -->
+-        <Border Grid.Column="0" Classes="glass-card" Margin="0,0,8,0">
++        <Border Grid.Column="0" Classes="matte-card" Margin="0,0,8,0" Padding="14,10">
+             <StackPanel Spacing="8">
+-                <TextBlock Text="⚡ Engine Health Status" FontSize="13" FontWeight="Bold" Foreground="{StaticResource TextMainBrush}"/>
++                <Grid ColumnDefinitions="*, Auto">
++                    <TextBlock Grid.Column="0" Text="⚡ Engine Health Status" FontSize="12" FontWeight="SemiBold" Foreground="{StaticResource TextMutedBrush}"/>
++                    <Border Grid.Column="1" Classes="matte-pill" Padding="6,2">
++                        <TextBlock Text="Services" FontSize="10" Foreground="{StaticResource TextMutedBrush}" FontWeight="SemiBold"/>
++                    </Border>
++                </Grid>
+                 <UniformGrid Columns="3">
+-                    <StackPanel HorizontalAlignment="Center" Spacing="4">
++                    <StackPanel HorizontalAlignment="Center" Spacing="3">
+                         <TextBlock Text="Ollama" FontSize="11" Foreground="{StaticResource TextMutedBrush}" HorizontalAlignment="Center"/>
+-                        <Border Classes="telemetry-pill">
+-                            <TextBlock Text="{Binding OllamaStatus}" FontSize="11" Foreground="{StaticResource OnlineBrush}" FontWeight="Bold"/>
++                        <Border Classes="matte-pill" Padding="8,3">
++                            <StackPanel Orientation="Horizontal" Spacing="4" HorizontalAlignment="Center">
++                                <Ellipse Width="6" Height="6" Fill="{StaticResource OnlineBrush}" VerticalAlignment="Center"/>
++                                <TextBlock Text="{Binding OllamaStatus}" FontSize="11" Foreground="{StaticResource TextMainBrush}" FontWeight="Bold"/>
++                            </StackPanel>
+                         </Border>
+                     </StackPanel>
+-                    <StackPanel HorizontalAlignment="Center" Spacing="4">
++                    <StackPanel HorizontalAlignment="Center" Spacing="3">
+                         <TextBlock Text="Forge SD" FontSize="11" Foreground="{StaticResource TextMutedBrush}" HorizontalAlignment="Center"/>
+-                        <Border Classes="telemetry-pill">
+-                            <TextBlock Text="{Binding ForgeStatus}" FontSize="11" Foreground="{StaticResource PrimaryBrush}" FontWeight="Bold"/>
++                        <Border Classes="matte-pill" Padding="8,3">
++                            <StackPanel Orientation="Horizontal" Spacing="4" HorizontalAlignment="Center">
++                                <Ellipse Width="6" Height="6" Fill="{StaticResource PrimaryBrush}" VerticalAlignment="Center"/>
++                                <TextBlock Text="{Binding ForgeStatus}" FontSize="11" Foreground="{StaticResource TextMainBrush}" FontWeight="Bold"/>
++                            </StackPanel>
+                         </Border>
+                     </StackPanel>
+-                    <StackPanel HorizontalAlignment="Center" Spacing="4">
++                    <StackPanel HorizontalAlignment="Center" Spacing="3">
+                         <TextBlock Text="ComfyUI" FontSize="11" Foreground="{StaticResource TextMutedBrush}" HorizontalAlignment="Center"/>
+-                        <Border Classes="telemetry-pill">
+-                            <TextBlock Text="{Binding ComfyStatus}" FontSize="11" Foreground="{StaticResource AccentBrush}" FontWeight="Bold"/>
++                        <Border Classes="matte-pill" Padding="8,3">
++                            <StackPanel Orientation="Horizontal" Spacing="4" HorizontalAlignment="Center">
++                                <Ellipse Width="6" Height="6" Fill="{StaticResource AccentBrush}" VerticalAlignment="Center"/>
++                                <TextBlock Text="{Binding ComfyStatus}" FontSize="11" Foreground="{StaticResource TextMainBrush}" FontWeight="Bold"/>
++                            </StackPanel>
+                         </Border>
+                     </StackPanel>
+                 </UniformGrid>
+             </StackPanel>
+         </Border>
+ 
+-        <!-- CARD 2: Hero Stacked VRAM Visual Bar -->
+-        <Border Grid.Column="1" Classes="glass-card" Margin="4,0,4,0">
+-            <StackPanel Spacing="6">
++        <!-- CARD 2: GPU VRAM Memory Telemetry Chip -->
++        <Border Grid.Column="1" Classes="matte-card" Margin="4,0,4,0" Padding="14,10">
++            <StackPanel Spacing="6" VerticalAlignment="Center">
+                 <Grid ColumnDefinitions="*, Auto">
+-                    <StackPanel Grid.Column="0">
+-                        <TextBlock Text="🎮 VRAM Memory Allocation" FontSize="13" FontWeight="Bold" Foreground="{StaticResource TextMainBrush}"/>
+-                        <TextBlock Text="{Binding GpuName}" FontSize="11" Foreground="{StaticResource TextMutedBrush}" Margin="0,2,0,0"/>
++                    <StackPanel Grid.Column="0" Spacing="1">
++                        <TextBlock Text="🎮 VRAM Allocation" FontSize="12" FontWeight="SemiBold" Foreground="{StaticResource TextMutedBrush}"/>
++                        <TextBlock Text="{Binding GpuName}" FontSize="11" Foreground="{StaticResource TextMainBrush}" FontWeight="Medium"/>
+                     </StackPanel>
+-                    <TextBlock Grid.Column="1" Text="{Binding VramStatusText}" FontSize="12" Foreground="{StaticResource PrimaryBrush}" FontWeight="Bold" VerticalAlignment="Center"/>
++                    <Border Grid.Column="1" Classes="matte-pill" Padding="8,3" VerticalAlignment="Center">
++                        <TextBlock Text="{Binding VramStatusText}" FontSize="11" Foreground="{StaticResource PrimaryBrush}" FontWeight="Bold"/>
++                    </Border>
+                 </Grid>
+-                <ProgressBar Value="{Binding VramPercentage}" Maximum="100" Classes="glass-progress" Height="12"/>
++                <ProgressBar Value="{Binding VramPercentage}" Maximum="100" Classes="matte-progress" Height="8" Margin="0,2,0,0"/>
+             </StackPanel>
+         </Border>
+ 
+-        <!-- CARD 3: Orchestrator Proxy & Actions -->
+-        <Border Grid.Column="2" Classes="glass-card" Margin="8,0,0,0">
+-            <Grid ColumnDefinitions="*, Auto">
++        <!-- CARD 3: Reverse Proxy & Quick Actions -->
++        <Border Grid.Column="2" Classes="matte-card" Margin="8,0,0,0" Padding="14,10">
++            <Grid ColumnDefinitions="*, Auto" VerticalAlignment="Center">
+                 <StackPanel Grid.Column="0" Spacing="4">
+-                    <TextBlock Text="🌐 Reverse Proxy Status" FontSize="13" FontWeight="Bold" Foreground="{StaticResource TextMainBrush}"/>
+-                    <Border Classes="telemetry-pill" HorizontalAlignment="Left">
+-                        <TextBlock Text="{Binding ServiceModeText}" FontSize="11" Foreground="{StaticResource SecondaryBrush}" FontWeight="SemiBold"/>
++                    <TextBlock Text="🌐 Orchestrator Proxy" FontSize="12" FontWeight="SemiBold" Foreground="{StaticResource TextMutedBrush}"/>
++                    <Border Classes="matte-pill" HorizontalAlignment="Left" Padding="8,3">
++                        <StackPanel Orientation="Horizontal" Spacing="4">
++                            <Ellipse Width="6" Height="6" Fill="{StaticResource SecondaryBrush}" VerticalAlignment="Center"/>
++                            <TextBlock Text="{Binding ServiceModeText}" FontSize="11" Foreground="{StaticResource TextMainBrush}" FontWeight="SemiBold"/>
++                        </StackPanel>
+                     </Border>
+                 </StackPanel>
+-                <Button Grid.Column="1" Command="{Binding RefreshStatusCommand}" Classes="glass-secondary" VerticalAlignment="Center">
+-                    🔄 Refresh
++                <Button Grid.Column="1" Command="{Binding RefreshStatusCommand}" Classes="matte-secondary" VerticalAlignment="Center" Padding="10,6">
++                    <StackPanel Orientation="Horizontal" Spacing="4">
++                        <TextBlock Text="🔄" FontSize="11"/>
++                        <TextBlock Text="Refresh" FontSize="11" FontWeight="SemiBold"/>
++                    </StackPanel>
+                 </Button>
+             </Grid>
+         </Border>
+     </Grid>
+ </UserControl>
+diff --git a/LocalLLMServerManager.Shared/Views/MainView.axaml b/LocalLLMServerManager.Shared/Views/MainView.axaml
+index bc8f87e..5c446ab 100644
+--- a/LocalLLMServerManager.Shared/Views/MainView.axaml
++++ b/LocalLLMServerManager.Shared/Views/MainView.axaml
+@@ -14,21 +14,21 @@
+             <ResourceDictionary.MergedDictionaries>
+                 <ResourceInclude Source="avares://LocalLLMServerManager.Shared/Styles/DesignTokens.axaml" />
+             </ResourceDictionary.MergedDictionaries>
+         </ResourceDictionary>
+     </UserControl.Resources>
+ 
+     <Design.DataContext>
+         <vm:MainViewModel/>
+     </Design.DataContext>
+ 
+-    <Grid RowDefinitions="Auto, *, Auto" Background="{StaticResource GlassBackgroundBrush}">
++    <Grid RowDefinitions="Auto, *, Auto" Background="{StaticResource BgDarkBrush}">
+         <!-- Top Telemetry Header -->
+         <controls:TelemetryHeaderControl Grid.Row="0" DataContext="{Binding Telemetry}"/>
+ 
+         <!-- Main Content Area: Native Avalonia XAML Tabs -->
+         <TabControl Grid.Row="1" Background="Transparent" Margin="16,0,16,0">
+             <!-- TAB 1: Installed LLM Models & KV Cache Calculator -->
+             <TabItem Header="🦙 Installed Models">
+                 <controls:OllamaModelsTabControl DataContext="{Binding Ollama}"/>
+             </TabItem>
+ 
+@@ -50,26 +50,26 @@
+             <!-- TAB 5: Remote Access & Settings -->
+             <TabItem Header="⚙️ Settings">
+                 <controls:SettingsTabControl DataContext="{Binding Settings}"/>
+             </TabItem>
+         </TabControl>
+ 
+         <!-- Floating Toast Notifications Overlay -->
+         <ItemsControl Grid.Row="1" ItemsSource="{Binding Toasts}" VerticalAlignment="Top" HorizontalAlignment="Right" Margin="0,20,24,0" IsHitTestVisible="False">
+             <ItemsControl.ItemTemplate>
+                 <DataTemplate DataType="services:ToastItem">
+-                    <Border Background="#1E293B" CornerRadius="6" BorderBrush="{Binding BadgeColor}" BorderThickness="2" Padding="12,8" Margin="0,0,0,8" Width="300">
+-                        <TextBlock Text="{Binding Message}" Foreground="#F8FAFC" FontSize="12" TextWrapping="Wrap"/>
++                    <Border Background="{StaticResource BgSurfaceBrush}" CornerRadius="6" BorderBrush="{Binding BadgeColor}" BorderThickness="1" Padding="12,8" Margin="0,0,0,8" Width="300">
++                        <TextBlock Text="{Binding Message}" Foreground="{StaticResource TextMainBrush}" FontSize="12" TextWrapping="Wrap"/>
+                     </Border>
+                 </DataTemplate>
+             </ItemsControl.ItemTemplate>
+         </ItemsControl>
+ 
+         <!-- Footer -->
+-        <Border Grid.Row="2" BorderBrush="#1E293B" BorderThickness="0,1,0,0" Padding="16,12,16,12" Margin="0,8,0,0">
++        <Border Grid.Row="2" Background="{StaticResource BgSurfaceBrush}" BorderBrush="{StaticResource GlassBorderBrush}" BorderThickness="0,1,0,0" Padding="16,10,16,10" Margin="0,8,0,0">
+             <Grid ColumnDefinitions="*, Auto">
+-                <TextBlock Text="LocalLLMServerManager v3.5.0 — Unified WASM &amp; Desktop UI" FontSize="12" Foreground="#64748B"/>
+-                <TextBlock Grid.Column="1" Text="System Tray Enabled 🟢" FontSize="12" Foreground="#22C55E"/>
++                <TextBlock Grid.Column="0" Text="LocalLLMServerManager v3.5.0 — Unified WASM &amp; Desktop UI" FontSize="12" Foreground="{StaticResource TextMutedBrush}" VerticalAlignment="Center"/>
++                <TextBlock Grid.Column="1" Text="System Tray Enabled 🟢" FontSize="12" Foreground="{StaticResource OnlineBrush}" FontWeight="SemiBold" VerticalAlignment="Center"/>
+             </Grid>
+         </Border>
+     </Grid>
+ </UserControl>

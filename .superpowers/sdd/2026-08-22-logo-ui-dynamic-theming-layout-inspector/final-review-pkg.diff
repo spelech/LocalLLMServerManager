@@ -1,0 +1,3447 @@
+﻿f60841d feat(tooling): integrate playwright-layout-inspector audit suite for WASM dashboard
+6fcb752 feat(theming): implement live dynamic theme switching across Desktop and WASM
+857706a feat(ui): streamline telemetry header, tab navigation, and card layouts
+b705f57 feat(ui): implement clean matte design system and remove neon glassmorphism
+2401af3 feat(branding): install monochromatic L³M² icon and logo assets
+ App.axaml                                          |    2 +-
+ Assets/app-icon.ico                                |  Bin 172012 -> 14744 bytes
+ Assets/app-icon.png                                |  Bin 0 -> 14641 bytes
+ Assets/app_tray_icon.jpg                           |  Bin 584993 -> 584993 bytes
+ Assets/logo.svg                                    |    7 +
+ .../Services/IThemeService.cs                      |   17 +
+ .../Services/ThemeService.cs                       |  131 ++
+ .../Styles/DesignTokens.axaml                      |   49 +-
+ .../Styles/GlassmorphicTheme.axaml                 |  137 +-
+ .../Styles/MatteTheme.axaml                        |  160 ++
+ .../ViewModels/MainViewModel.cs                    |    2 +
+ .../ViewModels/SettingsViewModel.cs                |   39 +-
+ .../Views/Controls/CivitaiTabControl.axaml         |   12 +-
+ .../Views/Controls/EngineStudioTabControl.axaml    |   16 +-
+ .../Views/Controls/HuggingFaceTabControl.axaml     |   16 +-
+ .../Views/Controls/OllamaModelsTabControl.axaml    |   26 +-
+ .../Views/Controls/SettingsTabControl.axaml        |   79 +-
+ .../Views/Controls/TelemetryHeaderControl.axaml    |   86 +-
+ LocalLLMServerManager.Shared/Views/MainView.axaml  |   12 +-
+ .../SettingsViewModelTests.cs                      |    2 +
+ LocalLLMServerManager.Tests/ThemeServiceTests.cs   |  192 +++
+ LocalLLMServerManager.Web/App.axaml                |    2 +-
+ LocalLLMServerManager.Web/wwwroot/favicon.ico      |  Bin 0 -> 14744 bytes
+ LocalLLMServerManager.Web/wwwroot/index.html       |    3 +-
+ eslint.config.mjs                                  |   24 +
+ package-lock.json                                  | 1600 ++++++++++++++++++++
+ package.json                                       |   20 +
+ playwright.config.ts                               |   44 +
+ tests/layout-inspector/layout-audit.spec.ts        |   21 +
+ tsconfig.json                                      |   18 +
+ wwwroot/favicon.ico                                |  Bin 17985 -> 14744 bytes
+ wwwroot/index.html                                 |    3 +-
+ 32 files changed, 2449 insertions(+), 271 deletions(-)
+diff --git a/App.axaml b/App.axaml
+index 8ccae54..5f2dfa2 100644
+--- a/App.axaml
++++ b/App.axaml
+@@ -5,21 +5,21 @@
+              RequestedThemeVariant="Dark">
+     <Application.Resources>
+         <ResourceDictionary>
+             <ResourceDictionary.MergedDictionaries>
+                 <ResourceInclude Source="avares://LocalLLMServerManager.Shared/Styles/DesignTokens.axaml" />
+             </ResourceDictionary.MergedDictionaries>
+         </ResourceDictionary>
+     </Application.Resources>
+     <Application.Styles>
+         <semi:SemiTheme Locale="en-US" />
+-        <StyleInclude Source="avares://LocalLLMServerManager.Shared/Styles/GlassmorphicTheme.axaml" />
++        <StyleInclude Source="avares://LocalLLMServerManager.Shared/Styles/MatteTheme.axaml" />
+     </Application.Styles>
+     <TrayIcon.Icons>
+         <TrayIcons>
+             <TrayIcon Icon="avares://LocalLLMServerManager/Assets/app-icon.ico" ToolTipText="Local LLM Server Manager v3.5.0" IsVisible="True">
+                 <TrayIcon.Menu>
+                     <NativeMenu>
+                         <NativeMenuItem Header="Open Native Dashboard" Click="OnOpenDashboardClick"/>
+                         <NativeMenuItem Header="Open Web UI in Browser" Click="OnOpenWebUiClick"/>
+                         <NativeMenuItemSeparator/>
+                         <NativeMenuItem Header="Exit Manager" Click="OnExitClick"/>
+diff --git a/Assets/app-icon.ico b/Assets/app-icon.ico
+index 0fcc77b..f7f840c 100644
+Binary files a/Assets/app-icon.ico and b/Assets/app-icon.ico differ
+diff --git a/Assets/app-icon.png b/Assets/app-icon.png
+new file mode 100644
+index 0000000..b39c515
+Binary files /dev/null and b/Assets/app-icon.png differ
+diff --git a/Assets/app_tray_icon.jpg b/Assets/app_tray_icon.jpg
+index 3b99368..4de9c5e 100644
+Binary files a/Assets/app_tray_icon.jpg and b/Assets/app_tray_icon.jpg differ
+diff --git a/Assets/logo.svg b/Assets/logo.svg
+new file mode 100644
+index 0000000..740f397
+--- /dev/null
++++ b/Assets/logo.svg
+@@ -0,0 +1,7 @@
++<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" width="100%" height="100%">
++  <rect width="128" height="128" rx="28" fill="#14171d"/>
++  <text x="24" y="86" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif" font-weight="900" font-size="54" fill="#ffffff">L</text>
++  <text x="52" y="56" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif" font-weight="800" font-size="25" fill="#ffffff">3</text>
++  <text x="64" y="86" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif" font-weight="900" font-size="54" fill="#ffffff">M</text>
++  <text x="104" y="56" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif" font-weight="800" font-size="25" fill="#ffffff">2</text>
++</svg>
+diff --git a/LocalLLMServerManager.Shared/Services/IThemeService.cs b/LocalLLMServerManager.Shared/Services/IThemeService.cs
+new file mode 100644
+index 0000000..c5906bd
+--- /dev/null
++++ b/LocalLLMServerManager.Shared/Services/IThemeService.cs
+@@ -0,0 +1,17 @@
++using System;
++
++namespace LocalLLMServerManager.Shared.Services;
++
++public enum AppTheme
++{
++    MatteCarbon,
++    OledBlack,
++    Light
++}
++
++public interface IThemeService
++{
++    AppTheme CurrentTheme { get; }
++    void SetTheme(AppTheme theme);
++    event EventHandler<AppTheme>? ThemeChanged;
++}
+diff --git a/LocalLLMServerManager.Shared/Services/ThemeService.cs b/LocalLLMServerManager.Shared/Services/ThemeService.cs
+new file mode 100644
+index 0000000..73a970c
+--- /dev/null
++++ b/LocalLLMServerManager.Shared/Services/ThemeService.cs
+@@ -0,0 +1,131 @@
++using System;
++using Avalonia;
++using Avalonia.Controls;
++using Avalonia.Media;
++using Avalonia.Styling;
++
++namespace LocalLLMServerManager.Shared.Services;
++
++public class ThemeService : IThemeService
++{
++    private static ThemeService? _instance;
++    public static ThemeService Instance => _instance ??= new ThemeService();
++
++    private readonly IResourceDictionary? _resourceDictionary;
++
++    public AppTheme CurrentTheme { get; private set; } = AppTheme.MatteCarbon;
++
++    public event EventHandler<AppTheme>? ThemeChanged;
++
++    public ThemeService(IResourceDictionary? resourceDictionary = null)
++    {
++        _resourceDictionary = resourceDictionary;
++    }
++
++    public void SetTheme(AppTheme theme)
++    {
++        CurrentTheme = theme;
++
++        var resources = _resourceDictionary ?? Application.Current?.Resources;
++        if (resources != null)
++        {
++            ApplyThemeResources(resources, theme);
++        }
++
++        if (Application.Current != null)
++        {
++            Application.Current.RequestedThemeVariant = theme == AppTheme.Light ? ThemeVariant.Light : ThemeVariant.Dark;
++        }
++
++        ThemeChanged?.Invoke(this, theme);
++    }
++
++    public static void ApplyThemeResources(IResourceDictionary resources, AppTheme theme)
++    {
++        Color bgDark, bgSurface, bgCard, border, textMain, textMuted, primary, secondary, accent;
++
++        switch (theme)
++        {
++            case AppTheme.OledBlack:
++                bgDark = Color.Parse("#000000");
++                bgSurface = Color.Parse("#121212");
++                bgCard = Color.Parse("#18181b");
++                border = Color.Parse("#27272a");
++                textMain = Color.Parse("#f4f4f5");
++                textMuted = Color.Parse("#71717a");
++                primary = Color.Parse("#3b82f6");
++                secondary = Color.Parse("#60a5fa");
++                accent = Color.Parse("#60a5fa");
++                break;
++
++            case AppTheme.Light:
++                bgDark = Color.Parse("#ffffff");
++                bgSurface = Color.Parse("#f6f8fa");
++                bgCard = Color.Parse("#ffffff");
++                border = Color.Parse("#d0d7de");
++                textMain = Color.Parse("#1f2328");
++                textMuted = Color.Parse("#656d76");
++                primary = Color.Parse("#0969da");
++                secondary = Color.Parse("#218bff");
++                accent = Color.Parse("#218bff");
++                break;
++
++            case AppTheme.MatteCarbon:
++            default:
++                bgDark = Color.Parse("#0d1117");
++                bgSurface = Color.Parse("#161b22");
++                bgCard = Color.Parse("#1c2128");
++                border = Color.Parse("#30363d");
++                textMain = Color.Parse("#f0f6fc");
++                textMuted = Color.Parse("#8b949e");
++                primary = Color.Parse("#388bfd");
++                secondary = Color.Parse("#58a6ff");
++                accent = Color.Parse("#79c0ff");
++                break;
++        }
++
++        resources["BgDarkColor"] = bgDark;
++        resources["BgSurfaceColor"] = bgSurface;
++        resources["BgCardColor"] = bgCard;
++        resources["BorderColor"] = border;
++        resources["TextMainColor"] = textMain;
++        resources["TextMutedColor"] = textMuted;
++        resources["PrimaryColor"] = primary;
++        resources["SecondaryColor"] = secondary;
++        resources["AccentColor"] = accent;
++
++        SetOrUpdateBrush(resources, "BgDarkBrush", bgDark);
++        SetOrUpdateBrush(resources, "BgSurfaceBrush", bgSurface);
++        SetOrUpdateBrush(resources, "BgCardBrush", bgCard);
++        SetOrUpdateBrush(resources, "GlassBorderBrush", border);
++        SetOrUpdateBrush(resources, "BorderColorBrush", border);
++        SetOrUpdateBrush(resources, "BorderGlowBrush", primary, 0.4);
++        SetOrUpdateBrush(resources, "TextMainBrush", textMain);
++        SetOrUpdateBrush(resources, "TextMutedBrush", textMuted);
++        SetOrUpdateBrush(resources, "PrimaryBrush", primary);
++        SetOrUpdateBrush(resources, "SecondaryBrush", secondary);
++        SetOrUpdateBrush(resources, "AccentBrush", accent);
++        SetOrUpdateBrush(resources, "GlassBackgroundBrush", bgDark);
++        SetOrUpdateBrush(resources, "PrimaryGradientBrush", primary);
++    }
++
++    private static void SetOrUpdateBrush(IResourceDictionary resources, string key, Color color, double opacity = 1.0)
++    {
++        if (resources.TryGetResource(key, null, out var existing) && existing is SolidColorBrush existingBrush)
++        {
++            existingBrush.Color = color;
++            existingBrush.Opacity = opacity;
++            resources[key] = existingBrush;
++        }
++        else if (resources.TryGetValue(key, out var dictVal) && dictVal is SolidColorBrush dictBrush)
++        {
++            dictBrush.Color = color;
++            dictBrush.Opacity = opacity;
++            resources[key] = dictBrush;
++        }
++        else
++        {
++            resources[key] = new SolidColorBrush(color) { Opacity = opacity };
++        }
++    }
++}
+diff --git a/LocalLLMServerManager.Shared/Styles/DesignTokens.axaml b/LocalLLMServerManager.Shared/Styles/DesignTokens.axaml
+index a4637fd..62616d0 100644
+--- a/LocalLLMServerManager.Shared/Styles/DesignTokens.axaml
++++ b/LocalLLMServerManager.Shared/Styles/DesignTokens.axaml
+@@ -1,35 +1,36 @@
+ <ResourceDictionary xmlns="https://github.com/avaloniaui"
+                     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+     <!-- Color Definitions -->
+-    <Color x:Key="BgDarkColor">#0b0e14</Color>
+-    <Color x:Key="BgSurfaceColor">#161b26</Color>
+-    <Color x:Key="BgCardColor">#1e2536</Color>
+-    <Color x:Key="PrimaryColor">#8b5cf6</Color>
+-    <Color x:Key="SecondaryColor">#06b6d4</Color>
+-    <Color x:Key="AccentColor">#c084fc</Color>
++    <Color x:Key="BgDarkColor">#0d1117</Color>
++    <Color x:Key="BgSurfaceColor">#161b22</Color>
++    <Color x:Key="BgCardColor">#1c2128</Color>
++    <Color x:Key="BorderColor">#30363d</Color>
++    <Color x:Key="PrimaryColor">#388bfd</Color>
++    <Color x:Key="SecondaryColor">#58a6ff</Color>
++    <Color x:Key="AccentColor">#79c0ff</Color>
++    <Color x:Key="TextMainColor">#f0f6fc</Color>
++    <Color x:Key="TextMutedColor">#8b949e</Color>
++    <Color x:Key="OnlineColor">#238636</Color>
++    <Color x:Key="OfflineColor">#da3633</Color>
++    <Color x:Key="WarningColor">#d29922</Color>
+ 
+     <!-- Solid Brushes -->
+     <SolidColorBrush x:Key="BgDarkBrush" Color="{StaticResource BgDarkColor}" />
+-    <SolidColorBrush x:Key="BgSurfaceBrush" Color="{StaticResource BgSurfaceColor}" Opacity="0.45" />
+-    <SolidColorBrush x:Key="BgCardBrush" Color="{StaticResource BgCardColor}" Opacity="0.65" />
+-    <SolidColorBrush x:Key="GlassBorderBrush" Color="#4b5563" Opacity="0.35" />
+-    <SolidColorBrush x:Key="BorderGlowBrush" Color="#a78bfa" Opacity="0.25" />
++    <SolidColorBrush x:Key="BgSurfaceBrush" Color="{StaticResource BgSurfaceColor}" />
++    <SolidColorBrush x:Key="BgCardBrush" Color="{StaticResource BgCardColor}" />
++    <SolidColorBrush x:Key="GlassBorderBrush" Color="{StaticResource BorderColor}" />
++    <SolidColorBrush x:Key="BorderColorBrush" Color="{StaticResource BorderColor}" />
++    <SolidColorBrush x:Key="BorderGlowBrush" Color="#388bfd" Opacity="0.4" />
+     <SolidColorBrush x:Key="PrimaryBrush" Color="{StaticResource PrimaryColor}" />
+     <SolidColorBrush x:Key="SecondaryBrush" Color="{StaticResource SecondaryColor}" />
+     <SolidColorBrush x:Key="AccentBrush" Color="{StaticResource AccentColor}" />
+-    <SolidColorBrush x:Key="TextMainBrush" Color="#f3f4f6" />
+-    <SolidColorBrush x:Key="TextMutedBrush" Color="#9ca3af" />
+-    <SolidColorBrush x:Key="OnlineBrush" Color="#22c55e" />
+-    <SolidColorBrush x:Key="OfflineBrush" Color="#ef4444" />
++    <SolidColorBrush x:Key="TextMainBrush" Color="{StaticResource TextMainColor}" />
++    <SolidColorBrush x:Key="TextMutedBrush" Color="{StaticResource TextMutedColor}" />
++    <SolidColorBrush x:Key="OnlineBrush" Color="{StaticResource OnlineColor}" />
++    <SolidColorBrush x:Key="OfflineBrush" Color="{StaticResource OfflineColor}" />
++    <SolidColorBrush x:Key="WarningBrush" Color="{StaticResource WarningColor}" />
+ 
+-    <!-- Gradient Brushes -->
+-    <LinearGradientBrush x:Key="PrimaryGradientBrush" StartPoint="0%,50%" EndPoint="100%,50%">
+-        <GradientStop Color="#8b5cf6" Offset="0.0" />
+-        <GradientStop Color="#06b6d4" Offset="1.0" />
+-    </LinearGradientBrush>
+-
+-    <RadialGradientBrush x:Key="GlassBackgroundBrush" Center="50%,50%" GradientOrigin="50%,50%" RadiusX="0.8" RadiusY="0.8">
+-        <GradientStop Color="#1e1b4b" Offset="0.0" />
+-        <GradientStop Color="#0b0e14" Offset="1.0" />
+-    </RadialGradientBrush>
++    <!-- Solid Base Background & Legacy Fallbacks -->
++    <SolidColorBrush x:Key="GlassBackgroundBrush" Color="{StaticResource BgDarkColor}" />
++    <SolidColorBrush x:Key="PrimaryGradientBrush" Color="{StaticResource PrimaryColor}" />
+ </ResourceDictionary>
+diff --git a/LocalLLMServerManager.Shared/Styles/GlassmorphicTheme.axaml b/LocalLLMServerManager.Shared/Styles/GlassmorphicTheme.axaml
+index 0ee9c9f..03ea244 100644
+--- a/LocalLLMServerManager.Shared/Styles/GlassmorphicTheme.axaml
++++ b/LocalLLMServerManager.Shared/Styles/GlassmorphicTheme.axaml
+@@ -1,139 +1,4 @@
+ <Styles xmlns="https://github.com/avaloniaui"
+         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+-    <Styles.Resources>
+-        <ResourceDictionary>
+-            <ResourceDictionary.MergedDictionaries>
+-                <ResourceInclude Source="avares://LocalLLMServerManager.Shared/Styles/DesignTokens.axaml" />
+-            </ResourceDictionary.MergedDictionaries>
+-        </ResourceDictionary>
+-    </Styles.Resources>
+-    <!-- Glass Card Style -->
+-    <Style Selector="Border.glass-card">
+-        <Setter Property="Background" Value="{StaticResource BgCardBrush}" />
+-        <Setter Property="BorderBrush" Value="{StaticResource GlassBorderBrush}" />
+-        <Setter Property="BorderThickness" Value="1" />
+-        <Setter Property="CornerRadius" Value="12" />
+-        <Setter Property="Padding" Value="16" />
+-        <Setter Property="BoxShadow" Value="0 8 32 0 #20000000" />
+-    </Style>
+-
+-    <!-- Telemetry Pill Style -->
+-    <Style Selector="Border.telemetry-pill">
+-        <Setter Property="Background" Value="{StaticResource BgSurfaceBrush}" />
+-        <Setter Property="BorderBrush" Value="{StaticResource GlassBorderBrush}" />
+-        <Setter Property="BorderThickness" Value="1" />
+-        <Setter Property="CornerRadius" Value="16" />
+-        <Setter Property="Padding" Value="10,6" />
+-    </Style>
+-
+-    <!-- Primary Glowing Button Style -->
+-    <Style Selector="Button.glass-primary">
+-        <Setter Property="Background" Value="{StaticResource PrimaryGradientBrush}" />
+-        <Setter Property="Foreground" Value="#ffffff" />
+-        <Setter Property="FontWeight" Value="Bold" />
+-        <Setter Property="CornerRadius" Value="8" />
+-        <Setter Property="Padding" Value="16,10" />
+-        <Setter Property="BorderThickness" Value="0" />
+-    </Style>
+-    <Style Selector="Button.glass-primary /template/ ContentPresenter#PART_ContentPresenter">
+-        <Setter Property="CornerRadius" Value="8" />
+-        <Setter Property="BoxShadow" Value="0 4 15 0 #408b5cf6" />
+-    </Style>
+-    <Style Selector="Button.glass-primary:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+-        <Setter Property="BoxShadow" Value="0 6 20 0 #608b5cf6" />
+-    </Style>
+-
+-    <!-- Secondary Glass Button Style -->
+-    <Style Selector="Button.glass-secondary">
+-        <Setter Property="Background" Value="{StaticResource BgSurfaceBrush}" />
+-        <Setter Property="Foreground" Value="{StaticResource TextMainBrush}" />
+-        <Setter Property="BorderBrush" Value="{StaticResource GlassBorderBrush}" />
+-        <Setter Property="BorderThickness" Value="1" />
+-        <Setter Property="CornerRadius" Value="8" />
+-        <Setter Property="Padding" Value="14,8" />
+-    </Style>
+-    <Style Selector="Button.glass-secondary:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+-        <Setter Property="Background" Value="{StaticResource BgCardBrush}" />
+-        <Setter Property="BorderBrush" Value="{StaticResource BorderGlowBrush}" />
+-    </Style>
+-
+-    <!-- Glass Progress Bar Style -->
+-    <Style Selector="ProgressBar.glass-progress">
+-        <Setter Property="Background" Value="{StaticResource BgSurfaceBrush}" />
+-        <Setter Property="Foreground" Value="{StaticResource PrimaryGradientBrush}" />
+-        <Setter Property="BorderBrush" Value="{StaticResource GlassBorderBrush}" />
+-        <Setter Property="BorderThickness" Value="1" />
+-        <Setter Property="CornerRadius" Value="8" />
+-        <Setter Property="MinHeight" Value="10" />
+-    </Style>
+-
+-    <!-- Glass Input TextBox Style -->
+-    <Style Selector="TextBox.glass-input">
+-        <Setter Property="Background" Value="{StaticResource BgSurfaceBrush}" />
+-        <Setter Property="Foreground" Value="{StaticResource TextMainBrush}" />
+-        <Setter Property="BorderBrush" Value="{StaticResource GlassBorderBrush}" />
+-        <Setter Property="BorderThickness" Value="1" />
+-        <Setter Property="CornerRadius" Value="8" />
+-        <Setter Property="Padding" Value="10,8" />
+-    </Style>
+-    <Style Selector="TextBox.glass-input:focus /template/ Border#PART_BorderElement">
+-        <Setter Property="BorderBrush" Value="{StaticResource BorderGlowBrush}" />
+-        <Setter Property="Background" Value="{StaticResource BgCardBrush}" />
+-    </Style>
+-
+-    <!-- Glass TabControl Navigation Bar Style -->
+-    <Style Selector="TabControl">
+-        <Setter Property="Background" Value="Transparent" />
+-        <Setter Property="Padding" Value="0" />
+-        <Setter Property="Template">
+-            <ControlTemplate>
+-                <Border Background="{TemplateBinding Background}"
+-                        BorderBrush="{TemplateBinding BorderBrush}"
+-                        BorderThickness="{TemplateBinding BorderThickness}"
+-                        CornerRadius="{TemplateBinding CornerRadius}">
+-                    <DockPanel>
+-                        <Border DockPanel.Dock="Top"
+-                                Background="{StaticResource BgSurfaceBrush}"
+-                                CornerRadius="12"
+-                                Margin="0,0,0,16"
+-                                Padding="6"
+-                                HorizontalAlignment="Left">
+-                            <ItemsPresenter Name="PART_ItemsPresenter"
+-                                            ItemsPanel="{TemplateBinding ItemsPanel}" />
+-                        </Border>
+-                        <ContentPresenter Name="PART_SelectedContentHost"
+-                                          Margin="{TemplateBinding Padding}"
+-                                          HorizontalContentAlignment="{TemplateBinding HorizontalContentAlignment}"
+-                                          VerticalContentAlignment="{TemplateBinding VerticalContentAlignment}"
+-                                          Content="{TemplateBinding SelectedContent}"
+-                                          ContentTemplate="{TemplateBinding SelectedContentTemplate}" />
+-                    </DockPanel>
+-                </Border>
+-            </ControlTemplate>
+-        </Setter>
+-    </Style>
+-
+-    <!-- Glass TabItem Style -->
+-    <Style Selector="TabItem">
+-        <Setter Property="Foreground" Value="{StaticResource TextMutedBrush}" />
+-        <Setter Property="FontWeight" Value="SemiBold" />
+-        <Setter Property="FontSize" Value="13" />
+-        <Setter Property="Padding" Value="16,10" />
+-        <Setter Property="CornerRadius" Value="8" />
+-        <Setter Property="Margin" Value="2,0" />
+-        <Setter Property="MinHeight" Value="38" />
+-    </Style>
+-    <Style Selector="TabItem:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+-        <Setter Property="Background" Value="{StaticResource BgCardBrush}" />
+-        <Setter Property="Foreground" Value="{StaticResource TextMainBrush}" />
+-    </Style>
+-    <Style Selector="TabItem:selected">
+-        <Setter Property="Foreground" Value="#ffffff" />
+-        <Setter Property="FontWeight" Value="Bold" />
+-    </Style>
+-    <Style Selector="TabItem:selected /template/ ContentPresenter#PART_ContentPresenter">
+-        <Setter Property="Background" Value="{StaticResource PrimaryGradientBrush}" />
+-        <Setter Property="Foreground" Value="#ffffff" />
+-        <Setter Property="BoxShadow" Value="0 4 12 0 #408b5cf6" />
+-    </Style>
++    <StyleInclude Source="avares://LocalLLMServerManager.Shared/Styles/MatteTheme.axaml" />
+ </Styles>
+diff --git a/LocalLLMServerManager.Shared/Styles/MatteTheme.axaml b/LocalLLMServerManager.Shared/Styles/MatteTheme.axaml
+new file mode 100644
+index 0000000..d79eff7
+--- /dev/null
++++ b/LocalLLMServerManager.Shared/Styles/MatteTheme.axaml
+@@ -0,0 +1,160 @@
++<Styles xmlns="https://github.com/avaloniaui"
++        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
++    <Styles.Resources>
++        <ResourceDictionary>
++            <ResourceDictionary.MergedDictionaries>
++                <ResourceInclude Source="avares://LocalLLMServerManager.Shared/Styles/DesignTokens.axaml" />
++            </ResourceDictionary.MergedDictionaries>
++        </ResourceDictionary>
++    </Styles.Resources>
++
++    <!-- Matte Card Style (Flat, High-Contrast Carbon) -->
++    <Style Selector="Border.matte-card, Border.glass-card">
++        <Setter Property="Background" Value="{StaticResource BgCardBrush}" />
++        <Setter Property="BorderBrush" Value="{StaticResource GlassBorderBrush}" />
++        <Setter Property="BorderThickness" Value="1" />
++        <Setter Property="CornerRadius" Value="8" />
++        <Setter Property="Padding" Value="16" />
++    </Style>
++
++    <!-- Telemetry / Metadata Pill Style -->
++    <Style Selector="Border.matte-pill, Border.telemetry-pill">
++        <Setter Property="Background" Value="{StaticResource BgSurfaceBrush}" />
++        <Setter Property="BorderBrush" Value="{StaticResource GlassBorderBrush}" />
++        <Setter Property="BorderThickness" Value="1" />
++        <Setter Property="CornerRadius" Value="6" />
++        <Setter Property="Padding" Value="8,4" />
++    </Style>
++
++    <!-- Primary Matte Solid Button Style -->
++    <Style Selector="Button.matte-primary, Button.glass-primary">
++        <Setter Property="Background" Value="{StaticResource PrimaryBrush}" />
++        <Setter Property="Foreground" Value="#ffffff" />
++        <Setter Property="FontWeight" Value="SemiBold" />
++        <Setter Property="CornerRadius" Value="6" />
++        <Setter Property="Padding" Value="14,8" />
++        <Setter Property="BorderBrush" Value="{StaticResource PrimaryBrush}" />
++        <Setter Property="BorderThickness" Value="1" />
++    </Style>
++    <Style Selector="Button.matte-primary /template/ ContentPresenter#PART_ContentPresenter, Button.glass-primary /template/ ContentPresenter#PART_ContentPresenter">
++        <Setter Property="CornerRadius" Value="6" />
++    </Style>
++    <Style Selector="Button.matte-primary:pointerover /template/ ContentPresenter#PART_ContentPresenter, Button.glass-primary:pointerover /template/ ContentPresenter#PART_ContentPresenter">
++        <Setter Property="Background" Value="{StaticResource SecondaryBrush}" />
++        <Setter Property="BorderBrush" Value="{StaticResource SecondaryBrush}" />
++        <Setter Property="Foreground" Value="#ffffff" />
++    </Style>
++    <Style Selector="Button.matte-primary:pressed /template/ ContentPresenter#PART_ContentPresenter, Button.glass-primary:pressed /template/ ContentPresenter#PART_ContentPresenter">
++        <Setter Property="Background" Value="{StaticResource PrimaryBrush}" />
++        <Setter Property="BorderBrush" Value="{StaticResource PrimaryBrush}" />
++        <Setter Property="Opacity" Value="0.85" />
++    </Style>
++
++    <!-- Secondary Matte Solid Button Style -->
++    <Style Selector="Button.matte-secondary, Button.glass-secondary">
++        <Setter Property="Background" Value="{StaticResource BgSurfaceBrush}" />
++        <Setter Property="Foreground" Value="{StaticResource TextMainBrush}" />
++        <Setter Property="BorderBrush" Value="{StaticResource GlassBorderBrush}" />
++        <Setter Property="BorderThickness" Value="1" />
++        <Setter Property="CornerRadius" Value="6" />
++        <Setter Property="Padding" Value="12,7" />
++    </Style>
++    <Style Selector="Button.matte-secondary /template/ ContentPresenter#PART_ContentPresenter, Button.glass-secondary /template/ ContentPresenter#PART_ContentPresenter">
++        <Setter Property="CornerRadius" Value="6" />
++    </Style>
++    <Style Selector="Button.matte-secondary:pointerover /template/ ContentPresenter#PART_ContentPresenter, Button.glass-secondary:pointerover /template/ ContentPresenter#PART_ContentPresenter">
++        <Setter Property="Background" Value="{StaticResource BgCardBrush}" />
++        <Setter Property="BorderBrush" Value="{StaticResource PrimaryBrush}" />
++        <Setter Property="Foreground" Value="{StaticResource TextMainBrush}" />
++    </Style>
++    <Style Selector="Button.matte-secondary:pressed /template/ ContentPresenter#PART_ContentPresenter, Button.glass-secondary:pressed /template/ ContentPresenter#PART_ContentPresenter">
++        <Setter Property="Background" Value="{StaticResource BgSurfaceBrush}" />
++        <Setter Property="Opacity" Value="0.85" />
++    </Style>
++
++    <!-- Matte Progress Bar Style -->
++    <Style Selector="ProgressBar.matte-progress, ProgressBar.glass-progress">
++        <Setter Property="Background" Value="{StaticResource BgSurfaceBrush}" />
++        <Setter Property="Foreground" Value="{StaticResource PrimaryBrush}" />
++        <Setter Property="BorderBrush" Value="{StaticResource GlassBorderBrush}" />
++        <Setter Property="BorderThickness" Value="1" />
++        <Setter Property="CornerRadius" Value="4" />
++        <Setter Property="MinHeight" Value="8" />
++    </Style>
++
++    <!-- Matte Input TextBox Style -->
++    <Style Selector="TextBox.matte-input, TextBox.glass-input">
++        <Setter Property="Background" Value="{StaticResource BgSurfaceBrush}" />
++        <Setter Property="Foreground" Value="{StaticResource TextMainBrush}" />
++        <Setter Property="BorderBrush" Value="{StaticResource GlassBorderBrush}" />
++        <Setter Property="BorderThickness" Value="1" />
++        <Setter Property="CornerRadius" Value="6" />
++        <Setter Property="Padding" Value="10,8" />
++    </Style>
++    <Style Selector="TextBox.matte-input:focus /template/ Border#PART_BorderElement, TextBox.glass-input:focus /template/ Border#PART_BorderElement">
++        <Setter Property="BorderBrush" Value="{StaticResource PrimaryBrush}" />
++        <Setter Property="Background" Value="{StaticResource BgCardBrush}" />
++    </Style>
++
++    <!-- Modern Segmented TabControl Style -->
++    <Style Selector="TabControl">
++        <Setter Property="Background" Value="Transparent" />
++        <Setter Property="Padding" Value="0" />
++        <Setter Property="Template">
++            <ControlTemplate>
++                <Border Background="{TemplateBinding Background}"
++                        BorderBrush="{TemplateBinding BorderBrush}"
++                        BorderThickness="{TemplateBinding BorderThickness}"
++                        CornerRadius="{TemplateBinding CornerRadius}">
++                    <DockPanel>
++                        <Border DockPanel.Dock="Top"
++                                Background="{StaticResource BgSurfaceBrush}"
++                                BorderBrush="{StaticResource GlassBorderBrush}"
++                                BorderThickness="1"
++                                CornerRadius="8"
++                                Margin="0,0,0,16"
++                                Padding="4"
++                                HorizontalAlignment="Left">
++                            <ItemsPresenter Name="PART_ItemsPresenter"
++                                            ItemsPanel="{TemplateBinding ItemsPanel}" />
++                        </Border>
++                        <ContentPresenter Name="PART_SelectedContentHost"
++                                          Margin="{TemplateBinding Padding}"
++                                          HorizontalContentAlignment="{TemplateBinding HorizontalContentAlignment}"
++                                          VerticalContentAlignment="{TemplateBinding VerticalContentAlignment}"
++                                          Content="{TemplateBinding SelectedContent}"
++                                          ContentTemplate="{TemplateBinding SelectedContentTemplate}" />
++                    </DockPanel>
++                </Border>
++            </ControlTemplate>
++        </Setter>
++    </Style>
++
++    <!-- Modern Segmented TabItem Style -->
++    <Style Selector="TabItem">
++        <Setter Property="Foreground" Value="{StaticResource TextMutedBrush}" />
++        <Setter Property="FontWeight" Value="SemiBold" />
++        <Setter Property="FontSize" Value="13" />
++        <Setter Property="Padding" Value="14,8" />
++        <Setter Property="CornerRadius" Value="6" />
++        <Setter Property="Margin" Value="2,0" />
++        <Setter Property="MinHeight" Value="34" />
++    </Style>
++    <Style Selector="TabItem /template/ ContentPresenter#PART_ContentPresenter">
++        <Setter Property="CornerRadius" Value="6" />
++    </Style>
++    <Style Selector="TabItem:pointerover /template/ ContentPresenter#PART_ContentPresenter">
++        <Setter Property="Background" Value="{StaticResource BgCardBrush}" />
++        <Setter Property="Foreground" Value="{StaticResource TextMainBrush}" />
++    </Style>
++    <Style Selector="TabItem:selected">
++        <Setter Property="Foreground" Value="{StaticResource TextMainBrush}" />
++        <Setter Property="FontWeight" Value="Bold" />
++    </Style>
++    <Style Selector="TabItem:selected /template/ ContentPresenter#PART_ContentPresenter">
++        <Setter Property="Background" Value="{StaticResource BgCardBrush}" />
++        <Setter Property="BorderBrush" Value="{StaticResource GlassBorderBrush}" />
++        <Setter Property="BorderThickness" Value="1" />
++        <Setter Property="Foreground" Value="{StaticResource TextMainBrush}" />
++    </Style>
++</Styles>
+diff --git a/LocalLLMServerManager.Shared/ViewModels/MainViewModel.cs b/LocalLLMServerManager.Shared/ViewModels/MainViewModel.cs
+index 17f5b27..df1125a 100644
+--- a/LocalLLMServerManager.Shared/ViewModels/MainViewModel.cs
++++ b/LocalLLMServerManager.Shared/ViewModels/MainViewModel.cs
+@@ -167,20 +167,22 @@ public partial class MainViewModel : ObservableObject
+     public ObservableCollection<CivitaiModelItem> CivitaiResults => Civitai.CivitaiResults;
+ 
+     public string ForgeModelsPath { get => Settings.ForgeModelsPath; set => Settings.ForgeModelsPath = value; }
+     public string ComfyUiUrl { get => Settings.ComfyUiUrl; set => Settings.ComfyUiUrl = value; }
+     public string ThreeDModelsPath { get => Settings.ThreeDModelsPath; set => Settings.ThreeDModelsPath = value; }
+     public string WorkflowsPath { get => Settings.WorkflowsPath; set => Settings.WorkflowsPath = value; }
+     public string PreferredImageEngine { get => Settings.PreferredImageEngine; set => Settings.PreferredImageEngine = value; }
+     public string ComfyUiExecutablePath { get => Settings.ComfyUiExecutablePath; set => Settings.ComfyUiExecutablePath = value; }
+     public string ForgeExecutablePath { get => Settings.ForgeExecutablePath; set => Settings.ForgeExecutablePath = value; }
+     public string LanAccessUrl { get => Settings.LanAccessUrl; set => Settings.LanAccessUrl = value; }
++    public string SelectedTheme { get => Settings.SelectedTheme; set => Settings.SelectedTheme = value; }
++    public System.Collections.Generic.IReadOnlyList<string> AvailableThemes => Settings.AvailableThemes;
+ 
+     private async Task StartBackgroundPollingAsync()
+     {
+         while (EnableAutomaticPolling)
+         {
+             try
+             {
+                 await Task.Delay(5000);
+                 if (!EnableAutomaticPolling) break;
+                 await RefreshStatusAsync();
+diff --git a/LocalLLMServerManager.Shared/ViewModels/SettingsViewModel.cs b/LocalLLMServerManager.Shared/ViewModels/SettingsViewModel.cs
+index 124be37..48c1274 100644
+--- a/LocalLLMServerManager.Shared/ViewModels/SettingsViewModel.cs
++++ b/LocalLLMServerManager.Shared/ViewModels/SettingsViewModel.cs
+@@ -34,37 +34,74 @@ public partial class SettingsViewModel : ObservableObject
+     [ObservableProperty] private string _comfyUiExecutableStatus = "⚠️ Missing";
+     [ObservableProperty] private string _forgeExecutableStatus = "⚠️ Missing";
+     [ObservableProperty] private string _ollamaStatus = "⚠️ Missing";
+     [ObservableProperty] private string _forgeModelsStatus = "⚠️ Missing";
+     [ObservableProperty] private string _comfyModelsStatus = "⚠️ Missing";
+     [ObservableProperty] private string _threeDModelsStatus = "⚠️ Missing";
+     [ObservableProperty] private string _workflowsStatus = "⚠️ Missing";
+ 
+     public string OllamaExecutableStatus => OllamaStatus;
+ 
+-    public SettingsViewModel()
++    private readonly IThemeService _themeService;
++
++    public IReadOnlyList<string> AvailableThemes { get; } = new[]
++    {
++        "Matte Carbon (Default)",
++        "OLED Pure Black",
++        "Clean Light"
++    };
++
++    [ObservableProperty] private string _selectedTheme = "Matte Carbon (Default)";
++
++    public SettingsViewModel() : this(ThemeService.Instance)
++    {
++    }
++
++    public SettingsViewModel(IThemeService themeService)
+     {
++        _themeService = themeService ?? ThemeService.Instance;
++        _selectedTheme = MapThemeToString(_themeService.CurrentTheme);
+         RefreshAllStatuses();
+     }
+ 
+     partial void OnForgeModelsPathChanged(string value) => ForgeModelsStatus = EvaluateDirectoryStatus(value);
+     partial void OnComfyModelsPathChanged(string value) => ComfyModelsStatus = EvaluateDirectoryStatus(value);
+     partial void OnThreeDModelsPathChanged(string value) => ThreeDModelsStatus = EvaluateDirectoryStatus(value);
+     partial void OnWorkflowsPathChanged(string value) => WorkflowsStatus = EvaluateDirectoryStatus(value);
+     partial void OnComfyUiExecutablePathChanged(string value) => ComfyUiExecutableStatus = EvaluateExecutableStatus(value);
+     partial void OnForgeExecutablePathChanged(string value) => ForgeExecutableStatus = EvaluateExecutableStatus(value);
+     partial void OnOllamaExecutablePathChanged(string value)
+     {
+         OllamaStatus = EvaluateExecutableStatus(value);
+         OnPropertyChanged(nameof(OllamaExecutableStatus));
+     }
+ 
++    partial void OnSelectedThemeChanged(string value)
++    {
++        var theme = MapStringToTheme(value);
++        _themeService?.SetTheme(theme);
++    }
++
++    public static string MapThemeToString(AppTheme theme) => theme switch
++    {
++        AppTheme.OledBlack => "OLED Pure Black",
++        AppTheme.Light => "Clean Light",
++        _ => "Matte Carbon (Default)"
++    };
++
++    public static AppTheme MapStringToTheme(string? themeName) => themeName switch
++    {
++        "OLED Pure Black" => AppTheme.OledBlack,
++        "Clean Light" => AppTheme.Light,
++        _ => AppTheme.MatteCarbon
++    };
++
+     public void RefreshAllStatuses()
+     {
+         ComfyUiExecutableStatus = EvaluateExecutableStatus(ComfyUiExecutablePath);
+         ForgeExecutableStatus = EvaluateExecutableStatus(ForgeExecutablePath);
+         OllamaStatus = EvaluateExecutableStatus(OllamaExecutablePath);
+         ForgeModelsStatus = EvaluateDirectoryStatus(ForgeModelsPath);
+         ComfyModelsStatus = EvaluateDirectoryStatus(ComfyModelsPath);
+         ThreeDModelsStatus = EvaluateDirectoryStatus(ThreeDModelsPath);
+         WorkflowsStatus = EvaluateDirectoryStatus(WorkflowsPath);
+         OnPropertyChanged(nameof(OllamaExecutableStatus));
+diff --git a/LocalLLMServerManager.Shared/Views/Controls/CivitaiTabControl.axaml b/LocalLLMServerManager.Shared/Views/Controls/CivitaiTabControl.axaml
+index c0d9246..6b58aaf 100644
+--- a/LocalLLMServerManager.Shared/Views/Controls/CivitaiTabControl.axaml
++++ b/LocalLLMServerManager.Shared/Views/Controls/CivitaiTabControl.axaml
+@@ -1,39 +1,39 @@
+ <UserControl xmlns="https://github.com/avaloniaui"
+              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+              xmlns:vm="using:LocalLLMServerManager.Shared.ViewModels"
+              x:Class="LocalLLMServerManager.Shared.Views.Controls.CivitaiTabControl"
+              x:DataType="vm:CivitaiSearchViewModel">
+ 
+     <Grid RowDefinitions="Auto, *" Margin="0,12,0,0">
+         <Grid Grid.Row="0" ColumnDefinitions="*, Auto" Margin="0,0,0,12">
+-            <TextBox Text="{Binding CivitaiSearchQuery}" PlaceholderText="Search Stable Diffusion checkpoints &amp; LoRAs..." 
+-                     Classes="glass-input" VerticalAlignment="Center"/>
++            <TextBox Grid.Column="0" Text="{Binding CivitaiSearchQuery}" PlaceholderText="Search Stable Diffusion checkpoints &amp; LoRAs..." 
++                     Classes="matte-input" VerticalAlignment="Center"/>
+             <Button Grid.Column="1" Command="{Binding SearchCivitaiCommand}" 
+-                    Classes="glass-primary" Margin="8,0,0,0">
++                    Classes="matte-primary" Margin="8,0,0,0" VerticalAlignment="Center">
+                 🔍 Search CivitAI
+             </Button>
+         </Grid>
+ 
+         <ScrollViewer Grid.Row="1">
+             <ItemsControl ItemsSource="{Binding CivitaiResults}">
+                 <ItemsControl.ItemTemplate>
+                     <DataTemplate DataType="vm:CivitaiModelItem">
+-                        <Border Classes="glass-card" Margin="0,0,0,8">
++                        <Border Classes="matte-card" Margin="0,0,0,8" Padding="14,12">
+                             <Grid ColumnDefinitions="*, Auto">
+                                 <StackPanel Grid.Column="0" Spacing="4">
+                                     <TextBlock Text="{Binding Name}" FontWeight="Bold" FontSize="14" Foreground="{StaticResource TextMainBrush}"/>
+                                     <StackPanel Orientation="Horizontal" Spacing="8" Margin="0,2,0,0">
+-                                        <Border Classes="telemetry-pill">
++                                        <Border Classes="matte-pill" Padding="8,4">
+                                             <TextBlock Text="{Binding Type}" FontSize="11" Foreground="{StaticResource AccentBrush}" FontWeight="Bold"/>
+                                         </Border>
+-                                        <Border Classes="telemetry-pill">
++                                        <Border Classes="matte-pill" Padding="8,4">
+                                             <TextBlock Text="{Binding DownloadCount, StringFormat='⬇️ {0:N0} downloads'}" FontSize="11" Foreground="{StaticResource TextMutedBrush}" FontWeight="SemiBold"/>
+                                         </Border>
+                                     </StackPanel>
+                                 </StackPanel>
+                             </Grid>
+                         </Border>
+                     </DataTemplate>
+                 </ItemsControl.ItemTemplate>
+             </ItemsControl>
+         </ScrollViewer>
+diff --git a/LocalLLMServerManager.Shared/Views/Controls/EngineStudioTabControl.axaml b/LocalLLMServerManager.Shared/Views/Controls/EngineStudioTabControl.axaml
+index 2ef09ea..04b0135 100644
+--- a/LocalLLMServerManager.Shared/Views/Controls/EngineStudioTabControl.axaml
++++ b/LocalLLMServerManager.Shared/Views/Controls/EngineStudioTabControl.axaml
+@@ -5,55 +5,55 @@
+              x:DataType="vm:MainViewModel">
+ 
+     <StackPanel Spacing="16" Margin="0,12,0,0">
+         <StackPanel Spacing="2">
+             <TextBlock Text="🎨 AI Image &amp; 3D Generation Engines" FontSize="16" FontWeight="Bold" Foreground="{StaticResource TextMainBrush}"/>
+             <TextBlock Text="Manage background engine processes and web interfaces" FontSize="12" Foreground="{StaticResource TextMutedBrush}"/>
+         </StackPanel>
+ 
+         <UniformGrid Columns="2">
+             <!-- Forge Card -->
+-            <Border Classes="glass-card" Margin="0,0,8,0">
++            <Border Classes="matte-card" Margin="0,0,8,0" Padding="16">
+                 <StackPanel Spacing="12">
+                     <Grid ColumnDefinitions="*, Auto">
+                         <TextBlock Text="🎨 Stable Diffusion / Forge" FontSize="14" FontWeight="Bold" Foreground="{StaticResource TextMainBrush}" VerticalAlignment="Center"/>
+-                        <Border Grid.Column="1" Classes="telemetry-pill">
++                        <Border Grid.Column="1" Classes="matte-pill" Padding="8,4">
+                             <TextBlock Text="{Binding ForgeStatus}" FontSize="11" Foreground="{StaticResource PrimaryBrush}" FontWeight="Bold"/>
+                         </Border>
+                     </Grid>
+                     
+                     <StackPanel Spacing="4">
+                         <TextBlock Text="WebUI &amp; SD API Endpoint" FontSize="12" Foreground="{StaticResource TextMutedBrush}"/>
+-                        <Border Classes="telemetry-pill" HorizontalAlignment="Left">
++                        <Border Classes="matte-pill" HorizontalAlignment="Left" Padding="8,4">
+                             <TextBlock Text="Port 7860 • Localhost" FontSize="11" Foreground="{StaticResource SecondaryBrush}" FontWeight="SemiBold"/>
+                         </Border>
+                     </StackPanel>
+ 
+                     <Button Content="▶️ Toggle Forge Engine" Command="{Binding ToggleEngineCommand}" CommandParameter="forge" 
+-                            Classes="glass-primary" HorizontalAlignment="Stretch" HorizontalContentAlignment="Center" Margin="0,4,0,0"/>
++                            Classes="matte-primary" HorizontalAlignment="Stretch" HorizontalContentAlignment="Center" Margin="0,4,0,0"/>
+                 </StackPanel>
+             </Border>
+ 
+             <!-- ComfyUI Card -->
+-            <Border Classes="glass-card" Margin="8,0,0,0">
++            <Border Classes="matte-card" Margin="8,0,0,0" Padding="16">
+                 <StackPanel Spacing="12">
+                     <Grid ColumnDefinitions="*, Auto">
+                         <TextBlock Text="🧩 ComfyUI 3D Mesh Studio" FontSize="14" FontWeight="Bold" Foreground="{StaticResource TextMainBrush}" VerticalAlignment="Center"/>
+-                        <Border Grid.Column="1" Classes="telemetry-pill">
++                        <Border Grid.Column="1" Classes="matte-pill" Padding="8,4">
+                             <TextBlock Text="{Binding ComfyStatus}" FontSize="11" Foreground="{StaticResource AccentBrush}" FontWeight="Bold"/>
+                         </Border>
+                     </Grid>
+ 
+                     <StackPanel Spacing="4">
+                         <TextBlock Text="TRELLIS V2 &amp; Hunyuan3D Pipelines" FontSize="12" Foreground="{StaticResource TextMutedBrush}"/>
+-                        <Border Classes="telemetry-pill" HorizontalAlignment="Left">
++                        <Border Classes="matte-pill" HorizontalAlignment="Left" Padding="8,4">
+                             <TextBlock Text="Port 8188 • Localhost" FontSize="11" Foreground="{StaticResource SecondaryBrush}" FontWeight="SemiBold"/>
+                         </Border>
+                     </StackPanel>
+ 
+                     <Button Content="▶️ Toggle ComfyUI Engine" Command="{Binding ToggleEngineCommand}" CommandParameter="comfy" 
+-                            Classes="glass-primary" HorizontalAlignment="Stretch" HorizontalContentAlignment="Center" Margin="0,4,0,0"/>
++                            Classes="matte-primary" HorizontalAlignment="Stretch" HorizontalContentAlignment="Center" Margin="0,4,0,0"/>
+                 </StackPanel>
+             </Border>
+         </UniformGrid>
+     </StackPanel>
+ </UserControl>
+diff --git a/LocalLLMServerManager.Shared/Views/Controls/HuggingFaceTabControl.axaml b/LocalLLMServerManager.Shared/Views/Controls/HuggingFaceTabControl.axaml
+index 8f827fe..7a2cf8b 100644
+--- a/LocalLLMServerManager.Shared/Views/Controls/HuggingFaceTabControl.axaml
++++ b/LocalLLMServerManager.Shared/Views/Controls/HuggingFaceTabControl.axaml
+@@ -1,42 +1,42 @@
+ <UserControl xmlns="https://github.com/avaloniaui"
+              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+              xmlns:vm="using:LocalLLMServerManager.Shared.ViewModels"
+              x:Class="LocalLLMServerManager.Shared.Views.Controls.HuggingFaceTabControl"
+              x:DataType="vm:HuggingFaceSearchViewModel">
+ 
+     <Grid RowDefinitions="Auto, *" Margin="0,12,0,0">
+         <Grid Grid.Row="0" ColumnDefinitions="*, Auto" Margin="0,0,0,12">
+-            <TextBox Text="{Binding HfSearchQuery}" PlaceholderText="Search GGUF models (e.g. llama 3.3, qwen2.5-coder)..." 
+-                     Classes="glass-input" VerticalAlignment="Center"/>
++            <TextBox Grid.Column="0" Text="{Binding HfSearchQuery}" PlaceholderText="Search GGUF models (e.g. llama 3.3, qwen2.5-coder)..." 
++                     Classes="matte-input" VerticalAlignment="Center"/>
+             <Button Grid.Column="1" Command="{Binding SearchHuggingFaceCommand}" 
+-                    Classes="glass-primary" Margin="8,0,0,0">
++                    Classes="matte-primary" Margin="8,0,0,0" VerticalAlignment="Center">
+                 🔍 Search Hub
+             </Button>
+         </Grid>
+ 
+         <ScrollViewer Grid.Row="1">
+             <ItemsControl ItemsSource="{Binding HuggingFaceResults}">
+                 <ItemsControl.ItemTemplate>
+                     <DataTemplate DataType="vm:HuggingFaceRepoItem">
+-                        <Border Classes="glass-card" Margin="0,0,0,8">
++                        <Border Classes="matte-card" Margin="0,0,0,8" Padding="14,12">
+                             <Grid ColumnDefinitions="*, Auto">
+                                 <StackPanel Grid.Column="0" Spacing="4">
+                                     <TextBlock Text="{Binding Id}" FontWeight="Bold" FontSize="14" Foreground="{StaticResource SecondaryBrush}"/>
+                                     <TextBlock Text="{Binding Author, StringFormat='Author: {0}'}" FontSize="12" Foreground="{StaticResource TextMutedBrush}"/>
+                                 </StackPanel>
+                                 <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+-                                    <Border Classes="telemetry-pill">
+-                                        <TextBlock Text="{Binding Downloads, StringFormat='⬇️ {0}'}" FontSize="11" Foreground="{StaticResource TextMainBrush}" FontWeight="SemiBold"/>
++                                    <Border Classes="matte-pill" Padding="8,4">
++                                        <TextBlock Text="{Binding Downloads, StringFormat='⬇️ {0:N0}'}" FontSize="11" Foreground="{StaticResource TextMainBrush}" FontWeight="SemiBold"/>
+                                     </Border>
+-                                    <Border Classes="telemetry-pill">
+-                                        <TextBlock Text="{Binding Likes, StringFormat='❤️ {0}'}" FontSize="11" Foreground="{StaticResource AccentBrush}" FontWeight="Bold"/>
++                                    <Border Classes="matte-pill" Padding="8,4">
++                                        <TextBlock Text="{Binding Likes, StringFormat='❤️ {0:N0}'}" FontSize="11" Foreground="{StaticResource AccentBrush}" FontWeight="Bold"/>
+                                     </Border>
+                                 </StackPanel>
+                             </Grid>
+                         </Border>
+                     </DataTemplate>
+                 </ItemsControl.ItemTemplate>
+             </ItemsControl>
+         </ScrollViewer>
+     </Grid>
+ </UserControl>
+diff --git a/LocalLLMServerManager.Shared/Views/Controls/OllamaModelsTabControl.axaml b/LocalLLMServerManager.Shared/Views/Controls/OllamaModelsTabControl.axaml
+index 695a8b5..bd408ba 100644
+--- a/LocalLLMServerManager.Shared/Views/Controls/OllamaModelsTabControl.axaml
++++ b/LocalLLMServerManager.Shared/Views/Controls/OllamaModelsTabControl.axaml
+@@ -4,59 +4,63 @@
+              x:Class="LocalLLMServerManager.Shared.Views.Controls.OllamaModelsTabControl"
+              x:DataType="vm:OllamaLibraryViewModel">
+ 
+     <Grid RowDefinitions="Auto, *, Auto" Margin="0,12,0,0">
+         <Grid Grid.Row="0" ColumnDefinitions="*, Auto" Margin="0,0,0,12">
+             <StackPanel Grid.Column="0" Spacing="2">
+                 <TextBlock Text="🦙 Ollama Local Model Library" FontSize="16" FontWeight="Bold" Foreground="{StaticResource TextMainBrush}" VerticalAlignment="Center"/>
+                 <TextBlock Text="Manage installed LLMs and GGUF quantizations" FontSize="12" Foreground="{StaticResource TextMutedBrush}"/>
+             </StackPanel>
+             <Button Grid.Column="1" Command="{Binding UnloadAllVramCommand}" 
+-                    Classes="glass-secondary" VerticalAlignment="Center">
++                    Classes="matte-secondary" VerticalAlignment="Center">
+                 🧹 Unload All VRAM
+             </Button>
+         </Grid>
+ 
+         <ScrollViewer Grid.Row="1" Margin="0,0,0,12">
+             <ItemsControl ItemsSource="{Binding InstalledModels}">
+                 <ItemsControl.ItemTemplate>
+                     <DataTemplate DataType="vm:OllamaModelItem">
+-                        <Border Classes="glass-card" Margin="0,0,0,8">
++                        <Border Classes="matte-card" Margin="0,0,0,8" Padding="14,12">
+                             <Grid ColumnDefinitions="*, Auto">
+                                 <StackPanel Grid.Column="0" Spacing="6">
+                                     <TextBlock Text="{Binding Name}" FontWeight="Bold" FontSize="14" Foreground="{StaticResource TextMainBrush}"/>
+                                     <StackPanel Orientation="Horizontal" Spacing="8">
+-                                        <Border Classes="telemetry-pill">
++                                        <Border Classes="matte-pill">
+                                             <TextBlock Text="GGUF" FontSize="11" Foreground="{StaticResource SecondaryBrush}" FontWeight="Bold"/>
+                                         </Border>
+-                                        <Border Classes="telemetry-pill">
++                                        <Border Classes="matte-pill">
+                                             <TextBlock Text="{Binding CapabilityTag}" FontSize="11" Foreground="{Binding CapabilityColor}" FontWeight="Bold"/>
+                                         </Border>
+-                                        <Border Classes="telemetry-pill">
++                                        <Border Classes="matte-pill">
+                                             <TextBlock Text="{Binding FormatSize}" FontSize="11" Foreground="{StaticResource TextMutedBrush}" FontWeight="SemiBold"/>
+                                         </Border>
+                                     </StackPanel>
+                                 </StackPanel>
+-                                <Border Grid.Column="1" Classes="telemetry-pill" VerticalAlignment="Center">
++                                <Border Grid.Column="1" Classes="matte-pill" VerticalAlignment="Center" Padding="10,4">
+                                     <TextBlock Text="Installed 🟢" FontSize="11" Foreground="{StaticResource OnlineBrush}" FontWeight="Bold"/>
+                                 </Border>
+                             </Grid>
+                         </Border>
+                     </DataTemplate>
+                 </ItemsControl.ItemTemplate>
+             </ItemsControl>
+         </ScrollViewer>
+ 
+-        <Border Grid.Row="2" Classes="glass-card">
+-            <StackPanel Spacing="8">
++        <Border Grid.Row="2" Classes="matte-card" Padding="16,14">
++            <StackPanel Spacing="10">
+                 <Grid ColumnDefinitions="*, Auto">
+                     <TextBlock Text="🧮 Interactive KV Cache Calculator" FontSize="13" FontWeight="Bold" Foreground="{StaticResource TextMainBrush}"/>
+-                    <TextBlock Grid.Column="1" Text="{Binding EstimatedKvCacheText}" FontSize="13" Foreground="{StaticResource SecondaryBrush}" FontWeight="Bold"/>
++                    <Border Grid.Column="1" Classes="matte-pill" Padding="8,3">
++                        <TextBlock Text="{Binding EstimatedKvCacheText}" FontSize="12" Foreground="{StaticResource SecondaryBrush}" FontWeight="Bold"/>
++                    </Border>
+                 </Grid>
+                 <Grid ColumnDefinitions="*, Auto">
+-                    <Slider Value="{Binding TargetContextTokens}" Minimum="1024" Maximum="32768" SmallChange="1024" LargeChange="4096"/>
+-                    <TextBlock Grid.Column="1" Text="{Binding TargetContextTokens, StringFormat='{}{0:N0} tokens'}" FontSize="12" Foreground="{StaticResource TextMutedBrush}" VerticalAlignment="Center" Margin="10,0,0,0"/>
++                    <Slider Grid.Column="0" Value="{Binding TargetContextTokens}" Minimum="1024" Maximum="32768" SmallChange="1024" LargeChange="4096"/>
++                    <Border Grid.Column="1" Classes="matte-pill" Margin="12,0,0,0" Padding="8,4" VerticalAlignment="Center">
++                        <TextBlock Text="{Binding TargetContextTokens, StringFormat='{}{0:N0} tokens'}" FontSize="12" Foreground="{StaticResource TextMainBrush}" FontWeight="SemiBold"/>
++                    </Border>
+                 </Grid>
+             </StackPanel>
+         </Border>
+     </Grid>
+ </UserControl>
+diff --git a/LocalLLMServerManager.Shared/Views/Controls/SettingsTabControl.axaml b/LocalLLMServerManager.Shared/Views/Controls/SettingsTabControl.axaml
+index d225b58..eb8b3bc 100644
+--- a/LocalLLMServerManager.Shared/Views/Controls/SettingsTabControl.axaml
++++ b/LocalLLMServerManager.Shared/Views/Controls/SettingsTabControl.axaml
+@@ -1,173 +1,182 @@
+ <UserControl xmlns="https://github.com/avaloniaui"
+              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+              xmlns:vm="using:LocalLLMServerManager.Shared.ViewModels"
+              x:Class="LocalLLMServerManager.Shared.Views.Controls.SettingsTabControl"
+              x:DataType="vm:SettingsViewModel">
+ 
+     <ScrollViewer Margin="0,12,0,0">
+-        <StackPanel Spacing="16">
++        <StackPanel Spacing="16" Margin="0,0,0,16">
+             <!-- Auto-Discovery Quick Action -->
+-            <Border Classes="glass-card">
++            <Border Classes="matte-card" Padding="16">
+                 <StackPanel Spacing="12">
+                     <StackPanel Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+                         <TextBlock Text="🔍 AI Ecosystem Auto-Discovery" FontSize="16" FontWeight="Bold" Foreground="{StaticResource TextMainBrush}"/>
+                     </StackPanel>
+                     <TextBlock Text="Automatically scan common install directories, drive roots, PATH, and AppData for Ollama, ComfyUI, and Stable Diffusion Forge:" FontSize="13" Foreground="{StaticResource TextMutedBrush}"/>
+ 
+                     <Button Content="🔍 Auto-Detect Installed Tools" 
+                             Command="{Binding AutoDetectToolsCommand}"
+-                            Classes="glass-primary" 
++                            Classes="matte-primary" 
+                             HorizontalAlignment="Left"/>
+                 </StackPanel>
+             </Border>
+ 
+             <!-- Theme & Interface Mode Switcher -->
+-            <Border Classes="glass-card">
++            <Border Classes="matte-card" Padding="16">
+                 <StackPanel Spacing="12">
+                     <TextBlock Text="🎨 Desktop Theme &amp; Web Interface Options" FontSize="16" FontWeight="Bold" Foreground="{StaticResource TextMainBrush}"/>
+-                    <TextBlock Text="Try switching between desktop themes or launch the browser dashboard:" FontSize="13" Foreground="{StaticResource TextMutedBrush}"/>
++                    <TextBlock Text="Select dynamic theme palette or switch framework theme styles:" FontSize="13" Foreground="{StaticResource TextMutedBrush}"/>
++
++                    <StackPanel Spacing="6">
++                        <TextBlock Text="Theme Palette" FontSize="13" Foreground="{StaticResource TextMutedBrush}" FontWeight="Medium"/>
++                        <ComboBox ItemsSource="{Binding AvailableThemes}"
++                                  SelectedItem="{Binding SelectedTheme, Mode=TwoWay}"
++                                  HorizontalAlignment="Left"
++                                  MinWidth="240"/>
++                    </StackPanel>
+ 
++                    <TextBlock Text="Framework Theme Style:" FontSize="13" Foreground="{StaticResource TextMutedBrush}" Margin="0,4,0,0"/>
+                     <StackPanel Orientation="Horizontal" Spacing="10">
+                         <Button Content="✨ Semi Design Dark Theme" Command="{Binding SwitchThemeStyleCommand}" CommandParameter="semi"
+-                                Classes="glass-primary"/>
++                                Classes="matte-primary"/>
+                         <Button Content="⚡ Fluent Dark Theme" Command="{Binding SwitchThemeStyleCommand}" CommandParameter="fluent"
+-                                Classes="glass-secondary"/>
++                                Classes="matte-secondary"/>
+                     </StackPanel>
+                 </StackPanel>
+             </Border>
+ 
+             <!-- Remote Access -->
+-            <Border Classes="glass-card">
++            <Border Classes="matte-card" Padding="16">
+                 <StackPanel Spacing="10">
+                     <TextBlock Text="🌐 Remote &amp; Mobile Access URL" FontSize="16" FontWeight="Bold" Foreground="{StaticResource TextMainBrush}"/>
+                     <TextBlock Text="Connect to this manager from your smartphone, tablet, or laptop:" FontSize="13" Foreground="{StaticResource TextMutedBrush}"/>
+-                    <Border Classes="telemetry-pill" HorizontalAlignment="Left">
+-                        <SelectableTextBlock Text="{Binding LanAccessUrl}" FontSize="15" FontWeight="Bold" Foreground="{StaticResource SecondaryBrush}"/>
++                    <Border Classes="matte-pill" HorizontalAlignment="Left" Padding="10,6">
++                        <SelectableTextBlock Text="{Binding LanAccessUrl}" FontSize="14" FontWeight="Bold" Foreground="{StaticResource SecondaryBrush}"/>
+                     </Border>
+                 </StackPanel>
+             </Border>
+ 
+             <!-- Paths and Settings -->
+-            <Border Classes="glass-card">
++            <Border Classes="matte-card" Padding="16">
+                 <StackPanel Spacing="14">
+                     <TextBlock Text="🛠️ Executable &amp; Directory Paths" FontSize="16" FontWeight="Bold" Foreground="{StaticResource TextMainBrush}"/>
+ 
+                     <!-- ComfyUI Executable -->
+                     <StackPanel Spacing="4">
+                         <StackPanel Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+                             <TextBlock Text="ComfyUI Executable Path" FontSize="13" Foreground="{StaticResource TextMutedBrush}" FontWeight="Medium"/>
+-                            <Border Classes="telemetry-pill" Padding="6,2">
++                            <Border Classes="matte-pill" Padding="6,2">
+                                 <TextBlock Text="{Binding ComfyUiExecutableStatus}" FontSize="11" FontWeight="Bold"/>
+                             </Border>
+                         </StackPanel>
+                         <Grid ColumnDefinitions="*,Auto">
+-                            <TextBox Grid.Column="0" Text="{Binding ComfyUiExecutablePath, Mode=TwoWay}" Classes="glass-input"/>
+-                            <Button Grid.Column="1" Content="📁 Browse..." Command="{Binding BrowseComfyExecutableCommand}" Margin="8,0,0,0" Classes="glass-secondary"/>
++                            <TextBox Grid.Column="0" Text="{Binding ComfyUiExecutablePath, Mode=TwoWay}" Classes="matte-input"/>
++                            <Button Grid.Column="1" Content="📁 Browse..." Command="{Binding BrowseComfyExecutableCommand}" Margin="8,0,0,0" Classes="matte-secondary"/>
+                         </Grid>
+                     </StackPanel>
+ 
+                     <!-- Forge Executable -->
+                     <StackPanel Spacing="4">
+                         <StackPanel Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+                             <TextBlock Text="Forge Executable Path" FontSize="13" Foreground="{StaticResource TextMutedBrush}" FontWeight="Medium"/>
+-                            <Border Classes="telemetry-pill" Padding="6,2">
++                            <Border Classes="matte-pill" Padding="6,2">
+                                 <TextBlock Text="{Binding ForgeExecutableStatus}" FontSize="11" FontWeight="Bold"/>
+                             </Border>
+                         </StackPanel>
+                         <Grid ColumnDefinitions="*,Auto">
+-                            <TextBox Grid.Column="0" Text="{Binding ForgeExecutablePath, Mode=TwoWay}" Classes="glass-input"/>
+-                            <Button Grid.Column="1" Content="📁 Browse..." Command="{Binding BrowseForgeExecutableCommand}" Margin="8,0,0,0" Classes="glass-secondary"/>
++                            <TextBox Grid.Column="0" Text="{Binding ForgeExecutablePath, Mode=TwoWay}" Classes="matte-input"/>
++                            <Button Grid.Column="1" Content="📁 Browse..." Command="{Binding BrowseForgeExecutableCommand}" Margin="8,0,0,0" Classes="matte-secondary"/>
+                         </Grid>
+                     </StackPanel>
+ 
+                     <!-- Ollama Executable -->
+                     <StackPanel Spacing="4">
+                         <StackPanel Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+                             <TextBlock Text="Ollama Executable Path" FontSize="13" Foreground="{StaticResource TextMutedBrush}" FontWeight="Medium"/>
+-                            <Border Classes="telemetry-pill" Padding="6,2">
++                            <Border Classes="matte-pill" Padding="6,2">
+                                 <TextBlock Text="{Binding OllamaStatus}" FontSize="11" FontWeight="Bold"/>
+                             </Border>
+                         </StackPanel>
+                         <Grid ColumnDefinitions="*,Auto">
+-                            <TextBox Grid.Column="0" Text="{Binding OllamaExecutablePath, Mode=TwoWay}" Classes="glass-input"/>
+-                            <Button Grid.Column="1" Content="📁 Browse..." Command="{Binding BrowseOllamaExecutableCommand}" Margin="8,0,0,0" Classes="glass-secondary"/>
++                            <TextBox Grid.Column="0" Text="{Binding OllamaExecutablePath, Mode=TwoWay}" Classes="matte-input"/>
++                            <Button Grid.Column="1" Content="📁 Browse..." Command="{Binding BrowseOllamaExecutableCommand}" Margin="8,0,0,0" Classes="matte-secondary"/>
+                         </Grid>
+                     </StackPanel>
+ 
+                     <!-- Forge Models -->
+                     <StackPanel Spacing="4">
+                         <StackPanel Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+                             <TextBlock Text="Forge Models Directory Path" FontSize="13" Foreground="{StaticResource TextMutedBrush}" FontWeight="Medium"/>
+-                            <Border Classes="telemetry-pill" Padding="6,2">
++                            <Border Classes="matte-pill" Padding="6,2">
+                                 <TextBlock Text="{Binding ForgeModelsStatus}" FontSize="11" FontWeight="Bold"/>
+                             </Border>
+                         </StackPanel>
+                         <Grid ColumnDefinitions="*,Auto">
+-                            <TextBox Grid.Column="0" Text="{Binding ForgeModelsPath, Mode=TwoWay}" Classes="glass-input"/>
+-                            <Button Grid.Column="1" Content="📁 Browse..." Command="{Binding BrowseForgeModelsCommand}" Margin="8,0,0,0" Classes="glass-secondary"/>
++                            <TextBox Grid.Column="0" Text="{Binding ForgeModelsPath, Mode=TwoWay}" Classes="matte-input"/>
++                            <Button Grid.Column="1" Content="📁 Browse..." Command="{Binding BrowseForgeModelsCommand}" Margin="8,0,0,0" Classes="matte-secondary"/>
+                         </Grid>
+                     </StackPanel>
+ 
+                     <!-- ComfyUI Models -->
+                     <StackPanel Spacing="4">
+                         <StackPanel Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+                             <TextBlock Text="ComfyUI Models Directory Path" FontSize="13" Foreground="{StaticResource TextMutedBrush}" FontWeight="Medium"/>
+-                            <Border Classes="telemetry-pill" Padding="6,2">
++                            <Border Classes="matte-pill" Padding="6,2">
+                                 <TextBlock Text="{Binding ComfyModelsStatus}" FontSize="11" FontWeight="Bold"/>
+                             </Border>
+                         </StackPanel>
+                         <Grid ColumnDefinitions="*,Auto">
+-                            <TextBox Grid.Column="0" Text="{Binding ComfyModelsPath, Mode=TwoWay}" Classes="glass-input"/>
+-                            <Button Grid.Column="1" Content="📁 Browse..." Command="{Binding BrowseComfyModelsCommand}" Margin="8,0,0,0" Classes="glass-secondary"/>
++                            <TextBox Grid.Column="0" Text="{Binding ComfyModelsPath, Mode=TwoWay}" Classes="matte-input"/>
++                            <Button Grid.Column="1" Content="📁 Browse..." Command="{Binding BrowseComfyModelsCommand}" Margin="8,0,0,0" Classes="matte-secondary"/>
+                         </Grid>
+                     </StackPanel>
+ 
+                     <!-- 3D Models Output -->
+                     <StackPanel Spacing="4">
+                         <StackPanel Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+                             <TextBlock Text="3D Models Output Path" FontSize="13" Foreground="{StaticResource TextMutedBrush}" FontWeight="Medium"/>
+-                            <Border Classes="telemetry-pill" Padding="6,2">
++                            <Border Classes="matte-pill" Padding="6,2">
+                                 <TextBlock Text="{Binding ThreeDModelsStatus}" FontSize="11" FontWeight="Bold"/>
+                             </Border>
+                         </StackPanel>
+                         <Grid ColumnDefinitions="*,Auto">
+-                            <TextBox Grid.Column="0" Text="{Binding ThreeDModelsPath, Mode=TwoWay}" Classes="glass-input"/>
+-                            <Button Grid.Column="1" Content="📁 Browse..." Command="{Binding BrowseThreeDModelsCommand}" Margin="8,0,0,0" Classes="glass-secondary"/>
++                            <TextBox Grid.Column="0" Text="{Binding ThreeDModelsPath, Mode=TwoWay}" Classes="matte-input"/>
++                            <Button Grid.Column="1" Content="📁 Browse..." Command="{Binding BrowseThreeDModelsCommand}" Margin="8,0,0,0" Classes="matte-secondary"/>
+                         </Grid>
+                     </StackPanel>
+ 
+                     <!-- Workflows Directory -->
+                     <StackPanel Spacing="4">
+                         <StackPanel Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+                             <TextBlock Text="Workflows Directory Path" FontSize="13" Foreground="{StaticResource TextMutedBrush}" FontWeight="Medium"/>
+-                            <Border Classes="telemetry-pill" Padding="6,2">
++                            <Border Classes="matte-pill" Padding="6,2">
+                                 <TextBlock Text="{Binding WorkflowsStatus}" FontSize="11" FontWeight="Bold"/>
+                             </Border>
+                         </StackPanel>
+                         <Grid ColumnDefinitions="*,Auto">
+-                            <TextBox Grid.Column="0" Text="{Binding WorkflowsPath, Mode=TwoWay}" Classes="glass-input"/>
+-                            <Button Grid.Column="1" Content="📁 Browse..." Command="{Binding BrowseWorkflowsCommand}" Margin="8,0,0,0" Classes="glass-secondary"/>
++                            <TextBox Grid.Column="0" Text="{Binding WorkflowsPath, Mode=TwoWay}" Classes="matte-input"/>
++                            <Button Grid.Column="1" Content="📁 Browse..." Command="{Binding BrowseWorkflowsCommand}" Margin="8,0,0,0" Classes="matte-secondary"/>
+                         </Grid>
+                     </StackPanel>
+ 
+                     <!-- ComfyUI URL -->
+                     <StackPanel Spacing="4">
+                         <TextBlock Text="ComfyUI URL" FontSize="13" Foreground="{StaticResource TextMutedBrush}" FontWeight="Medium"/>
+-                        <TextBox Text="{Binding ComfyUiUrl, Mode=TwoWay}" Classes="glass-input"/>
++                        <TextBox Text="{Binding ComfyUiUrl, Mode=TwoWay}" Classes="matte-input"/>
+                     </StackPanel>
+ 
+                     <!-- Preferred Image Engine -->
+                     <StackPanel Spacing="4">
+                         <TextBlock Text="Preferred Image Engine" FontSize="13" Foreground="{StaticResource TextMutedBrush}" FontWeight="Medium"/>
+-                        <TextBox Text="{Binding PreferredImageEngine, Mode=TwoWay}" Classes="glass-input"/>
++                        <TextBox Text="{Binding PreferredImageEngine, Mode=TwoWay}" Classes="matte-input"/>
+                     </StackPanel>
+ 
+                     <Button Command="{Binding SaveSettingsCommand}" 
+-                            Classes="glass-primary" HorizontalAlignment="Left" Margin="0,8,0,0">
++                            Classes="matte-primary" HorizontalAlignment="Left" Margin="0,8,0,0">
+                         💾 Save Settings
+                     </Button>
+                 </StackPanel>
+             </Border>
+         </StackPanel>
+     </ScrollViewer>
+ </UserControl>
+diff --git a/LocalLLMServerManager.Shared/Views/Controls/TelemetryHeaderControl.axaml b/LocalLLMServerManager.Shared/Views/Controls/TelemetryHeaderControl.axaml
+index f985f0d..af9dede 100644
+--- a/LocalLLMServerManager.Shared/Views/Controls/TelemetryHeaderControl.axaml
++++ b/LocalLLMServerManager.Shared/Views/Controls/TelemetryHeaderControl.axaml
+@@ -1,64 +1,86 @@
+ <UserControl xmlns="https://github.com/avaloniaui"
+-              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+-              xmlns:vm="using:LocalLLMServerManager.Shared.ViewModels"
+-              x:Class="LocalLLMServerManager.Shared.Views.Controls.TelemetryHeaderControl"
+-              x:DataType="vm:TelemetryViewModel">
++             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
++             xmlns:vm="using:LocalLLMServerManager.Shared.ViewModels"
++             x:Class="LocalLLMServerManager.Shared.Views.Controls.TelemetryHeaderControl"
++             x:DataType="vm:TelemetryViewModel">
+ 
+-    <Grid ColumnDefinitions="*, *, *" Margin="16,16,16,12">
++    <Grid ColumnDefinitions="*, 1.3*, *" Margin="16,14,16,10">
+         <!-- CARD 1: Service Health Badges -->
+-        <Border Grid.Column="0" Classes="glass-card" Margin="0,0,8,0">
++        <Border Grid.Column="0" Classes="matte-card" Margin="0,0,8,0" Padding="14,10">
+             <StackPanel Spacing="8">
+-                <TextBlock Text="⚡ Engine Health Status" FontSize="13" FontWeight="Bold" Foreground="{StaticResource TextMainBrush}"/>
++                <Grid ColumnDefinitions="*, Auto">
++                    <TextBlock Grid.Column="0" Text="⚡ Engine Health Status" FontSize="12" FontWeight="SemiBold" Foreground="{StaticResource TextMutedBrush}"/>
++                    <Border Grid.Column="1" Classes="matte-pill" Padding="6,2">
++                        <TextBlock Text="Services" FontSize="10" Foreground="{StaticResource TextMutedBrush}" FontWeight="SemiBold"/>
++                    </Border>
++                </Grid>
+                 <UniformGrid Columns="3">
+-                    <StackPanel HorizontalAlignment="Center" Spacing="4">
++                    <StackPanel HorizontalAlignment="Center" Spacing="3">
+                         <TextBlock Text="Ollama" FontSize="11" Foreground="{StaticResource TextMutedBrush}" HorizontalAlignment="Center"/>
+-                        <Border Classes="telemetry-pill">
+-                            <TextBlock Text="{Binding OllamaStatus}" FontSize="11" Foreground="{StaticResource OnlineBrush}" FontWeight="Bold"/>
++                        <Border Classes="matte-pill" Padding="8,3">
++                            <StackPanel Orientation="Horizontal" Spacing="4" HorizontalAlignment="Center">
++                                <Ellipse Width="6" Height="6" Fill="{StaticResource OnlineBrush}" VerticalAlignment="Center"/>
++                                <TextBlock Text="{Binding OllamaStatus}" FontSize="11" Foreground="{StaticResource TextMainBrush}" FontWeight="Bold"/>
++                            </StackPanel>
+                         </Border>
+                     </StackPanel>
+-                    <StackPanel HorizontalAlignment="Center" Spacing="4">
++                    <StackPanel HorizontalAlignment="Center" Spacing="3">
+                         <TextBlock Text="Forge SD" FontSize="11" Foreground="{StaticResource TextMutedBrush}" HorizontalAlignment="Center"/>
+-                        <Border Classes="telemetry-pill">
+-                            <TextBlock Text="{Binding ForgeStatus}" FontSize="11" Foreground="{StaticResource PrimaryBrush}" FontWeight="Bold"/>
++                        <Border Classes="matte-pill" Padding="8,3">
++                            <StackPanel Orientation="Horizontal" Spacing="4" HorizontalAlignment="Center">
++                                <Ellipse Width="6" Height="6" Fill="{StaticResource PrimaryBrush}" VerticalAlignment="Center"/>
++                                <TextBlock Text="{Binding ForgeStatus}" FontSize="11" Foreground="{StaticResource TextMainBrush}" FontWeight="Bold"/>
++                            </StackPanel>
+                         </Border>
+                     </StackPanel>
+-                    <StackPanel HorizontalAlignment="Center" Spacing="4">
++                    <StackPanel HorizontalAlignment="Center" Spacing="3">
+                         <TextBlock Text="ComfyUI" FontSize="11" Foreground="{StaticResource TextMutedBrush}" HorizontalAlignment="Center"/>
+-                        <Border Classes="telemetry-pill">
+-                            <TextBlock Text="{Binding ComfyStatus}" FontSize="11" Foreground="{StaticResource AccentBrush}" FontWeight="Bold"/>
++                        <Border Classes="matte-pill" Padding="8,3">
++                            <StackPanel Orientation="Horizontal" Spacing="4" HorizontalAlignment="Center">
++                                <Ellipse Width="6" Height="6" Fill="{StaticResource AccentBrush}" VerticalAlignment="Center"/>
++                                <TextBlock Text="{Binding ComfyStatus}" FontSize="11" Foreground="{StaticResource TextMainBrush}" FontWeight="Bold"/>
++                            </StackPanel>
+                         </Border>
+                     </StackPanel>
+                 </UniformGrid>
+             </StackPanel>
+         </Border>
+ 
+-        <!-- CARD 2: Hero Stacked VRAM Visual Bar -->
+-        <Border Grid.Column="1" Classes="glass-card" Margin="4,0,4,0">
+-            <StackPanel Spacing="6">
++        <!-- CARD 2: GPU VRAM Memory Telemetry Chip -->
++        <Border Grid.Column="1" Classes="matte-card" Margin="4,0,4,0" Padding="14,10">
++            <StackPanel Spacing="6" VerticalAlignment="Center">
+                 <Grid ColumnDefinitions="*, Auto">
+-                    <StackPanel Grid.Column="0">
+-                        <TextBlock Text="🎮 VRAM Memory Allocation" FontSize="13" FontWeight="Bold" Foreground="{StaticResource TextMainBrush}"/>
+-                        <TextBlock Text="{Binding GpuName}" FontSize="11" Foreground="{StaticResource TextMutedBrush}" Margin="0,2,0,0"/>
++                    <StackPanel Grid.Column="0" Spacing="1">
++                        <TextBlock Text="🎮 VRAM Allocation" FontSize="12" FontWeight="SemiBold" Foreground="{StaticResource TextMutedBrush}"/>
++                        <TextBlock Text="{Binding GpuName}" FontSize="11" Foreground="{StaticResource TextMainBrush}" FontWeight="Medium"/>
+                     </StackPanel>
+-                    <TextBlock Grid.Column="1" Text="{Binding VramStatusText}" FontSize="12" Foreground="{StaticResource PrimaryBrush}" FontWeight="Bold" VerticalAlignment="Center"/>
++                    <Border Grid.Column="1" Classes="matte-pill" Padding="8,3" VerticalAlignment="Center">
++                        <TextBlock Text="{Binding VramStatusText}" FontSize="11" Foreground="{StaticResource PrimaryBrush}" FontWeight="Bold"/>
++                    </Border>
+                 </Grid>
+-                <ProgressBar Value="{Binding VramPercentage}" Maximum="100" Classes="glass-progress" Height="12"/>
++                <ProgressBar Value="{Binding VramPercentage}" Maximum="100" Classes="matte-progress" Height="8" Margin="0,2,0,0"/>
+             </StackPanel>
+         </Border>
+ 
+-        <!-- CARD 3: Orchestrator Proxy & Actions -->
+-        <Border Grid.Column="2" Classes="glass-card" Margin="8,0,0,0">
+-            <Grid ColumnDefinitions="*, Auto">
++        <!-- CARD 3: Reverse Proxy & Quick Actions -->
++        <Border Grid.Column="2" Classes="matte-card" Margin="8,0,0,0" Padding="14,10">
++            <Grid ColumnDefinitions="*, Auto" VerticalAlignment="Center">
+                 <StackPanel Grid.Column="0" Spacing="4">
+-                    <TextBlock Text="🌐 Reverse Proxy Status" FontSize="13" FontWeight="Bold" Foreground="{StaticResource TextMainBrush}"/>
+-                    <Border Classes="telemetry-pill" HorizontalAlignment="Left">
+-                        <TextBlock Text="{Binding ServiceModeText}" FontSize="11" Foreground="{StaticResource SecondaryBrush}" FontWeight="SemiBold"/>
++                    <TextBlock Text="🌐 Orchestrator Proxy" FontSize="12" FontWeight="SemiBold" Foreground="{StaticResource TextMutedBrush}"/>
++                    <Border Classes="matte-pill" HorizontalAlignment="Left" Padding="8,3">
++                        <StackPanel Orientation="Horizontal" Spacing="4">
++                            <Ellipse Width="6" Height="6" Fill="{StaticResource SecondaryBrush}" VerticalAlignment="Center"/>
++                            <TextBlock Text="{Binding ServiceModeText}" FontSize="11" Foreground="{StaticResource TextMainBrush}" FontWeight="SemiBold"/>
++                        </StackPanel>
+                     </Border>
+                 </StackPanel>
+-                <Button Grid.Column="1" Command="{Binding RefreshStatusCommand}" Classes="glass-secondary" VerticalAlignment="Center">
+-                    🔄 Refresh
++                <Button Grid.Column="1" Command="{Binding RefreshStatusCommand}" Classes="matte-secondary" VerticalAlignment="Center" Padding="10,6">
++                    <StackPanel Orientation="Horizontal" Spacing="4">
++                        <TextBlock Text="🔄" FontSize="11"/>
++                        <TextBlock Text="Refresh" FontSize="11" FontWeight="SemiBold"/>
++                    </StackPanel>
+                 </Button>
+             </Grid>
+         </Border>
+     </Grid>
+ </UserControl>
+diff --git a/LocalLLMServerManager.Shared/Views/MainView.axaml b/LocalLLMServerManager.Shared/Views/MainView.axaml
+index bc8f87e..5c446ab 100644
+--- a/LocalLLMServerManager.Shared/Views/MainView.axaml
++++ b/LocalLLMServerManager.Shared/Views/MainView.axaml
+@@ -14,21 +14,21 @@
+             <ResourceDictionary.MergedDictionaries>
+                 <ResourceInclude Source="avares://LocalLLMServerManager.Shared/Styles/DesignTokens.axaml" />
+             </ResourceDictionary.MergedDictionaries>
+         </ResourceDictionary>
+     </UserControl.Resources>
+ 
+     <Design.DataContext>
+         <vm:MainViewModel/>
+     </Design.DataContext>
+ 
+-    <Grid RowDefinitions="Auto, *, Auto" Background="{StaticResource GlassBackgroundBrush}">
++    <Grid RowDefinitions="Auto, *, Auto" Background="{StaticResource BgDarkBrush}">
+         <!-- Top Telemetry Header -->
+         <controls:TelemetryHeaderControl Grid.Row="0" DataContext="{Binding Telemetry}"/>
+ 
+         <!-- Main Content Area: Native Avalonia XAML Tabs -->
+         <TabControl Grid.Row="1" Background="Transparent" Margin="16,0,16,0">
+             <!-- TAB 1: Installed LLM Models & KV Cache Calculator -->
+             <TabItem Header="🦙 Installed Models">
+                 <controls:OllamaModelsTabControl DataContext="{Binding Ollama}"/>
+             </TabItem>
+ 
+@@ -50,26 +50,26 @@
+             <!-- TAB 5: Remote Access & Settings -->
+             <TabItem Header="⚙️ Settings">
+                 <controls:SettingsTabControl DataContext="{Binding Settings}"/>
+             </TabItem>
+         </TabControl>
+ 
+         <!-- Floating Toast Notifications Overlay -->
+         <ItemsControl Grid.Row="1" ItemsSource="{Binding Toasts}" VerticalAlignment="Top" HorizontalAlignment="Right" Margin="0,20,24,0" IsHitTestVisible="False">
+             <ItemsControl.ItemTemplate>
+                 <DataTemplate DataType="services:ToastItem">
+-                    <Border Background="#1E293B" CornerRadius="6" BorderBrush="{Binding BadgeColor}" BorderThickness="2" Padding="12,8" Margin="0,0,0,8" Width="300">
+-                        <TextBlock Text="{Binding Message}" Foreground="#F8FAFC" FontSize="12" TextWrapping="Wrap"/>
++                    <Border Background="{StaticResource BgSurfaceBrush}" CornerRadius="6" BorderBrush="{Binding BadgeColor}" BorderThickness="1" Padding="12,8" Margin="0,0,0,8" Width="300">
++                        <TextBlock Text="{Binding Message}" Foreground="{StaticResource TextMainBrush}" FontSize="12" TextWrapping="Wrap"/>
+                     </Border>
+                 </DataTemplate>
+             </ItemsControl.ItemTemplate>
+         </ItemsControl>
+ 
+         <!-- Footer -->
+-        <Border Grid.Row="2" BorderBrush="#1E293B" BorderThickness="0,1,0,0" Padding="16,12,16,12" Margin="0,8,0,0">
++        <Border Grid.Row="2" Background="{StaticResource BgSurfaceBrush}" BorderBrush="{StaticResource GlassBorderBrush}" BorderThickness="0,1,0,0" Padding="16,10,16,10" Margin="0,8,0,0">
+             <Grid ColumnDefinitions="*, Auto">
+-                <TextBlock Text="LocalLLMServerManager v3.5.0 — Unified WASM &amp; Desktop UI" FontSize="12" Foreground="#64748B"/>
+-                <TextBlock Grid.Column="1" Text="System Tray Enabled 🟢" FontSize="12" Foreground="#22C55E"/>
++                <TextBlock Grid.Column="0" Text="LocalLLMServerManager v3.5.0 — Unified WASM &amp; Desktop UI" FontSize="12" Foreground="{StaticResource TextMutedBrush}" VerticalAlignment="Center"/>
++                <TextBlock Grid.Column="1" Text="System Tray Enabled 🟢" FontSize="12" Foreground="{StaticResource OnlineBrush}" FontWeight="SemiBold" VerticalAlignment="Center"/>
+             </Grid>
+         </Border>
+     </Grid>
+ </UserControl>
+diff --git a/LocalLLMServerManager.Tests/SettingsViewModelTests.cs b/LocalLLMServerManager.Tests/SettingsViewModelTests.cs
+index b2cd030..84b5411 100644
+--- a/LocalLLMServerManager.Tests/SettingsViewModelTests.cs
++++ b/LocalLLMServerManager.Tests/SettingsViewModelTests.cs
+@@ -30,20 +30,22 @@ public class SettingsViewModelTests
+     }
+ 
+     [Fact]
+     public void DefaultState_HasExpectedPropertiesAndMissingStatus()
+     {
+         var vm = new SettingsViewModel();
+ 
+         Assert.Equal("http://127.0.0.1:8188", vm.ComfyUiUrl);
+         Assert.Equal("semi", vm.SelectedThemeStyle);
+         Assert.Equal("http://127.0.0.1:5246", vm.LanAccessUrl);
++        Assert.Equal("Matte Carbon (Default)", vm.SelectedTheme);
++        Assert.Equal(3, vm.AvailableThemes.Count);
+ 
+         Assert.Contains("Missing", vm.ForgeModelsStatus);
+         Assert.Contains("Missing", vm.ThreeDModelsStatus);
+         Assert.Contains("Missing", vm.WorkflowsStatus);
+         Assert.Contains("Missing", vm.ComfyUiExecutableStatus);
+         Assert.Contains("Missing", vm.ForgeExecutableStatus);
+     }
+ 
+     [Fact]
+     public void PathChanges_UpdateStatusIndicatorsDynamically()
+diff --git a/LocalLLMServerManager.Tests/ThemeServiceTests.cs b/LocalLLMServerManager.Tests/ThemeServiceTests.cs
+new file mode 100644
+index 0000000..bf38b54
+--- /dev/null
++++ b/LocalLLMServerManager.Tests/ThemeServiceTests.cs
+@@ -0,0 +1,192 @@
++using System;
++using Avalonia.Controls;
++using Avalonia.Headless.XUnit;
++using Avalonia.Media;
++using Avalonia.Styling;
++using LocalLLMServerManager.Shared.Services;
++using LocalLLMServerManager.Shared.ViewModels;
++using Moq;
++using Xunit;
++
++namespace LocalLLMServerManager.Tests;
++
++public class ThemeServiceTests
++{
++    [Fact]
++    public void DefaultTheme_IsMatteCarbon()
++    {
++        var dict = new ResourceDictionary();
++        var service = new ThemeService(dict);
++
++        Assert.Equal(AppTheme.MatteCarbon, service.CurrentTheme);
++    }
++
++    [Fact]
++    public void SetTheme_OledBlack_UpdatesCurrentThemeAndFiresThemeChangedAndMutatesResources()
++    {
++        var dict = new ResourceDictionary();
++        var service = new ThemeService(dict);
++
++        AppTheme? changedTheme = null;
++        service.ThemeChanged += (_, theme) => changedTheme = theme;
++
++        service.SetTheme(AppTheme.OledBlack);
++
++        Assert.Equal(AppTheme.OledBlack, service.CurrentTheme);
++        Assert.Equal(AppTheme.OledBlack, changedTheme);
++
++        // Assert brushes
++        Assert.Equal(Color.Parse("#000000"), ((SolidColorBrush)dict["BgDarkBrush"]!).Color);
++        Assert.Equal(Color.Parse("#121212"), ((SolidColorBrush)dict["BgSurfaceBrush"]!).Color);
++        Assert.Equal(Color.Parse("#18181b"), ((SolidColorBrush)dict["BgCardBrush"]!).Color);
++        Assert.Equal(Color.Parse("#27272a"), ((SolidColorBrush)dict["GlassBorderBrush"]!).Color);
++        Assert.Equal(Color.Parse("#27272a"), ((SolidColorBrush)dict["BorderColorBrush"]!).Color);
++        Assert.Equal(Color.Parse("#f4f4f5"), ((SolidColorBrush)dict["TextMainBrush"]!).Color);
++        Assert.Equal(Color.Parse("#71717a"), ((SolidColorBrush)dict["TextMutedBrush"]!).Color);
++        Assert.Equal(Color.Parse("#3b82f6"), ((SolidColorBrush)dict["PrimaryBrush"]!).Color);
++        Assert.Equal(Color.Parse("#60a5fa"), ((SolidColorBrush)dict["SecondaryBrush"]!).Color);
++        Assert.Equal(Color.Parse("#60a5fa"), ((SolidColorBrush)dict["AccentBrush"]!).Color);
++        Assert.Equal(Color.Parse("#000000"), ((SolidColorBrush)dict["GlassBackgroundBrush"]!).Color);
++        Assert.Equal(Color.Parse("#3b82f6"), ((SolidColorBrush)dict["PrimaryGradientBrush"]!).Color);
++
++        var glow = (SolidColorBrush)dict["BorderGlowBrush"]!;
++        Assert.Equal(Color.Parse("#3b82f6"), glow.Color);
++        Assert.Equal(0.4, glow.Opacity, precision: 2);
++
++        // Assert colors
++        Assert.Equal(Color.Parse("#000000"), (Color)dict["BgDarkColor"]!);
++        Assert.Equal(Color.Parse("#121212"), (Color)dict["BgSurfaceColor"]!);
++        Assert.Equal(Color.Parse("#18181b"), (Color)dict["BgCardColor"]!);
++        Assert.Equal(Color.Parse("#27272a"), (Color)dict["BorderColor"]!);
++        Assert.Equal(Color.Parse("#f4f4f5"), (Color)dict["TextMainColor"]!);
++        Assert.Equal(Color.Parse("#71717a"), (Color)dict["TextMutedColor"]!);
++        Assert.Equal(Color.Parse("#3b82f6"), (Color)dict["PrimaryColor"]!);
++        Assert.Equal(Color.Parse("#60a5fa"), (Color)dict["SecondaryColor"]!);
++        Assert.Equal(Color.Parse("#60a5fa"), (Color)dict["AccentColor"]!);
++    }
++
++    [Fact]
++    public void SetTheme_Light_UpdatesCurrentThemeAndFiresThemeChangedAndMutatesResources()
++    {
++        var dict = new ResourceDictionary();
++        var service = new ThemeService(dict);
++
++        AppTheme? changedTheme = null;
++        service.ThemeChanged += (_, theme) => changedTheme = theme;
++
++        service.SetTheme(AppTheme.Light);
++
++        Assert.Equal(AppTheme.Light, service.CurrentTheme);
++        Assert.Equal(AppTheme.Light, changedTheme);
++
++        // Assert brushes
++        Assert.Equal(Color.Parse("#ffffff"), ((SolidColorBrush)dict["BgDarkBrush"]!).Color);
++        Assert.Equal(Color.Parse("#f6f8fa"), ((SolidColorBrush)dict["BgSurfaceBrush"]!).Color);
++        Assert.Equal(Color.Parse("#ffffff"), ((SolidColorBrush)dict["BgCardBrush"]!).Color);
++        Assert.Equal(Color.Parse("#d0d7de"), ((SolidColorBrush)dict["GlassBorderBrush"]!).Color);
++        Assert.Equal(Color.Parse("#d0d7de"), ((SolidColorBrush)dict["BorderColorBrush"]!).Color);
++        Assert.Equal(Color.Parse("#1f2328"), ((SolidColorBrush)dict["TextMainBrush"]!).Color);
++        Assert.Equal(Color.Parse("#656d76"), ((SolidColorBrush)dict["TextMutedBrush"]!).Color);
++        Assert.Equal(Color.Parse("#0969da"), ((SolidColorBrush)dict["PrimaryBrush"]!).Color);
++        Assert.Equal(Color.Parse("#218bff"), ((SolidColorBrush)dict["SecondaryBrush"]!).Color);
++        Assert.Equal(Color.Parse("#218bff"), ((SolidColorBrush)dict["AccentBrush"]!).Color);
++        Assert.Equal(Color.Parse("#ffffff"), ((SolidColorBrush)dict["GlassBackgroundBrush"]!).Color);
++        Assert.Equal(Color.Parse("#0969da"), ((SolidColorBrush)dict["PrimaryGradientBrush"]!).Color);
++
++        var glow = (SolidColorBrush)dict["BorderGlowBrush"]!;
++        Assert.Equal(Color.Parse("#0969da"), glow.Color);
++        Assert.Equal(0.4, glow.Opacity, precision: 2);
++    }
++
++    [Fact]
++    public void SetTheme_MatteCarbon_UpdatesCurrentThemeAndFiresThemeChangedAndMutatesResources()
++    {
++        var dict = new ResourceDictionary();
++        var service = new ThemeService(dict);
++
++        // Switch to Light first, then back to MatteCarbon
++        service.SetTheme(AppTheme.Light);
++
++        AppTheme? changedTheme = null;
++        service.ThemeChanged += (_, theme) => changedTheme = theme;
++
++        service.SetTheme(AppTheme.MatteCarbon);
++
++        Assert.Equal(AppTheme.MatteCarbon, service.CurrentTheme);
++        Assert.Equal(AppTheme.MatteCarbon, changedTheme);
++
++        Assert.Equal(Color.Parse("#0d1117"), ((SolidColorBrush)dict["BgDarkBrush"]!).Color);
++        Assert.Equal(Color.Parse("#161b22"), ((SolidColorBrush)dict["BgSurfaceBrush"]!).Color);
++        Assert.Equal(Color.Parse("#1c2128"), ((SolidColorBrush)dict["BgCardBrush"]!).Color);
++        Assert.Equal(Color.Parse("#30363d"), ((SolidColorBrush)dict["GlassBorderBrush"]!).Color);
++        Assert.Equal(Color.Parse("#f0f6fc"), ((SolidColorBrush)dict["TextMainBrush"]!).Color);
++        Assert.Equal(Color.Parse("#8b949e"), ((SolidColorBrush)dict["TextMutedBrush"]!).Color);
++        Assert.Equal(Color.Parse("#388bfd"), ((SolidColorBrush)dict["PrimaryBrush"]!).Color);
++        Assert.Equal(Color.Parse("#58a6ff"), ((SolidColorBrush)dict["SecondaryBrush"]!).Color);
++        Assert.Equal(Color.Parse("#79c0ff"), ((SolidColorBrush)dict["AccentBrush"]!).Color);
++    }
++
++    [Fact]
++    public void SetTheme_WithExistingBrushInstances_MutatesColorInPlace()
++    {
++        var dict = new ResourceDictionary();
++        var existingBrush = new SolidColorBrush(Color.Parse("#111111"));
++        dict["BgDarkBrush"] = existingBrush;
++
++        var service = new ThemeService(dict);
++        service.SetTheme(AppTheme.Light);
++
++        // Ensure the exact instance in memory was updated
++        Assert.Same(existingBrush, dict["BgDarkBrush"]);
++        Assert.Equal(Color.Parse("#ffffff"), existingBrush.Color);
++    }
++
++    [AvaloniaFact]
++    public void SetTheme_WithHeadlessApp_MutatesApplicationRequestedThemeVariant()
++    {
++        var service = new ThemeService();
++        service.SetTheme(AppTheme.Light);
++        Assert.Equal(ThemeVariant.Light, Avalonia.Application.Current?.RequestedThemeVariant);
++
++        service.SetTheme(AppTheme.OledBlack);
++        Assert.Equal(ThemeVariant.Dark, Avalonia.Application.Current?.RequestedThemeVariant);
++
++        service.SetTheme(AppTheme.MatteCarbon);
++        Assert.Equal(ThemeVariant.Dark, Avalonia.Application.Current?.RequestedThemeVariant);
++    }
++
++    [Fact]
++    public void SettingsViewModel_ThemeIntegration_ChangesThemeOnPropertySet()
++    {
++        var mockThemeService = new Mock<IThemeService>();
++        mockThemeService.SetupGet(t => t.CurrentTheme).Returns(AppTheme.MatteCarbon);
++
++        var vm = new SettingsViewModel(mockThemeService.Object);
++
++        Assert.Equal("Matte Carbon (Default)", vm.SelectedTheme);
++        Assert.Equal(3, vm.AvailableThemes.Count);
++
++        vm.SelectedTheme = "OLED Pure Black";
++        mockThemeService.Verify(t => t.SetTheme(AppTheme.OledBlack), Times.Once);
++
++        vm.SelectedTheme = "Clean Light";
++        mockThemeService.Verify(t => t.SetTheme(AppTheme.Light), Times.Once);
++
++        vm.SelectedTheme = "Matte Carbon (Default)";
++        mockThemeService.Verify(t => t.SetTheme(AppTheme.MatteCarbon), Times.Once);
++    }
++
++    [Fact]
++    public void SettingsViewModel_MappingHelpers_CoverAllThemeVariants()
++    {
++        Assert.Equal("Matte Carbon (Default)", SettingsViewModel.MapThemeToString(AppTheme.MatteCarbon));
++        Assert.Equal("OLED Pure Black", SettingsViewModel.MapThemeToString(AppTheme.OledBlack));
++        Assert.Equal("Clean Light", SettingsViewModel.MapThemeToString(AppTheme.Light));
++
++        Assert.Equal(AppTheme.MatteCarbon, SettingsViewModel.MapStringToTheme("Matte Carbon (Default)"));
++        Assert.Equal(AppTheme.OledBlack, SettingsViewModel.MapStringToTheme("OLED Pure Black"));
++        Assert.Equal(AppTheme.Light, SettingsViewModel.MapStringToTheme("Clean Light"));
++        Assert.Equal(AppTheme.MatteCarbon, SettingsViewModel.MapStringToTheme("unknown"));
++        Assert.Equal(AppTheme.MatteCarbon, SettingsViewModel.MapStringToTheme(null));
++    }
++}
+diff --git a/LocalLLMServerManager.Web/App.axaml b/LocalLLMServerManager.Web/App.axaml
+index a094a28..99c14c2 100644
+--- a/LocalLLMServerManager.Web/App.axaml
++++ b/LocalLLMServerManager.Web/App.axaml
+@@ -5,13 +5,13 @@
+              RequestedThemeVariant="Dark">
+     <Application.Resources>
+         <ResourceDictionary>
+             <ResourceDictionary.MergedDictionaries>
+                 <ResourceInclude Source="avares://LocalLLMServerManager.Shared/Styles/DesignTokens.axaml" />
+             </ResourceDictionary.MergedDictionaries>
+         </ResourceDictionary>
+     </Application.Resources>
+     <Application.Styles>
+         <semi:SemiTheme Locale="en-US" />
+-        <StyleInclude Source="avares://LocalLLMServerManager.Shared/Styles/GlassmorphicTheme.axaml" />
++        <StyleInclude Source="avares://LocalLLMServerManager.Shared/Styles/MatteTheme.axaml" />
+     </Application.Styles>
+ </Application>
+diff --git a/LocalLLMServerManager.Web/wwwroot/favicon.ico b/LocalLLMServerManager.Web/wwwroot/favicon.ico
+new file mode 100644
+index 0000000..f7f840c
+Binary files /dev/null and b/LocalLLMServerManager.Web/wwwroot/favicon.ico differ
+diff --git a/LocalLLMServerManager.Web/wwwroot/index.html b/LocalLLMServerManager.Web/wwwroot/index.html
+index 1a61903..95d9fbb 100644
+--- a/LocalLLMServerManager.Web/wwwroot/index.html
++++ b/LocalLLMServerManager.Web/wwwroot/index.html
+@@ -1,16 +1,17 @@
+ <!DOCTYPE html>
+ <html>
+ <head>
+     <meta charset="utf-8" />
+     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no" />
+-    <title>Local LLM Server Manager</title>
++    <title>L³M² — Local LLM Server Manager</title>
++    <link rel="icon" type="image/x-icon" href="favicon.ico" />
+     <style>
+         html, body {
+             margin: 0;
+             padding: 0;
+             width: 100%;
+             height: 100%;
+             overflow: hidden;
+             background-color: #0F172A;
+         }
+         #out {
+diff --git a/eslint.config.mjs b/eslint.config.mjs
+new file mode 100644
+index 0000000..ece112d
+--- /dev/null
++++ b/eslint.config.mjs
+@@ -0,0 +1,24 @@
++import js from '@eslint/js';
++import tseslint from 'typescript-eslint';
++
++export default tseslint.config(
++  {
++    ignores: [
++      '**/bin/**',
++      '**/obj/**',
++      '**/dist/**',
++      '**/publish/**',
++      '**/node_modules/**',
++      '**/wwwroot/**',
++      '**/.superpowers/**',
++      '**/screenshots/**',
++      '**/scripts/**',
++      '**/docs/**',
++      '**/LocalLLMServerManager.Web/**',
++      '**/test-results/**',
++      '**/playwright-report/**',
++    ],
++  },
++  js.configs.recommended,
++  ...tseslint.configs.recommended,
++);
+diff --git a/package-lock.json b/package-lock.json
+new file mode 100644
+index 0000000..cee2279
+--- /dev/null
++++ b/package-lock.json
+@@ -0,0 +1,1600 @@
++{
++  "name": "localllm-server-manager-tooling",
++  "version": "1.0.0",
++  "lockfileVersion": 3,
++  "requires": true,
++  "packages": {
++    "": {
++      "name": "localllm-server-manager-tooling",
++      "version": "1.0.0",
++      "devDependencies": {
++        "@eslint/js": "^9.20.0",
++        "@playwright/test": "^1.50.0",
++        "@types/node": "^22.0.0",
++        "eslint": "^9.20.0",
++        "playwright-layout-inspector": "github:spelech/playwright-layout-inspector",
++        "typescript": "^5.7.0",
++        "typescript-eslint": "^8.24.0"
++      }
++    },
++    "node_modules/@eslint-community/eslint-utils": {
++      "version": "4.10.1",
++      "resolved": "https://registry.npmjs.org/@eslint-community/eslint-utils/-/eslint-utils-4.10.1.tgz",
++      "integrity": "sha512-cuadcxVFE8sDK6iWJbs8Sn0av2Nrh2QSGQhVlBW9AaAHqHwjWsZHT8LJ4hFGPh7ASBV2deFdM7H/DPjulmh8rg==",
++      "dev": true,
++      "license": "MIT",
++      "dependencies": {
++        "eslint-visitor-keys": "^3.4.3"
++      },
++      "engines": {
++        "node": "^12.22.0 || ^14.17.0 || >=16.0.0"
++      },
++      "funding": {
++        "url": "https://opencollective.com/eslint"
++      },
++      "peerDependencies": {
++        "eslint": "^6.0.0 || ^7.0.0 || >=8.0.0"
++      }
++    },
++    "node_modules/@eslint-community/eslint-utils/node_modules/eslint-visitor-keys": {
++      "version": "3.4.3",
++      "resolved": "https://registry.npmjs.org/eslint-visitor-keys/-/eslint-visitor-keys-3.4.3.tgz",
++      "integrity": "sha512-wpc+LXeiyiisxPlEkUzU6svyS1frIO3Mgxj1fdy7Pm8Ygzguax2N3Fa/D/ag1WqbOprdI+uY6wMUl8/a2G+iag==",
++      "dev": true,
++      "license": "Apache-2.0",
++      "engines": {
++        "node": "^12.22.0 || ^14.17.0 || >=16.0.0"
++      },
++      "funding": {
++        "url": "https://opencollective.com/eslint"
++      }
++    },
++    "node_modules/@eslint-community/regexpp": {
++      "version": "4.12.2",
++      "resolved": "https://registry.npmjs.org/@eslint-community/regexpp/-/regexpp-4.12.2.tgz",
++      "integrity": "sha512-EriSTlt5OC9/7SXkRSCAhfSxxoSUgBm33OH+IkwbdpgoqsSsUg7y3uh+IICI/Qg4BBWr3U2i39RpmycbxMq4ew==",
++      "dev": true,
++      "license": "MIT",
++      "engines": {
++        "node": "^12.0.0 || ^14.0.0 || >=16.0.0"
++      }
++    },
++    "node_modules/@eslint/config-array": {
++      "version": "0.21.2",
++      "resolved": "https://registry.npmjs.org/@eslint/config-array/-/config-array-0.21.2.tgz",
++      "integrity": "sha512-nJl2KGTlrf9GjLimgIru+V/mzgSK0ABCDQRvxw5BjURL7WfH5uoWmizbH7QB6MmnMBd8cIC9uceWnezL1VZWWw==",
++      "dev": true,
++      "license": "Apache-2.0",
++      "dependencies": {
++        "@eslint/object-schema": "^2.1.7",
++        "debug": "^4.3.1",
++        "minimatch": "^3.1.5"
++      },
++      "engines": {
++        "node": "^18.18.0 || ^20.9.0 || >=21.1.0"
++      }
++    },
++    "node_modules/@eslint/config-helpers": {
++      "version": "0.4.2",
++      "resolved": "https://registry.npmjs.org/@eslint/config-helpers/-/config-helpers-0.4.2.tgz",
++      "integrity": "sha512-gBrxN88gOIf3R7ja5K9slwNayVcZgK6SOUORm2uBzTeIEfeVaIhOpCtTox3P6R7o2jLFwLFTLnC7kU/RGcYEgw==",
++      "dev": true,
++      "license": "Apache-2.0",
++      "dependencies": {
++        "@eslint/core": "^0.17.0"
++      },
++      "engines": {
++        "node": "^18.18.0 || ^20.9.0 || >=21.1.0"
++      }
++    },
++    "node_modules/@eslint/core": {
++      "version": "0.17.0",
++      "resolved": "https://registry.npmjs.org/@eslint/core/-/core-0.17.0.tgz",
++      "integrity": "sha512-yL/sLrpmtDaFEiUj1osRP4TI2MDz1AddJL+jZ7KSqvBuliN4xqYY54IfdN8qD8Toa6g1iloph1fxQNkjOxrrpQ==",
++      "dev": true,
++      "license": "Apache-2.0",
++      "dependencies": {
++        "@types/json-schema": "^7.0.15"
++      },
++      "engines": {
++        "node": "^18.18.0 || ^20.9.0 || >=21.1.0"
++      }
++    },
++    "node_modules/@eslint/eslintrc": {
++      "version": "3.3.6",
++      "resolved": "https://registry.npmjs.org/@eslint/eslintrc/-/eslintrc-3.3.6.tgz",
++      "integrity": "sha512-l2Ul9PrHsPCKcEY/ac7VgFj9D80C7S68sOKc618SyHDPK36s1XcFebXY0iTzUVn4Yq+YbwvSnDmCz9yxjX+QrA==",
++      "dev": true,
++      "license": "MIT",
++      "dependencies": {
++        "ajv": "^6.14.0",
++        "debug": "^4.3.2",
++        "espree": "^10.0.1",
++        "globals": "^14.0.0",
++        "ignore": "^5.2.0",
++        "import-fresh": "^3.2.1",
++        "js-yaml": "^4.3.0",
++        "minimatch": "^3.1.5",
++        "strip-json-comments": "^3.1.1"
++      },
++      "engines": {
++        "node": "^18.18.0 || ^20.9.0 || >=21.1.0"
++      },
++      "funding": {
++        "url": "https://opencollective.com/eslint"
++      }
++    },
++    "node_modules/@eslint/js": {
++      "version": "9.39.5",
++      "resolved": "https://registry.npmjs.org/@eslint/js/-/js-9.39.5.tgz",
++      "integrity": "sha512-QywQuszQh77pIXCsq998c8hbhSTI/azTty1Z6N53dmAudKHhy573j3yvRLsX2BSp8YpLtoCEG8E9DJe+8zUh4A==",
++      "dev": true,
++      "license": "MIT",
++      "engines": {
++        "node": "^18.18.0 || ^20.9.0 || >=21.1.0"
++      },
++      "funding": {
++        "url": "https://eslint.org/donate"
++      }
++    },
++    "node_modules/@eslint/object-schema": {
++      "version": "2.1.7",
++      "resolved": "https://registry.npmjs.org/@eslint/object-schema/-/object-schema-2.1.7.tgz",
++      "integrity": "sha512-VtAOaymWVfZcmZbp6E2mympDIHvyjXs/12LqWYjVw6qjrfF+VK+fyG33kChz3nnK+SU5/NeHOqrTEHS8sXO3OA==",
++      "dev": true,
++      "license": "Apache-2.0",
++      "engines": {
++        "node": "^18.18.0 || ^20.9.0 || >=21.1.0"
++      }
++    },
++    "node_modules/@eslint/plugin-kit": {
++      "version": "0.4.1",
++      "resolved": "https://registry.npmjs.org/@eslint/plugin-kit/-/plugin-kit-0.4.1.tgz",
++      "integrity": "sha512-43/qtrDUokr7LJqoF2c3+RInu/t4zfrpYdoSDfYyhg52rwLV6TnOvdG4fXm7IkSB3wErkcmJS9iEhjVtOSEjjA==",
++      "dev": true,
++      "license": "Apache-2.0",
++      "dependencies": {
++        "@eslint/core": "^0.17.0",
++        "levn": "^0.4.1"
++      },
++      "engines": {
++        "node": "^18.18.0 || ^20.9.0 || >=21.1.0"
++      }
++    },
++    "node_modules/@humanfs/core": {
++      "version": "0.19.2",
++      "resolved": "https://registry.npmjs.org/@humanfs/core/-/core-0.19.2.tgz",
++      "integrity": "sha512-UhXNm+CFMWcbChXywFwkmhqjs3PRCmcSa/hfBgLIb7oQ5HNb1wS0icWsGtSAUNgefHeI+eBrA8I1fxmbHsGdvA==",
++      "dev": true,
++      "license": "Apache-2.0",
++      "dependencies": {
++        "@humanfs/types": "^0.15.0"
++      },
++      "engines": {
++        "node": ">=18.18.0"
++      }
++    },
++    "node_modules/@humanfs/node": {
++      "version": "0.16.8",
++      "resolved": "https://registry.npmjs.org/@humanfs/node/-/node-0.16.8.tgz",
++      "integrity": "sha512-gE1eQNZ3R++kTzFUpdGlpmy8kDZD/MLyHqDwqjkVQI0JMdI1D51sy1H958PNXYkM2rAac7e5/CnIKZrHtPh3BQ==",
++      "dev": true,
++      "license": "Apache-2.0",
++      "dependencies": {
++        "@humanfs/core": "^0.19.2",
++        "@humanfs/types": "^0.15.0",
++        "@humanwhocodes/retry": "^0.4.0"
++      },
++      "engines": {
++        "node": ">=18.18.0"
++      }
++    },
++    "node_modules/@humanfs/types": {
++      "version": "0.15.0",
++      "resolved": "https://registry.npmjs.org/@humanfs/types/-/types-0.15.0.tgz",
++      "integrity": "sha512-ZZ1w0aoQkwuUuC7Yf+7sdeaNfqQiiLcSRbfI08oAxqLtpXQr9AIVX7Ay7HLDuiLYAaFPu8oBYNq/QIi9URHJ3Q==",
++      "dev": true,
++      "license": "Apache-2.0",
++      "engines": {
++        "node": ">=18.18.0"
++      }
++    },
++    "node_modules/@humanwhocodes/module-importer": {
++      "version": "1.0.1",
++      "resolved": "https://registry.npmjs.org/@humanwhocodes/module-importer/-/module-importer-1.0.1.tgz",
++      "integrity": "sha512-bxveV4V8v5Yb4ncFTT3rPSgZBOpCkjfK0y4oVVVJwIuDVBRMDXrPyXRL988i5ap9m9bnyEEjWfm5WkBmtffLfA==",
++      "dev": true,
++      "license": "Apache-2.0",
++      "engines": {
++        "node": ">=12.22"
++      },
++      "funding": {
++        "type": "github",
++        "url": "https://github.com/sponsors/nzakas"
++      }
++    },
++    "node_modules/@humanwhocodes/retry": {
++      "version": "0.4.3",
++      "resolved": "https://registry.npmjs.org/@humanwhocodes/retry/-/retry-0.4.3.tgz",
++      "integrity": "sha512-bV0Tgo9K4hfPCek+aMAn81RppFKv2ySDQeMoSZuvTASywNTnVJCArCZE2FWqpvIatKu7VMRLWlR1EazvVhDyhQ==",
++      "dev": true,
++      "license": "Apache-2.0",
++      "engines": {
++        "node": ">=18.18"
++      },
++      "funding": {
++        "type": "github",
++        "url": "https://github.com/sponsors/nzakas"
++      }
++    },
++    "node_modules/@playwright/test": {
++      "version": "1.62.1",
++      "resolved": "https://registry.npmjs.org/@playwright/test/-/test-1.62.1.tgz",
++      "integrity": "sha512-DTcUc8qii+cpHvtOwggMtBRMjKZHXYWdw8syRYu2vtzuq4Wxphqq4NfCs5Zt44L6mA8rfDfj+PHnxFc/FeK6mQ==",
++      "dev": true,
++      "license": "Apache-2.0",
++      "dependencies": {
++        "playwright": "1.62.1"
++      },
++      "bin": {
++        "playwright": "cli.js"
++      },
++      "engines": {
++        "node": ">=20"
++      }
++    },
++    "node_modules/@types/estree": {
++      "version": "1.0.9",
++      "resolved": "https://registry.npmjs.org/@types/estree/-/estree-1.0.9.tgz",
++      "integrity": "sha512-GhdPgy1el4/ImP05X05Uw4cw2/M93BCUmnEvWZNStlCzEKME4Fkk+YpoA5OiHNQmoS7Cafb8Xa3Pya8m1Qrzeg==",
++      "dev": true,
++      "license": "MIT"
++    },
++    "node_modules/@types/json-schema": {
++      "version": "7.0.15",
++      "resolved": "https://registry.npmjs.org/@types/json-schema/-/json-schema-7.0.15.tgz",
++      "integrity": "sha512-5+fP8P8MFNC+AyZCDxrB2pkZFPGzqQWUzpSeuuVLvm8VMcorNYavBqoFcxK8bQz4Qsbn4oUEEem4wDLfcysGHA==",
++      "dev": true,
++      "license": "MIT"
++    },
++    "node_modules/@types/node": {
++      "version": "22.20.1",
++      "resolved": "https://registry.npmjs.org/@types/node/-/node-22.20.1.tgz",
++      "integrity": "sha512-EANqOCF9QFyra+4pfxUcX9STKJpCLjMbObVzljIJomAWSnuSIEAvyzEU53GaajbXJEgdh0iEcPL+DGvpUd4k1Q==",
++      "dev": true,
++      "license": "MIT",
++      "dependencies": {
++        "undici-types": "~6.21.0"
++      }
++    },
++    "node_modules/@typescript-eslint/eslint-plugin": {
++      "version": "8.67.0",
++      "resolved": "https://registry.npmjs.org/@typescript-eslint/eslint-plugin/-/eslint-plugin-8.67.0.tgz",
++      "integrity": "sha512-Un7Heoyj65NREbKAyIrFxeM143NZpExWmy1Nep4DLeQOeLlTeumPjoNKnBrU5D5moWXbPJgRa5Uwcdu0faVNGQ==",
++      "dev": true,
++      "license": "MIT",
++      "dependencies": {
++        "@eslint-community/regexpp": "^4.12.2",
++        "@typescript-eslint/scope-manager": "8.67.0",
++        "@typescript-eslint/type-utils": "8.67.0",
++        "@typescript-eslint/utils": "8.67.0",
++        "@typescript-eslint/visitor-keys": "8.67.0",
++        "ignore": "^7.0.5",
++        "natural-compare": "^1.4.0",
++        "ts-api-utils": "^2.5.0"
++      },
++      "engines": {
++        "node": "^18.18.0 || ^20.9.0 || >=21.1.0"
++      },
++      "funding": {
++        "type": "opencollective",
++        "url": "https://opencollective.com/typescript-eslint"
++      },
++      "peerDependencies": {
++        "@typescript-eslint/parser": "^8.67.0",
++        "eslint": "^8.57.0 || ^9.0.0 || ^10.0.0",
++        "typescript": ">=4.8.4 <6.1.0"
++      }
++    },
++    "node_modules/@typescript-eslint/eslint-plugin/node_modules/ignore": {
++      "version": "7.0.6",
++      "resolved": "https://registry.npmjs.org/ignore/-/ignore-7.0.6.tgz",
++      "integrity": "sha512-BAg6QkE8W+TuQLrrw0Ugr7HegXduRuuj8/ti2kSOc+jz1dmx8/WNcjr6XGnq5YpDWxFwwaavqD0+jIUOKelTsw==",
++      "dev": true,
++      "license": "MIT",
++      "engines": {
++        "node": ">= 4"
++      }
++    },
++    "node_modules/@typescript-eslint/parser": {
++      "version": "8.67.0",
++      "resolved": "https://registry.npmjs.org/@typescript-eslint/parser/-/parser-8.67.0.tgz",
++      "integrity": "sha512-fUBfTuuEulWqX6V8+O3PtScV01tzYYRUDTAirHFKoRAt7nOzoGiPt0M/bB47wWNy0coOOcgEwAMUtBpykMxl6w==",
++      "dev": true,
++      "license": "MIT",
++      "dependencies": {
++        "@typescript-eslint/scope-manager": "8.67.0",
++        "@typescript-eslint/types": "8.67.0",
++        "@typescript-eslint/typescript-estree": "8.67.0",
++        "@typescript-eslint/visitor-keys": "8.67.0",
++        "debug": "^4.4.3"
++      },
++      "engines": {
++        "node": "^18.18.0 || ^20.9.0 || >=21.1.0"
++      },
++      "funding": {
++        "type": "opencollective",
++        "url": "https://opencollective.com/typescript-eslint"
++      },
++      "peerDependencies": {
++        "eslint": "^8.57.0 || ^9.0.0 || ^10.0.0",
++        "typescript": ">=4.8.4 <6.1.0"
++      }
++    },
++    "node_modules/@typescript-eslint/project-service": {
++      "version": "8.67.0",
++      "resolved": "https://registry.npmjs.org/@typescript-eslint/project-service/-/project-service-8.67.0.tgz",
++      "integrity": "sha512-cvE8c7ulYeXN9fYuszhCeCsbzyVEXuhrRCybnBre7TUmqb5nRmBfQAwCj0O3WJFDeyAZt4VYv51vMCC9LHSdYw==",
++      "dev": true,
++      "license": "MIT",
++      "dependencies": {
++        "@typescript-eslint/tsconfig-utils": "^8.67.0",
++        "@typescript-eslint/types": "^8.67.0",
++        "debug": "^4.4.3"
++      },
++      "engines": {
++        "node": "^18.18.0 || ^20.9.0 || >=21.1.0"
++      },
++      "funding": {
++        "type": "opencollective",
++        "url": "https://opencollective.com/typescript-eslint"
++      },
++      "peerDependencies": {
++        "typescript": ">=4.8.4 <6.1.0"
++      }
++    },
++    "node_modules/@typescript-eslint/scope-manager": {
++      "version": "8.67.0",
++      "resolved": "https://registry.npmjs.org/@typescript-eslint/scope-manager/-/scope-manager-8.67.0.tgz",
++      "integrity": "sha512-EgvsleTwS4E+WzzSvem8fAUubLwatMNF1B5hHSLQxcvs7q2dtRhGyujHwLJSYlG41niJ7GP24Aha2+0mb1b2kg==",
++      "dev": true,
++      "license": "MIT",
++      "dependencies": {
++        "@typescript-eslint/types": "8.67.0",
++        "@typescript-eslint/visitor-keys": "8.67.0"
++      },
++      "engines": {
++        "node": "^18.18.0 || ^20.9.0 || >=21.1.0"
++      },
++      "funding": {
++        "type": "opencollective",
++        "url": "https://opencollective.com/typescript-eslint"
++      }
++    },
++    "node_modules/@typescript-eslint/tsconfig-utils": {
++      "version": "8.67.0",
++      "resolved": "https://registry.npmjs.org/@typescript-eslint/tsconfig-utils/-/tsconfig-utils-8.67.0.tgz",
++      "integrity": "sha512-vV+LUSv5njUWsknE71fqKTlXUva+R76SaeORd6Zojcunk/6DvKFXONU3BrAs2H49mbygUXt6gbYunzwqNwlhdg==",
++      "dev": true,
++      "license": "MIT",
++      "engines": {
++        "node": "^18.18.0 || ^20.9.0 || >=21.1.0"
++      },
++      "funding": {
++        "type": "opencollective",
++        "url": "https://opencollective.com/typescript-eslint"
++      },
++      "peerDependencies": {
++        "typescript": ">=4.8.4 <6.1.0"
++      }
++    },
++    "node_modules/@typescript-eslint/type-utils": {
++      "version": "8.67.0",
++      "resolved": "https://registry.npmjs.org/@typescript-eslint/type-utils/-/type-utils-8.67.0.tgz",
++      "integrity": "sha512-aVWDXbRmdXO9siTfX4ditQI1T9+zVcNazT48EJCD0v40/9RIFoUgZ05CmGEq9H2gixRpjUn/iplwvlcvutJW/Q==",
++      "dev": true,
++      "license": "MIT",
++      "dependencies": {
++        "@typescript-eslint/types": "8.67.0",
++        "@typescript-eslint/typescript-estree": "8.67.0",
++        "@typescript-eslint/utils": "8.67.0",
++        "debug": "^4.4.3",
++        "ts-api-utils": "^2.5.0"
++      },
++      "engines": {
++        "node": "^18.18.0 || ^20.9.0 || >=21.1.0"
++      },
++      "funding": {
++        "type": "opencollective",
++        "url": "https://opencollective.com/typescript-eslint"
++      },
++      "peerDependencies": {
++        "eslint": "^8.57.0 || ^9.0.0 || ^10.0.0",
++        "typescript": ">=4.8.4 <6.1.0"
++      }
++    },
++    "node_modules/@typescript-eslint/types": {
++      "version": "8.67.0",
++      "resolved": "https://registry.npmjs.org/@typescript-eslint/types/-/types-8.67.0.tgz",
++      "integrity": "sha512-sBtgslww8nsMYUjhdPBiSyUqSzT8uR6g93A2QXnQC8+cGdjz0CyaOdqHDRJb1AtORbZCNUJBBeFA/tNR2uQmww==",
++      "dev": true,
++      "license": "MIT",
++      "engines": {
++        "node": "^18.18.0 || ^20.9.0 || >=21.1.0"
++      },
++      "funding": {
++        "type": "opencollective",
++        "url": "https://opencollective.com/typescript-eslint"
++      }
++    },
++    "node_modules/@typescript-eslint/typescript-estree": {
++      "version": "8.67.0",
++      "resolved": "https://registry.npmjs.org/@typescript-eslint/typescript-estree/-/typescript-estree-8.67.0.tgz",
++      "integrity": "sha512-EKQBCE9yNlRJYm7jdTW5AhDacDUmSwQb0FAJAmK2EKYrNXIsa2vxcSZx6PvJ/dEdI6lS+Y9W+EXckLj0iPFGcw==",
++      "dev": true,
++      "license": "MIT",
++      "dependencies": {
++        "@typescript-eslint/project-service": "8.67.0",
++        "@typescript-eslint/tsconfig-utils": "8.67.0",
++        "@typescript-eslint/types": "8.67.0",
++        "@typescript-eslint/visitor-keys": "8.67.0",
++        "debug": "^4.4.3",
++        "minimatch": "^10.2.2",
++        "semver": "^7.7.3",
++        "tinyglobby": "^0.2.15",
++        "ts-api-utils": "^2.5.0"
++      },
++      "engines": {
++        "node": "^18.18.0 || ^20.9.0 || >=21.1.0"
++      },
++      "funding": {
++        "type": "opencollective",
++        "url": "https://opencollective.com/typescript-eslint"
++      },
++      "peerDependencies": {
++        "typescript": ">=4.8.4 <6.1.0"
++      }
++    },
++    "node_modules/@typescript-eslint/typescript-estree/node_modules/balanced-match": {
++      "version": "4.0.4",
++      "resolved": "https://registry.npmjs.org/balanced-match/-/balanced-match-4.0.4.tgz",
++      "integrity": "sha512-BLrgEcRTwX2o6gGxGOCNyMvGSp35YofuYzw9h1IMTRmKqttAZZVU67bdb9Pr2vUHA8+j3i2tJfjO6C6+4myGTA==",
++      "dev": true,
++      "license": "MIT",
++      "engines": {
++        "node": "18 || 20 || >=22"
++      }
++    },
++    "node_modules/@typescript-eslint/typescript-estree/node_modules/brace-expansion": {
++      "version": "5.0.9",
++      "resolved": "https://registry.npmjs.org/brace-expansion/-/brace-expansion-5.0.9.tgz",
++      "integrity": "sha512-ScQ4IuvIEF1TMlP7Zt+vjJ//9zlPb2SDcxWxM3bk8s6t6GGdJ7KO1dCcTidOPJKePW30LE/2cT7wCyPho9/Wxg==",
++      "dev": true,
++      "license": "MIT",
++      "dependencies": {
++        "balanced-match": "^4.0.2"
++      },
++      "engines": {
++        "node": "20 || >=22"
++      }
++    },
++    "node_modules/@typescript-eslint/typescript-estree/node_modules/minimatch": {
++      "version": "10.2.6",
++      "resolved": "https://registry.npmjs.org/minimatch/-/minimatch-10.2.6.tgz",
++      "integrity": "sha512-vpLQEs+VLCr1nU0BXS07maYoFwlDAH0gngQuuttxIwutDFEMHq2blX+8vpgxDdK3J1PwjCJiep77OitTZ4Ll1A==",
++      "dev": true,
++      "license": "BlueOak-1.0.0",
++      "dependencies": {
++        "brace-expansion": "^5.0.8"
++      },
++      "engines": {
++        "node": "18 || 20 || >=22"
++      },
++      "funding": {
++        "url": "https://github.com/sponsors/isaacs"
++      }
++    },
++    "node_modules/@typescript-eslint/utils": {
++      "version": "8.67.0",
++      "resolved": "https://registry.npmjs.org/@typescript-eslint/utils/-/utils-8.67.0.tgz",
++      "integrity": "sha512-U9D1FdwEWBwok3hxxSdhclMb0twvt9QnjIQ0VfQ1AiX2epnpSgv2ubVDsayOFyY8K6FX+AQ7E0FKWVG3iKsj1A==",
++      "dev": true,
++      "license": "MIT",
++      "dependencies": {
++        "@eslint-community/eslint-utils": "^4.9.1",
++        "@typescript-eslint/scope-manager": "8.67.0",
++        "@typescript-eslint/types": "8.67.0",
++        "@typescript-eslint/typescript-estree": "8.67.0"
++      },
++      "engines": {
++        "node": "^18.18.0 || ^20.9.0 || >=21.1.0"
++      },
++      "funding": {
++        "type": "opencollective",
++        "url": "https://opencollective.com/typescript-eslint"
++      },
++      "peerDependencies": {
++        "eslint": "^8.57.0 || ^9.0.0 || ^10.0.0",
++        "typescript": ">=4.8.4 <6.1.0"
++      }
++    },
++    "node_modules/@typescript-eslint/visitor-keys": {
++      "version": "8.67.0",
++      "resolved": "https://registry.npmjs.org/@typescript-eslint/visitor-keys/-/visitor-keys-8.67.0.tgz",
++      "integrity": "sha512-fkv8dHRDqfGtTHuJeebdrQ7cX6Ad4WAS00rgHh9UGvMycF1mjBfsxry1XsLIFhWZ6Judlh6UdzK+TYlbpCXgnA==",
++      "dev": true,
++      "license": "MIT",
++      "dependencies": {
++        "@typescript-eslint/types": "8.67.0",
++        "eslint-visitor-keys": "^5.0.0"
++      },
++      "engines": {
++        "node": "^18.18.0 || ^20.9.0 || >=21.1.0"
++      },
++      "funding": {
++        "type": "opencollective",
++        "url": "https://opencollective.com/typescript-eslint"
++      }
++    },
++    "node_modules/@typescript-eslint/visitor-keys/node_modules/eslint-visitor-keys": {
++      "version": "5.0.1",
++      "resolved": "https://registry.npmjs.org/eslint-visitor-keys/-/eslint-visitor-keys-5.0.1.tgz",
++      "integrity": "sha512-tD40eHxA35h0PEIZNeIjkHoDR4YjjJp34biM0mDvplBe//mB+IHCqHDGV7pxF+7MklTvighcCPPZC7ynWyjdTA==",
++      "dev": true,
++      "license": "Apache-2.0",
++      "engines": {
++        "node": "^20.19.0 || ^22.13.0 || >=24"
++      },
++      "funding": {
++        "url": "https://opencollective.com/eslint"
++      }
++    },
++    "node_modules/acorn": {
++      "version": "8.18.0",
++      "resolved": "https://registry.npmjs.org/acorn/-/acorn-8.18.0.tgz",
++      "integrity": "sha512-lGq+9yr1/GuAWaVYIHRjvvySG5/4VfKIvC8EWxStPdcDh/Ka7FG3twP6v4d5BkravUilhIAsG4Qj83t02LWUPQ==",
++      "dev": true,
++      "license": "MIT",
++      "bin": {
++        "acorn": "bin/acorn"
++      },
++      "engines": {
++        "node": ">=0.4.0"
++      }
++    },
++    "node_modules/acorn-jsx": {
++      "version": "5.3.2",
++      "resolved": "https://registry.npmjs.org/acorn-jsx/-/acorn-jsx-5.3.2.tgz",
++      "integrity": "sha512-rq9s+JNhf0IChjtDXxllJ7g41oZk5SlXtp0LHwyA5cejwn7vKmKp4pPri6YEePv2PU65sAsegbXtIinmDFDXgQ==",
++      "dev": true,
++      "license": "MIT",
++      "peerDependencies": {
++        "acorn": "^6.0.0 || ^7.0.0 || ^8.0.0"
++      }
++    },
++    "node_modules/ajv": {
++      "version": "6.15.0",
++      "resolved": "https://registry.npmjs.org/ajv/-/ajv-6.15.0.tgz",
++      "integrity": "sha512-fgFx7Hfoq60ytK2c7DhnF8jIvzYgOMxfugjLOSMHjLIPgenqa7S7oaagATUq99mV6IYvN2tRmC0wnTYX6iPbMw==",
++      "dev": true,
++      "license": "MIT",
++      "dependencies": {
++        "fast-deep-equal": "^3.1.1",
++        "fast-json-stable-stringify": "^2.0.0",
++        "json-schema-traverse": "^0.4.1",
++        "uri-js": "^4.2.2"
++      },
++      "funding": {
++        "type": "github",
++        "url": "https://github.com/sponsors/epoberezkin"
++      }
++    },
++    "node_modules/ansi-styles": {
++      "version": "4.3.0",
++      "resolved": "https://registry.npmjs.org/ansi-styles/-/ansi-styles-4.3.0.tgz",
++      "integrity": "sha512-zbB9rCJAT1rbjiVDb2hqKFHNYLxgtk8NURxZ3IZwD3F6NtxbXZQCnnSi1Lkx+IDohdPlFp222wVALIheZJQSEg==",
++      "dev": true,
++      "license": "MIT",
++      "dependencies": {
++        "color-convert": "^2.0.1"
++      },
++      "engines": {
++        "node": ">=8"
++      },
++      "funding": {
++        "url": "https://github.com/chalk/ansi-styles?sponsor=1"
++      }
++    },
++    "node_modules/argparse": {
++      "version": "2.0.1",
++      "resolved": "https://registry.npmjs.org/argparse/-/argparse-2.0.1.tgz",
++      "integrity": "sha512-8+9WqebbFzpX9OR+Wa6O29asIogeRMzcGtAINdpMHHyAg10f05aSFVBbcEqGf/PXw1EjAZ+q2/bEBg3DvurK3Q==",
++      "dev": true,
++      "license": "Python-2.0"
++    },
++    "node_modules/balanced-match": {
++      "version": "1.0.2",
++      "resolved": "https://registry.npmjs.org/balanced-match/-/balanced-match-1.0.2.tgz",
++      "integrity": "sha512-3oSeUO0TMV67hN1AmbXsK4yaqU7tjiHlbxRDZOpH0KW9+CeX4bRAaX0Anxt0tx2MrpRpWwQaPwIlISEJhYU5Pw==",
++      "dev": true,
++      "license": "MIT"
++    },
++    "node_modules/brace-expansion": {
++      "version": "1.1.18",
++      "resolved": "https://registry.npmjs.org/brace-expansion/-/brace-expansion-1.1.18.tgz",
++      "integrity": "sha512-Edep/X9fGqVNmzKBVsDYIOtD+z1tuezV70LBjdCst9Tqu76lsnvRiZ6oTic1n+/BIwX6QDGAO94PN4N2SADvtw==",
++      "dev": true,
++      "license": "MIT",
++      "dependencies": {
++        "balanced-match": "^1.0.0",
++        "concat-map": "0.0.1"
++      }
++    },
++    "node_modules/callsites": {
++      "version": "3.1.0",
++      "resolved": "https://registry.npmjs.org/callsites/-/callsites-3.1.0.tgz",
++      "integrity": "sha512-P8BjAsXvZS+VIDUI11hHCQEv74YT67YUi5JJFNWIqL235sBmjX4+qx9Muvls5ivyNENctx46xQLQ3aTuE7ssaQ==",
++      "dev": true,
++      "license": "MIT",
++      "engines": {
++        "node": ">=6"
++      }
++    },
++    "node_modules/chalk": {
++      "version": "4.1.2",
++      "resolved": "https://registry.npmjs.org/chalk/-/chalk-4.1.2.tgz",
++      "integrity": "sha512-oKnbhFyRIXpUuez8iBMmyEa4nbj4IOQyuhc/wy9kY7/WVPcwIO9VA668Pu8RkO7+0G76SLROeyw9CpQ061i4mA==",
++      "dev": true,
++      "license": "MIT",
++      "dependencies": {
++        "ansi-styles": "^4.1.0",
++        "supports-color": "^7.1.0"
++      },
++      "engines": {
++        "node": ">=10"
++      },
++      "funding": {
++        "url": "https://github.com/chalk/chalk?sponsor=1"
++      }
++    },
++    "node_modules/color-convert": {
++      "version": "2.0.1",
++      "resolved": "https://registry.npmjs.org/color-convert/-/color-convert-2.0.1.tgz",
++      "integrity": "sha512-RRECPsj7iu/xb5oKYcsFHSppFNnsj/52OVTRKb4zP5onXwVF3zVmmToNcOfGC+CRDpfK/U584fMg38ZHCaElKQ==",
++      "dev": true,
++      "license": "MIT",
++      "dependencies": {
++        "color-name": "~1.1.4"
++      },
++      "engines": {
++        "node": ">=7.0.0"
++      }
++    },
++    "node_modules/color-name": {
++      "version": "1.1.4",
++      "resolved": "https://registry.npmjs.org/color-name/-/color-name-1.1.4.tgz",
++      "integrity": "sha512-dOy+3AuW3a2wNbZHIuMZpTcgjGuLU/uBL/ubcZF9OXbDo8ff4O8yVp5Bf0efS8uEoYo5q4Fx7dY9OgQGXgAsQA==",
++      "dev": true,
++      "license": "MIT"
++    },
++    "node_modules/concat-map": {
++      "version": "0.0.1",
++      "resolved": "https://registry.npmjs.org/concat-map/-/concat-map-0.0.1.tgz",
++      "integrity": "sha512-/Srv4dswyQNBfohGpz9o6Yb3Gz3SrUDqBH5rTuhGR7ahtlbYKnVxw2bCFMRljaA7EXHaXZ8wsHdodFvbkhKmqg==",
++      "dev": true,
++      "license": "MIT"
++    },
++    "node_modules/cross-spawn": {
++      "version": "7.0.6",
++      "resolved": "https://registry.npmjs.org/cross-spawn/-/cross-spawn-7.0.6.tgz",
++      "integrity": "sha512-uV2QOWP2nWzsy2aMp8aRibhi9dlzF5Hgh5SHaB9OiTGEyDTiJJyx0uy51QXdyWbtAHNua4XJzUKca3OzKUd3vA==",
++      "dev": true,
++      "license": "MIT",
++      "dependencies": {
++        "path-key": "^3.1.0",
++        "shebang-command": "^2.0.0",
++        "which": "^2.0.1"
++      },
++      "engines": {
++        "node": ">= 8"
++      }
++    },
++    "node_modules/debug": {
++      "version": "4.4.3",
++      "resolved": "https://registry.npmjs.org/debug/-/debug-4.4.3.tgz",
++      "integrity": "sha512-RGwwWnwQvkVfavKVt22FGLw+xYSdzARwm0ru6DhTVA3umU5hZc28V3kO4stgYryrTlLpuvgI9GiijltAjNbcqA==",
++      "dev": true,
++      "license": "MIT",
++      "dependencies": {
++        "ms": "^2.1.3"
++      },
++      "engines": {
++        "node": ">=6.0"
++      },
++      "peerDependenciesMeta": {
++        "supports-color": {
++          "optional": true
++        }
++      }
++    },
++    "node_modules/deep-is": {
++      "version": "0.1.4",
++      "resolved": "https://registry.npmjs.org/deep-is/-/deep-is-0.1.4.tgz",
++      "integrity": "sha512-oIPzksmTg4/MriiaYGO+okXDT7ztn/w3Eptv/+gSIdMdKsJo0u4CfYNFJPy+4SKMuCqGw2wxnA+URMg3t8a/bQ==",
++      "dev": true,
++      "license": "MIT"
++    },
++    "node_modules/escape-string-regexp": {
++      "version": "4.0.0",
++      "resolved": "https://registry.npmjs.org/escape-string-regexp/-/escape-string-regexp-4.0.0.tgz",
++      "integrity": "sha512-TtpcNJ3XAzx3Gq8sWRzJaVajRs0uVxA2YAkdb1jm2YkPz4G6egUFAyA3n5vtEIZefPk5Wa4UXbKuS5fKkJWdgA==",
++      "dev": true,
++      "license": "MIT",
++      "engines": {
++        "node": ">=10"
++      },
++      "funding": {
++        "url": "https://github.com/sponsors/sindresorhus"
++      }
++    },
++    "node_modules/eslint": {
++      "version": "9.39.5",
++      "resolved": "https://registry.npmjs.org/eslint/-/eslint-9.39.5.tgz",
++      "integrity": "sha512-DgZS62aPLXKlnxILS/AYCoRvHaZeXceIzlXPkkGGzJWSow1aEk0lbTlxUSlyjC8jcaKxAdOnTDz+o1JFSBsyjw==",
++      "deprecated": "This version is no longer supported. Please see https://eslint.org/version-support for other options.",
++      "dev": true,
++      "license": "MIT",
++      "dependencies": {
++        "@eslint-community/eslint-utils": "^4.8.0",
++        "@eslint-community/regexpp": "^4.12.1",
++        "@eslint/config-array": "^0.21.2",
++        "@eslint/config-helpers": "^0.4.2",
++        "@eslint/core": "^0.17.0",
++        "@eslint/eslintrc": "^3.3.6",
++        "@eslint/js": "9.39.5",
++        "@eslint/plugin-kit": "^0.4.1",
++        "@humanfs/node": "^0.16.6",
++        "@humanwhocodes/module-importer": "^1.0.1",
++        "@humanwhocodes/retry": "^0.4.2",
++        "@types/estree": "^1.0.6",
++        "ajv": "^6.14.0",
++        "chalk": "^4.0.0",
++        "cross-spawn": "^7.0.6",
++        "debug": "^4.3.2",
++        "escape-string-regexp": "^4.0.0",
++        "eslint-scope": "^8.4.0",
++        "eslint-visitor-keys": "^4.2.1",
++        "espree": "^10.4.0",
++        "esquery": "^1.5.0",
++        "esutils": "^2.0.2",
++        "fast-deep-equal": "^3.1.3",
++        "file-entry-cache": "^8.0.0",
++        "find-up": "^5.0.0",
++        "glob-parent": "^6.0.2",
++        "ignore": "^5.2.0",
++        "imurmurhash": "^0.1.4",
++        "is-glob": "^4.0.0",
++        "json-stable-stringify-without-jsonify": "^1.0.1",
++        "lodash.merge": "^4.6.2",
++        "minimatch": "^3.1.5",
++        "natural-compare": "^1.4.0",
++        "optionator": "^0.9.3"
++      },
++      "bin": {
++        "eslint": "bin/eslint.js"
++      },
++      "engines": {
++        "node": "^18.18.0 || ^20.9.0 || >=21.1.0"
++      },
++      "funding": {
++        "url": "https://eslint.org/donate"
++      },
++      "peerDependencies": {
++        "jiti": "*"
++      },
++      "peerDependenciesMeta": {
++        "jiti": {
++          "optional": true
++        }
++      }
++    },
++    "node_modules/eslint-scope": {
++      "version": "8.4.0",
++      "resolved": "https://registry.npmjs.org/eslint-scope/-/eslint-scope-8.4.0.tgz",
++      "integrity": "sha512-sNXOfKCn74rt8RICKMvJS7XKV/Xk9kA7DyJr8mJik3S7Cwgy3qlkkmyS2uQB3jiJg6VNdZd/pDBJu0nvG2NlTg==",
++      "dev": true,
++      "license": "BSD-2-Clause",
++      "dependencies": {
++        "esrecurse": "^4.3.0",
++        "estraverse": "^5.2.0"
++      },
++      "engines": {
++        "node": "^18.18.0 || ^20.9.0 || >=21.1.0"
++      },
++      "funding": {
++        "url": "https://opencollective.com/eslint"
++      }
++    },
++    "node_modules/eslint-visitor-keys": {
++      "version": "4.2.1",
++      "resolved": "https://registry.npmjs.org/eslint-visitor-keys/-/eslint-visitor-keys-4.2.1.tgz",
++      "integrity": "sha512-Uhdk5sfqcee/9H/rCOJikYz67o0a2Tw2hGRPOG2Y1R2dg7brRe1uG0yaNQDHu+TO/uQPF/5eCapvYSmHUjt7JQ==",
++      "dev": true,
++      "license": "Apache-2.0",
++      "engines": {
++        "node": "^18.18.0 || ^20.9.0 || >=21.1.0"
++      },
++      "funding": {
++        "url": "https://opencollective.com/eslint"
++      }
++    },
++    "node_modules/espree": {
++      "version": "10.4.0",
++      "resolved": "https://registry.npmjs.org/espree/-/espree-10.4.0.tgz",
++      "integrity": "sha512-j6PAQ2uUr79PZhBjP5C5fhl8e39FmRnOjsD5lGnWrFU8i2G776tBK7+nP8KuQUTTyAZUwfQqXAgrVH5MbH9CYQ==",
++      "dev": true,
++      "license": "BSD-2-Clause",
++      "dependencies": {
++        "acorn": "^8.15.0",
++        "acorn-jsx": "^5.3.2",
++        "eslint-visitor-keys": "^4.2.1"
++      },
++      "engines": {
++        "node": "^18.18.0 || ^20.9.0 || >=21.1.0"
++      },
++      "funding": {
++        "url": "https://opencollective.com/eslint"
++      }
++    },
++    "node_modules/esquery": {
++      "version": "1.7.0",
++      "resolved": "https://registry.npmjs.org/esquery/-/esquery-1.7.0.tgz",
++      "integrity": "sha512-Ap6G0WQwcU/LHsvLwON1fAQX9Zp0A2Y6Y/cJBl9r/JbW90Zyg4/zbG6zzKa2OTALELarYHmKu0GhpM5EO+7T0g==",
++      "dev": true,
++      "license": "BSD-3-Clause",
++      "dependencies": {
++        "estraverse": "^5.1.0"
++      },
++      "engines": {
++        "node": ">=0.10"
++      }
++    },
++    "node_modules/esrecurse": {
++      "version": "4.3.0",
++      "resolved": "https://registry.npmjs.org/esrecurse/-/esrecurse-4.3.0.tgz",
++      "integrity": "sha512-KmfKL3b6G+RXvP8N1vr3Tq1kL/oCFgn2NYXEtqP8/L3pKapUA4G8cFVaoF3SU323CD4XypR/ffioHmkti6/Tag==",
++      "dev": true,
++      "license": "BSD-2-Clause",
++      "dependencies": {
++        "estraverse": "^5.2.0"
++      },
++      "engines": {
++        "node": ">=4.0"
++      }
++    },
++    "node_modules/estraverse": {
++      "version": "5.3.0",
++      "resolved": "https://registry.npmjs.org/estraverse/-/estraverse-5.3.0.tgz",
++      "integrity": "sha512-MMdARuVEQziNTeJD8DgMqmhwR11BRQ/cBP+pLtYdSTnf3MIO8fFeiINEbX36ZdNlfU/7A9f3gUw49B3oQsvwBA==",
++      "dev": true,
++      "license": "BSD-2-Clause",
++      "engines": {
++        "node": ">=4.0"
++      }
++    },
++    "node_modules/esutils": {
++      "version": "2.0.3",
++      "resolved": "https://registry.npmjs.org/esutils/-/esutils-2.0.3.tgz",
++      "integrity": "sha512-kVscqXk4OCp68SZ0dkgEKVi6/8ij300KBWTJq32P/dYeWTSwK41WyTxalN1eRmA5Z9UU/LX9D7FWSmV9SAYx6g==",
++      "dev": true,
++      "license": "BSD-2-Clause",
++      "engines": {
++        "node": ">=0.10.0"
++      }
++    },
++    "node_modules/fast-deep-equal": {
++      "version": "3.1.3",
++      "resolved": "https://registry.npmjs.org/fast-deep-equal/-/fast-deep-equal-3.1.3.tgz",
++      "integrity": "sha512-f3qQ9oQy9j2AhBe/H9VC91wLmKBCCU/gDOnKNAYG5hswO7BLKj09Hc5HYNz9cGI++xlpDCIgDaitVs03ATR84Q==",
++      "dev": true,
++      "license": "MIT"
++    },
++    "node_modules/fast-json-stable-stringify": {
++      "version": "2.1.0",
++      "resolved": "https://registry.npmjs.org/fast-json-stable-stringify/-/fast-json-stable-stringify-2.1.0.tgz",
++      "integrity": "sha512-lhd/wF+Lk98HZoTCtlVraHtfh5XYijIjalXck7saUtuanSDyLMxnHhSXEDJqHxD7msR8D0uCmqlkwjCV8xvwHw==",
++      "dev": true,
++      "license": "MIT"
++    },
++    "node_modules/fast-levenshtein": {
++      "version": "2.0.6",
++      "resolved": "https://registry.npmjs.org/fast-levenshtein/-/fast-levenshtein-2.0.6.tgz",
++      "integrity": "sha512-DCXu6Ifhqcks7TZKY3Hxp3y6qphY5SJZmrWMDrKcERSOXWQdMhU9Ig/PYrzyw/ul9jOIyh0N4M0tbC5hodg8dw==",
++      "dev": true,
++      "license": "MIT"
++    },
++    "node_modules/fdir": {
++      "version": "6.5.0",
++      "resolved": "https://registry.npmjs.org/fdir/-/fdir-6.5.0.tgz",
++      "integrity": "sha512-tIbYtZbucOs0BRGqPJkshJUYdL+SDH7dVM8gjy+ERp3WAUjLEFJE+02kanyHtwjWOnwrKYBiwAmM0p4kLJAnXg==",
++      "dev": true,
++      "license": "MIT",
++      "engines": {
++        "node": ">=12.0.0"
++      },
++      "peerDependencies": {
++        "picomatch": "^3 || ^4"
++      },
++      "peerDependenciesMeta": {
++        "picomatch": {
++          "optional": true
++        }
++      }
++    },
++    "node_modules/file-entry-cache": {
++      "version": "8.0.0",
++      "resolved": "https://registry.npmjs.org/file-entry-cache/-/file-entry-cache-8.0.0.tgz",
++      "integrity": "sha512-XXTUwCvisa5oacNGRP9SfNtYBNAMi+RPwBFmblZEF7N7swHYQS6/Zfk7SRwx4D5j3CH211YNRco1DEMNVfZCnQ==",
++      "dev": true,
++      "license": "MIT",
++      "dependencies": {
++        "flat-cache": "^4.0.0"
++      },
++      "engines": {
++        "node": ">=16.0.0"
++      }
++    },
++    "node_modules/find-up": {
++      "version": "5.0.0",
++      "resolved": "https://registry.npmjs.org/find-up/-/find-up-5.0.0.tgz",
++      "integrity": "sha512-78/PXT1wlLLDgTzDs7sjq9hzz0vXD+zn+7wypEe4fXQxCmdmqfGsEPQxmiCSQI3ajFV91bVSsvNtrJRiW6nGng==",
++      "dev": true,
++      "license": "MIT",
++      "dependencies": {
++        "locate-path": "^6.0.0",
++        "path-exists": "^4.0.0"
++      },
++      "engines": {
++        "node": ">=10"
++      },
++      "funding": {
++        "url": "https://github.com/sponsors/sindresorhus"
++      }
++    },
++    "node_modules/flat-cache": {
++      "version": "4.0.1",
++      "resolved": "https://registry.npmjs.org/flat-cache/-/flat-cache-4.0.1.tgz",
++      "integrity": "sha512-f7ccFPK3SXFHpx15UIGyRJ/FJQctuKZ0zVuN3frBo4HnK3cay9VEW0R6yPYFHC0AgqhukPzKjq22t5DmAyqGyw==",
++      "dev": true,
++      "license": "MIT",
++      "dependencies": {
++        "flatted": "^3.2.9",
++        "keyv": "^4.5.4"
++      },
++      "engines": {
++        "node": ">=16"
++      }
++    },
++    "node_modules/flatted": {
++      "version": "3.4.4",
++      "resolved": "https://registry.npmjs.org/flatted/-/flatted-3.4.4.tgz",
++      "integrity": "sha512-5+ybhBZANEJxaH3X5evAFatUxLfEHSr7n6kYJ+1Qd0mUqr4eu9gIf6GDbWHf8RJijHrjjO8G+la14SlL2SeS1Q==",
++      "dev": true,
++      "license": "ISC"
++    },
++    "node_modules/fsevents": {
++      "version": "2.3.2",
++      "resolved": "https://registry.npmjs.org/fsevents/-/fsevents-2.3.2.tgz",
++      "integrity": "sha512-xiqMQR4xAeHTuB9uWm+fFRcIOgKBMiOBP+eXiyT7jsgVCq1bkVygt00oASowB7EdtpOHaaPgKt812P9ab+DDKA==",
++      "dev": true,
++      "hasInstallScript": true,
++      "license": "MIT",
++      "optional": true,
++      "os": [
++        "darwin"
++      ],
++      "engines": {
++        "node": "^8.16.0 || ^10.6.0 || >=11.0.0"
++      }
++    },
++    "node_modules/glob-parent": {
++      "version": "6.0.2",
++      "resolved": "https://registry.npmjs.org/glob-parent/-/glob-parent-6.0.2.tgz",
++      "integrity": "sha512-XxwI8EOhVQgWp6iDL+3b0r86f4d6AX6zSU55HfB4ydCEuXLXc5FcYeOu+nnGftS4TEju/11rt4KJPTMgbfmv4A==",
++      "dev": true,
++      "license": "ISC",
++      "dependencies": {
++        "is-glob": "^4.0.3"
++      },
++      "engines": {
++        "node": ">=10.13.0"
++      }
++    },
++    "node_modules/globals": {
++      "version": "14.0.0",
++      "resolved": "https://registry.npmjs.org/globals/-/globals-14.0.0.tgz",
++      "integrity": "sha512-oahGvuMGQlPw/ivIYBjVSrWAfWLBeku5tpPE2fOPLi+WHffIWbuh2tCjhyQhTBPMf5E9jDEH4FOmTYgYwbKwtQ==",
++      "dev": true,
++      "license": "MIT",
++      "engines": {
++        "node": ">=18"
++      },
++      "funding": {
++        "url": "https://github.com/sponsors/sindresorhus"
++      }
++    },
++    "node_modules/has-flag": {
++      "version": "4.0.0",
++      "resolved": "https://registry.npmjs.org/has-flag/-/has-flag-4.0.0.tgz",
++      "integrity": "sha512-EykJT/Q1KjTWctppgIAgfSO0tKVuZUjhgMr17kqTumMl6Afv3EISleU7qZUzoXDFTAHTDC4NOoG/ZxU3EvlMPQ==",
++      "dev": true,
++      "license": "MIT",
++      "engines": {
++        "node": ">=8"
++      }
++    },
++    "node_modules/ignore": {
++      "version": "5.3.2",
++      "resolved": "https://registry.npmjs.org/ignore/-/ignore-5.3.2.tgz",
++      "integrity": "sha512-hsBTNUqQTDwkWtcdYI2i06Y/nUBEsNEDJKjWdigLvegy8kDuJAS8uRlpkkcQpyEXL0Z/pjDy5HBmMjRCJ2gq+g==",
++      "dev": true,
++      "license": "MIT",
++      "engines": {
++        "node": ">= 4"
++      }
++    },
++    "node_modules/import-fresh": {
++      "version": "3.3.1",
++      "resolved": "https://registry.npmjs.org/import-fresh/-/import-fresh-3.3.1.tgz",
++      "integrity": "sha512-TR3KfrTZTYLPB6jUjfx6MF9WcWrHL9su5TObK4ZkYgBdWKPOFoSoQIdEuTuR82pmtxH2spWG9h6etwfr1pLBqQ==",
++      "dev": true,
++      "license": "MIT",
++      "dependencies": {
++        "parent-module": "^1.0.0",
++        "resolve-from": "^4.0.0"
++      },
++      "engines": {
++        "node": ">=6"
++      },
++      "funding": {
++        "url": "https://github.com/sponsors/sindresorhus"
++      }
++    },
++    "node_modules/imurmurhash": {
++      "version": "0.1.4",
++      "resolved": "https://registry.npmjs.org/imurmurhash/-/imurmurhash-0.1.4.tgz",
++      "integrity": "sha512-JmXMZ6wuvDmLiHEml9ykzqO6lwFbof0GG4IkcGaENdCRDDmMVnny7s5HsIgHCbaq0w2MyPhDqkhTUgS2LU2PHA==",
++      "dev": true,
++      "license": "MIT",
++      "engines": {
++        "node": ">=0.8.19"
++      }
++    },
++    "node_modules/is-extglob": {
++      "version": "2.1.1",
++      "resolved": "https://registry.npmjs.org/is-extglob/-/is-extglob-2.1.1.tgz",
++      "integrity": "sha512-SbKbANkN603Vi4jEZv49LeVJMn4yGwsbzZworEoyEiutsN3nJYdbO36zfhGJ6QEDpOZIFkDtnq5JRxmvl3jsoQ==",
++      "dev": true,
++      "license": "MIT",
++      "engines": {
++        "node": ">=0.10.0"
++      }
++    },
++    "node_modules/is-glob": {
++      "version": "4.0.3",
++      "resolved": "https://registry.npmjs.org/is-glob/-/is-glob-4.0.3.tgz",
++      "integrity": "sha512-xelSayHH36ZgE7ZWhli7pW34hNbNl8Ojv5KVmkJD4hBdD3th8Tfk9vYasLM+mXWOZhFkgZfxhLSnrwRr4elSSg==",
++      "dev": true,
++      "license": "MIT",
++      "dependencies": {
++        "is-extglob": "^2.1.1"
++      },
++      "engines": {
++        "node": ">=0.10.0"
++      }
++    },
++    "node_modules/isexe": {
++      "version": "2.0.0",
++      "resolved": "https://registry.npmjs.org/isexe/-/isexe-2.0.0.tgz",
++      "integrity": "sha512-RHxMLp9lnKHGHRng9QFhRCMbYAcVpn69smSGcq3f36xjgVVWThj4qqLbTLlq7Ssj8B+fIQ1EuCEGI2lKsyQeIw==",
++      "dev": true,
++      "license": "ISC"
++    },
++    "node_modules/js-yaml": {
++      "version": "4.3.1",
++      "resolved": "https://registry.npmjs.org/js-yaml/-/js-yaml-4.3.1.tgz",
++      "integrity": "sha512-CY6crGq313MX8GkwvB7tzgp99vjQxY1++5y10/BKN/GUfHqWaOGQMNZkBvqSzsZKWk/ijwHlWzzkLulsGHhjWQ==",
++      "dev": true,
++      "funding": [
++        {
++          "type": "github",
++          "url": "https://github.com/sponsors/puzrin"
++        },
++        {
++          "type": "github",
++          "url": "https://github.com/sponsors/nodeca"
++        }
++      ],
++      "license": "MIT",
++      "dependencies": {
++        "argparse": "^2.0.1"
++      },
++      "bin": {
++        "js-yaml": "bin/js-yaml.js"
++      }
++    },
++    "node_modules/json-buffer": {
++      "version": "3.0.1",
++      "resolved": "https://registry.npmjs.org/json-buffer/-/json-buffer-3.0.1.tgz",
++      "integrity": "sha512-4bV5BfR2mqfQTJm+V5tPPdf+ZpuhiIvTuAB5g8kcrXOZpTT/QwwVRWBywX1ozr6lEuPdbHxwaJlm9G6mI2sfSQ==",
++      "dev": true,
++      "license": "MIT"
++    },
++    "node_modules/json-schema-traverse": {
++      "version": "0.4.1",
++      "resolved": "https://registry.npmjs.org/json-schema-traverse/-/json-schema-traverse-0.4.1.tgz",
++      "integrity": "sha512-xbbCH5dCYU5T8LcEhhuh7HJ88HXuW3qsI3Y0zOZFKfZEHcpWiHU/Jxzk629Brsab/mMiHQti9wMP+845RPe3Vg==",
++      "dev": true,
++      "license": "MIT"
++    },
++    "node_modules/json-stable-stringify-without-jsonify": {
++      "version": "1.0.1",
++      "resolved": "https://registry.npmjs.org/json-stable-stringify-without-jsonify/-/json-stable-stringify-without-jsonify-1.0.1.tgz",
++      "integrity": "sha512-Bdboy+l7tA3OGW6FjyFHWkP5LuByj1Tk33Ljyq0axyzdk9//JSi2u3fP1QSmd1KNwq6VOKYGlAu87CisVir6Pw==",
++      "dev": true,
++      "license": "MIT"
++    },
++    "node_modules/keyv": {
++      "version": "4.5.4",
++      "resolved": "https://registry.npmjs.org/keyv/-/keyv-4.5.4.tgz",
++      "integrity": "sha512-oxVHkHR/EJf2CNXnWxRLW6mg7JyCCUcG0DtEGmL2ctUo1PNTin1PUil+r/+4r5MpVgC/fn1kjsx7mjSujKqIpw==",
++      "dev": true,
++      "license": "MIT",
++      "dependencies": {
++        "json-buffer": "3.0.1"
++      }
++    },
++    "node_modules/levn": {
++      "version": "0.4.1",
++      "resolved": "https://registry.npmjs.org/levn/-/levn-0.4.1.tgz",
++      "integrity": "sha512-+bT2uH4E5LGE7h/n3evcS/sQlJXCpIp6ym8OWJ5eV6+67Dsql/LaaT7qJBAt2rzfoa/5QBGBhxDix1dMt2kQKQ==",
++      "dev": true,
++      "license": "MIT",
++      "dependencies": {
++        "prelude-ls": "^1.2.1",
++        "type-check": "~0.4.0"
++      },
++      "engines": {
++        "node": ">= 0.8.0"
++      }
++    },
++    "node_modules/locate-path": {
++      "version": "6.0.0",
++      "resolved": "https://registry.npmjs.org/locate-path/-/locate-path-6.0.0.tgz",
++      "integrity": "sha512-iPZK6eYjbxRu3uB4/WZ3EsEIMJFMqAoopl3R+zuq0UjcAm/MO6KCweDgPfP3elTztoKP3KtnVHxTn2NHBSDVUw==",
++      "dev": true,
++      "license": "MIT",
++      "dependencies": {
++        "p-locate": "^5.0.0"
++      },
++      "engines": {
++        "node": ">=10"
++      },
++      "funding": {
++        "url": "https://github.com/sponsors/sindresorhus"
++      }
++    },
++    "node_modules/lodash.merge": {
++      "version": "4.6.2",
++      "resolved": "https://registry.npmjs.org/lodash.merge/-/lodash.merge-4.6.2.tgz",
++      "integrity": "sha512-0KpjqXRVvrYyCsX1swR/XTK0va6VQkQM6MNo7PqW77ByjAhoARA8EfrP1N4+KlKj8YS0ZUCtRT/YUuhyYDujIQ==",
++      "dev": true,
++      "license": "MIT"
++    },
++    "node_modules/minimatch": {
++      "version": "3.1.5",
++      "resolved": "https://registry.npmjs.org/minimatch/-/minimatch-3.1.5.tgz",
++      "integrity": "sha512-VgjWUsnnT6n+NUk6eZq77zeFdpW2LWDzP6zFGrCbHXiYNul5Dzqk2HHQ5uFH2DNW5Xbp8+jVzaeNt94ssEEl4w==",
++      "dev": true,
++      "license": "ISC",
++      "dependencies": {
++        "brace-expansion": "^1.1.7"
++      },
++      "engines": {
++        "node": "*"
++      }
++    },
++    "node_modules/ms": {
++      "version": "2.1.3",
++      "resolved": "https://registry.npmjs.org/ms/-/ms-2.1.3.tgz",
++      "integrity": "sha512-6FlzubTLZG3J2a/NVCAleEhjzq5oxgHyaCU9yYXvcLsvoVaHJq/s5xXI6/XXP6tz7R9xAOtHnSO/tXtF3WRTlA==",
++      "dev": true,
++      "license": "MIT"
++    },
++    "node_modules/natural-compare": {
++      "version": "1.4.0",
++      "resolved": "https://registry.npmjs.org/natural-compare/-/natural-compare-1.4.0.tgz",
++      "integrity": "sha512-OWND8ei3VtNC9h7V60qff3SVobHr996CTwgxubgyQYEpg290h9J0buyECNNJexkFm5sOajh5G116RYA1c8ZMSw==",
++      "dev": true,
++      "license": "MIT"
++    },
++    "node_modules/optionator": {
++      "version": "0.9.4",
++      "resolved": "https://registry.npmjs.org/optionator/-/optionator-0.9.4.tgz",
++      "integrity": "sha512-6IpQ7mKUxRcZNLIObR0hz7lxsapSSIYNZJwXPGeF0mTVqGKFIXj1DQcMoT22S3ROcLyY/rz0PWaWZ9ayWmad9g==",
++      "dev": true,
++      "license": "MIT",
++      "dependencies": {
++        "deep-is": "^0.1.3",
++        "fast-levenshtein": "^2.0.6",
++        "levn": "^0.4.1",
++        "prelude-ls": "^1.2.1",
++        "type-check": "^0.4.0",
++        "word-wrap": "^1.2.5"
++      },
++      "engines": {
++        "node": ">= 0.8.0"
++      }
++    },
++    "node_modules/p-limit": {
++      "version": "3.1.0",
++      "resolved": "https://registry.npmjs.org/p-limit/-/p-limit-3.1.0.tgz",
++      "integrity": "sha512-TYOanM3wGwNGsZN2cVTYPArw454xnXj5qmWF1bEoAc4+cU/ol7GVh7odevjp1FNHduHc3KZMcFduxU5Xc6uJRQ==",
++      "dev": true,
++      "license": "MIT",
++      "dependencies": {
++        "yocto-queue": "^0.1.0"
++      },
++      "engines": {
++        "node": ">=10"
++      },
++      "funding": {
++        "url": "https://github.com/sponsors/sindresorhus"
++      }
++    },
++    "node_modules/p-locate": {
++      "version": "5.0.0",
++      "resolved": "https://registry.npmjs.org/p-locate/-/p-locate-5.0.0.tgz",
++      "integrity": "sha512-LaNjtRWUBY++zB5nE/NwcaoMylSPk+S+ZHNB1TzdbMJMny6dynpAGt7X/tl/QYq3TIeE6nxHppbo2LGymrG5Pw==",
++      "dev": true,
++      "license": "MIT",
++      "dependencies": {
++        "p-limit": "^3.0.2"
++      },
++      "engines": {
++        "node": ">=10"
++      },
++      "funding": {
++        "url": "https://github.com/sponsors/sindresorhus"
++      }
++    },
++    "node_modules/parent-module": {
++      "version": "1.0.1",
++      "resolved": "https://registry.npmjs.org/parent-module/-/parent-module-1.0.1.tgz",
++      "integrity": "sha512-GQ2EWRpQV8/o+Aw8YqtfZZPfNRWZYkbidE9k5rpl/hC3vtHHBfGm2Ifi6qWV+coDGkrUKZAxE3Lot5kcsRlh+g==",
++      "dev": true,
++      "license": "MIT",
++      "dependencies": {
++        "callsites": "^3.0.0"
++      },
++      "engines": {
++        "node": ">=6"
++      }
++    },
++    "node_modules/path-exists": {
++      "version": "4.0.0",
++      "resolved": "https://registry.npmjs.org/path-exists/-/path-exists-4.0.0.tgz",
++      "integrity": "sha512-ak9Qy5Q7jYb2Wwcey5Fpvg2KoAc/ZIhLSLOSBmRmygPsGwkVVt0fZa0qrtMz+m6tJTAHfZQ8FnmB4MG4LWy7/w==",
++      "dev": true,
++      "license": "MIT",
++      "engines": {
++        "node": ">=8"
++      }
++    },
++    "node_modules/path-key": {
++      "version": "3.1.1",
++      "resolved": "https://registry.npmjs.org/path-key/-/path-key-3.1.1.tgz",
++      "integrity": "sha512-ojmeN0qd+y0jszEtoY48r0Peq5dwMEkIlCOu6Q5f41lfkswXuKtYrhgoTpLnyIcHm24Uhqx+5Tqm2InSwLhE6Q==",
++      "dev": true,
++      "license": "MIT",
++      "engines": {
++        "node": ">=8"
++      }
++    },
++    "node_modules/picomatch": {
++      "version": "4.0.5",
++      "resolved": "https://registry.npmjs.org/picomatch/-/picomatch-4.0.5.tgz",
++      "integrity": "sha512-RvwwcruNjI1ncT5xRakeyS9Lf8lcItv34KD+aif+VH9kduAyfYBipGh12274xtenIPZ119/R9BdTBa8gAwSh0A==",
++      "dev": true,
++      "license": "MIT",
++      "engines": {
++        "node": ">=12"
++      },
++      "funding": {
++        "url": "https://github.com/sponsors/jonschlinkert"
++      }
++    },
++    "node_modules/playwright": {
++      "version": "1.62.1",
++      "resolved": "https://registry.npmjs.org/playwright/-/playwright-1.62.1.tgz",
++      "integrity": "sha512-0M+L3LAD8/nm554LOla9Ayx0j0tmFZ0FBcoQ7F1VuVHpM/XpiC8RcDzBQB8W5+hA8L22THxELzeF+2WcUzvcLg==",
++      "dev": true,
++      "license": "Apache-2.0",
++      "dependencies": {
++        "playwright-core": "1.62.1"
++      },
++      "bin": {
++        "playwright": "cli.js"
++      },
++      "engines": {
++        "node": ">=20"
++      },
++      "optionalDependencies": {
++        "fsevents": "2.3.2"
++      }
++    },
++    "node_modules/playwright-core": {
++      "version": "1.62.1",
++      "resolved": "https://registry.npmjs.org/playwright-core/-/playwright-core-1.62.1.tgz",
++      "integrity": "sha512-wPYSwEBJY9GHraISXqyqtx0na0LpO3XEX7jNDhntbex7tzUS7kLnZsOlFruFJB4Hi/rhDMjXGqHewDZ68nYZVw==",
++      "dev": true,
++      "license": "Apache-2.0",
++      "bin": {
++        "playwright-core": "cli.js"
++      },
++      "engines": {
++        "node": ">=20"
++      }
++    },
++    "node_modules/playwright-layout-inspector": {
++      "version": "1.0.0",
++      "resolved": "git+ssh://git@github.com/spelech/playwright-layout-inspector.git#d63b24610f82262ab77ba68657b0fcb071bf9319",
++      "dev": true,
++      "license": "MIT",
++      "bin": {
++        "playwright-layout-inspector": "dist/cli.mjs"
++      },
++      "peerDependencies": {
++        "@playwright/test": "^1.30.0 || ^1.40.0 || ^1.50.0 || ^1.60.0",
++        "playwright": "^1.30.0 || ^1.40.0 || ^1.50.0 || ^1.60.0"
++      },
++      "peerDependenciesMeta": {
++        "@playwright/test": {
++          "optional": true
++        },
++        "playwright": {
++          "optional": true
++        }
++      }
++    },
++    "node_modules/prelude-ls": {
++      "version": "1.2.1",
++      "resolved": "https://registry.npmjs.org/prelude-ls/-/prelude-ls-1.2.1.tgz",
++      "integrity": "sha512-vkcDPrRZo1QZLbn5RLGPpg/WmIQ65qoWWhcGKf/b5eplkkarX0m9z8ppCat4mlOqUsWpyNuYgO3VRyrYHSzX5g==",
++      "dev": true,
++      "license": "MIT",
++      "engines": {
++        "node": ">= 0.8.0"
++      }
++    },
++    "node_modules/punycode": {
++      "version": "2.3.1",
++      "resolved": "https://registry.npmjs.org/punycode/-/punycode-2.3.1.tgz",
++      "integrity": "sha512-vYt7UD1U9Wg6138shLtLOvdAu+8DsC/ilFtEVHcH+wydcSpNE20AfSOduf6MkRFahL5FY7X1oU7nKVZFtfq8Fg==",
++      "dev": true,
++      "license": "MIT",
++      "engines": {
++        "node": ">=6"
++      }
++    },
++    "node_modules/resolve-from": {
++      "version": "4.0.0",
++      "resolved": "https://registry.npmjs.org/resolve-from/-/resolve-from-4.0.0.tgz",
++      "integrity": "sha512-pb/MYmXstAkysRFx8piNI1tGFNQIFA3vkE3Gq4EuA1dF6gHp/+vgZqsCGJapvy8N3Q+4o7FwvquPJcnZ7RYy4g==",
++      "dev": true,
++      "license": "MIT",
++      "engines": {
++        "node": ">=4"
++      }
++    },
++    "node_modules/semver": {
++      "version": "7.8.5",
++      "resolved": "https://registry.npmjs.org/semver/-/semver-7.8.5.tgz",
++      "integrity": "sha512-Y7/KDsb8LjooZpwaqGyulO6DQlksgCncchHGk+sZIY4SBvUocMBEFH5Ur1fI4dV+Jvl0w6cjvucaIi40puRioA==",
++      "dev": true,
++      "license": "ISC",
++      "bin": {
++        "semver": "bin/semver.js"
++      },
++      "engines": {
++        "node": ">=10"
++      }
++    },
++    "node_modules/shebang-command": {
++      "version": "2.0.0",
++      "resolved": "https://registry.npmjs.org/shebang-command/-/shebang-command-2.0.0.tgz",
++      "integrity": "sha512-kHxr2zZpYtdmrN1qDjrrX/Z1rR1kG8Dx+gkpK1G4eXmvXswmcE1hTWBWYUzlraYw1/yZp6YuDY77YtvbN0dmDA==",
++      "dev": true,
++      "license": "MIT",
++      "dependencies": {
++        "shebang-regex": "^3.0.0"
++      },
++      "engines": {
++        "node": ">=8"
++      }
++    },
++    "node_modules/shebang-regex": {
++      "version": "3.0.0",
++      "resolved": "https://registry.npmjs.org/shebang-regex/-/shebang-regex-3.0.0.tgz",
++      "integrity": "sha512-7++dFhtcx3353uBaq8DDR4NuxBetBzC7ZQOhmTQInHEd6bSrXdiEyzCvG07Z44UYdLShWUyXt5M/yhz8ekcb1A==",
++      "dev": true,
++      "license": "MIT",
++      "engines": {
++        "node": ">=8"
++      }
++    },
++    "node_modules/strip-json-comments": {
++      "version": "3.1.1",
++      "resolved": "https://registry.npmjs.org/strip-json-comments/-/strip-json-comments-3.1.1.tgz",
++      "integrity": "sha512-6fPc+R4ihwqP6N/aIv2f1gMH8lOVtWQHoqC4yK6oSDVVocumAsfCqjkXnqiYMhmMwS/mEHLp7Vehlt3ql6lEig==",
++      "dev": true,
++      "license": "MIT",
++      "engines": {
++        "node": ">=8"
++      },
++      "funding": {
++        "url": "https://github.com/sponsors/sindresorhus"
++      }
++    },
++    "node_modules/supports-color": {
++      "version": "7.2.0",
++      "resolved": "https://registry.npmjs.org/supports-color/-/supports-color-7.2.0.tgz",
++      "integrity": "sha512-qpCAvRl9stuOHveKsn7HncJRvv501qIacKzQlO/+Lwxc9+0q2wLyv4Dfvt80/DPn2pqOBsJdDiogXGR9+OvwRw==",
++      "dev": true,
++      "license": "MIT",
++      "dependencies": {
++        "has-flag": "^4.0.0"
++      },
++      "engines": {
++        "node": ">=8"
++      }
++    },
++    "node_modules/tinyglobby": {
++      "version": "0.2.17",
++      "resolved": "https://registry.npmjs.org/tinyglobby/-/tinyglobby-0.2.17.tgz",
++      "integrity": "sha512-wXR/dYpcqKmfWpEdZjiKJOwCNFndD0DMnrW/cYjVGttEkBfVgcLFHoNrlj47mjOVic9yyNu65alsgF4NQyTa2g==",
++      "dev": true,
++      "license": "MIT",
++      "dependencies": {
++        "fdir": "^6.5.0",
++        "picomatch": "^4.0.4"
++      },
++      "engines": {
++        "node": ">=12.0.0"
++      },
++      "funding": {
++        "url": "https://github.com/sponsors/SuperchupuDev"
++      }
++    },
++    "node_modules/ts-api-utils": {
++      "version": "2.5.0",
++      "resolved": "https://registry.npmjs.org/ts-api-utils/-/ts-api-utils-2.5.0.tgz",
++      "integrity": "sha512-OJ/ibxhPlqrMM0UiNHJ/0CKQkoKF243/AEmplt3qpRgkW8VG7IfOS41h7V8TjITqdByHzrjcS/2si+y4lIh8NA==",
++      "dev": true,
++      "license": "MIT",
++      "engines": {
++        "node": ">=18.12"
++      },
++      "peerDependencies": {
++        "typescript": ">=4.8.4"
++      }
++    },
++    "node_modules/type-check": {
++      "version": "0.4.0",
++      "resolved": "https://registry.npmjs.org/type-check/-/type-check-0.4.0.tgz",
++      "integrity": "sha512-XleUoc9uwGXqjWwXaUTZAmzMcFZ5858QA2vvx1Ur5xIcixXIP+8LnFDgRplU30us6teqdlskFfu+ae4K79Ooew==",
++      "dev": true,
++      "license": "MIT",
++      "dependencies": {
++        "prelude-ls": "^1.2.1"
++      },
++      "engines": {
++        "node": ">= 0.8.0"
++      }
++    },
++    "node_modules/typescript": {
++      "version": "5.9.3",
++      "resolved": "https://registry.npmjs.org/typescript/-/typescript-5.9.3.tgz",
++      "integrity": "sha512-jl1vZzPDinLr9eUt3J/t7V6FgNEw9QjvBPdysz9KfQDD41fQrC2Y4vKQdiaUpFT4bXlb1RHhLpp8wtm6M5TgSw==",
++      "dev": true,
++      "license": "Apache-2.0",
++      "bin": {
++        "tsc": "bin/tsc",
++        "tsserver": "bin/tsserver"
++      },
++      "engines": {
++        "node": ">=14.17"
++      }
++    },
++    "node_modules/typescript-eslint": {
++      "version": "8.67.0",
++      "resolved": "https://registry.npmjs.org/typescript-eslint/-/typescript-eslint-8.67.0.tgz",
++      "integrity": "sha512-S2udFs8tCKEKffuJ4TB1idGUZiXdCPGi3IPBGWXarbLQ5UPXORV8QEVzJ4gCRduURMb5EkpNCdjbk0eDIuI8Yg==",
++      "dev": true,
++      "license": "MIT",
++      "dependencies": {
++        "@typescript-eslint/eslint-plugin": "8.67.0",
++        "@typescript-eslint/parser": "8.67.0",
++        "@typescript-eslint/typescript-estree": "8.67.0",
++        "@typescript-eslint/utils": "8.67.0"
++      },
++      "engines": {
++        "node": "^18.18.0 || ^20.9.0 || >=21.1.0"
++      },
++      "funding": {
++        "type": "opencollective",
++        "url": "https://opencollective.com/typescript-eslint"
++      },
++      "peerDependencies": {
++        "eslint": "^8.57.0 || ^9.0.0 || ^10.0.0",
++        "typescript": ">=4.8.4 <6.1.0"
++      }
++    },
++    "node_modules/undici-types": {
++      "version": "6.21.0",
++      "resolved": "https://registry.npmjs.org/undici-types/-/undici-types-6.21.0.tgz",
++      "integrity": "sha512-iwDZqg0QAGrg9Rav5H4n0M64c3mkR59cJ6wQp+7C4nI0gsmExaedaYLNO44eT4AtBBwjbTiGPMlt2Md0T9H9JQ==",
++      "dev": true,
++      "license": "MIT"
++    },
++    "node_modules/uri-js": {
++      "version": "4.4.1",
++      "resolved": "https://registry.npmjs.org/uri-js/-/uri-js-4.4.1.tgz",
++      "integrity": "sha512-7rKUyy33Q1yc98pQ1DAmLtwX109F7TIfWlW1Ydo8Wl1ii1SeHieeh0HHfPeL2fMXK6z0s8ecKs9frCuLJvndBg==",
++      "dev": true,
++      "license": "BSD-2-Clause",
++      "dependencies": {
++        "punycode": "^2.1.0"
++      }
++    },
++    "node_modules/which": {
++      "version": "2.0.2",
++      "resolved": "https://registry.npmjs.org/which/-/which-2.0.2.tgz",
++      "integrity": "sha512-BLI3Tl1TW3Pvl70l3yq3Y64i+awpwXqsGBYWkkqMtnbXgrMD+yj7rhW0kuEDxzJaYXGjEW5ogapKNMEKNMjibA==",
++      "dev": true,
++      "license": "ISC",
++      "dependencies": {
++        "isexe": "^2.0.0"
++      },
++      "bin": {
++        "node-which": "bin/node-which"
++      },
++      "engines": {
++        "node": ">= 8"
++      }
++    },
++    "node_modules/word-wrap": {
++      "version": "1.2.5",
++      "resolved": "https://registry.npmjs.org/word-wrap/-/word-wrap-1.2.5.tgz",
++      "integrity": "sha512-BN22B5eaMMI9UMtjrGd5g5eCYPpCPDUy0FJXbYsaT5zYxjFOckS53SQDE3pWkVoWpHXVb3BrYcEN4Twa55B5cA==",
++      "dev": true,
++      "license": "MIT",
++      "engines": {
++        "node": ">=0.10.0"
++      }
++    },
++    "node_modules/yocto-queue": {
++      "version": "0.1.0",
++      "resolved": "https://registry.npmjs.org/yocto-queue/-/yocto-queue-0.1.0.tgz",
++      "integrity": "sha512-rVksvsnNCdJ/ohGc6xgPwyN8eheCxsiLM8mxuE/t/mOVqJewPuO1miLpTHQiRgTKCLexL4MeAFVagts7HmNZ2Q==",
++      "dev": true,
++      "license": "MIT",
++      "engines": {
++        "node": ">=10"
++      },
++      "funding": {
++        "url": "https://github.com/sponsors/sindresorhus"
++      }
++    }
++  }
++}
+diff --git a/package.json b/package.json
+new file mode 100644
+index 0000000..f6802fa
+--- /dev/null
++++ b/package.json
+@@ -0,0 +1,20 @@
++{
++  "name": "localllm-server-manager-tooling",
++  "version": "1.0.0",
++  "private": true,
++  "type": "module",
++  "scripts": {
++    "lint": "eslint .",
++    "typecheck": "tsc --noEmit",
++    "test:layout": "playwright test --config=playwright.config.ts"
++  },
++  "devDependencies": {
++    "@eslint/js": "^9.20.0",
++    "@playwright/test": "^1.50.0",
++    "@types/node": "^22.0.0",
++    "eslint": "^9.20.0",
++    "playwright-layout-inspector": "github:spelech/playwright-layout-inspector",
++    "typescript": "^5.7.0",
++    "typescript-eslint": "^8.24.0"
++  }
++}
+diff --git a/playwright.config.ts b/playwright.config.ts
+new file mode 100644
+index 0000000..28d7389
+--- /dev/null
++++ b/playwright.config.ts
+@@ -0,0 +1,44 @@
++import { defineConfig, devices } from '@playwright/test';
++
++export default defineConfig({
++  testDir: './tests/layout-inspector',
++  fullyParallel: true,
++  forbidOnly: !!process.env.CI,
++  retries: process.env.CI ? 2 : 0,
++  workers: process.env.CI ? 1 : undefined,
++  reporter: 'list',
++  use: {
++    baseURL: process.env.TEST_BASE_URL || 'http://localhost:5000',
++    trace: 'on-first-retry',
++  },
++  projects: [
++    {
++      name: 'Desktop 1080p',
++      use: {
++        viewport: { width: 1920, height: 1080 },
++      },
++    },
++    {
++      name: 'Desktop 1440p',
++      use: {
++        viewport: { width: 2560, height: 1440 },
++      },
++    },
++    {
++      name: 'Tablet iPad',
++      use: {
++        ...devices['iPad Pro 11'],
++      },
++    },
++    {
++      name: 'Mobile Galaxy S25+',
++      use: {
++        viewport: { width: 412, height: 915 },
++        deviceScaleFactor: 2.625,
++        isMobile: true,
++        hasTouch: true,
++        defaultBrowserType: 'chromium',
++      },
++    },
++  ],
++});
+diff --git a/tests/layout-inspector/layout-audit.spec.ts b/tests/layout-inspector/layout-audit.spec.ts
+new file mode 100644
+index 0000000..b4d92d9
+--- /dev/null
++++ b/tests/layout-inspector/layout-audit.spec.ts
+@@ -0,0 +1,21 @@
++import { test, expect } from '@playwright/test';
++import 'playwright-layout-inspector/matchers';
++
++test.describe('L³M² Web Dashboard Layout & UX Audit', () => {
++  test.beforeEach(async ({ page }) => {
++    await page.goto('/');
++    await page.waitForSelector('#out', { timeout: 15000 });
++  });
++
++  test('assert zero horizontal viewport overflow and canvas bleeding', async ({ page }) => {
++    await expect(page).toHaveNoLayoutOverflow();
++  });
++
++  test('assert viewport and mobile fit standards', async ({ page }) => {
++    await expect(page).toHaveMobileFit();
++  });
++
++  test('assert interactive touch targets meet ergonomics standards', async ({ page }) => {
++    await expect(page).toHaveTouchFriendlyTargets({ minSize: 24 });
++  });
++});
+diff --git a/tsconfig.json b/tsconfig.json
+new file mode 100644
+index 0000000..f702349
+--- /dev/null
++++ b/tsconfig.json
+@@ -0,0 +1,18 @@
++{
++  "compilerOptions": {
++    "target": "ES2022",
++    "module": "NodeNext",
++    "moduleResolution": "NodeNext",
++    "lib": ["ES2022", "DOM", "DOM.Iterable"],
++    "strict": true,
++    "noEmit": true,
++    "skipLibCheck": true,
++    "esModuleInterop": true,
++    "resolveJsonModule": true
++  },
++  "include": [
++    "eslint.config.mjs",
++    "playwright.config.ts",
++    "tests/**/*.ts"
++  ]
++}
+diff --git a/wwwroot/favicon.ico b/wwwroot/favicon.ico
+index 8e1e454..f7f840c 100644
+Binary files a/wwwroot/favicon.ico and b/wwwroot/favicon.ico differ
+diff --git a/wwwroot/index.html b/wwwroot/index.html
+index 1a61903..95d9fbb 100644
+--- a/wwwroot/index.html
++++ b/wwwroot/index.html
+@@ -1,16 +1,17 @@
+ <!DOCTYPE html>
+ <html>
+ <head>
+     <meta charset="utf-8" />
+     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no" />
+-    <title>Local LLM Server Manager</title>
++    <title>L³M² — Local LLM Server Manager</title>
++    <link rel="icon" type="image/x-icon" href="favicon.ico" />
+     <style>
+         html, body {
+             margin: 0;
+             padding: 0;
+             width: 100%;
+             height: 100%;
+             overflow: hidden;
+             background-color: #0F172A;
+         }
+         #out {

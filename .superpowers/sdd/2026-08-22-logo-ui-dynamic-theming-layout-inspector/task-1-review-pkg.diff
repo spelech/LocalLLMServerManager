@@ -1,0 +1,86 @@
+﻿2401af3 feat(branding): install monochromatic L³M² icon and logo assets
+ Assets/app-icon.ico                           | Bin 172012 -> 14744 bytes
+ Assets/app-icon.png                           | Bin 0 -> 14641 bytes
+ Assets/app_tray_icon.jpg                      | Bin 584993 -> 584993 bytes
+ Assets/logo.svg                               |   7 +++++++
+ LocalLLMServerManager.Web/wwwroot/favicon.ico | Bin 0 -> 14744 bytes
+ LocalLLMServerManager.Web/wwwroot/index.html  |   3 ++-
+ wwwroot/favicon.ico                           | Bin 17985 -> 14744 bytes
+ wwwroot/index.html                            |   3 ++-
+ 8 files changed, 11 insertions(+), 2 deletions(-)
+diff --git a/Assets/app-icon.ico b/Assets/app-icon.ico
+index 0fcc77b..f7f840c 100644
+Binary files a/Assets/app-icon.ico and b/Assets/app-icon.ico differ
+diff --git a/Assets/app-icon.png b/Assets/app-icon.png
+new file mode 100644
+index 0000000..b39c515
+Binary files /dev/null and b/Assets/app-icon.png differ
+diff --git a/Assets/app_tray_icon.jpg b/Assets/app_tray_icon.jpg
+index 3b99368..4de9c5e 100644
+Binary files a/Assets/app_tray_icon.jpg and b/Assets/app_tray_icon.jpg differ
+diff --git a/Assets/logo.svg b/Assets/logo.svg
+new file mode 100644
+index 0000000..740f397
+--- /dev/null
++++ b/Assets/logo.svg
+@@ -0,0 +1,7 @@
++<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" width="100%" height="100%">
++  <rect width="128" height="128" rx="28" fill="#14171d"/>
++  <text x="24" y="86" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif" font-weight="900" font-size="54" fill="#ffffff">L</text>
++  <text x="52" y="56" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif" font-weight="800" font-size="25" fill="#ffffff">3</text>
++  <text x="64" y="86" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif" font-weight="900" font-size="54" fill="#ffffff">M</text>
++  <text x="104" y="56" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif" font-weight="800" font-size="25" fill="#ffffff">2</text>
++</svg>
+diff --git a/LocalLLMServerManager.Web/wwwroot/favicon.ico b/LocalLLMServerManager.Web/wwwroot/favicon.ico
+new file mode 100644
+index 0000000..f7f840c
+Binary files /dev/null and b/LocalLLMServerManager.Web/wwwroot/favicon.ico differ
+diff --git a/LocalLLMServerManager.Web/wwwroot/index.html b/LocalLLMServerManager.Web/wwwroot/index.html
+index 1a61903..95d9fbb 100644
+--- a/LocalLLMServerManager.Web/wwwroot/index.html
++++ b/LocalLLMServerManager.Web/wwwroot/index.html
+@@ -1,16 +1,17 @@
+ <!DOCTYPE html>
+ <html>
+ <head>
+     <meta charset="utf-8" />
+     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no" />
+-    <title>Local LLM Server Manager</title>
++    <title>L³M² — Local LLM Server Manager</title>
++    <link rel="icon" type="image/x-icon" href="favicon.ico" />
+     <style>
+         html, body {
+             margin: 0;
+             padding: 0;
+             width: 100%;
+             height: 100%;
+             overflow: hidden;
+             background-color: #0F172A;
+         }
+         #out {
+diff --git a/wwwroot/favicon.ico b/wwwroot/favicon.ico
+index 8e1e454..f7f840c 100644
+Binary files a/wwwroot/favicon.ico and b/wwwroot/favicon.ico differ
+diff --git a/wwwroot/index.html b/wwwroot/index.html
+index 1a61903..95d9fbb 100644
+--- a/wwwroot/index.html
++++ b/wwwroot/index.html
+@@ -1,16 +1,17 @@
+ <!DOCTYPE html>
+ <html>
+ <head>
+     <meta charset="utf-8" />
+     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no" />
+-    <title>Local LLM Server Manager</title>
++    <title>L³M² — Local LLM Server Manager</title>
++    <link rel="icon" type="image/x-icon" href="favicon.ico" />
+     <style>
+         html, body {
+             margin: 0;
+             padding: 0;
+             width: 100%;
+             height: 100%;
+             overflow: hidden;
+             background-color: #0F172A;
+         }
+         #out {

@@ -1,0 +1,322 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Local LLM Server Manager — Adobe-Style Mnemonic Icons</title>
+  <style>
+    :root {
+      --bg: #0b0d11;
+      --card-bg: #13171f;
+      --border: #222936;
+      --text: #f0f3f8;
+      --text-muted: #8b94a5;
+      --cyan: #00d8ff;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+      background: radial-gradient(circle at center, #151922 0%, #090b0e 100%);
+      color: var(--text);
+      min-height: 100vh;
+      padding: 48px 24px;
+    }
+    header {
+      text-align: center;
+      max-width: 760px;
+      margin: 0 auto 48px auto;
+    }
+    .badge {
+      display: inline-block;
+      font-size: 0.72rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      padding: 5px 12px;
+      border-radius: 999px;
+      background: #1c2330;
+      color: var(--cyan);
+      border: 1px solid rgba(0, 216, 255, 0.3);
+      margin-bottom: 16px;
+    }
+    h1 {
+      font-size: 2.2rem;
+      font-weight: 700;
+      color: #ffffff;
+      margin-bottom: 12px;
+      letter-spacing: -0.02em;
+    }
+    p.subtitle {
+      color: var(--text-muted);
+      font-size: 1.05rem;
+      line-height: 1.6;
+    }
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+      gap: 28px;
+      max-width: 1140px;
+      margin: 0 auto 50px auto;
+    }
+    .card {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      transition: border-color 0.2s ease, transform 0.2s ease;
+    }
+    .card:hover {
+      border-color: #3b82f6;
+      transform: translateY(-4px);
+    }
+    .image-wrapper {
+      background: #000000;
+      padding: 32px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-bottom: 1px solid var(--border);
+    }
+    .image-wrapper img {
+      width: 100%;
+      max-width: 260px;
+      aspect-ratio: 1/1;
+      border-radius: 20px;
+      object-fit: cover;
+    }
+    .card-content {
+      padding: 24px;
+      display: flex;
+      flex-direction: column;
+      flex-grow: 1;
+    }
+    h2 {
+      font-size: 1.3rem;
+      font-weight: 600;
+      margin-bottom: 8px;
+      color: #ffffff;
+    }
+    p.desc {
+      color: var(--text-muted);
+      font-size: 0.92rem;
+      line-height: 1.55;
+      margin-bottom: 18px;
+    }
+    .features {
+      list-style: none;
+      border-top: 1px solid var(--border);
+      padding-top: 14px;
+      margin-top: auto;
+    }
+    .features li {
+      font-size: 0.85rem;
+      color: #cbd5e1;
+      margin-bottom: 6px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .features li::before {
+      content: "—";
+      color: #64748b;
+    }
+
+    /* Vector SVG Playground */
+    .playground-section {
+      max-width: 1140px;
+      margin: 0 auto 50px auto;
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 32px;
+    }
+    .controls {
+      display: flex;
+      gap: 12px;
+      align-items: center;
+      flex-wrap: wrap;
+      margin-bottom: 24px;
+    }
+    .btn-color {
+      border: 1px solid #333d4d;
+      background: #1c222c;
+      color: #e5e7eb;
+      padding: 8px 14px;
+      border-radius: 8px;
+      font-size: 0.85rem;
+      font-weight: 600;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .btn-color:hover { background: #262e3c; }
+    .dot { width: 10px; height: 10px; border-radius: 50%; display: inline-block; }
+    .dot-cyan { background: #00d8ff; }
+    .dot-amber { background: #ff9800; }
+    .dot-emerald { background: #10b981; }
+    .dot-violet { background: #a855f7; }
+
+    .size-test-row {
+      display: flex;
+      align-items: flex-end;
+      gap: 36px;
+      flex-wrap: wrap;
+      background: #000000;
+      padding: 32px;
+      border-radius: 12px;
+      border: 1px solid var(--border);
+    }
+    .size-box {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 10px;
+    }
+    .size-label {
+      font-size: 0.78rem;
+      color: var(--text-muted);
+      font-family: monospace;
+    }
+
+    footer {
+      text-align: center;
+      color: var(--text-muted);
+      font-size: 0.85rem;
+      border-top: 1px solid var(--border);
+      padding-top: 24px;
+      max-width: 600px;
+      margin: 0 auto;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="badge">Adobe Creative Cloud Aesthetic</div>
+    <h1>Adobe-Style Mnemonic App Icons</h1>
+    <p class="subtitle">Dark rounded squircle tile, high-contrast accent border, and bold 2-letter centered mnemonic typography (Photoshop / Illustrator style).</p>
+  </header>
+
+  <div class="grid">
+    <!-- Option 1: Lm Titlecase -->
+    <div class="card">
+      <div class="image-wrapper">
+        <img src="/adobe_lm_titlecase.jpg" alt="Adobe Style Lm">
+      </div>
+      <div class="card-content">
+        <h2>Option 1: Title-Case 'Lm'</h2>
+        <p class="desc">
+          Classic Adobe format (like <strong>Ps</strong>, <strong>Ai</strong>, <strong>Pr</strong>). Dark charcoal tile, solid cyan border, and bold centered <strong>Lm</strong> (Local Manager).
+        </p>
+        <ul class="features">
+          <li>Standard Adobe 2-letter convention</li>
+          <li>Highest legibility at tiny 16px tray sizes</li>
+          <li>Instant developer / creative tool recognition</li>
+        </ul>
+      </div>
+    </div>
+
+    <!-- Option 2: LM Uppercase -->
+    <div class="card">
+      <div class="image-wrapper">
+        <img src="/adobe_lm_uppercase.jpg" alt="Adobe Style LM Uppercase">
+      </div>
+      <div class="card-content">
+        <h2>Option 2: All-Caps 'LM'</h2>
+        <p class="desc">
+          Monolithic all-caps <strong>LM</strong> in matching cyan border and lettering for high-impact geometric presence.
+        </p>
+        <ul class="features">
+          <li>Bold, symmetrical block presence</li>
+          <li>Solid typography profile</li>
+        </ul>
+      </div>
+    </div>
+
+    <!-- Option 3: LLM 3-Letter -->
+    <div class="card">
+      <div class="image-wrapper">
+        <img src="/adobe_llm.jpg" alt="Adobe Style LLM">
+      </div>
+      <div class="card-content">
+        <h2>Option 3: 3-Letter 'LLM'</h2>
+        <p class="desc">
+          Direct <strong>LLM</strong> mnemonic inside the dark border squircle.
+        </p>
+        <ul class="features">
+          <li>Unmistakable AI domain mnemonic</li>
+          <li>Fits the server manager category</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <!-- Live Vector SVG Tile Scale Test -->
+  <div class="playground-section">
+    <h3 style="margin-bottom:8px;">Live Vector Adobe Tile (Scale & Color Test)</h3>
+    <p style="color:var(--text-muted); font-size:0.9rem; margin-bottom:20px;">Testing the exact SVG vector asset at 128px, 64px, 32px, and 20px tray sizes.</p>
+
+    <div class="controls">
+      <span style="font-size:0.85rem; color:var(--text-muted); font-weight:600;">Accent Color:</span>
+      <button class="btn-color" onclick="setTileColor('#00d8ff')"><span class="dot dot-cyan"></span> Cyan (Ps style)</button>
+      <button class="btn-color" onclick="setTileColor('#ff9800')"><span class="dot dot-amber"></span> Amber (Ai style)</button>
+      <button class="btn-color" onclick="setTileColor('#10b981')"><span class="dot dot-emerald"></span> Emerald (XD style)</button>
+      <button class="btn-color" onclick="setTileColor('#a855f7')"><span class="dot dot-violet"></span> Purple (Pr style)</button>
+    </div>
+
+    <div class="size-test-row">
+      <!-- 128px -->
+      <div class="size-box">
+        <svg id="svg-128" width="128" height="128" viewBox="0 0 128 128">
+          <rect x="4" y="4" width="120" height="120" rx="28" fill="#14171d" stroke="#00d8ff" stroke-width="6" class="tile-stroke"/>
+          <text x="64" y="80" text-anchor="middle" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-weight="900" font-size="52" fill="#00d8ff" class="tile-text">Lm</text>
+        </svg>
+        <span class="size-label">128px (App Icon)</span>
+      </div>
+
+      <!-- 64px -->
+      <div class="size-box">
+        <svg id="svg-64" width="64" height="64" viewBox="0 0 128 128">
+          <rect x="4" y="4" width="120" height="120" rx="28" fill="#14171d" stroke="#00d8ff" stroke-width="7" class="tile-stroke"/>
+          <text x="64" y="80" text-anchor="middle" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-weight="900" font-size="52" fill="#00d8ff" class="tile-text">Lm</text>
+        </svg>
+        <span class="size-label">64px (Dock)</span>
+      </div>
+
+      <!-- 32px -->
+      <div class="size-box">
+        <svg id="svg-32" width="32" height="32" viewBox="0 0 128 128">
+          <rect x="4" y="4" width="120" height="120" rx="28" fill="#14171d" stroke="#00d8ff" stroke-width="8" class="tile-stroke"/>
+          <text x="64" y="80" text-anchor="middle" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-weight="900" font-size="54" fill="#00d8ff" class="tile-text">Lm</text>
+        </svg>
+        <span class="size-label">32px (Header)</span>
+      </div>
+
+      <!-- 20px Tray -->
+      <div class="size-box">
+        <div style="background:#1a1e26; padding:6px 12px; border-radius:6px; display:flex; align-items:center; gap:8px;">
+          <svg id="svg-20" width="20" height="20" viewBox="0 0 128 128">
+            <rect x="4" y="4" width="120" height="120" rx="28" fill="#14171d" stroke="#00d8ff" stroke-width="9" class="tile-stroke"/>
+            <text x="64" y="82" text-anchor="middle" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-weight="900" font-size="56" fill="#00d8ff" class="tile-text">Lm</text>
+          </svg>
+          <span style="font-size:0.75rem; color:#9ca3af; font-family:sans-serif;">LocalLLM</span>
+        </div>
+        <span class="size-label">20px (OS Tray)</span>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    function setTileColor(color) {
+      document.querySelectorAll('.tile-stroke').forEach(el => el.setAttribute('stroke', color));
+      document.querySelectorAll('.tile-text').forEach(el => el.setAttribute('fill', color));
+    }
+  </script>
+
+  <footer>
+    <p>Local LLM Server Manager • Visual Companion</p>
+  </footer>
+</body>
+</html>

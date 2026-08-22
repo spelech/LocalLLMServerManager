@@ -1,0 +1,538 @@
+﻿6fcb752 feat(theming): implement live dynamic theme switching across Desktop and WASM
+ .../Services/IThemeService.cs                      |  17 ++
+ .../Services/ThemeService.cs                       | 131 ++++++++++++++
+ .../ViewModels/MainViewModel.cs                    |   2 +
+ .../ViewModels/SettingsViewModel.cs                |  39 ++++-
+ .../Views/Controls/SettingsTabControl.axaml        |  11 +-
+ .../SettingsViewModelTests.cs                      |   2 +
+ LocalLLMServerManager.Tests/ThemeServiceTests.cs   | 192 +++++++++++++++++++++
+ 7 files changed, 392 insertions(+), 2 deletions(-)
+diff --git a/LocalLLMServerManager.Shared/Services/IThemeService.cs b/LocalLLMServerManager.Shared/Services/IThemeService.cs
+new file mode 100644
+index 0000000..c5906bd
+--- /dev/null
++++ b/LocalLLMServerManager.Shared/Services/IThemeService.cs
+@@ -0,0 +1,17 @@
++using System;
++
++namespace LocalLLMServerManager.Shared.Services;
++
++public enum AppTheme
++{
++    MatteCarbon,
++    OledBlack,
++    Light
++}
++
++public interface IThemeService
++{
++    AppTheme CurrentTheme { get; }
++    void SetTheme(AppTheme theme);
++    event EventHandler<AppTheme>? ThemeChanged;
++}
+diff --git a/LocalLLMServerManager.Shared/Services/ThemeService.cs b/LocalLLMServerManager.Shared/Services/ThemeService.cs
+new file mode 100644
+index 0000000..73a970c
+--- /dev/null
++++ b/LocalLLMServerManager.Shared/Services/ThemeService.cs
+@@ -0,0 +1,131 @@
++using System;
++using Avalonia;
++using Avalonia.Controls;
++using Avalonia.Media;
++using Avalonia.Styling;
++
++namespace LocalLLMServerManager.Shared.Services;
++
++public class ThemeService : IThemeService
++{
++    private static ThemeService? _instance;
++    public static ThemeService Instance => _instance ??= new ThemeService();
++
++    private readonly IResourceDictionary? _resourceDictionary;
++
++    public AppTheme CurrentTheme { get; private set; } = AppTheme.MatteCarbon;
++
++    public event EventHandler<AppTheme>? ThemeChanged;
++
++    public ThemeService(IResourceDictionary? resourceDictionary = null)
++    {
++        _resourceDictionary = resourceDictionary;
++    }
++
++    public void SetTheme(AppTheme theme)
++    {
++        CurrentTheme = theme;
++
++        var resources = _resourceDictionary ?? Application.Current?.Resources;
++        if (resources != null)
++        {
++            ApplyThemeResources(resources, theme);
++        }
++
++        if (Application.Current != null)
++        {
++            Application.Current.RequestedThemeVariant = theme == AppTheme.Light ? ThemeVariant.Light : ThemeVariant.Dark;
++        }
++
++        ThemeChanged?.Invoke(this, theme);
++    }
++
++    public static void ApplyThemeResources(IResourceDictionary resources, AppTheme theme)
++    {
++        Color bgDark, bgSurface, bgCard, border, textMain, textMuted, primary, secondary, accent;
++
++        switch (theme)
++        {
++            case AppTheme.OledBlack:
++                bgDark = Color.Parse("#000000");
++                bgSurface = Color.Parse("#121212");
++                bgCard = Color.Parse("#18181b");
++                border = Color.Parse("#27272a");
++                textMain = Color.Parse("#f4f4f5");
++                textMuted = Color.Parse("#71717a");
++                primary = Color.Parse("#3b82f6");
++                secondary = Color.Parse("#60a5fa");
++                accent = Color.Parse("#60a5fa");
++                break;
++
++            case AppTheme.Light:
++                bgDark = Color.Parse("#ffffff");
++                bgSurface = Color.Parse("#f6f8fa");
++                bgCard = Color.Parse("#ffffff");
++                border = Color.Parse("#d0d7de");
++                textMain = Color.Parse("#1f2328");
++                textMuted = Color.Parse("#656d76");
++                primary = Color.Parse("#0969da");
++                secondary = Color.Parse("#218bff");
++                accent = Color.Parse("#218bff");
++                break;
++
++            case AppTheme.MatteCarbon:
++            default:
++                bgDark = Color.Parse("#0d1117");
++                bgSurface = Color.Parse("#161b22");
++                bgCard = Color.Parse("#1c2128");
++                border = Color.Parse("#30363d");
++                textMain = Color.Parse("#f0f6fc");
++                textMuted = Color.Parse("#8b949e");
++                primary = Color.Parse("#388bfd");
++                secondary = Color.Parse("#58a6ff");
++                accent = Color.Parse("#79c0ff");
++                break;
++        }
++
++        resources["BgDarkColor"] = bgDark;
++        resources["BgSurfaceColor"] = bgSurface;
++        resources["BgCardColor"] = bgCard;
++        resources["BorderColor"] = border;
++        resources["TextMainColor"] = textMain;
++        resources["TextMutedColor"] = textMuted;
++        resources["PrimaryColor"] = primary;
++        resources["SecondaryColor"] = secondary;
++        resources["AccentColor"] = accent;
++
++        SetOrUpdateBrush(resources, "BgDarkBrush", bgDark);
++        SetOrUpdateBrush(resources, "BgSurfaceBrush", bgSurface);
++        SetOrUpdateBrush(resources, "BgCardBrush", bgCard);
++        SetOrUpdateBrush(resources, "GlassBorderBrush", border);
++        SetOrUpdateBrush(resources, "BorderColorBrush", border);
++        SetOrUpdateBrush(resources, "BorderGlowBrush", primary, 0.4);
++        SetOrUpdateBrush(resources, "TextMainBrush", textMain);
++        SetOrUpdateBrush(resources, "TextMutedBrush", textMuted);
++        SetOrUpdateBrush(resources, "PrimaryBrush", primary);
++        SetOrUpdateBrush(resources, "SecondaryBrush", secondary);
++        SetOrUpdateBrush(resources, "AccentBrush", accent);
++        SetOrUpdateBrush(resources, "GlassBackgroundBrush", bgDark);
++        SetOrUpdateBrush(resources, "PrimaryGradientBrush", primary);
++    }
++
++    private static void SetOrUpdateBrush(IResourceDictionary resources, string key, Color color, double opacity = 1.0)
++    {
++        if (resources.TryGetResource(key, null, out var existing) && existing is SolidColorBrush existingBrush)
++        {
++            existingBrush.Color = color;
++            existingBrush.Opacity = opacity;
++            resources[key] = existingBrush;
++        }
++        else if (resources.TryGetValue(key, out var dictVal) && dictVal is SolidColorBrush dictBrush)
++        {
++            dictBrush.Color = color;
++            dictBrush.Opacity = opacity;
++            resources[key] = dictBrush;
++        }
++        else
++        {
++            resources[key] = new SolidColorBrush(color) { Opacity = opacity };
++        }
++    }
++}
+diff --git a/LocalLLMServerManager.Shared/ViewModels/MainViewModel.cs b/LocalLLMServerManager.Shared/ViewModels/MainViewModel.cs
+index 17f5b27..df1125a 100644
+--- a/LocalLLMServerManager.Shared/ViewModels/MainViewModel.cs
++++ b/LocalLLMServerManager.Shared/ViewModels/MainViewModel.cs
+@@ -167,20 +167,22 @@ public partial class MainViewModel : ObservableObject
+     public ObservableCollection<CivitaiModelItem> CivitaiResults => Civitai.CivitaiResults;
+ 
+     public string ForgeModelsPath { get => Settings.ForgeModelsPath; set => Settings.ForgeModelsPath = value; }
+     public string ComfyUiUrl { get => Settings.ComfyUiUrl; set => Settings.ComfyUiUrl = value; }
+     public string ThreeDModelsPath { get => Settings.ThreeDModelsPath; set => Settings.ThreeDModelsPath = value; }
+     public string WorkflowsPath { get => Settings.WorkflowsPath; set => Settings.WorkflowsPath = value; }
+     public string PreferredImageEngine { get => Settings.PreferredImageEngine; set => Settings.PreferredImageEngine = value; }
+     public string ComfyUiExecutablePath { get => Settings.ComfyUiExecutablePath; set => Settings.ComfyUiExecutablePath = value; }
+     public string ForgeExecutablePath { get => Settings.ForgeExecutablePath; set => Settings.ForgeExecutablePath = value; }
+     public string LanAccessUrl { get => Settings.LanAccessUrl; set => Settings.LanAccessUrl = value; }
++    public string SelectedTheme { get => Settings.SelectedTheme; set => Settings.SelectedTheme = value; }
++    public System.Collections.Generic.IReadOnlyList<string> AvailableThemes => Settings.AvailableThemes;
+ 
+     private async Task StartBackgroundPollingAsync()
+     {
+         while (EnableAutomaticPolling)
+         {
+             try
+             {
+                 await Task.Delay(5000);
+                 if (!EnableAutomaticPolling) break;
+                 await RefreshStatusAsync();
+diff --git a/LocalLLMServerManager.Shared/ViewModels/SettingsViewModel.cs b/LocalLLMServerManager.Shared/ViewModels/SettingsViewModel.cs
+index 124be37..48c1274 100644
+--- a/LocalLLMServerManager.Shared/ViewModels/SettingsViewModel.cs
++++ b/LocalLLMServerManager.Shared/ViewModels/SettingsViewModel.cs
+@@ -34,37 +34,74 @@ public partial class SettingsViewModel : ObservableObject
+     [ObservableProperty] private string _comfyUiExecutableStatus = "⚠️ Missing";
+     [ObservableProperty] private string _forgeExecutableStatus = "⚠️ Missing";
+     [ObservableProperty] private string _ollamaStatus = "⚠️ Missing";
+     [ObservableProperty] private string _forgeModelsStatus = "⚠️ Missing";
+     [ObservableProperty] private string _comfyModelsStatus = "⚠️ Missing";
+     [ObservableProperty] private string _threeDModelsStatus = "⚠️ Missing";
+     [ObservableProperty] private string _workflowsStatus = "⚠️ Missing";
+ 
+     public string OllamaExecutableStatus => OllamaStatus;
+ 
+-    public SettingsViewModel()
++    private readonly IThemeService _themeService;
++
++    public IReadOnlyList<string> AvailableThemes { get; } = new[]
++    {
++        "Matte Carbon (Default)",
++        "OLED Pure Black",
++        "Clean Light"
++    };
++
++    [ObservableProperty] private string _selectedTheme = "Matte Carbon (Default)";
++
++    public SettingsViewModel() : this(ThemeService.Instance)
++    {
++    }
++
++    public SettingsViewModel(IThemeService themeService)
+     {
++        _themeService = themeService ?? ThemeService.Instance;
++        _selectedTheme = MapThemeToString(_themeService.CurrentTheme);
+         RefreshAllStatuses();
+     }
+ 
+     partial void OnForgeModelsPathChanged(string value) => ForgeModelsStatus = EvaluateDirectoryStatus(value);
+     partial void OnComfyModelsPathChanged(string value) => ComfyModelsStatus = EvaluateDirectoryStatus(value);
+     partial void OnThreeDModelsPathChanged(string value) => ThreeDModelsStatus = EvaluateDirectoryStatus(value);
+     partial void OnWorkflowsPathChanged(string value) => WorkflowsStatus = EvaluateDirectoryStatus(value);
+     partial void OnComfyUiExecutablePathChanged(string value) => ComfyUiExecutableStatus = EvaluateExecutableStatus(value);
+     partial void OnForgeExecutablePathChanged(string value) => ForgeExecutableStatus = EvaluateExecutableStatus(value);
+     partial void OnOllamaExecutablePathChanged(string value)
+     {
+         OllamaStatus = EvaluateExecutableStatus(value);
+         OnPropertyChanged(nameof(OllamaExecutableStatus));
+     }
+ 
++    partial void OnSelectedThemeChanged(string value)
++    {
++        var theme = MapStringToTheme(value);
++        _themeService?.SetTheme(theme);
++    }
++
++    public static string MapThemeToString(AppTheme theme) => theme switch
++    {
++        AppTheme.OledBlack => "OLED Pure Black",
++        AppTheme.Light => "Clean Light",
++        _ => "Matte Carbon (Default)"
++    };
++
++    public static AppTheme MapStringToTheme(string? themeName) => themeName switch
++    {
++        "OLED Pure Black" => AppTheme.OledBlack,
++        "Clean Light" => AppTheme.Light,
++        _ => AppTheme.MatteCarbon
++    };
++
+     public void RefreshAllStatuses()
+     {
+         ComfyUiExecutableStatus = EvaluateExecutableStatus(ComfyUiExecutablePath);
+         ForgeExecutableStatus = EvaluateExecutableStatus(ForgeExecutablePath);
+         OllamaStatus = EvaluateExecutableStatus(OllamaExecutablePath);
+         ForgeModelsStatus = EvaluateDirectoryStatus(ForgeModelsPath);
+         ComfyModelsStatus = EvaluateDirectoryStatus(ComfyModelsPath);
+         ThreeDModelsStatus = EvaluateDirectoryStatus(ThreeDModelsPath);
+         WorkflowsStatus = EvaluateDirectoryStatus(WorkflowsPath);
+         OnPropertyChanged(nameof(OllamaExecutableStatus));
+diff --git a/LocalLLMServerManager.Shared/Views/Controls/SettingsTabControl.axaml b/LocalLLMServerManager.Shared/Views/Controls/SettingsTabControl.axaml
+index 454d4db..eb8b3bc 100644
+--- a/LocalLLMServerManager.Shared/Views/Controls/SettingsTabControl.axaml
++++ b/LocalLLMServerManager.Shared/Views/Controls/SettingsTabControl.axaml
+@@ -18,22 +18,31 @@
+                             Command="{Binding AutoDetectToolsCommand}"
+                             Classes="matte-primary" 
+                             HorizontalAlignment="Left"/>
+                 </StackPanel>
+             </Border>
+ 
+             <!-- Theme & Interface Mode Switcher -->
+             <Border Classes="matte-card" Padding="16">
+                 <StackPanel Spacing="12">
+                     <TextBlock Text="🎨 Desktop Theme &amp; Web Interface Options" FontSize="16" FontWeight="Bold" Foreground="{StaticResource TextMainBrush}"/>
+-                    <TextBlock Text="Try switching between desktop themes or launch the browser dashboard:" FontSize="13" Foreground="{StaticResource TextMutedBrush}"/>
++                    <TextBlock Text="Select dynamic theme palette or switch framework theme styles:" FontSize="13" Foreground="{StaticResource TextMutedBrush}"/>
++
++                    <StackPanel Spacing="6">
++                        <TextBlock Text="Theme Palette" FontSize="13" Foreground="{StaticResource TextMutedBrush}" FontWeight="Medium"/>
++                        <ComboBox ItemsSource="{Binding AvailableThemes}"
++                                  SelectedItem="{Binding SelectedTheme, Mode=TwoWay}"
++                                  HorizontalAlignment="Left"
++                                  MinWidth="240"/>
++                    </StackPanel>
+ 
++                    <TextBlock Text="Framework Theme Style:" FontSize="13" Foreground="{StaticResource TextMutedBrush}" Margin="0,4,0,0"/>
+                     <StackPanel Orientation="Horizontal" Spacing="10">
+                         <Button Content="✨ Semi Design Dark Theme" Command="{Binding SwitchThemeStyleCommand}" CommandParameter="semi"
+                                 Classes="matte-primary"/>
+                         <Button Content="⚡ Fluent Dark Theme" Command="{Binding SwitchThemeStyleCommand}" CommandParameter="fluent"
+                                 Classes="matte-secondary"/>
+                     </StackPanel>
+                 </StackPanel>
+             </Border>
+ 
+             <!-- Remote Access -->
+diff --git a/LocalLLMServerManager.Tests/SettingsViewModelTests.cs b/LocalLLMServerManager.Tests/SettingsViewModelTests.cs
+index b2cd030..84b5411 100644
+--- a/LocalLLMServerManager.Tests/SettingsViewModelTests.cs
++++ b/LocalLLMServerManager.Tests/SettingsViewModelTests.cs
+@@ -30,20 +30,22 @@ public class SettingsViewModelTests
+     }
+ 
+     [Fact]
+     public void DefaultState_HasExpectedPropertiesAndMissingStatus()
+     {
+         var vm = new SettingsViewModel();
+ 
+         Assert.Equal("http://127.0.0.1:8188", vm.ComfyUiUrl);
+         Assert.Equal("semi", vm.SelectedThemeStyle);
+         Assert.Equal("http://127.0.0.1:5246", vm.LanAccessUrl);
++        Assert.Equal("Matte Carbon (Default)", vm.SelectedTheme);
++        Assert.Equal(3, vm.AvailableThemes.Count);
+ 
+         Assert.Contains("Missing", vm.ForgeModelsStatus);
+         Assert.Contains("Missing", vm.ThreeDModelsStatus);
+         Assert.Contains("Missing", vm.WorkflowsStatus);
+         Assert.Contains("Missing", vm.ComfyUiExecutableStatus);
+         Assert.Contains("Missing", vm.ForgeExecutableStatus);
+     }
+ 
+     [Fact]
+     public void PathChanges_UpdateStatusIndicatorsDynamically()
+diff --git a/LocalLLMServerManager.Tests/ThemeServiceTests.cs b/LocalLLMServerManager.Tests/ThemeServiceTests.cs
+new file mode 100644
+index 0000000..bf38b54
+--- /dev/null
++++ b/LocalLLMServerManager.Tests/ThemeServiceTests.cs
+@@ -0,0 +1,192 @@
++using System;
++using Avalonia.Controls;
++using Avalonia.Headless.XUnit;
++using Avalonia.Media;
++using Avalonia.Styling;
++using LocalLLMServerManager.Shared.Services;
++using LocalLLMServerManager.Shared.ViewModels;
++using Moq;
++using Xunit;
++
++namespace LocalLLMServerManager.Tests;
++
++public class ThemeServiceTests
++{
++    [Fact]
++    public void DefaultTheme_IsMatteCarbon()
++    {
++        var dict = new ResourceDictionary();
++        var service = new ThemeService(dict);
++
++        Assert.Equal(AppTheme.MatteCarbon, service.CurrentTheme);
++    }
++
++    [Fact]
++    public void SetTheme_OledBlack_UpdatesCurrentThemeAndFiresThemeChangedAndMutatesResources()
++    {
++        var dict = new ResourceDictionary();
++        var service = new ThemeService(dict);
++
++        AppTheme? changedTheme = null;
++        service.ThemeChanged += (_, theme) => changedTheme = theme;
++
++        service.SetTheme(AppTheme.OledBlack);
++
++        Assert.Equal(AppTheme.OledBlack, service.CurrentTheme);
++        Assert.Equal(AppTheme.OledBlack, changedTheme);
++
++        // Assert brushes
++        Assert.Equal(Color.Parse("#000000"), ((SolidColorBrush)dict["BgDarkBrush"]!).Color);
++        Assert.Equal(Color.Parse("#121212"), ((SolidColorBrush)dict["BgSurfaceBrush"]!).Color);
++        Assert.Equal(Color.Parse("#18181b"), ((SolidColorBrush)dict["BgCardBrush"]!).Color);
++        Assert.Equal(Color.Parse("#27272a"), ((SolidColorBrush)dict["GlassBorderBrush"]!).Color);
++        Assert.Equal(Color.Parse("#27272a"), ((SolidColorBrush)dict["BorderColorBrush"]!).Color);
++        Assert.Equal(Color.Parse("#f4f4f5"), ((SolidColorBrush)dict["TextMainBrush"]!).Color);
++        Assert.Equal(Color.Parse("#71717a"), ((SolidColorBrush)dict["TextMutedBrush"]!).Color);
++        Assert.Equal(Color.Parse("#3b82f6"), ((SolidColorBrush)dict["PrimaryBrush"]!).Color);
++        Assert.Equal(Color.Parse("#60a5fa"), ((SolidColorBrush)dict["SecondaryBrush"]!).Color);
++        Assert.Equal(Color.Parse("#60a5fa"), ((SolidColorBrush)dict["AccentBrush"]!).Color);
++        Assert.Equal(Color.Parse("#000000"), ((SolidColorBrush)dict["GlassBackgroundBrush"]!).Color);
++        Assert.Equal(Color.Parse("#3b82f6"), ((SolidColorBrush)dict["PrimaryGradientBrush"]!).Color);
++
++        var glow = (SolidColorBrush)dict["BorderGlowBrush"]!;
++        Assert.Equal(Color.Parse("#3b82f6"), glow.Color);
++        Assert.Equal(0.4, glow.Opacity, precision: 2);
++
++        // Assert colors
++        Assert.Equal(Color.Parse("#000000"), (Color)dict["BgDarkColor"]!);
++        Assert.Equal(Color.Parse("#121212"), (Color)dict["BgSurfaceColor"]!);
++        Assert.Equal(Color.Parse("#18181b"), (Color)dict["BgCardColor"]!);
++        Assert.Equal(Color.Parse("#27272a"), (Color)dict["BorderColor"]!);
++        Assert.Equal(Color.Parse("#f4f4f5"), (Color)dict["TextMainColor"]!);
++        Assert.Equal(Color.Parse("#71717a"), (Color)dict["TextMutedColor"]!);
++        Assert.Equal(Color.Parse("#3b82f6"), (Color)dict["PrimaryColor"]!);
++        Assert.Equal(Color.Parse("#60a5fa"), (Color)dict["SecondaryColor"]!);
++        Assert.Equal(Color.Parse("#60a5fa"), (Color)dict["AccentColor"]!);
++    }
++
++    [Fact]
++    public void SetTheme_Light_UpdatesCurrentThemeAndFiresThemeChangedAndMutatesResources()
++    {
++        var dict = new ResourceDictionary();
++        var service = new ThemeService(dict);
++
++        AppTheme? changedTheme = null;
++        service.ThemeChanged += (_, theme) => changedTheme = theme;
++
++        service.SetTheme(AppTheme.Light);
++
++        Assert.Equal(AppTheme.Light, service.CurrentTheme);
++        Assert.Equal(AppTheme.Light, changedTheme);
++
++        // Assert brushes
++        Assert.Equal(Color.Parse("#ffffff"), ((SolidColorBrush)dict["BgDarkBrush"]!).Color);
++        Assert.Equal(Color.Parse("#f6f8fa"), ((SolidColorBrush)dict["BgSurfaceBrush"]!).Color);
++        Assert.Equal(Color.Parse("#ffffff"), ((SolidColorBrush)dict["BgCardBrush"]!).Color);
++        Assert.Equal(Color.Parse("#d0d7de"), ((SolidColorBrush)dict["GlassBorderBrush"]!).Color);
++        Assert.Equal(Color.Parse("#d0d7de"), ((SolidColorBrush)dict["BorderColorBrush"]!).Color);
++        Assert.Equal(Color.Parse("#1f2328"), ((SolidColorBrush)dict["TextMainBrush"]!).Color);
++        Assert.Equal(Color.Parse("#656d76"), ((SolidColorBrush)dict["TextMutedBrush"]!).Color);
++        Assert.Equal(Color.Parse("#0969da"), ((SolidColorBrush)dict["PrimaryBrush"]!).Color);
++        Assert.Equal(Color.Parse("#218bff"), ((SolidColorBrush)dict["SecondaryBrush"]!).Color);
++        Assert.Equal(Color.Parse("#218bff"), ((SolidColorBrush)dict["AccentBrush"]!).Color);
++        Assert.Equal(Color.Parse("#ffffff"), ((SolidColorBrush)dict["GlassBackgroundBrush"]!).Color);
++        Assert.Equal(Color.Parse("#0969da"), ((SolidColorBrush)dict["PrimaryGradientBrush"]!).Color);
++
++        var glow = (SolidColorBrush)dict["BorderGlowBrush"]!;
++        Assert.Equal(Color.Parse("#0969da"), glow.Color);
++        Assert.Equal(0.4, glow.Opacity, precision: 2);
++    }
++
++    [Fact]
++    public void SetTheme_MatteCarbon_UpdatesCurrentThemeAndFiresThemeChangedAndMutatesResources()
++    {
++        var dict = new ResourceDictionary();
++        var service = new ThemeService(dict);
++
++        // Switch to Light first, then back to MatteCarbon
++        service.SetTheme(AppTheme.Light);
++
++        AppTheme? changedTheme = null;
++        service.ThemeChanged += (_, theme) => changedTheme = theme;
++
++        service.SetTheme(AppTheme.MatteCarbon);
++
++        Assert.Equal(AppTheme.MatteCarbon, service.CurrentTheme);
++        Assert.Equal(AppTheme.MatteCarbon, changedTheme);
++
++        Assert.Equal(Color.Parse("#0d1117"), ((SolidColorBrush)dict["BgDarkBrush"]!).Color);
++        Assert.Equal(Color.Parse("#161b22"), ((SolidColorBrush)dict["BgSurfaceBrush"]!).Color);
++        Assert.Equal(Color.Parse("#1c2128"), ((SolidColorBrush)dict["BgCardBrush"]!).Color);
++        Assert.Equal(Color.Parse("#30363d"), ((SolidColorBrush)dict["GlassBorderBrush"]!).Color);
++        Assert.Equal(Color.Parse("#f0f6fc"), ((SolidColorBrush)dict["TextMainBrush"]!).Color);
++        Assert.Equal(Color.Parse("#8b949e"), ((SolidColorBrush)dict["TextMutedBrush"]!).Color);
++        Assert.Equal(Color.Parse("#388bfd"), ((SolidColorBrush)dict["PrimaryBrush"]!).Color);
++        Assert.Equal(Color.Parse("#58a6ff"), ((SolidColorBrush)dict["SecondaryBrush"]!).Color);
++        Assert.Equal(Color.Parse("#79c0ff"), ((SolidColorBrush)dict["AccentBrush"]!).Color);
++    }
++
++    [Fact]
++    public void SetTheme_WithExistingBrushInstances_MutatesColorInPlace()
++    {
++        var dict = new ResourceDictionary();
++        var existingBrush = new SolidColorBrush(Color.Parse("#111111"));
++        dict["BgDarkBrush"] = existingBrush;
++
++        var service = new ThemeService(dict);
++        service.SetTheme(AppTheme.Light);
++
++        // Ensure the exact instance in memory was updated
++        Assert.Same(existingBrush, dict["BgDarkBrush"]);
++        Assert.Equal(Color.Parse("#ffffff"), existingBrush.Color);
++    }
++
++    [AvaloniaFact]
++    public void SetTheme_WithHeadlessApp_MutatesApplicationRequestedThemeVariant()
++    {
++        var service = new ThemeService();
++        service.SetTheme(AppTheme.Light);
++        Assert.Equal(ThemeVariant.Light, Avalonia.Application.Current?.RequestedThemeVariant);
++
++        service.SetTheme(AppTheme.OledBlack);
++        Assert.Equal(ThemeVariant.Dark, Avalonia.Application.Current?.RequestedThemeVariant);
++
++        service.SetTheme(AppTheme.MatteCarbon);
++        Assert.Equal(ThemeVariant.Dark, Avalonia.Application.Current?.RequestedThemeVariant);
++    }
++
++    [Fact]
++    public void SettingsViewModel_ThemeIntegration_ChangesThemeOnPropertySet()
++    {
++        var mockThemeService = new Mock<IThemeService>();
++        mockThemeService.SetupGet(t => t.CurrentTheme).Returns(AppTheme.MatteCarbon);
++
++        var vm = new SettingsViewModel(mockThemeService.Object);
++
++        Assert.Equal("Matte Carbon (Default)", vm.SelectedTheme);
++        Assert.Equal(3, vm.AvailableThemes.Count);
++
++        vm.SelectedTheme = "OLED Pure Black";
++        mockThemeService.Verify(t => t.SetTheme(AppTheme.OledBlack), Times.Once);
++
++        vm.SelectedTheme = "Clean Light";
++        mockThemeService.Verify(t => t.SetTheme(AppTheme.Light), Times.Once);
++
++        vm.SelectedTheme = "Matte Carbon (Default)";
++        mockThemeService.Verify(t => t.SetTheme(AppTheme.MatteCarbon), Times.Once);
++    }
++
++    [Fact]
++    public void SettingsViewModel_MappingHelpers_CoverAllThemeVariants()
++    {
++        Assert.Equal("Matte Carbon (Default)", SettingsViewModel.MapThemeToString(AppTheme.MatteCarbon));
++        Assert.Equal("OLED Pure Black", SettingsViewModel.MapThemeToString(AppTheme.OledBlack));
++        Assert.Equal("Clean Light", SettingsViewModel.MapThemeToString(AppTheme.Light));
++
++        Assert.Equal(AppTheme.MatteCarbon, SettingsViewModel.MapStringToTheme("Matte Carbon (Default)"));
++        Assert.Equal(AppTheme.OledBlack, SettingsViewModel.MapStringToTheme("OLED Pure Black"));
++        Assert.Equal(AppTheme.Light, SettingsViewModel.MapStringToTheme("Clean Light"));
++        Assert.Equal(AppTheme.MatteCarbon, SettingsViewModel.MapStringToTheme("unknown"));
++        Assert.Equal(AppTheme.MatteCarbon, SettingsViewModel.MapStringToTheme(null));
++    }
++}

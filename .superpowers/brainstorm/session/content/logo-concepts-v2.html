@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Local LLM Server Manager — Minimalist Lettermark Exploration</title>
+  <style>
+    :root {
+      --bg: #121417;
+      --card-bg: #1a1d24;
+      --border: #2a2f3a;
+      --text: #f0f2f5;
+      --text-muted: #8a92a3;
+      --accent-amber: #f59e0b;
+      --accent-emerald: #10b981;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      padding: 48px 24px;
+    }
+    header {
+      text-align: center;
+      max-width: 720px;
+      margin: 0 auto 48px auto;
+    }
+    h1 {
+      font-size: 2rem;
+      font-weight: 700;
+      color: #ffffff;
+      margin-bottom: 12px;
+      letter-spacing: -0.02em;
+    }
+    p.subtitle {
+      color: var(--text-muted);
+      font-size: 1.05rem;
+      line-height: 1.6;
+    }
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+      gap: 28px;
+      max-width: 1140px;
+      margin: 0 auto 60px auto;
+    }
+    .card {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      transition: border-color 0.2s ease, transform 0.2s ease;
+    }
+    .card:hover {
+      border-color: #4b5563;
+      transform: translateY(-4px);
+    }
+    .image-wrapper {
+      background: #0d0f12;
+      padding: 24px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-bottom: 1px solid var(--border);
+    }
+    .image-wrapper img {
+      width: 100%;
+      max-width: 280px;
+      aspect-ratio: 1/1;
+      border-radius: 16px;
+      object-fit: cover;
+      border: 1px solid rgba(255, 255, 255, 0.05);
+    }
+    .card-content {
+      padding: 24px;
+      display: flex;
+      flex-direction: column;
+      flex-grow: 1;
+    }
+    .badge {
+      display: inline-block;
+      align-self: flex-start;
+      font-size: 0.72rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      padding: 4px 8px;
+      border-radius: 6px;
+      margin-bottom: 12px;
+      background: #262b35;
+      color: #d1d5db;
+      border: 1px solid #374151;
+    }
+    h2 {
+      font-size: 1.25rem;
+      font-weight: 600;
+      margin-bottom: 8px;
+      color: #ffffff;
+    }
+    p.desc {
+      color: var(--text-muted);
+      font-size: 0.92rem;
+      line-height: 1.55;
+      margin-bottom: 18px;
+    }
+    .highlights {
+      list-style: none;
+      border-top: 1px solid var(--border);
+      padding-top: 14px;
+      margin-top: auto;
+    }
+    .highlights li {
+      font-size: 0.85rem;
+      color: #9ca3af;
+      margin-bottom: 6px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .highlights li::before {
+      content: "—";
+      color: #6b7280;
+    }
+    footer {
+      text-align: center;
+      color: var(--text-muted);
+      font-size: 0.85rem;
+      border-top: 1px solid var(--border);
+      padding-top: 24px;
+      max-width: 600px;
+      margin: 0 auto;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Local LLM Server Manager — Minimalist Lettermark Exploration</h1>
+    <p class="subtitle">Clean, matte, typography-focused marks with subtle accents. No neon, no heavy glassmorphism.</p>
+  </header>
+
+  <div class="grid">
+    <!-- Concept 1 -->
+    <div class="card">
+      <div class="image-wrapper">
+        <img src="/logo_minimal_amber.jpg" alt="Option 1: Geometric LM with Amber Accent">
+      </div>
+      <div class="card-content">
+        <span class="badge">Option A</span>
+        <h2>Architectural 'LM' + Warm Amber Accent</h2>
+        <p class="desc">
+          Refined geometric line construction forming interlocking <strong>L</strong> and <strong>M</strong> with a warm amber status dot. Pure matte slate background.
+        </p>
+        <ul class="highlights">
+          <li>Minimalist, timeless developer tool aesthetic</li>
+          <li>Warm amber accent gives life without neon glare</li>
+          <li>Crisp at all display sizes</li>
+        </ul>
+      </div>
+    </div>
+
+    <!-- Concept 2 -->
+    <div class="card">
+      <div class="image-wrapper">
+        <img src="/logo_minimal_emerald.jpg" alt="Option 2: Swiss Bold LM with Mint Dot">
+      </div>
+      <div class="card-content">
+        <span class="badge">Option B</span>
+        <h2>Swiss Bold 'LM' + Mint Green Node</h2>
+        <p class="desc">
+          High-contrast, bold Swiss typography monogram on dark graphite with a single subtle mint-green active indicator.
+        </p>
+        <ul class="highlights">
+          <li>Very bold visual hierarchy & high contrast</li>
+          <li>Active indicator connects to server online status</li>
+          <li>Reads clearly as an OS tray icon</li>
+        </ul>
+      </div>
+    </div>
+
+    <!-- Concept 3 -->
+    <div class="card">
+      <div class="image-wrapper">
+        <img src="/logo_minimal_terminal.jpg" alt="Option 3: Terminal Bracket Monogram">
+      </div>
+      <div class="card-content">
+        <span class="badge">Option C</span>
+        <h2>Terminal Prompt / Server Bracket</h2>
+        <p class="desc">
+          Enclosing server rack brackets with CLI prompt <code>&gt;LM</code> and an amber block cursor accent.
+        </p>
+        <ul class="highlights">
+          <li>Strong CLI, server & developer identity</li>
+          <li>Distinct bracket frame works well in square/circular app icons</li>
+          <li>Subtle cursor accent</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <footer>
+    <p>Local LLM Server Manager • Visual Companion</p>
+  </footer>
+</body>
+</html>
