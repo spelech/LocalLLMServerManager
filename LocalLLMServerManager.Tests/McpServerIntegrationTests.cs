@@ -15,13 +15,21 @@ using Xunit;
 
 namespace LocalLLMServerManager.Tests;
 
-public class McpServerIntegrationTests
+public class McpServerIntegrationTests : IClassFixture<AppTestServerFixture>
 {
+    private readonly AppTestServerFixture _fixture;
+    private readonly HttpClient _client;
     private readonly Mock<IGpuTelemetryProvider> _mockTelemetry = new();
     private readonly Mock<IAiEngineManager> _mockEngine = new();
     private readonly Mock<IOllamaModelService> _mockOllama = new();
     private readonly Mock<IToolDiscoveryService> _mockDiscovery = new();
     private readonly Mock<IHttpClientFactory> _mockHttpFactory = new();
+
+    public McpServerIntegrationTests(AppTestServerFixture fixture)
+    {
+        _fixture = fixture;
+        _client = fixture.CreateClient();
+    }
 
     private LocalLlmMcpTools CreateTools(HttpMessageHandler? handler = null)
     {
@@ -167,6 +175,33 @@ public class McpServerIntegrationTests
         Assert.NotNull(result);
         Assert.Contains("ollama.exe", result);
         Assert.Contains("webui-user.bat", result);
+    }
+
+    [Fact]
+    public async Task LegacyMcpToolsEndpoint_ReturnsAllToolMetadata()
+    {
+        var response = await _client.GetAsync("/api/mcp/tools");
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+
+        var json = await response.Content.ReadAsStringAsync();
+        Assert.Contains("get_gpu_vram", json);
+        Assert.Contains("check_health", json);
+        Assert.Contains("list_models", json);
+        Assert.Contains("pull_model", json);
+        Assert.Contains("unload_vram", json);
+        Assert.Contains("start_engine", json);
+        Assert.Contains("stop_engine", json);
+        Assert.Contains("detect_tools", json);
+        Assert.Contains("/mcp", json);
+    }
+
+    [Fact]
+    public async Task McpEndpoint_IsRegisteredAndAccessible()
+    {
+        // MCP HTTP transport in ModelContextProtocol.AspNetCore accepts POST (JSON-RPC) or GET (SSE)
+        var postContent = new StringContent("{\"jsonrpc\":\"2.0\",\"id\":1,\"method\":\"tools/list\"}", System.Text.Encoding.UTF8, "application/json");
+        var response = await _client.PostAsync("/mcp", postContent);
+        Assert.NotEqual(HttpStatusCode.NotFound, response.StatusCode);
     }
 }
 
