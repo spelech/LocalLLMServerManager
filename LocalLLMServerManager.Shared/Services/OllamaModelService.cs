@@ -122,4 +122,30 @@ public class OllamaModelService : IOllamaModelService
             return false;
         }
     }
+
+    public async Task<List<OllamaModelItem>> GetInstalledModelsAsync()
+    {
+        using var client = new HttpClient();
+        return await LoadInstalledModelsAsync("http://127.0.0.1:11434", client);
+    }
+
+    public async Task<bool> PullModelAsync(string modelName)
+    {
+        if (string.IsNullOrWhiteSpace(modelName)) return false;
+        try
+        {
+            using var client = new HttpClient();
+            var content = new StringContent(
+                JsonSerializer.Serialize(new { name = modelName, stream = false }),
+                System.Text.Encoding.UTF8,
+                "application/json"
+            );
+            var resp = await client.PostAsync("http://127.0.0.1:11434/api/pull", content);
+            return resp.IsSuccessStatusCode;
+        }
+        catch
+        {
+            return false;
+        }
+    }
 }
