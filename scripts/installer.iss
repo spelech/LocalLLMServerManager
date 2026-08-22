@@ -39,7 +39,7 @@ Name: "windowsservice"; Description: "Install background Windows Service (starts
 ; Main published application files (excluding settings.json so existing user settings are preserved on upgrade)
 Source: "..\publish\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs; Excludes: "settings.json"
 ; Preserve settings.json across in-place upgrades (only install if not already present, never delete on uninstall)
-Source: "..\publish\settings.json*"; DestDir: "{app}"; Flags: onlyifdoesntexist uninsneveruninstall; Permissions: users-full
+Source: "..\publish\settings.json*"; DestDir: "{app}"; Flags: skipifsourcedoesntexist onlyifdoesntexist uninsneveruninstall; Permissions: users-full
 Source: "..\Assets\app-icon.ico"; DestDir: "{app}\Assets"; Flags: ignoreversion
 
 [Icons]
