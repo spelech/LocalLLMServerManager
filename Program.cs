@@ -19,7 +19,12 @@ public class Program
 
     public static void MainInternal(string[] args, bool runWeb = false)
     {
-        if (args.Contains("--service"))
+        if (args.Contains("--server") || args.Contains("--headless"))
+        {
+            var app = CreateWebApplication(args, isServiceMode: false);
+            if (runWeb) app.Run();
+        }
+        else if (args.Contains("--service"))
         {
             var app = CreateWebApplication(args, isServiceMode: true);
             if (runWeb) app.Run();

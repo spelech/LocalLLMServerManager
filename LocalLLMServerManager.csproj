@@ -44,13 +44,19 @@
     <Compile Remove="LocalLLMServerManager.Shared/**" />
     <AvaloniaXaml Remove="LocalLLMServerManager.Shared/**" />
     <AvaloniaResource Remove="LocalLLMServerManager.Shared/**" />
+    <Content Remove="LocalLLMServerManager.Shared/**" />
+    <None Remove="LocalLLMServerManager.Shared/**" />
     <Compile Remove="LocalLLMServerManager.Web/**" />
     <AvaloniaXaml Remove="LocalLLMServerManager.Web/**" />
     <AvaloniaResource Remove="LocalLLMServerManager.Web/**" />
+    <Content Remove="LocalLLMServerManager.Web/**" />
+    <None Remove="LocalLLMServerManager.Web/**" />
     <Compile Remove="LocalLLMServerManager.Tests/**" />
     <EmbeddedResource Remove="LocalLLMServerManager.Tests/**" />
     <None Remove="LocalLLMServerManager.Tests/**" />
     <Content Remove="LocalLLMServerManager.Tests/**" />
+    <Content Remove="wwwroot_wasm/**" />
+    <None Remove="wwwroot_wasm/**" />
     <Content Remove="publish/**" />
     <Content Remove="dist/**" />
   </ItemGroup>
