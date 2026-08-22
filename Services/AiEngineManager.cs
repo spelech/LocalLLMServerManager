@@ -155,4 +155,51 @@ public class AiEngineManager : IAiEngineManager
             return Task.FromResult(false);
         }
     }
+
+    public async Task<EngineOperationResult> StartEngineAsync(string engine)
+    {
+        var normalized = engine?.Trim().ToLowerInvariant() ?? "";
+        var logger = Microsoft.Extensions.Logging.Abstractions.NullLogger.Instance;
+
+        if (normalized == "forge" || normalized == "sdforge")
+        {
+            var settings = new SettingsService().LoadSettings();
+            var execPath = string.IsNullOrWhiteSpace(settings.ForgeExecutablePath) ? @"C:\AI\webui\webui-user.bat" : settings.ForgeExecutablePath;
+            var success = await StartForgeAsync(execPath, logger);
+            return new EngineOperationResult(success, "forge", success ? "SD Forge Started" : "Failed to start SD Forge", _forgeProcess?.Id);
+        }
+        else if (normalized == "comfyui" || normalized == "comfy")
+        {
+            var settings = new SettingsService().LoadSettings();
+            var execPath = string.IsNullOrWhiteSpace(settings.ComfyUiExecutablePath) ? @"C:\AI\ComfyUI\run_nvidia_gpu.bat" : settings.ComfyUiExecutablePath;
+            var success = await StartComfyUiAsync(execPath, logger);
+            return new EngineOperationResult(success, "comfyui", success ? "ComfyUI Started" : "Failed to start ComfyUI", _comfyProcess?.Id);
+        }
+        else if (normalized == "ollama")
+        {
+            var isRunning = IsProcessRunning("ollama");
+            return new EngineOperationResult(isRunning, "ollama", isRunning ? "Ollama is running" : "Ollama process not detected");
+        }
+
+        return new EngineOperationResult(false, engine ?? "unknown", $"Unsupported engine: {engine}");
+    }
+
+    public async Task<EngineOperationResult> StopEngineAsync(string engine)
+    {
+        var normalized = engine?.Trim().ToLowerInvariant() ?? "";
+        var logger = Microsoft.Extensions.Logging.Abstractions.NullLogger.Instance;
+
+        if (normalized == "forge" || normalized == "sdforge")
+        {
+            var success = await StopForgeAsync(logger);
+            return new EngineOperationResult(success, "forge", success ? "SD Forge Stopped" : "Failed to stop SD Forge");
+        }
+        else if (normalized == "comfyui" || normalized == "comfy")
+        {
+            var success = await StopComfyUiAsync(logger);
+            return new EngineOperationResult(success, "comfyui", success ? "ComfyUI Stopped" : "Failed to stop ComfyUI");
+        }
+
+        return new EngineOperationResult(false, engine ?? "unknown", $"Unsupported engine: {engine}");
+    }
 }

@@ -10,4 +10,6 @@ public interface IOllamaModelService
     Task<List<OllamaModelItem>> LoadInstalledModelsAsync(string apiBase, HttpClient http);
     Task<bool> UnloadAllVramAsync(string apiBase, HttpClient http);
     Task<bool> PreloadModelAsync(string apiBase, string modelName, HttpClient http);
+    Task<List<OllamaModelItem>> GetInstalledModelsAsync();
+    Task<bool> PullModelAsync(string modelName);
 }

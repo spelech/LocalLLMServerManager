@@ -1,7 +1,15 @@
 using System.Diagnostics;
+using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
 
 namespace LocalLLMServerManager.Services;
+
+public record EngineOperationResult(
+    bool Success,
+    string Engine,
+    string Message,
+    int? Pid = null
+);
 
 public interface IAiEngineManager
 {
@@ -13,4 +21,7 @@ public interface IAiEngineManager
     Task<bool> StopComfyUiAsync(ILogger logger);
     Task<bool> StartForgeAsync(string executablePath, ILogger logger);
     Task<bool> StopForgeAsync(ILogger logger);
+
+    Task<EngineOperationResult> StartEngineAsync(string engine);
+    Task<EngineOperationResult> StopEngineAsync(string engine);
 }

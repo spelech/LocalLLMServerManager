@@ -6,6 +6,8 @@ using LocalLLMServerManager;
 using Microsoft.AspNetCore.StaticFiles;
 using LocalLLMServerManager.Endpoints;
 using LocalLLMServerManager.Services;
+using LocalLLMServerManager.Shared.Interfaces;
+using LocalLLMServerManager.Shared.Services;
 
 namespace LocalLLMServerManager;
 
@@ -145,6 +147,12 @@ public class Program
         builder.Services.AddSingleton<IToolDiscoveryService, ToolDiscoveryService>();
         builder.Services.AddSingleton<ISettingsService, SettingsService>();
         builder.Services.AddSingleton<IGpuTelemetryProvider, GpuTelemetryProvider>();
+        builder.Services.AddSingleton<IOllamaModelService, OllamaModelService>();
+
+        // Register MCP Server
+        builder.Services.AddMcpServer()
+            .WithHttpTransport()
+            .WithTools<LocalLlmMcpTools>();
 
         try
         {
