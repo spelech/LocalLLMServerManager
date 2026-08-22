@@ -63,9 +63,30 @@ public class LiveExternalProviderIntegrationTests
                 var doc = JsonNode.Parse(content);
 
                 Assert.NotNull(doc);
+                Assert.Equal("mcp", doc?["protocol"]?.ToString());
+                Assert.Equal("2024-11-05", doc?["version"]?.ToString());
+                Assert.Equal("/mcp", doc?["endpoint"]?.ToString());
+
                 var tools = doc?["tools"]?.AsArray();
                 Assert.NotNull(tools);
-                Assert.True(tools.Count >= 4);
+                Assert.Equal(8, tools.Count);
+
+                var toolNames = new HashSet<string>();
+                foreach (var tool in tools)
+                {
+                    var name = tool?["name"]?.ToString();
+                    Assert.False(string.IsNullOrWhiteSpace(name));
+                    toolNames.Add(name!);
+                }
+
+                Assert.Contains("get_gpu_vram", toolNames);
+                Assert.Contains("check_health", toolNames);
+                Assert.Contains("list_models", toolNames);
+                Assert.Contains("pull_model", toolNames);
+                Assert.Contains("unload_vram", toolNames);
+                Assert.Contains("start_engine", toolNames);
+                Assert.Contains("stop_engine", toolNames);
+                Assert.Contains("detect_tools", toolNames);
             }
         }
         catch (Exception) { }

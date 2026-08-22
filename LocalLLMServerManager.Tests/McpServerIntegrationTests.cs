@@ -1,14 +1,20 @@
 using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.IO;
+using System.Linq;
 using System.Net;
 using System.Net.Http;
+using System.Reflection;
 using System.Text.Json;
+using System.Text.Json.Nodes;
 using System.Threading;
 using System.Threading.Tasks;
 using LocalLLMServerManager.Services;
 using LocalLLMServerManager.Shared.Interfaces;
 using LocalLLMServerManager.Shared.ViewModels;
+using Microsoft.Extensions.DependencyInjection;
+using ModelContextProtocol.Server;
 using Moq;
 using Moq.Protected;
 using Xunit;
@@ -61,7 +67,7 @@ public class McpServerIntegrationTests : IClassFixture<AppTestServerFixture>
     }
 
     [Fact]
-    public async Task CheckHealth_ReturnsStatusForBackends()
+    public async Task CheckHealth_ReturnsStatusForBackends_WhenOnline()
     {
         var handler = new MockHttpMessageHandler(HttpStatusCode.OK, "{\"status\":\"healthy\"}");
         var tools = CreateTools(handler);
@@ -73,6 +79,28 @@ public class McpServerIntegrationTests : IClassFixture<AppTestServerFixture>
         Assert.Contains("sdForge", result);
         Assert.Contains("comfyUi", result);
         Assert.Contains("online", result);
+        Assert.Contains("latencyMs", result);
+    }
+
+    [Fact]
+    public async Task CheckHealth_WhenHttpExceptionThrown_ReturnsErrorGracefully()
+    {
+        var throwingHandler = new ThrowingHttpMessageHandler(new HttpRequestException("Connection refused"));
+        var tools = CreateTools(throwingHandler);
+
+        var result = await tools.CheckHealthAsync();
+
+        Assert.NotNull(result);
+        Assert.Contains("ollama", result);
+        Assert.Contains("sdForge", result);
+        Assert.Contains("comfyUi", result);
+        Assert.Contains("Connection refused", result);
+
+        var doc = JsonNode.Parse(result);
+        Assert.NotNull(doc);
+        Assert.False(doc?["ollama"]?["online"]?.GetValue<bool>());
+        Assert.False(doc?["sdForge"]?["online"]?.GetValue<bool>());
+        Assert.False(doc?["comfyUi"]?["online"]?.GetValue<bool>());
     }
 
     [Fact]
@@ -94,6 +122,20 @@ public class McpServerIntegrationTests : IClassFixture<AppTestServerFixture>
     }
 
     [Fact]
+    public async Task ListModels_WhenNoModelsInstalled_ReturnsEmptyArray()
+    {
+        _mockOllama.Setup(o => o.GetInstalledModelsAsync()).ReturnsAsync(new List<OllamaModelItem>());
+
+        var tools = CreateTools();
+        var result = await tools.ListModelsAsync();
+
+        Assert.NotNull(result);
+        var doc = JsonNode.Parse(result)?.AsArray();
+        Assert.NotNull(doc);
+        Assert.Empty(doc);
+    }
+
+    [Fact]
     public async Task PullModel_ValidName_InitiatesPull()
     {
         _mockOllama.Setup(o => o.PullModelAsync("deepseek-r1:7b")).ReturnsAsync(true);
@@ -104,20 +146,38 @@ public class McpServerIntegrationTests : IClassFixture<AppTestServerFixture>
         Assert.NotNull(result);
         Assert.Contains("deepseek-r1:7b", result);
         Assert.Contains("true", result.ToLowerInvariant());
+        Assert.Contains("Model pull initiated", result);
     }
 
     [Fact]
-    public async Task PullModel_EmptyName_ReturnsError()
+    public async Task PullModel_ValidName_WhenServiceReturnsFalse_ReturnsFailureMessage()
+    {
+        _mockOllama.Setup(o => o.PullModelAsync("unknown:model")).ReturnsAsync(false);
+
+        var tools = CreateTools();
+        var result = await tools.PullModelAsync("unknown:model");
+
+        Assert.NotNull(result);
+        Assert.Contains("false", result.ToLowerInvariant());
+        Assert.Contains("Failed to initiate pull", result);
+    }
+
+    [Theory]
+    [InlineData("")]
+    [InlineData("   ")]
+    [InlineData(null)]
+    public async Task PullModel_NullOrWhitespaceName_ReturnsError(string? modelName)
     {
         var tools = CreateTools();
-        var result = await tools.PullModelAsync("");
+        var result = await tools.PullModelAsync(modelName!);
 
         Assert.NotNull(result);
         Assert.Contains("error", result.ToLowerInvariant());
+        Assert.Contains("modelName is required", result);
     }
 
     [Fact]
-    public async Task UnloadVram_SendsKeepAliveZeroToOllama()
+    public async Task UnloadVram_SendsKeepAliveZeroToOllama_Success()
     {
         var handler = new MockHttpMessageHandler(HttpStatusCode.OK, "{\"status\":\"success\"}");
         var tools = CreateTools(handler);
@@ -126,6 +186,33 @@ public class McpServerIntegrationTests : IClassFixture<AppTestServerFixture>
 
         Assert.NotNull(result);
         Assert.Contains("true", result.ToLowerInvariant());
+        Assert.Contains("VRAM unload requested", result);
+    }
+
+    [Fact]
+    public async Task UnloadVram_WhenOllamaReturnsServerError_ReturnsFailureStatus()
+    {
+        var handler = new MockHttpMessageHandler(HttpStatusCode.InternalServerError, "{\"error\":\"server busy\"}");
+        var tools = CreateTools(handler);
+
+        var result = await tools.UnloadVramAsync();
+
+        Assert.NotNull(result);
+        Assert.Contains("false", result.ToLowerInvariant());
+        Assert.Contains("500", result);
+    }
+
+    [Fact]
+    public async Task UnloadVram_WhenHttpExceptionThrown_CatchesAndReturnsError()
+    {
+        var throwingHandler = new ThrowingHttpMessageHandler(new HttpRequestException("Ollama daemon unreachable"));
+        var tools = CreateTools(throwingHandler);
+
+        var result = await tools.UnloadVramAsync();
+
+        Assert.NotNull(result);
+        Assert.Contains("false", result.ToLowerInvariant());
+        Assert.Contains("Ollama daemon unreachable", result);
     }
 
     [Fact]
@@ -143,6 +230,20 @@ public class McpServerIntegrationTests : IClassFixture<AppTestServerFixture>
     }
 
     [Fact]
+    public async Task StartEngine_WhenStartFails_ReturnsFailureResult()
+    {
+        _mockEngine.Setup(e => e.StartEngineAsync("unknown"))
+            .ReturnsAsync(new EngineOperationResult(false, "unknown", "Unknown engine 'unknown'"));
+
+        var tools = CreateTools();
+        var result = await tools.StartEngineAsync("unknown");
+
+        Assert.NotNull(result);
+        Assert.Contains("false", result.ToLowerInvariant());
+        Assert.Contains("Unknown engine", result);
+    }
+
+    [Fact]
     public async Task StopEngine_CallsEngineManagerAndReturnsResult()
     {
         _mockEngine.Setup(e => e.StopEngineAsync("comfyui"))
@@ -154,6 +255,20 @@ public class McpServerIntegrationTests : IClassFixture<AppTestServerFixture>
         Assert.NotNull(result);
         Assert.Contains("comfyui", result);
         Assert.Contains("Stopped ComfyUI process", result);
+    }
+
+    [Fact]
+    public async Task StopEngine_WhenStopFails_ReturnsFailureResult()
+    {
+        _mockEngine.Setup(e => e.StopEngineAsync("forge"))
+            .ReturnsAsync(new EngineOperationResult(false, "forge", "Process was not running"));
+
+        var tools = CreateTools();
+        var result = await tools.StopEngineAsync("forge");
+
+        Assert.NotNull(result);
+        Assert.Contains("false", result.ToLowerInvariant());
+        Assert.Contains("Process was not running", result);
     }
 
     [Fact]
@@ -178,27 +293,109 @@ public class McpServerIntegrationTests : IClassFixture<AppTestServerFixture>
     }
 
     [Fact]
+    public void McpToolsClass_HasCorrectAttributesAndDescriptions()
+    {
+        var toolType = typeof(LocalLlmMcpTools);
+
+        // Class-level attribute
+        Assert.NotNull(toolType.GetCustomAttribute<McpServerToolTypeAttribute>());
+
+        // 8 Expected Tool Methods
+        var expectedMethods = new[]
+        {
+            "GetGpuVramAsync",
+            "CheckHealthAsync",
+            "ListModelsAsync",
+            "PullModelAsync",
+            "UnloadVramAsync",
+            "StartEngineAsync",
+            "StopEngineAsync",
+            "DetectToolsAsync"
+        };
+
+        foreach (var methodName in expectedMethods)
+        {
+            var method = toolType.GetMethod(methodName);
+            Assert.NotNull(method);
+            Assert.NotNull(method.GetCustomAttribute<McpServerToolAttribute>());
+            
+            var desc = method.GetCustomAttribute<DescriptionAttribute>();
+            Assert.NotNull(desc);
+            Assert.False(string.IsNullOrWhiteSpace(desc.Description));
+        }
+
+        // Check parameter descriptions
+        var pullModelMethod = toolType.GetMethod("PullModelAsync");
+        var modelNameParam = pullModelMethod?.GetParameters().FirstOrDefault(p => p.Name == "modelName");
+        Assert.NotNull(modelNameParam?.GetCustomAttribute<DescriptionAttribute>());
+
+        var startEngineMethod = toolType.GetMethod("StartEngineAsync");
+        var startEngineParam = startEngineMethod?.GetParameters().FirstOrDefault(p => p.Name == "engine");
+        Assert.NotNull(startEngineParam?.GetCustomAttribute<DescriptionAttribute>());
+
+        var stopEngineMethod = toolType.GetMethod("StopEngineAsync");
+        var stopEngineParam = stopEngineMethod?.GetParameters().FirstOrDefault(p => p.Name == "engine");
+        Assert.NotNull(stopEngineParam?.GetCustomAttribute<DescriptionAttribute>());
+    }
+
+    [Fact]
+    public void McpServer_DependencyInjectionResolution_Succeeds()
+    {
+        var services = new ServiceCollection();
+        services.AddHttpClient();
+        services.AddSingleton(_mockTelemetry.Object);
+        services.AddSingleton(_mockEngine.Object);
+        services.AddSingleton(_mockOllama.Object);
+        services.AddSingleton(_mockDiscovery.Object);
+
+        services.AddMcpServer()
+            .WithHttpTransport()
+            .WithTools<LocalLlmMcpTools>();
+
+        var provider = services.BuildServiceProvider();
+
+        var toolsInstance = ActivatorUtilities.CreateInstance<LocalLlmMcpTools>(provider);
+        Assert.NotNull(toolsInstance);
+    }
+
+    [Fact]
     public async Task LegacyMcpToolsEndpoint_ReturnsAllToolMetadata()
     {
         var response = await _client.GetAsync("/api/mcp/tools");
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
 
         var json = await response.Content.ReadAsStringAsync();
-        Assert.Contains("get_gpu_vram", json);
-        Assert.Contains("check_health", json);
-        Assert.Contains("list_models", json);
-        Assert.Contains("pull_model", json);
-        Assert.Contains("unload_vram", json);
-        Assert.Contains("start_engine", json);
-        Assert.Contains("stop_engine", json);
-        Assert.Contains("detect_tools", json);
-        Assert.Contains("/mcp", json);
+        var doc = JsonNode.Parse(json);
+        Assert.NotNull(doc);
+
+        Assert.Equal("mcp", doc?["protocol"]?.ToString());
+        Assert.Equal("2024-11-05", doc?["version"]?.ToString());
+        Assert.Equal("/mcp", doc?["endpoint"]?.ToString());
+
+        var tools = doc?["tools"]?.AsArray();
+        Assert.NotNull(tools);
+        Assert.Equal(8, tools.Count);
+
+        var toolNames = tools.Select(t => t?["name"]?.ToString()).ToList();
+        Assert.Contains("get_gpu_vram", toolNames);
+        Assert.Contains("check_health", toolNames);
+        Assert.Contains("list_models", toolNames);
+        Assert.Contains("pull_model", toolNames);
+        Assert.Contains("unload_vram", toolNames);
+        Assert.Contains("start_engine", toolNames);
+        Assert.Contains("stop_engine", toolNames);
+        Assert.Contains("detect_tools", toolNames);
+
+        foreach (var tool in tools)
+        {
+            Assert.False(string.IsNullOrWhiteSpace(tool?["description"]?.ToString()));
+        }
     }
 
     [Fact]
     public async Task McpEndpoint_IsRegisteredAndAccessible()
     {
-        // MCP HTTP transport in ModelContextProtocol.AspNetCore accepts POST (JSON-RPC) or GET (SSE)
+        // MCP HTTP transport in ModelContextProtocol.AspNetCore accepts POST (JSON-RPC)
         var postContent = new StringContent("{\"jsonrpc\":\"2.0\",\"id\":1,\"method\":\"tools/list\"}", System.Text.Encoding.UTF8, "application/json");
         var response = await _client.PostAsync("/mcp", postContent);
         Assert.NotEqual(HttpStatusCode.NotFound, response.StatusCode);
@@ -223,5 +420,20 @@ internal class MockHttpMessageHandler : HttpMessageHandler
             Content = new StringContent(_responseContent, System.Text.Encoding.UTF8, "application/json")
         };
         return Task.FromResult(response);
+    }
+}
+
+internal class ThrowingHttpMessageHandler : HttpMessageHandler
+{
+    private readonly Exception _exception;
+
+    public ThrowingHttpMessageHandler(Exception exception)
+    {
+        _exception = exception;
+    }
+
+    protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
+    {
+        throw _exception;
     }
 }
