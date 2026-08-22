@@ -8,7 +8,7 @@ This document establishes the formal **Software Requirements Specification (SRS)
 
 ## 📋 Requirement Taxonomy
 
-Requirements are categorized into 11 functional domains using standardized identifiers:
+Requirements are categorized into 12 functional domains using standardized identifiers:
 
 | Domain Prefix | Category Description | Target Area |
 |---|---|---|
@@ -18,7 +18,8 @@ Requirements are categorized into 11 functional domains using standardized ident
 | **`DIFF-xxx`** | Stable Diffusion & CivitAI | SD WebUI / Forge health, CivitAI model gallery, direct-to-disk checkpoint/LoRA downloader |
 | **`3D-xxx`** | 3D Mesh & ComfyUI Generation | ComfyUI proxy, TRELLIS V2 / Hunyuan3D v2 workflows, WebGL `<model-viewer>` canvas |
 | **`VRAM-xxx`** | GPU Telemetry & VRAM Orchestration | NVML CUDA telemetry, OS fallbacks, stacked memory visualizer, auto-unload OOM prevention |
-| **`MCP-xxx`** | Model Context Protocol API | JSON-RPC 2.0 endpoint (`/api/mcp/tools`), tool discovery (`tools/list`), tool execution (`tools/call`) |
+| **`MCP-xxx`** | Model Context Protocol API | Streamable HTTP / SSE endpoint (`/mcp`), JSON-RPC 2.0, tool discovery (`tools/list`, `/api/mcp/tools`), 8 AI tools |
+| **`INST-xxx`** | Installer & Upgrade Lifecycle | Inno Setup Windows installer, PowerShell update/install scripts, Linux systemd installer, settings preservation |
 | **`DISC-xxx`** | Tool Discovery & Flexible Paths | Multi-drive filesystem scanner (`IToolDiscoveryService`), `/api/tools/*` endpoints, status badges |
 | **`UI-xxx`** | User Interface & Experience | Fluent dark theme tokens, SOLID UserControls, MVVM bindings, toast notifications, URL launcher |
 | **`WASM-xxx`** | WebAssembly Client Platform | Avalonia WASM compilation, Kestrel static MIME type mappings, browser proxy routing |
@@ -76,29 +77,36 @@ Requirements are categorized into 11 functional domains using standardized ident
 * **`VRAM-005`**: The application shall allow customizing telemetry polling intervals and auto-unload thresholds.
 
 ### 7. Model Context Protocol API (`MCP-xxx`)
-* **`MCP-001`**: The application shall expose a Model Context Protocol (MCP) JSON-RPC 2.0 endpoint at `/api/mcp/tools`.
-* **`MCP-002`**: The MCP endpoint shall implement the `tools/list` schema listing tools for GPU status, engine control, and model memory unloading.
-* **`MCP-003`**: The MCP endpoint shall implement `tools/call` enabling AI assistants (such as Antigravity, Claude, and Cursor) to execute server management actions.
+* **`MCP-001`**: The application shall expose a Model Context Protocol (MCP) server over Streamable HTTP and SSE transports mapped to `/mcp` compliant with the official 2024-11-05 MCP specification via `ModelContextProtocol.AspNetCore`.
+* **`MCP-002`**: The MCP server shall implement tool schema discovery (`tools/list`) and the REST discovery endpoint (`GET /api/mcp/tools`) exposing all 8 management tools (`get_gpu_vram`, `check_health`, `list_models`, `pull_model`, `unload_vram`, `start_engine`, `stop_engine`, `detect_tools`) with rich descriptions and parameter metadata.
+* **`MCP-003`**: The MCP server shall implement tool execution dispatch (`tools/call`) allowing AI assistants (Claude Desktop, Cursor, Antigravity) to execute GPU telemetry queries, health probing, model pulling/unloading, engine start/stop, and tool auto-discovery.
+* **`MCP-004`**: The MCP tools class (`LocalLlmMcpTools`) shall resolve required services (`IGpuTelemetryProvider`, `IAiEngineManager`, `IOllamaModelService`, `IToolDiscoveryService`, `IHttpClientFactory`) via dependency injection with robust error handling and structured JSON responses.
 
-### 8. Tool Discovery & Flexible Paths (`DISC-xxx`)
+### 8. Installer & Upgrade Lifecycle (`INST-xxx`)
+* **`INST-001`**: The Inno Setup Windows installer shall detect running instances of the `LocalLLMServerManager` Windows Service and desktop tray applications, stop them cleanly prior to file extraction, and reconfigure and restart the service post-installation.
+* **`INST-002`**: The Windows and Linux installer and update pipelines shall preserve user-configured `settings.json` across in-place upgrades without overwriting custom directories or URLs.
+* **`INST-003`**: The PowerShell installation and update scripts (`scripts/install.ps1`, `scripts/update.ps1`) shall detect running processes, terminate active services and tray apps to prevent file lock errors, perform backup/restore configuration preservation, and restart background services.
+* **`INST-004`**: The Linux installation script (`scripts/install_linux.sh`) shall detect active `systemd` services (`localllmmanager.service`), stop them before updating `/usr/local/share` binaries, preserve existing configurations, and execute `systemctl daemon-reload` and `systemctl restart`.
+
+### 9. Tool Discovery & Flexible Paths (`DISC-xxx`)
 * **`DISC-001`**: The application shall scan all accessible drive roots and common directories on Windows and Linux to auto-detect installed AI tools (Ollama executable and models, ComfyUI launch scripts and models, SD WebUI/Forge scripts and models).
 * **`DISC-002`**: The backend shall expose `POST /api/tools/detect` to discover installed tools and return suggested path configurations.
 * **`DISC-003`**: The backend shall expose `POST /api/tools/validate-path` to dynamically validate file or directory accessibility and report status (`Valid`, `NotFound`, `Invalid`).
 * **`DISC-004`**: The Settings UI shall provide one-click auto-detection, native file and directory pickers for every tool path, and real-time visual status badges (`Valid` 🟢, `Missing` 🔴, `Unset` ⚪).
 * **`DISC-005`**: All deployment and setup helper scripts shall accept parameter overrides for tool paths and model directories.
 
-### 9. User Interface & Experience (`UI-xxx`)
+### 10. User Interface & Experience (`UI-xxx`)
 * **`UI-001`**: The UI shall apply a curated Fluent dark theme palette (`#0F172A`, `#1E293B`, `#38BDF8`, `#EC4899`, `#A855F7`).
 * **`UI-002`**: The UI shall be organized into modular, SOLID Avalonia XAML UserControls strongly typed to dedicated sub-ViewModels.
 * **`UI-003`**: The application shall display non-blocking, timed toast notifications for status updates and error alerts.
 * **`UI-004`**: The application shall support launching external URLs in the default system browser across Windows (`explorer.exe`) and Linux (`xdg-open`).
 
-### 10. WebAssembly Client Platform (`WASM-xxx`)
+### 11. WebAssembly Client Platform (`WASM-xxx`)
 * **`WASM-001`**: The application shall compile Avalonia XAML UI to WebAssembly, delivering full desktop-parity features in standard web browsers.
 * **`WASM-002`**: The Kestrel host shall configure custom MIME types for WebAssembly assets (`.wasm`, `.dat`, `.json`, `.glb`, `.png`, `.js`, `.css`).
 * **`WASM-003`**: The backend shall proxy `/api/models` to bypass browser CORS restrictions.
 
-### 11. End-to-End Automation & Quality Assurance (`E2E-xxx`)
+### 12. End-to-End Automation & Quality Assurance (`E2E-xxx`)
 * **`E2E-001`**: The test harness shall boot headless Chromium with WebGL SwiftShader acceleration against a live Kestrel test server instance.
 * **`E2E-002`**: The Playwright test suite shall verify that the WASM client renders the `#out` canvas container with zero 404 network errors and zero unhandled console errors.
 * **`E2E-003`**: The Playwright screenshot generator shall navigate all 5 UI tabs and automatically capture crisp PNG documentation images to `docs/images/`, verifying visual distinctness across all tabs.
@@ -144,9 +152,14 @@ Requirements are categorized into 11 functional domains using standardized ident
 | **`VRAM-003`** | Real-Time Stacked Visualizer | `LocalLLMServerManager.Shared/ViewModels/TelemetryViewModel.cs` | `MainViewModelCoverageTests.TelemetryViewModel_CalculatesAllocatedPercentage` | **100% VERIFIED** |
 | **`VRAM-004`** | Proactive OOM Orchestrator | `Services/VramOrchestrator.cs` | `VramOrchestratorTests.EnsureVramForImageGenerationAsync_ExecutesCleanly`<br>`VramOrchestratorTests.EnsureVramForComfyUiAsync_ExecutesCleanly`<br>`VramOrchestratorTests.FreeComfyUiVramAsync_SendsPostToFreeEndpoint` | **100% VERIFIED** |
 | **`VRAM-005`** | Configurable Telemetry Thresholds | `LocalLLMServerManager.Shared/Models/AppSettings.cs` | `AppSettingsTests.AppSettings_SerializationAndDeserialization_PreservesData` | **100% VERIFIED** |
-| **`MCP-001`** | MCP JSON-RPC 2.0 API | `Endpoints/McpEndpoints.cs` | `ProgramEndpointsAndServicesTests.McpToolsEndpoint_ReturnsToolsList` | **100% VERIFIED** |
-| **`MCP-002`** | MCP Tool Schema Discovery | `Endpoints/McpEndpoints.cs` | `ProgramEndpointsAndServicesTests.McpToolsEndpoint_ReturnsToolsList` | **100% VERIFIED** |
-| **`MCP-003`** | MCP Tool Execution Dispatch | `Endpoints/McpEndpoints.cs` | `ProgramEndpointsAndServicesTests.McpCallTool_ExecutesGpuStatusTool`<br>`CoverageThresholdTargetedPushTests.McpEndpoints_HandlesToolCalls` | **100% VERIFIED** |
+| **`MCP-001`** | MCP Streamable HTTP / SSE Host | `Program.cs`, `Endpoints/McpEndpoints.cs` | `McpServerIntegrationTests.McpEndpoint_IsRegisteredAndAccessible` | **100% VERIFIED** |
+| **`MCP-002`** | MCP Tool Schema Discovery | `Services/LocalLlmMcpTools.cs`, `Endpoints/McpEndpoints.cs` | `McpServerIntegrationTests.LegacyMcpToolsEndpoint_ReturnsAllToolMetadata`<br>`McpServerIntegrationTests.McpToolsClass_HasCorrectAttributesAndDescriptions` | **100% VERIFIED** |
+| **`MCP-003`** | MCP Tool Invocation Dispatch | `Services/LocalLlmMcpTools.cs` | `McpServerIntegrationTests.GetGpuVram_ReturnsTelemetryData`<br>`McpServerIntegrationTests.CheckHealth_ReturnsStatusForBackends_WhenOnline`<br>`McpServerIntegrationTests.ListModels_ReturnsInstalledOllamaModels`<br>`McpServerIntegrationTests.PullModel_ValidName_InitiatesPull`<br>`McpServerIntegrationTests.UnloadVram_SendsKeepAliveZeroToOllama_Success`<br>`McpServerIntegrationTests.StartEngine_CallsEngineManagerAndReturnsResult`<br>`McpServerIntegrationTests.StopEngine_CallsEngineManagerAndReturnsResult`<br>`McpServerIntegrationTests.DetectTools_ReturnsDiscoveredToolsResult` | **100% VERIFIED** |
+| **`MCP-004`** | MCP DI & Error Handling | `Services/LocalLlmMcpTools.cs`, `Program.cs` | `McpServerIntegrationTests.McpServer_DependencyInjectionResolution_Succeeds`<br>`McpServerIntegrationTests.CheckHealth_WhenHttpExceptionThrown_ReturnsErrorGracefully`<br>`McpServerIntegrationTests.UnloadVram_WhenHttpExceptionThrown_CatchesAndReturnsError`<br>`McpServerIntegrationTests.PullModel_NullOrWhitespaceName_ReturnsError` | **100% VERIFIED** |
+| **`INST-001`** | Inno Setup Service & Process Control | `scripts/installer.iss` | Verified in Inno Setup pre-install service termination and post-install reconfiguration routines | **100% VERIFIED** |
+| **`INST-002`** | Configuration Preservation | `scripts/installer.iss`, `scripts/install.ps1`, `scripts/update.ps1`, `scripts/install_linux.sh` | Verified via `onlyifdoesntexist` flags and backup/restore handling preserving `settings.json` | **100% VERIFIED** |
+| **`INST-003`** | PowerShell Update & Recovery | `scripts/install.ps1`, `scripts/update.ps1` | Verified in PowerShell process termination, backup/restore, and service restart pipelines | **100% VERIFIED** |
+| **`INST-004`** | Linux systemd In-Place Update | `scripts/install_linux.sh` | Verified in Linux bash systemd lifecycle detection, graceful stop, binary upgrade, and restart | **100% VERIFIED** |
 | **`DISC-001`** | Multi-Drive Tool Discovery | `Services/ToolDiscoveryService.cs`, `Interfaces/IToolDiscoveryService.cs` | `ToolDiscoveryServiceTests.DetectOllama_WhenInstalledInCustomRoot_DiscoversProperties`<br>`ToolDiscoveryServiceTests.DetectComfyUi_WhenPortableInstalled_DiscoversBatchAndDirectories`<br>`ToolDiscoveryServiceTests.DetectForge_WhenInstalled_DiscoversBatchAndModelsDirectory`<br>`ToolDiscoveryServiceTests.DetectAllToolsAsync_ReturnsAggregatedResultsAndSuggestions` | **100% VERIFIED** |
 | **`DISC-002`** | Tool Detection REST API | `Endpoints/DiscoveryEndpoints.cs` | `DiscoveryEndpointsTests.DetectToolsEndpoint_ReturnsToolDiscoveryResult` | **100% VERIFIED** |
 | **`DISC-003`** | Dynamic Path Validation API | `Endpoints/DiscoveryEndpoints.cs` | `DiscoveryEndpointsTests.ValidatePathEndpoint_WithExistingDirectory_ReturnsValid`<br>`DiscoveryEndpointsTests.ValidatePathEndpoint_WithInvalidPath_ReturnsNotFound` | **100% VERIFIED** |
