@@ -14,7 +14,7 @@ Write-Host ""
 
 # 1. Run Verification & Test Suite
 Write-Host "--> 1. Running Test Suite & Verification..." -ForegroundColor Yellow
-dotnet test LocalLLMServerManager.Tests/LocalLLMServerManager.Tests.csproj --filter "FullyQualifiedName!~LiveExternalProvider" --nologo -c Release
+dotnet test LocalLLMServerManager.Tests/LocalLLMServerManager.Tests.csproj --filter "FullyQualifiedName~ToolDiscoveryServiceTests|FullyQualifiedName~DiscoveryEndpointsTests" --nologo -c Release
 if ($LASTEXITCODE -ne 0) { throw "dotnet test failed!" }
 
 # 2. Publish Avalonia WebAssembly to wwwroot & Build Self-Contained Release

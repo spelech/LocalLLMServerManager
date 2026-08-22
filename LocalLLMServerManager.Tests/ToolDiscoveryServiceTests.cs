@@ -247,4 +247,62 @@ public class ToolDiscoveryServiceTests : IDisposable
         Assert.Equal(modelsDir, allResults.SuggestedThreeDPath);
         Assert.Equal(workflowsDir, allResults.SuggestedWorkflowsPath);
     }
+
+    [Fact]
+    public async Task DetectAllToolsAsync_DisambiguatesComfyAndForge_InSameSearchRootWithRootRunBat()
+    {
+        // Setup root with a top-level run.bat (which might fool naive scanners)
+        var topLevelRunBat = Path.Combine(_tempDirectory, "run.bat");
+        File.WriteAllText(topLevelRunBat, "@echo off\ncall webui-user.bat");
+
+        // Setup ComfyUI subfolder
+        var comfyFolder = Path.Combine(_tempDirectory, "ComfyUI");
+        var comfyModels = Path.Combine(comfyFolder, "models");
+        Directory.CreateDirectory(comfyModels);
+        var comfyBat = Path.Combine(comfyFolder, "run_nvidia_gpu.bat");
+        File.WriteAllText(comfyBat, "@echo off\npython main.py");
+
+        // Setup SD_Forge subfolder
+        var forgeFolder = Path.Combine(_tempDirectory, "SD_Forge");
+        var forgeModels = Path.Combine(forgeFolder, "models");
+        Directory.CreateDirectory(forgeModels);
+        var forgeBat = Path.Combine(forgeFolder, "webui-user.bat");
+        File.WriteAllText(forgeBat, "@echo off\npython launch.py");
+
+        var service = new ToolDiscoveryService(searchRoots: new[] { _tempDirectory });
+        var results = await service.DetectAllToolsAsync();
+
+        Assert.True(results.ComfyUi.IsInstalled);
+        Assert.Equal(comfyBat, results.ComfyUi.ExecutablePath);
+        Assert.Equal(comfyFolder, results.ComfyUi.RootDirectory);
+        Assert.Equal(comfyModels, results.ComfyUi.ModelsDirectory);
+
+        Assert.True(results.Forge.IsInstalled);
+        Assert.Equal(forgeBat, results.Forge.ExecutablePath);
+        Assert.Equal(forgeFolder, results.Forge.RootDirectory);
+        Assert.Equal(forgeModels, results.Forge.ModelsDirectory);
+
+        // Ensure they did NOT resolve to the top level or each other
+        Assert.NotEqual(results.ComfyUi.ExecutablePath, results.Forge.ExecutablePath);
+        Assert.NotEqual(results.ComfyUi.RootDirectory, results.Forge.RootDirectory);
+    }
+
+    [Fact]
+    public async Task DetectAllToolsAsync_OnDefaultSearchRoots_DiscoversUniqueToolRoots()
+    {
+        var service = new ToolDiscoveryService();
+        var results = await service.DetectAllToolsAsync();
+
+        if (results.ComfyUi.IsInstalled && results.Forge.IsInstalled)
+        {
+            Assert.NotEqual(results.ComfyUi.ExecutablePath, results.Forge.ExecutablePath);
+            Assert.NotEqual(results.ComfyUi.RootDirectory, results.Forge.RootDirectory);
+            Assert.Contains("ComfyUI", results.ComfyUi.ExecutablePath, StringComparison.OrdinalIgnoreCase);
+            Assert.True(
+                results.Forge.ExecutablePath.Contains("SD_Forge", StringComparison.OrdinalIgnoreCase) ||
+                results.Forge.ExecutablePath.Contains("Forge", StringComparison.OrdinalIgnoreCase) ||
+                results.Forge.ExecutablePath.Contains("webui", StringComparison.OrdinalIgnoreCase)
+            );
+        }
+    }
 }

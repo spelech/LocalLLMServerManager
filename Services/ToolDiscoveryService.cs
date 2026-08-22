@@ -151,25 +151,28 @@ public class ToolDiscoveryService : IToolDiscoveryService
             "ComfyUI_windows_portable",
             "ComfyUI",
             "comfyui",
-            "ComfyUI_windows_portable_nvidia_cu121_or_cpu"
+            "ComfyUI_windows_portable_nvidia_cu121_or_cpu",
+            "comfy"
         };
 
         var runnerNames = new[]
         {
+            "run_nvidia_gpu_fast_fp16_accumulation.bat",
             "run_nvidia_gpu.bat",
-            "run_cpu.bat",
             "run_directml.bat",
+            "run_cpu.bat",
             "run.bat",
             "main.py"
         };
 
         foreach (var baseRoot in _searchRoots)
         {
-            var candidateDirectories = new List<string> { baseRoot };
+            var candidateDirectories = new List<string>();
             foreach (var sub in targetSubdirs)
             {
                 candidateDirectories.Add(Path.Combine(baseRoot, sub));
             }
+            candidateDirectories.Add(baseRoot);
 
             foreach (var dir in candidateDirectories)
             {
@@ -182,6 +185,18 @@ public class ToolDiscoveryService : IToolDiscoveryService
                     var runnerPath = Path.Combine(dir, runner);
                     if (File.Exists(runnerPath))
                     {
+                        // If it's a generic run.bat, ensure directory has ComfyUI signatures
+                        if (runner.Equals("run.bat", StringComparison.OrdinalIgnoreCase))
+                        {
+                            var hasComfySignature = File.Exists(Path.Combine(dir, "main.py")) ||
+                                                    File.Exists(Path.Combine(dir, "ComfyUI", "main.py")) ||
+                                                    Directory.Exists(Path.Combine(dir, "comfy")) ||
+                                                    Directory.Exists(Path.Combine(dir, "ComfyUI")) ||
+                                                    File.Exists(Path.Combine(dir, "execution.py"));
+                            if (!hasComfySignature)
+                                continue;
+                        }
+
                         foundRunner = runnerPath;
                         break;
                     }
@@ -201,6 +216,13 @@ public class ToolDiscoveryService : IToolDiscoveryService
                 if (foundRunner != null)
                 {
                     var modelsDir = FindDirectory(dir, "models", "ComfyUI/models");
+                    if (modelsDir == null)
+                    {
+                        var parentModels = Path.Combine(dir, "..", "comfy_models");
+                        if (Directory.Exists(parentModels))
+                            modelsDir = Path.GetFullPath(parentModels);
+                    }
+
                     var workflowsDir = FindDirectory(dir, "user/default/workflows", "ComfyUI/user/default/workflows", "workflows", "ComfyUI/workflows");
 
                     return new DiscoveredToolInfo(
@@ -229,30 +251,36 @@ public class ToolDiscoveryService : IToolDiscoveryService
     {
         var targetSubdirs = new[]
         {
+            "SD_Forge",
+            "sd_forge",
+            "SD-Forge",
+            "sd-forge",
             "webui_forge_cu121_torch231",
             "stable-diffusion-webui-forge",
+            "webui_forge",
             "Forge",
             "forge",
-            "webui_forge",
-            "stable-diffusion-webui"
+            "stable-diffusion-webui",
+            "webui"
         };
 
         var runnerNames = new[]
         {
-            "run.bat",
             "webui-user.bat",
             "webui.bat",
-            "update.bat",
-            "launch.py"
+            "run.bat",
+            "launch.py",
+            "update.bat"
         };
 
         foreach (var baseRoot in _searchRoots)
         {
-            var candidateDirectories = new List<string> { baseRoot };
+            var candidateDirectories = new List<string>();
             foreach (var sub in targetSubdirs)
             {
                 candidateDirectories.Add(Path.Combine(baseRoot, sub));
             }
+            candidateDirectories.Add(baseRoot);
 
             foreach (var dir in candidateDirectories)
             {
@@ -265,6 +293,20 @@ public class ToolDiscoveryService : IToolDiscoveryService
                     var runnerPath = Path.Combine(dir, runner);
                     if (File.Exists(runnerPath))
                     {
+                        // If it's a generic run.bat or update.bat, ensure directory has WebUI / Forge signatures
+                        if (runner.Equals("run.bat", StringComparison.OrdinalIgnoreCase) || runner.Equals("update.bat", StringComparison.OrdinalIgnoreCase))
+                        {
+                            var hasForgeSignature = File.Exists(Path.Combine(dir, "webui-user.bat")) ||
+                                                    File.Exists(Path.Combine(dir, "webui.bat")) ||
+                                                    File.Exists(Path.Combine(dir, "webui.py")) ||
+                                                    File.Exists(Path.Combine(dir, "launch.py")) ||
+                                                    Directory.Exists(Path.Combine(dir, "modules_forge")) ||
+                                                    Directory.Exists(Path.Combine(dir, "modules")) ||
+                                                    Directory.Exists(Path.Combine(dir, "webui"));
+                            if (!hasForgeSignature)
+                                continue;
+                        }
+
                         foundRunner = runnerPath;
                         break;
                     }
@@ -272,7 +314,7 @@ public class ToolDiscoveryService : IToolDiscoveryService
 
                 if (foundRunner != null)
                 {
-                    var modelsDir = FindDirectory(dir, "webui/models/Stable-diffusion", "models/Stable-diffusion", "webui/models", "models");
+                    var modelsDir = FindDirectory(dir, "models/Stable-diffusion", "webui/models/Stable-diffusion", "models", "webui/models");
 
                     return new DiscoveredToolInfo(
                         IsInstalled: true,

@@ -45,6 +45,7 @@ LocalLLMServerManager-*-Setup.exe
 #wwwroot/
 wwwroot/_framework/
 wwwroot/wwwroot/
+wwwroot_wasm/
 
 # Visual Studio 2017 auto generated files
 Generated\ Files/
