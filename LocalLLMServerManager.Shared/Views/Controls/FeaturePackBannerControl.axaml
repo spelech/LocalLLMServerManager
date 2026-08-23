@@ -1,0 +1,39 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:controls="using:LocalLLMServerManager.Shared.Views.Controls"
+             x:Class="LocalLLMServerManager.Shared.Views.Controls.FeaturePackBannerControl"
+             x:Name="RootControl">
+
+    <Border Classes="matte-card" Background="{StaticResource BgSurfaceBrush}" BorderBrush="{StaticResource AccentBrush}" BorderThickness="1" Padding="20" CornerRadius="8">
+        <Grid RowDefinitions="Auto, Auto, Auto" ColumnDefinitions="*, Auto">
+            <StackPanel Grid.Row="0" Grid.Column="0" Spacing="4">
+                <StackPanel Orientation="Horizontal" Spacing="8">
+                    <TextBlock Text="📦" FontSize="20" VerticalAlignment="Center"/>
+                    <TextBlock Text="{Binding Title, ElementName=RootControl}" FontSize="16" FontWeight="Bold" Foreground="{StaticResource TextMainBrush}" VerticalAlignment="Center"/>
+                </StackPanel>
+                <TextBlock Text="{Binding Description, ElementName=RootControl}" FontSize="13" Foreground="{StaticResource TextMutedBrush}" TextWrapping="Wrap" Margin="0,4,0,0"/>
+            </StackPanel>
+
+            <StackPanel Grid.Row="1" Grid.Column="0" Orientation="Horizontal" Spacing="16" Margin="0,12,0,0">
+                <Border Classes="matte-pill" Padding="10,4">
+                    <StackPanel Orientation="Horizontal" Spacing="6">
+                        <TextBlock Text="💾 Disk Size:" FontSize="12" Foreground="{StaticResource TextMutedBrush}"/>
+                        <TextBlock Text="{Binding DiskSize, ElementName=RootControl}" FontSize="12" FontWeight="SemiBold" Foreground="{StaticResource TextMainBrush}"/>
+                    </StackPanel>
+                </Border>
+                <Border Classes="matte-pill" Padding="10,4">
+                    <StackPanel Orientation="Horizontal" Spacing="6">
+                        <TextBlock Text="⚡ Min VRAM:" FontSize="12" Foreground="{StaticResource TextMutedBrush}"/>
+                        <TextBlock Text="{Binding MinVram, ElementName=RootControl}" FontSize="12" FontWeight="SemiBold" Foreground="{StaticResource SecondaryBrush}"/>
+                    </StackPanel>
+                </Border>
+            </StackPanel>
+
+            <Button Grid.Row="0" Grid.Column="1" Grid.RowSpan="2"
+                    Content="📥 Install Feature Pack"
+                    Command="{Binding InstallCommand, ElementName=RootControl}"
+                    CommandParameter="{Binding InstallCommandParameter, ElementName=RootControl}"
+                    Classes="matte-primary" VerticalAlignment="Center" Padding="16,10"/>
+        </Grid>
+    </Border>
+</UserControl>

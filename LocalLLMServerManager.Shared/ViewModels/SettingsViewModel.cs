@@ -39,6 +39,15 @@ public partial class SettingsViewModel : ObservableObject
     [ObservableProperty] private string _threeDModelsStatus = "⚠️ Missing";
     [ObservableProperty] private string _workflowsStatus = "⚠️ Missing";
 
+    // Feature Packs Status & Management
+    [ObservableProperty] private bool _isVideoPackInstalled;
+    [ObservableProperty] private bool _isAudioPackInstalled;
+    [ObservableProperty] private string _videoPackDiskUsage = "14.2 GB";
+    [ObservableProperty] private string _audioPackDiskUsage = "350 MB";
+
+    public string VideoPackStatusText => IsVideoPackInstalled ? "🟢 Installed" : "⚠️ Optional Pack Not Installed";
+    public string AudioPackStatusText => IsAudioPackInstalled ? "🟢 Installed" : "⚠️ Optional Pack Not Installed";
+
     public string OllamaExecutableStatus => OllamaStatus;
 
     private readonly IThemeService _themeService;
@@ -152,6 +161,80 @@ public partial class SettingsViewModel : ObservableObject
         catch { }
 
         return "⚠️ Missing";
+    }
+
+    [RelayCommand]
+    public async Task RefreshComponentStatusesAsync()
+    {
+        var apiBase = string.IsNullOrWhiteSpace(LanAccessUrl) ? "http://127.0.0.1:5246" : LanAccessUrl.TrimEnd('/');
+        await RefreshComponentStatusesAsync(apiBase, new HttpClient());
+    }
+
+    public async Task RefreshComponentStatusesAsync(string apiBase, HttpClient http)
+    {
+        try
+        {
+            var response = await http.GetAsync($"{apiBase}/api/components");
+            if (response.IsSuccessStatusCode)
+            {
+                var json = await response.Content.ReadAsStringAsync();
+                using var doc = JsonDocument.Parse(json);
+                foreach (var elem in doc.RootElement.EnumerateArray())
+                {
+                    var id = elem.GetProperty("id").GetString();
+                    var installed = elem.GetProperty("installed").GetBoolean();
+                    if (id == "video-generation") IsVideoPackInstalled = installed;
+                    else if (id == "audio-tts") IsAudioPackInstalled = installed;
+                }
+                OnPropertyChanged(nameof(VideoPackStatusText));
+                OnPropertyChanged(nameof(AudioPackStatusText));
+            }
+        }
+        catch { }
+    }
+
+    [RelayCommand]
+    public async Task ToggleVideoPackAsync()
+    {
+        await ToggleComponentAsync("video-generation", IsVideoPackInstalled);
+    }
+
+    [RelayCommand]
+    public async Task ToggleAudioPackAsync()
+    {
+        await ToggleComponentAsync("audio-tts", IsAudioPackInstalled);
+    }
+
+    private async Task ToggleComponentAsync(string componentId, bool currentlyInstalled)
+    {
+        var http = new HttpClient();
+        var apiBase = string.IsNullOrWhiteSpace(LanAccessUrl) ? "http://127.0.0.1:5246" : LanAccessUrl.TrimEnd('/');
+        try
+        {
+            if (currentlyInstalled)
+            {
+                var content = new StringContent(JsonSerializer.Serialize(new { componentId }), System.Text.Encoding.UTF8, "application/json");
+                var res = await http.PostAsync($"{apiBase}/api/components/uninstall", content);
+                if (res.IsSuccessStatusCode)
+                {
+                    ToastService.Instance.Show($"Uninstalled component '{componentId}'.", ToastType.Info);
+                }
+            }
+            else
+            {
+                var content = new StringContent(JsonSerializer.Serialize(new { componentId }), System.Text.Encoding.UTF8, "application/json");
+                var res = await http.PostAsync($"{apiBase}/api/components/install", content);
+                if (res.IsSuccessStatusCode)
+                {
+                    ToastService.Instance.Show($"Installed component '{componentId}'.", ToastType.Success);
+                }
+            }
+            await RefreshComponentStatusesAsync();
+        }
+        catch
+        {
+            ToastService.Instance.Show($"Failed component action for '{componentId}'.", ToastType.Error);
+        }
     }
 
     [RelayCommand]
