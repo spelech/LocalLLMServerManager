@@ -16,6 +16,8 @@ public record AppSettings(
     string PublishOutputPath = "C:\\LocalLLMServerManager",
     string ComfyModelsPath = "",
     string LanAccessUrl = "http://127.0.0.1:5246",
-    string SelectedThemeStyle = "semi"
+    string SelectedThemeStyle = "semi",
+    string VideoModelsPath = "",
+    string VideoOutputPath = ""
 );
 

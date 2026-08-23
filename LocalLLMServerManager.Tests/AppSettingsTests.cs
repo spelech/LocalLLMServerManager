@@ -26,6 +26,8 @@ public class AppSettingsTests
         Assert.Equal("", settings.ComfyModelsPath);
         Assert.Equal("http://127.0.0.1:5246", settings.LanAccessUrl);
         Assert.Equal("semi", settings.SelectedThemeStyle);
+        Assert.Equal("", settings.VideoModelsPath);
+        Assert.Equal("", settings.VideoOutputPath);
     }
 
     [Fact]
@@ -75,7 +77,9 @@ public class AppSettingsTests
             PublishOutputPath: @"D:\Publish",
             ComfyModelsPath: @"C:\AI\ComfyUI\models",
             LanAccessUrl: "http://192.168.1.50:5246",
-            SelectedThemeStyle: "dark"
+            SelectedThemeStyle: "dark",
+            VideoModelsPath: @"C:\AI\VideoModels",
+            VideoOutputPath: @"C:\AI\VideoOutput"
         );
 
         var json = JsonSerializer.Serialize(original);
