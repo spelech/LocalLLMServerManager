@@ -15,6 +15,7 @@ public record AppSettings(
     string ServiceName = "LocalLLMServerManager",
     string PublishOutputPath = "C:\\LocalLLMServerManager",
     string ComfyModelsPath = "",
+    string AudioPath = "",
     string LanAccessUrl = "http://127.0.0.1:5246",
     string SelectedThemeStyle = "semi"
 );

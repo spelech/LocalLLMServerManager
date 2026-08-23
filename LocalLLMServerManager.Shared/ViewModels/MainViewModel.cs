@@ -64,6 +64,7 @@ public partial class MainViewModel : ObservableObject
     public HuggingFaceSearchViewModel HuggingFace { get; }
     public CivitaiSearchViewModel Civitai { get; }
     public SettingsViewModel Settings { get; }
+    public AudioStudioViewModel Audio { get; }
 
     public MainViewModel() : this(null)
     {
@@ -97,8 +98,11 @@ public partial class MainViewModel : ObservableObject
         HuggingFace = new HuggingFaceSearchViewModel(hfSearchService);
         Civitai = new CivitaiSearchViewModel(civitaiSearchService);
         Settings = new SettingsViewModel();
+        Audio = new AudioStudioViewModel();
 
         _ = RefreshStatusAsync();
+        _ = Audio.LoadAudioWorkflowsAsync(ApiBase, Http);
+        _ = Audio.LoadAudioFilesAsync(ApiBase, Http);
         _ = LoadSettingsAsync();
         if (EnableAutomaticPolling)
         {
@@ -252,4 +256,10 @@ public partial class MainViewModel : ObservableObject
 
     [RelayCommand]
     public async Task SaveSettingsAsync() => await Settings.SaveSettingsAsync(ApiBase, Http);
+
+    [RelayCommand]
+    public async Task GenerateAudioAsync()
+    {
+        await Audio.GenerateAudioAsync(new ParamContext(ApiBase, Http));
+    }
 }

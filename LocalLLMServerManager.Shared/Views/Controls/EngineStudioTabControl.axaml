@@ -6,8 +6,8 @@
 
     <StackPanel Spacing="16" Margin="0,12,0,0">
         <StackPanel Spacing="2">
-            <TextBlock Text="🎨 AI Image &amp; 3D Generation Engines" FontSize="16" FontWeight="Bold" Foreground="{StaticResource TextMainBrush}"/>
-            <TextBlock Text="Manage background engine processes and web interfaces" FontSize="12" Foreground="{StaticResource TextMutedBrush}"/>
+            <TextBlock Text="🎨 AI Image &amp; Audio Generation Engines" FontSize="16" FontWeight="Bold" Foreground="{StaticResource TextMainBrush}"/>
+            <TextBlock Text="Manage background engine processes, ComfyUI audio workflows, and web interfaces" FontSize="12" Foreground="{StaticResource TextMutedBrush}"/>
         </StackPanel>
 
         <UniformGrid Columns="2">
@@ -37,14 +37,14 @@
             <Border Classes="matte-card" Margin="8,0,0,0" Padding="16">
                 <StackPanel Spacing="12">
                     <Grid ColumnDefinitions="*, Auto">
-                        <TextBlock Text="🧩 ComfyUI 3D Mesh Studio" FontSize="14" FontWeight="Bold" Foreground="{StaticResource TextMainBrush}" VerticalAlignment="Center"/>
+                        <TextBlock Text="🧩 ComfyUI 3D &amp; Audio Studio" FontSize="14" FontWeight="Bold" Foreground="{StaticResource TextMainBrush}" VerticalAlignment="Center"/>
                         <Border Grid.Column="1" Classes="matte-pill" Padding="8,4">
                             <TextBlock Text="{Binding ComfyStatus}" FontSize="11" Foreground="{StaticResource AccentBrush}" FontWeight="Bold"/>
                         </Border>
                     </Grid>
 
                     <StackPanel Spacing="4">
-                        <TextBlock Text="TRELLIS V2 &amp; Hunyuan3D Pipelines" FontSize="12" Foreground="{StaticResource TextMutedBrush}"/>
+                        <TextBlock Text="Stable Audio 3.0, YuE &amp; TRELLIS V2" FontSize="12" Foreground="{StaticResource TextMutedBrush}"/>
                         <Border Classes="matte-pill" HorizontalAlignment="Left" Padding="8,4">
                             <TextBlock Text="Port 8188 • Localhost" FontSize="11" Foreground="{StaticResource SecondaryBrush}" FontWeight="SemiBold"/>
                         </Border>
@@ -55,5 +55,83 @@
                 </StackPanel>
             </Border>
         </UniformGrid>
+
+        <!-- Audio Generation & Waveform Visualizer Studio -->
+        <Border Classes="matte-card" Padding="16" Margin="0,4,0,0">
+            <StackPanel Spacing="12" DataContext="{Binding Audio}">
+                <Grid ColumnDefinitions="*, Auto">
+                    <StackPanel Spacing="2">
+                        <TextBlock Text="🎵 Stable Audio Open 3.0 &amp; YuE Song Generator" FontSize="14" FontWeight="Bold" Foreground="{StaticResource TextMainBrush}"/>
+                        <TextBlock Text="Text-to-SFX, ambient soundscapes, and dual-track lyrics-to-music full song generation" FontSize="12" Foreground="{StaticResource TextMutedBrush}"/>
+                    </StackPanel>
+                    <Border Grid.Column="1" Classes="matte-pill" Padding="8,4">
+                        <TextBlock Text="{Binding StatusMessage}" FontSize="11" Foreground="{StaticResource PrimaryBrush}" FontWeight="Bold"/>
+                    </Border>
+                </Grid>
+
+                <Grid ColumnDefinitions="*, 120, 100" RowDefinitions="Auto">
+                    <ComboBox Grid.Column="0" ItemsSource="{Binding Workflows}" SelectedItem="{Binding SelectedWorkflow}" HorizontalAlignment="Stretch" Classes="matte-input" VerticalAlignment="Center">
+                        <ComboBox.ItemTemplate>
+                            <DataTemplate x:DataType="vm:AudioWorkflowItem">
+                                <TextBlock Text="{Binding Name}" ToolTip.Tip="{Binding Description}"/>
+                            </DataTemplate>
+                        </ComboBox.ItemTemplate>
+                    </ComboBox>
+
+                    <StackPanel Grid.Column="1" Margin="8,0,0,0" VerticalAlignment="Center">
+                        <TextBlock Text="Duration (s)" FontSize="11" Foreground="{StaticResource TextMutedBrush}"/>
+                        <NumericUpDown Value="{Binding DurationSeconds}" Minimum="5" Maximum="300" Increment="5" Classes="matte-input"/>
+                    </StackPanel>
+
+                    <StackPanel Grid.Column="2" Margin="8,0,0,0" VerticalAlignment="Center">
+                        <TextBlock Text="Seed" FontSize="11" Foreground="{StaticResource TextMutedBrush}"/>
+                        <TextBox Text="{Binding Seed}" Classes="matte-input"/>
+                    </StackPanel>
+                </Grid>
+
+                <TextBox Text="{Binding Prompt}" PlaceholderText="Audio prompt (e.g. Cyberpunk atmospheric ambient drone...)"
+                         Classes="matte-input" AcceptsReturn="True" TextWrapping="Wrap" Height="48"/>
+
+                <TextBox Text="{Binding NegativePrompt}" PlaceholderText="Negative prompt (e.g. low quality, distortion...)"
+                         Classes="matte-input"/>
+
+                <Button Content="🎵 Queue Audio Generation Workflow" Command="{Binding $parent[UserControl].DataContext.GenerateAudioCommand}"
+                        Classes="matte-primary" HorizontalAlignment="Stretch" HorizontalContentAlignment="Center"/>
+
+                <!-- Waveform Visualizer and Audio Track Preview -->
+                <Border Classes="matte-pill" Padding="12" Margin="0,4,0,0" Background="#1E293B">
+                    <Grid ColumnDefinitions="Auto, *, Auto" VerticalAlignment="Center">
+                        <Button Grid.Column="0" Content="{Binding PlayButtonText}" Command="{Binding TogglePlayCommand}"
+                                Classes="matte-primary" Padding="12,6" VerticalAlignment="Center"/>
+
+                        <StackPanel Grid.Column="1" Margin="12,0" VerticalAlignment="Center" Spacing="4">
+                            <TextBlock Text="{Binding PlayingTrackTitle}" FontWeight="Bold" FontSize="12" Foreground="{StaticResource TextMainBrush}"/>
+                            <!-- Audio Waveform Amplitude Peaks Visualizer -->
+                            <UniformGrid Rows="1" Height="22">
+                                <Border Background="{StaticResource PrimaryBrush}" CornerRadius="2" Margin="1,2" Height="10" VerticalAlignment="Center"/>
+                                <Border Background="{StaticResource PrimaryBrush}" CornerRadius="2" Margin="1,2" Height="18" VerticalAlignment="Center"/>
+                                <Border Background="{StaticResource PrimaryBrush}" CornerRadius="2" Margin="1,2" Height="14" VerticalAlignment="Center"/>
+                                <Border Background="{StaticResource AccentBrush}" CornerRadius="2" Margin="1,2" Height="22" VerticalAlignment="Center"/>
+                                <Border Background="{StaticResource AccentBrush}" CornerRadius="2" Margin="1,2" Height="16" VerticalAlignment="Center"/>
+                                <Border Background="{StaticResource PrimaryBrush}" CornerRadius="2" Margin="1,2" Height="12" VerticalAlignment="Center"/>
+                                <Border Background="{StaticResource PrimaryBrush}" CornerRadius="2" Margin="1,2" Height="20" VerticalAlignment="Center"/>
+                                <Border Background="{StaticResource AccentBrush}" CornerRadius="2" Margin="1,2" Height="15" VerticalAlignment="Center"/>
+                                <Border Background="{StaticResource PrimaryBrush}" CornerRadius="2" Margin="1,2" Height="8" VerticalAlignment="Center"/>
+                                <Border Background="{StaticResource PrimaryBrush}" CornerRadius="2" Margin="1,2" Height="18" VerticalAlignment="Center"/>
+                            </UniformGrid>
+                        </StackPanel>
+
+                        <ComboBox Grid.Column="2" ItemsSource="{Binding GeneratedAudioFiles}" SelectedItem="{Binding SelectedAudioFile}"
+                                  Classes="matte-input" Width="180" VerticalAlignment="Center">
+                            <ComboBox.ItemTemplate>
+                                <DataTemplate x:DataType="vm:AudioFileItem">
+                                    <TextBlock Text="{Binding Filename}"/>
+                                </DataTemplate>
+                            </ComboBox.ItemTemplate>
+                        </ComboBox>
+                    </Grid>
+                </Border>
+            </StackPanel>
+        </Border>
     </StackPanel>
 </UserControl>
