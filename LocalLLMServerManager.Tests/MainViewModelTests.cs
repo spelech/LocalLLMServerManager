@@ -291,6 +291,74 @@ public class MainViewModelTests : IClassFixture<AppTestServerFixture>
         var c1 = new CivitaiModelItem(1, "n", "t", "th", "d", "f", 5.0, 10);
         var c2 = new CivitaiModelItem(1, "n", "t", "th", "d", "f", 5.0, 10);
         Assert.Equal(c1, c2);
+
+        var v1 = new VideoAssetItem("video.mp4", "/output_video/video.mp4", "3.0s", "832x480", 16, 42890L, 1000L, DateTime.MinValue);
+        var v2 = new VideoAssetItem("video.mp4", "/output_video/video.mp4", "3.0s", "832x480", 16, 42890L, 1000L, DateTime.MinValue);
+        Assert.Equal(v1, v2);
+    }
+
+    [Fact]
+    public async Task VideoStudio_GenerateAndSelectVideo_UpdatesProperties()
+    {
+        var videoGenJson = @"{
+            ""filename"": ""video_20260823.mp4"",
+            ""url"": ""/output_video/video_20260823.mp4"",
+            ""duration"": ""3.0s"",
+            ""resolution"": ""832x480"",
+            ""fps"": 16,
+            ""seed"": 42890
+        }";
+
+        var videoListJson = @"[
+            {
+                ""filename"": ""video_20260823.mp4"",
+                ""url"": ""/output_video/video_20260823.mp4"",
+                ""duration"": ""3.0s"",
+                ""resolution"": ""832x480"",
+                ""fps"": 16,
+                ""seed"": 42890,
+                ""sizeBytes"": 2048,
+                ""createdAt"": ""2026-08-23T00:00:00Z""
+            }
+        ]";
+
+        var handlerMock = new Mock<HttpMessageHandler>();
+        handlerMock.Protected()
+            .Setup<Task<HttpResponseMessage>>(
+                "SendAsync",
+                ItExpr.Is<HttpRequestMessage>(req => req.RequestUri!.ToString().Contains("/api/video/generate")),
+                ItExpr.IsAny<System.Threading.CancellationToken>()
+            )
+            .ReturnsAsync(new HttpResponseMessage { StatusCode = HttpStatusCode.OK, Content = new StringContent(videoGenJson, Encoding.UTF8, "application/json") });
+
+        handlerMock.Protected()
+            .Setup<Task<HttpResponseMessage>>(
+                "SendAsync",
+                ItExpr.Is<HttpRequestMessage>(req => req.RequestUri!.ToString().Contains("/api/video/files")),
+                ItExpr.IsAny<System.Threading.CancellationToken>()
+            )
+            .ReturnsAsync(new HttpResponseMessage { StatusCode = HttpStatusCode.OK, Content = new StringContent(videoListJson, Encoding.UTF8, "application/json") });
+
+        var client = new HttpClient(handlerMock.Object);
+        var vm = new MainViewModel(client) { ApiBase = "http://127.0.0.1:5246" };
+
+        await vm.GenerateVideoAsync();
+        Assert.Contains("video_20260823.mp4", vm.RenderedVideoUrl);
+        Assert.Single(vm.GeneratedVideosList);
+
+        await vm.LoadGeneratedVideosAsync();
+        Assert.Single(vm.GeneratedVideosList);
+
+        var videoItem = vm.GeneratedVideosList[0];
+        vm.SelectVideo(videoItem);
+        Assert.Equal("3.0s", vm.VideoDurationText);
+        Assert.Equal("832x480", vm.VideoResolutionBadge);
+
+        vm.ToggleVideoPlay();
+        Assert.False(vm.IsVideoPlaying);
+
+        vm.ToggleVideoLoop();
+        Assert.False(vm.IsVideoLooping);
     }
 
     [Fact]
