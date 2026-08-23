@@ -75,7 +75,8 @@ public class SearchServicesTests
                 ""id"": ""meta-llama/Llama-3.3-8B-Instruct-GGUF"",
                 ""author"": ""meta-llama"",
                 ""likes"": 1200,
-                ""downloads"": 45000
+                ""downloads"": 45000,
+                ""pipeline_tag"": ""text-generation""
             }
         ]";
 
@@ -91,11 +92,28 @@ public class SearchServicesTests
         var client = new HttpClient(handlerMock.Object);
         var service = new HuggingFaceSearchService();
 
-        var results = await service.SearchRepositoriesAsync("http://localhost", "llama", client);
+        var results = await service.SearchRepositoriesAsync("http://localhost", "llama", "text-generation", client);
         Assert.NotEmpty(results);
         Assert.Equal("meta-llama/Llama-3.3-8B-Instruct-GGUF", results[0].Id);
         Assert.Equal("meta-llama", results[0].Author);
         Assert.Equal(1200, results[0].Likes);
+        Assert.Equal("text-generation", results[0].PipelineTag);
+    }
+
+    [Theory]
+    [InlineData("text-to-video", "ltx.safetensors", "ComfyUI/models/diffusion_models")]
+    [InlineData("image-to-video", "wan.safetensors", "ComfyUI/models/diffusion_models")]
+    [InlineData("text-to-speech", "kokoro.pt", "models/tts")]
+    [InlineData("text-to-audio", "f5tts.pt", "models/tts")]
+    [InlineData("text-to-3d", "trellis.safetensors", "models/3d")]
+    [InlineData("Lora", "style.safetensors", "models/Lora")]
+    [InlineData("Checkpoint", "sd.safetensors", "models/checkpoints")]
+    public void DownloadManager_ResolveTargetDirectory_RoutesCorrectly(string tagOrType, string fileName, string expectedSubdir)
+    {
+        var root = "/test/root";
+        var resolved = DownloadManager.ResolveTargetDirectory(tagOrType, fileName, root);
+        var normalizedExpected = System.IO.Path.Combine(root, expectedSubdir.Replace('/', System.IO.Path.DirectorySeparatorChar));
+        Assert.Equal(normalizedExpected, resolved);
     }
 
     [Fact]

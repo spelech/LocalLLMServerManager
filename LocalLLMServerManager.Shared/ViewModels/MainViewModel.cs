@@ -22,7 +22,8 @@ public record HuggingFaceRepoItem(
     string Id,
     string Author,
     int Likes,
-    string Downloads
+    string Downloads,
+    string PipelineTag = ""
 );
 
 public record HfFileQuantItem(
