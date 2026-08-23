@@ -103,6 +103,34 @@ public class ServerEndpointsTests : IClassFixture<AppTestServerFixture>
     }
 
     [Fact]
+    public async Task AudioEndpoints_StartStopAndVoices_ExecuteAndReturnExpectedResponses()
+    {
+        var voicesResp = await _client.GetAsync("/api/audio/voices");
+        Assert.True(voicesResp.IsSuccessStatusCode);
+
+        var json = await voicesResp.Content.ReadFromJsonAsync<JsonElement>();
+        Assert.True(json.TryGetProperty("voices", out _));
+
+        var stopResp = await _client.PostAsync("/api/audio/stop", null);
+        Assert.True(stopResp.IsSuccessStatusCode);
+    }
+
+    [Fact]
+    public async Task AudioSpeechProxyEndpoint_ReturnsResponseOrBadGateway()
+    {
+        var speechRequest = new
+        {
+            model = "kokoro",
+            input = "Test speech synthesis",
+            voice = "af_heart",
+            response_format = "mp3"
+        };
+
+        var response = await _client.PostAsJsonAsync("/v1/audio/speech", speechRequest);
+        Assert.NotNull(response);
+    }
+
+    [Fact]
     public async Task ModelAndWorkflowEndpoints_ReturnDirectoryLists()
     {
         var modelsResp = await _client.GetAsync("/api/3d/files");

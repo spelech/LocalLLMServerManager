@@ -226,6 +226,40 @@ public class ToolDiscoveryServiceTests : IDisposable
     }
 
     [Fact]
+    public void DetectAudioEngine_WhenInstalled_DiscoversScriptAndProperties()
+    {
+        var kokoroDir = Path.Combine(_tempDirectory, "Kokoro-FastAPI");
+        Directory.CreateDirectory(kokoroDir);
+        var mainPy = Path.Combine(kokoroDir, "main.py");
+        File.WriteAllText(mainPy, "# kokoro fastapi entrypoint");
+
+        var service = new ToolDiscoveryService(searchRoots: new[] { _tempDirectory });
+        var result = service.DetectAudioEngine();
+
+        Assert.True(result.IsInstalled);
+        Assert.Equal(mainPy, result.ExecutablePath);
+        Assert.Equal(kokoroDir, result.RootDirectory);
+        Assert.Contains("Audio Engine", result.StatusMessage);
+    }
+
+    [Fact]
+    public void DetectAudioEngine_WhenNotFound_ReturnsNotInstalledOrDocker()
+    {
+        var emptyDir = Path.Combine(_tempDirectory, "empty_audio_root");
+        Directory.CreateDirectory(emptyDir);
+
+        var service = new ToolDiscoveryService(searchRoots: new[] { emptyDir });
+        var result = service.DetectAudioEngine();
+
+        Assert.NotNull(result);
+        if (!result.IsInstalled)
+        {
+            Assert.Null(result.ExecutablePath);
+            Assert.Contains("not detected", result.StatusMessage, StringComparison.OrdinalIgnoreCase);
+        }
+    }
+
+    [Fact]
     public async Task DetectAllToolsAsync_ReturnsAggregatedResultsAndSuggestions()
     {
         var comfyRoot = Path.Combine(_tempDirectory, "ComfyUI");

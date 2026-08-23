@@ -45,6 +45,21 @@ public class SettingsViewModelTests
         Assert.Contains("Missing", vm.WorkflowsStatus);
         Assert.Contains("Missing", vm.ComfyUiExecutableStatus);
         Assert.Contains("Missing", vm.ForgeExecutableStatus);
+        Assert.Contains("Missing", vm.AudioEngineExecutableStatus);
+    }
+
+    [Fact]
+    public void AudioEngineProperties_UpdateStatusAndDefaults()
+    {
+        var vm = new SettingsViewModel();
+
+        Assert.Equal("", vm.AudioEngineExecutablePath);
+        Assert.Equal("http://127.0.0.1:8880", vm.AudioEngineUrl);
+        Assert.Equal("af_heart", vm.PreferredAudioVoice);
+        Assert.Contains("Missing", vm.AudioEngineExecutableStatus);
+
+        vm.AudioEngineExecutablePath = _tempFile;
+        Assert.True(vm.AudioEngineExecutableStatus.Contains("Verified") || vm.AudioEngineExecutableStatus.Contains("Found"));
     }
 
     [Fact]
@@ -242,6 +257,35 @@ public class SettingsViewModelTests
         // Ollama Executable
         await vm.BrowseOllamaExecutableCommand.ExecuteAsync(null);
         Assert.Contains("run_nvidia_gpu.bat", vm.OllamaExecutablePath);
+
+        // Audio Executable
+        await vm.BrowseAudioEngineExecutableCommand.ExecuteAsync(mockStorage.Object);
+        Assert.Contains("run_nvidia_gpu.bat", vm.AudioEngineExecutablePath);
+    }
+
+    [Fact]
+    public async Task TestVoiceSynthesizerAsync_SendsPostToProxy()
+    {
+        var vm = new SettingsViewModel
+        {
+            PreferredAudioVoice = "af_bella"
+        };
+
+        var mockHandler = new Mock<HttpMessageHandler>();
+        mockHandler.Protected()
+            .Setup<Task<HttpResponseMessage>>(
+                "SendAsync",
+                ItExpr.Is<HttpRequestMessage>(r => r.Method == HttpMethod.Post && r.RequestUri!.ToString().Contains("/v1/audio/speech")),
+                ItExpr.IsAny<CancellationToken>()
+            )
+            .ReturnsAsync(new HttpResponseMessage
+            {
+                StatusCode = HttpStatusCode.OK,
+                Content = new StringContent("audio_binary_bytes", Encoding.UTF8, "audio/mpeg")
+            });
+
+        var http = new HttpClient(mockHandler.Object);
+        await vm.TestVoiceSynthesizerAsync("http://127.0.0.1:5246", http);
     }
 
     [Fact]

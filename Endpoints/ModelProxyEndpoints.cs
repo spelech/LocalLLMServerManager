@@ -1,6 +1,7 @@
 using System.Net.Http.Headers;
 using System.Text.Json;
 using System.Text.Json.Nodes;
+using LocalLLMServerManager.Services;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 
@@ -139,6 +140,60 @@ public static class ModelProxyEndpoints
             catch (Exception ex)
             {
                 return Results.Problem(ex.Message);
+            }
+        });
+
+        app.MapPost("/v1/audio/speech", async (HttpContext context, ISettingsService settingsService, IHttpClientFactory clientFactory) =>
+        {
+            try
+            {
+                var settings = settingsService.LoadSettings();
+                var baseUrl = (string.IsNullOrWhiteSpace(settings.AudioEngineUrl) ? "http://127.0.0.1:8880" : settings.AudioEngineUrl).TrimEnd('/');
+                var targetUrl = $"{baseUrl}/v1/audio/speech";
+
+                using var reader = new StreamReader(context.Request.Body);
+                var requestBodyStr = await reader.ReadToEndAsync();
+
+                string outgoingJson = requestBodyStr;
+                if (!string.IsNullOrWhiteSpace(requestBodyStr))
+                {
+                    try
+                    {
+                        using var doc = JsonDocument.Parse(requestBodyStr);
+                        var root = doc.RootElement;
+                        var hasVoice = root.TryGetProperty("voice", out var voiceProp) && !string.IsNullOrWhiteSpace(voiceProp.GetString());
+
+                        if (!hasVoice)
+                        {
+                            var dict = JsonSerializer.Deserialize<Dictionary<string, object>>(requestBodyStr) ?? new Dictionary<string, object>();
+                            dict["voice"] = string.IsNullOrWhiteSpace(settings.PreferredAudioVoice) ? "af_heart" : settings.PreferredAudioVoice;
+                            outgoingJson = JsonSerializer.Serialize(dict);
+                        }
+                    }
+                    catch { }
+                }
+
+                var http = clientFactory.CreateClient();
+                using var targetReq = new HttpRequestMessage(HttpMethod.Post, targetUrl);
+                targetReq.Content = new StringContent(outgoingJson, System.Text.Encoding.UTF8, "application/json");
+
+                var targetResponse = await http.SendAsync(targetReq, HttpCompletionOption.ResponseHeadersRead, context.RequestAborted);
+
+                context.Response.StatusCode = (int)targetResponse.StatusCode;
+                var contentType = targetResponse.Content.Headers.ContentType?.ToString() ?? "audio/mpeg";
+                context.Response.ContentType = contentType;
+
+                await using var responseStream = await targetResponse.Content.ReadAsStreamAsync(context.RequestAborted);
+                await responseStream.CopyToAsync(context.Response.Body, context.RequestAborted);
+            }
+            catch (Exception ex)
+            {
+                if (!context.Response.HasStarted)
+                {
+                    context.Response.StatusCode = StatusCodes.Status502BadGateway;
+                    context.Response.ContentType = "application/json";
+                    await context.Response.WriteAsync(JsonSerializer.Serialize(new { error = ex.Message }));
+                }
             }
         });
     }

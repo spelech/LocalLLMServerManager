@@ -91,5 +91,66 @@ public static class EngineEndpoints
             await orchestrator.FreeComfyUiVramAsync();
             return Results.Ok(new { message = "ComfyUI VRAM freed" });
         });
+
+        app.MapPost("/api/audio/start", async (IAiEngineManager engineManager, ISettingsService settingsService, ILoggerFactory loggerFactory) =>
+        {
+            var logger = loggerFactory.CreateLogger("EngineEndpoints");
+            var settings = settingsService.LoadSettings();
+            var execPath = string.IsNullOrWhiteSpace(settings.AudioEngineExecutablePath) ? @"C:\AI\Kokoro-FastAPI\main.py" : settings.AudioEngineExecutablePath;
+
+            if (!execPath.TrimStart().StartsWith("docker", StringComparison.OrdinalIgnoreCase))
+            {
+                if (!Program.IsSafePath(execPath) || !System.IO.File.Exists(Program.ResolvePath(execPath, @"C:\AI\Kokoro-FastAPI\main.py")))
+                {
+                    return Results.BadRequest(new { message = $"Invalid or unsafe executable path: {execPath}" });
+                }
+            }
+
+            var success = await engineManager.StartAudioEngineAsync(execPath, logger);
+            if (success)
+            {
+                return Results.Ok(new { message = "Audio Engine Started", pid = engineManager.AudioProcess?.Id });
+            }
+            return Results.Problem("Failed to start Audio Engine process");
+        });
+
+        app.MapPost("/api/audio/stop", async (IAiEngineManager engineManager, ILoggerFactory loggerFactory) =>
+        {
+            var logger = loggerFactory.CreateLogger("EngineEndpoints");
+            await engineManager.StopAudioEngineAsync(logger);
+            return Results.Ok(new { message = "Audio Engine Stopped" });
+        });
+
+        app.MapGet("/api/audio/voices", async (ISettingsService settingsService, System.Net.Http.IHttpClientFactory clientFactory) =>
+        {
+            var settings = settingsService.LoadSettings();
+            var baseUrl = (string.IsNullOrWhiteSpace(settings.AudioEngineUrl) ? "http://127.0.0.1:8880" : settings.AudioEngineUrl).TrimEnd('/');
+
+            try
+            {
+                var client = clientFactory.CreateClient();
+                using var cts = new System.Threading.CancellationTokenSource(TimeSpan.FromSeconds(3));
+
+                var response = await client.GetAsync($"{baseUrl}/v1/audio/voices", cts.Token);
+                if (!response.IsSuccessStatusCode)
+                {
+                    response = await client.GetAsync($"{baseUrl}/voices", cts.Token);
+                }
+
+                if (response.IsSuccessStatusCode)
+                {
+                    var json = await response.Content.ReadAsStringAsync(cts.Token);
+                    return Results.Content(json, "application/json");
+                }
+            }
+            catch { }
+
+            var defaultVoices = new[]
+            {
+                "af_heart", "af_bella", "af_nicole", "af_sarah", "af_sky",
+                "am_adam", "am_michael", "bf_emma", "bf_isabella", "bm_george", "bm_fable"
+            };
+            return Results.Ok(new { voices = defaultVoices, preferred = settings.PreferredAudioVoice });
+        });
     }
 }
