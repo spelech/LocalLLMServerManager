@@ -124,4 +124,112 @@ public sealed class LocalLlmMcpTools
         var discovered = await _toolDiscoveryService.DetectAllToolsAsync();
         return JsonSerializer.Serialize(discovered, new JsonSerializerOptions { WriteIndented = true });
     }
+
+    [McpServerTool, Description("Generate video from text prompt or image using ComfyUI DiT pipelines (Wan 2.2, LTX-2.5).")]
+    public async Task<string> GenerateVideoAsync(
+        [Description("Text prompt describing video content or animation.")] string prompt,
+        [Description("ComfyUI video workflow pipeline (e.g. 'wan2.2_t2v', 'ltx2.5_t2v', 'hunyuanvideo1.5_t2v').")] string workflow = "wan2.2_t2v",
+        [Description("Video frame width in pixels.")] int width = 832,
+        [Description("Video frame height in pixels.")] int height = 480,
+        [Description("Total number of video frames to render.")] int frames = 49)
+    {
+        if (string.IsNullOrWhiteSpace(prompt))
+            return JsonSerializer.Serialize(new { success = false, error = "prompt is required" });
+
+        try
+        {
+            using var client = _httpClientFactory.CreateClient();
+            var body = JsonSerializer.Serialize(new { prompt, workflow, width, height, frames });
+            var content = new StringContent(body, System.Text.Encoding.UTF8, "application/json");
+            var response = await client.PostAsync("http://127.0.0.1:8188/prompt", content);
+
+            var mediaId = Guid.NewGuid().ToString("N")[..8];
+            var result = new
+            {
+                success = response.IsSuccessStatusCode,
+                prompt,
+                workflow,
+                width,
+                height,
+                frames,
+                mediaUrl = $"/output/video_{mediaId}.mp4",
+                status = response.IsSuccessStatusCode ? "queued" : "error",
+                statusCode = (int)response.StatusCode
+            };
+            return JsonSerializer.Serialize(result, new JsonSerializerOptions { WriteIndented = true });
+        }
+        catch (Exception ex)
+        {
+            return JsonSerializer.Serialize(new { success = false, error = ex.Message });
+        }
+    }
+
+    [McpServerTool, Description("Synthesize speech audio from text using local Kokoro / AllTalk TTS engine.")]
+    public async Task<string> SynthesizeSpeechAsync(
+        [Description("Text script to synthesize into speech audio.")] string text,
+        [Description("Voice speaker profile (e.g. 'af_heart').")] string voice = "af_heart",
+        [Description("Output audio file format, e.g. 'mp3' or 'wav'.")] string format = "mp3")
+    {
+        if (string.IsNullOrWhiteSpace(text))
+            return JsonSerializer.Serialize(new { success = false, error = "text is required" });
+
+        try
+        {
+            using var client = _httpClientFactory.CreateClient();
+            var body = JsonSerializer.Serialize(new { text, voice, format });
+            var content = new StringContent(body, System.Text.Encoding.UTF8, "application/json");
+            var response = await client.PostAsync("http://127.0.0.1:7851/api/tts", content);
+
+            var mediaId = Guid.NewGuid().ToString("N")[..8];
+            var ext = string.IsNullOrWhiteSpace(format) ? "mp3" : format.TrimStart('.');
+            var result = new
+            {
+                success = response.IsSuccessStatusCode,
+                text,
+                voice,
+                format,
+                mediaUrl = $"/output/speech_{mediaId}.{ext}",
+                status = response.IsSuccessStatusCode ? "completed" : "error",
+                statusCode = (int)response.StatusCode
+            };
+            return JsonSerializer.Serialize(result, new JsonSerializerOptions { WriteIndented = true });
+        }
+        catch (Exception ex)
+        {
+            return JsonSerializer.Serialize(new { success = false, error = ex.Message });
+        }
+    }
+
+    [McpServerTool, Description("Generate sound effects or ambient musical loops from a prompt.")]
+    public async Task<string> GenerateAudioAsync(
+        [Description("Text prompt describing sound effect, ambient loop, or music.")] string prompt,
+        [Description("Target audio duration in seconds.")] int durationSeconds = 15)
+    {
+        if (string.IsNullOrWhiteSpace(prompt))
+            return JsonSerializer.Serialize(new { success = false, error = "prompt is required" });
+
+        try
+        {
+            using var client = _httpClientFactory.CreateClient();
+            var body = JsonSerializer.Serialize(new { prompt, durationSeconds });
+            var content = new StringContent(body, System.Text.Encoding.UTF8, "application/json");
+            var response = await client.PostAsync("http://127.0.0.1:7860/api/audio/generate", content);
+
+            var mediaId = Guid.NewGuid().ToString("N")[..8];
+            var result = new
+            {
+                success = response.IsSuccessStatusCode,
+                prompt,
+                durationSeconds,
+                mediaUrl = $"/output/audio_{mediaId}.wav",
+                status = response.IsSuccessStatusCode ? "queued" : "error",
+                statusCode = (int)response.StatusCode
+            };
+            return JsonSerializer.Serialize(result, new JsonSerializerOptions { WriteIndented = true });
+        }
+        catch (Exception ex)
+        {
+            return JsonSerializer.Serialize(new { success = false, error = ex.Message });
+        }
+    }
 }
