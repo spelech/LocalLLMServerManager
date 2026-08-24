@@ -30,6 +30,16 @@ RestartApplications=yes
 [Languages]
 Name: "english"; MessagesFile: "compiler:Default.isl"
 
+[Types]
+Name: "full"; Description: "Full installation (Core + Video & Audio Feature Packs)"
+Name: "compact"; Description: "Minimal core installation (Core LLM & Image Gen)"
+Name: "custom"; Description: "Custom installation"; Flags: iscustom
+
+[Components]
+Name: "core"; Description: "Core LLM & Image Generation (Ollama + SD/Forge + 3D Studio)"; Types: full compact custom; Flags: fixed
+Name: "ext_video"; Description: "ComfyUI Video Generation Pack (Wan 2.2 / LTX-2.5 nodes & templates)"; Types: full
+Name: "ext_audio"; Description: "Kokoro / Audio Engine Pack (FastAPI TTS server & voice models)"; Types: full
+
 [Tasks]
 Name: "desktopicon"; Description: "{cm:CreateDesktopIcon}"; GroupDescription: "{cm:AdditionalIcons}"; Flags: unchecked
 Name: "autostart"; Description: "Auto-start System Tray App on user login"; GroupDescription: "System Integration"

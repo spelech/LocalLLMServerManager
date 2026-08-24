@@ -148,6 +148,7 @@ public class Program
         builder.Services.AddSingleton<ISettingsService, SettingsService>();
         builder.Services.AddSingleton<IGpuTelemetryProvider, GpuTelemetryProvider>();
         builder.Services.AddSingleton<IOllamaModelService, OllamaModelService>();
+        builder.Services.AddSingleton<IComponentManagerService, ComponentManagerService>();
 
         // Register MCP Server
         builder.Services.AddMcpServer()
@@ -244,6 +245,7 @@ public class Program
         app.MapEngineEndpoints();
         app.MapWorkflowEndpoints();
         app.MapDiscoveryEndpoints();
+        app.MapComponentEndpoints();
 
         // Service Update Route
         app.MapPost("/api/service/update", async (HttpContext httpContext, IGitUpdateService gitService) =>

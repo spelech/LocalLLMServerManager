@@ -4,8 +4,30 @@ param(
     [string]$ModelsDir = "",
     [string]$SettingsJson = "",
     [string]$SevenZipPath = "",
-    [switch]$Interactive
+    [switch]$Interactive,
+    [switch]$InstallVideoPack,
+    [switch]$InstallAudioPack
 )
+
+function Install-VideoPack {
+    param([string]$TargetDir, [string]$ModelsDir)
+    Write-Host "Executing Install-VideoPack..." -ForegroundColor Cyan
+    $videoDir = Join-Path $TargetDir "Workflows\Video"
+    $diffDir = Join-Path $ModelsDir "diffusion_models"
+    if (-not (Test-Path $videoDir)) { New-Item -ItemType Directory -Path $videoDir -Force | Out-Null }
+    if (-not (Test-Path $diffDir)) { New-Item -ItemType Directory -Path $diffDir -Force | Out-Null }
+    Write-Host "Video Feature Pack installed." -ForegroundColor Green
+}
+
+function Install-AudioPack {
+    param([string]$TargetDir, [string]$ModelsDir)
+    Write-Host "Executing Install-AudioPack..." -ForegroundColor Cyan
+    $kokoroDir = Join-Path $TargetDir "kokoro-fastapi"
+    $audioDir = Join-Path $ModelsDir "audio"
+    if (-not (Test-Path $kokoroDir)) { New-Item -ItemType Directory -Path $kokoroDir -Force | Out-Null }
+    if (-not (Test-Path $audioDir)) { New-Item -ItemType Directory -Path $audioDir -Force | Out-Null }
+    Write-Host "Audio Feature Pack installed." -ForegroundColor Green
+}
 
 function Get-AppSettings {
     param([string]$Path)
@@ -211,6 +233,14 @@ if (-not (Test-Path $managerDir)) {
     git clone https://github.com/ltdrdata/ComfyUI-Manager.git $managerDir
 } else {
     Write-Host "ComfyUI-Manager already present at $managerDir" -ForegroundColor Yellow
+}
+
+if ($InstallVideoPack) {
+    Install-VideoPack -TargetDir $TargetDir -ModelsDir $ModelsDir
+}
+
+if ($InstallAudioPack) {
+    Install-AudioPack -TargetDir $TargetDir -ModelsDir $ModelsDir
 }
 
 Write-Host "Setup Scripts Completed successfully!" -ForegroundColor Green

@@ -3,7 +3,9 @@
 param(
     [string]$InstallDir = "",
     [switch]$InstallService,
-    [switch]$Force
+    [switch]$Force,
+    [switch]$WithVideo,
+    [switch]$WithAudio
 )
 
 $ErrorActionPreference = "Stop"
@@ -135,7 +137,24 @@ Set-ItemProperty -Path "HKCU:\Software\Microsoft\Windows\CurrentVersion\Run" `
                  -Value "`"$ExePath`"" -ErrorAction SilentlyContinue
 Write-Host "System Tray auto-start configured!" -ForegroundColor Green
 
-# 9. Relaunch Tray Application if it was running
+# 9. Feature Pack Optional Installation
+if ($WithVideo) {
+    Write-Host "Installing Video Generation Feature Pack..." -ForegroundColor Cyan
+    $videoWorkflowDir = Join-Path $InstallDir "Workflows\Video"
+    if (-not (Test-Path $videoWorkflowDir)) {
+        New-Item -ItemType Directory -Path $videoWorkflowDir -Force | Out-Null
+    }
+}
+
+if ($WithAudio) {
+    Write-Host "Installing Audio & Kokoro TTS Feature Pack..." -ForegroundColor Cyan
+    $kokoroDir = Join-Path $InstallDir "kokoro-fastapi"
+    $audioModelsDir = Join-Path $InstallDir "models\audio"
+    if (-not (Test-Path $kokoroDir)) { New-Item -ItemType Directory -Path $kokoroDir -Force | Out-Null }
+    if (-not (Test-Path $audioModelsDir)) { New-Item -ItemType Directory -Path $audioModelsDir -Force | Out-Null }
+}
+
+# 10. Relaunch Tray Application if it was running
 if ($HadRunningProcesses) {
     Write-Host "Relaunching LocalLLMServerManager tray application..." -ForegroundColor Yellow
     Start-Process -FilePath $ExePath -ErrorAction SilentlyContinue

@@ -3,12 +3,29 @@
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              xmlns:vm="using:LocalLLMServerManager.Shared.ViewModels"
-             mc:Ignorable="d" d:DesignWidth="1100" d:DesignHeight="850"
+             xmlns:controls="using:LocalLLMServerManager.Shared.Views.Controls"
+             mc:Ignorable="d" d:DesignWidth="1100" d:DesignHeight="950"
              x:Class="LocalLLMServerManager.Shared.Views.Controls.EngineStudioTabControl"
              x:DataType="vm:MainViewModel">
 
     <ScrollViewer VerticalScrollBarVisibility="Auto">
         <StackPanel Spacing="16" Margin="0,12,0,16">
+            <!-- Feature Pack Optional Install Banners -->
+            <controls:FeaturePackBannerControl x:Name="VideoFeatureBanner"
+                                               Title="ComfyUI Video Generation Pack Available"
+                                               Description="Enables Wan 2.2, LTX-2.5, and HunyuanVideo DiT workflows."
+                                               DiskSize="14.2 GB"
+                                               MinVram="8 GB"
+                                               InstallCommand="{Binding Settings.ToggleVideoPackCommand}"
+                                               IsVisible="{Binding !Settings.IsVideoPackInstalled}" Margin="0,0,0,4"/>
+            <controls:FeaturePackBannerControl x:Name="AudioFeatureBanner"
+                                               Title="Kokoro TTS &amp; Audio Engine Pack Available"
+                                               Description="Enables fast local text-to-speech with OpenAI /v1/audio/speech compatibility."
+                                               DiskSize="350 MB"
+                                               MinVram="CPU / 2 GB"
+                                               InstallCommand="{Binding Settings.ToggleAudioPackCommand}"
+                                               IsVisible="{Binding !Settings.IsAudioPackInstalled}" Margin="0,0,0,4"/>
+
             <!-- Studio Mode Segmented Selector Header -->
             <Grid ColumnDefinitions="*, Auto">
                 <StackPanel Spacing="2">
