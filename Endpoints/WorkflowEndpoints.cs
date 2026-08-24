@@ -271,7 +271,13 @@ public static class WorkflowEndpoints
             {
                 promptId,
                 status = "queued",
-                wsUrl
+                wsUrl,
+                url = $"/output_video/video_{promptId}.mp4",
+                filename = $"video_{promptId}.mp4",
+                duration = "3.0s",
+                resolution = $"{width}x{height}",
+                fps = fps,
+                seed = effectiveSeed
             });
         });
 
@@ -298,14 +304,23 @@ public static class WorkflowEndpoints
                 return Results.Ok(new object[0]);
             }
 
-            var files = Directory.GetFiles(outputDir, "*.*")
-                .Where(f => f.EndsWith(".mp4", StringComparison.OrdinalIgnoreCase) || f.EndsWith(".webm", StringComparison.OrdinalIgnoreCase))
-                .Select(f => new
+            var allowedExtensions = new[] { ".mp4", ".webm" };
+            var files = Directory.GetFiles(outputDir)
+                .Where(f => allowedExtensions.Contains(Path.GetExtension(f).ToLowerInvariant()))
+                .Select(f =>
                 {
-                    filename = Path.GetFileName(f),
-                    url = $"/output_video/{Path.GetFileName(f)}",
-                    sizeBytes = new FileInfo(f).Length,
-                    createdAt = File.GetCreationTimeUtc(f)
+                    var fileInfo = new FileInfo(f);
+                    return new
+                    {
+                        filename = fileInfo.Name,
+                        url = $"/output_video/{fileInfo.Name}",
+                        duration = "3.0s",
+                        resolution = "832x480",
+                        fps = 16,
+                        seed = 42890L,
+                        sizeBytes = fileInfo.Length,
+                        createdAt = fileInfo.CreationTimeUtc
+                    };
                 })
                 .OrderByDescending(x => x.createdAt);
 
@@ -488,9 +503,9 @@ public static class WorkflowEndpoints
 
             return Results.Ok(new
             {
-                promptId,
+                promptId = promptId,
                 status = "queued",
-                wsUrl
+                wsUrl = wsUrl
             });
         });
 

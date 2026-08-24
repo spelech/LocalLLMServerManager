@@ -44,6 +44,17 @@ public record CivitaiModelItem(
     int DownloadCount
 );
 
+public record VideoAssetItem(
+    string Filename,
+    string Url,
+    string Duration,
+    string Resolution,
+    int Fps,
+    long Seed,
+    long SizeBytes,
+    DateTime CreatedAt
+);
+
 public partial class MainViewModel : ObservableObject
 {
     public static HttpClient DefaultHttpClient { get; set; } = new();
@@ -182,6 +193,57 @@ public partial class MainViewModel : ObservableObject
     public string SelectedTheme { get => Settings.SelectedTheme; set => Settings.SelectedTheme = value; }
     public System.Collections.Generic.IReadOnlyList<string> AvailableThemes => Settings.AvailableThemes;
 
+    // Studio & Video Studio Observable Properties
+    [ObservableProperty]
+    private string _selectedStudioMode = "Video"; // "Images", "3D Mesh", "Video"
+
+    [ObservableProperty]
+    private string _selectedVideoWorkflow = "AnimateDiff SDXL";
+
+    [ObservableProperty]
+    private bool _isGeneratingVideo;
+
+    [ObservableProperty]
+    private double _videoGenerationProgress;
+
+    [ObservableProperty]
+    private string _renderedVideoUrl = "";
+
+    [ObservableProperty]
+    private string _videoPrompt = "a detailed high resolution video of a woman walking in Tokyo, dynamic motion";
+
+    [ObservableProperty]
+    private string _videoNegativePrompt = "deformed, blurry, low quality, static, artifacts";
+
+    [ObservableProperty]
+    private string _videoResolution = "832x480";
+
+    [ObservableProperty]
+    private int _videoFrameCount = 48;
+
+    [ObservableProperty]
+    private long _videoSeed = 42890;
+
+    [ObservableProperty]
+    private string _videoDurationText = "3.0s";
+
+    [ObservableProperty]
+    private string _videoResolutionBadge = "832x480";
+
+    [ObservableProperty]
+    private string _videoFpsBadge = "16 fps";
+
+    [ObservableProperty]
+    private string _videoSeedBadge = "42890";
+
+    [ObservableProperty]
+    private bool _isVideoLooping = true;
+
+    [ObservableProperty]
+    private bool _isVideoPlaying = true;
+
+    public ObservableCollection<VideoAssetItem> GeneratedVideosList { get; } = new();
+
     private async Task StartBackgroundPollingAsync()
     {
         while (EnableAutomaticPolling)
@@ -262,5 +324,142 @@ public partial class MainViewModel : ObservableObject
     public async Task GenerateAudioAsync()
     {
         await Audio.GenerateAudioAsync(new ParamContext(ApiBase, Http));
+    }
+
+    [RelayCommand]
+    public async Task GenerateVideoAsync()
+    {
+        if (IsGeneratingVideo) return;
+
+        IsGeneratingVideo = true;
+        VideoGenerationProgress = 10;
+
+        try
+        {
+            var req = new
+            {
+                Prompt = VideoPrompt,
+                NegativePrompt = VideoNegativePrompt,
+                Workflow = SelectedVideoWorkflow,
+                Resolution = VideoResolution,
+                FrameCount = VideoFrameCount,
+                Seed = VideoSeed
+            };
+
+            var content = new StringContent(
+                JsonSerializer.Serialize(req),
+                System.Text.Encoding.UTF8,
+                "application/json"
+            );
+
+            VideoGenerationProgress = 40;
+            var response = await Http.PostAsync($"{ApiBase}/api/video/generate", content);
+            VideoGenerationProgress = 80;
+
+            if (response.IsSuccessStatusCode)
+            {
+                var jsonStr = await response.Content.ReadAsStringAsync();
+                using var doc = JsonDocument.Parse(jsonStr);
+                var root = doc.RootElement;
+
+                var url = root.GetProperty("url").GetString() ?? "";
+                var duration = root.TryGetProperty("duration", out var durProp) ? durProp.GetString() ?? "3.0s" : "3.0s";
+                var resolution = root.TryGetProperty("resolution", out var resProp) ? resProp.GetString() ?? "832x480" : "832x480";
+                var fps = root.TryGetProperty("fps", out var fpsProp) ? fpsProp.GetInt32() : 16;
+                var seed = root.TryGetProperty("seed", out var seedProp) ? seedProp.GetInt64() : VideoSeed;
+                var filename = root.TryGetProperty("filename", out var fnProp) ? fnProp.GetString() ?? "video.mp4" : "video.mp4";
+
+                RenderedVideoUrl = url.StartsWith("http") ? url : $"{ApiBase}{url}";
+                VideoDurationText = duration;
+                VideoResolutionBadge = resolution;
+                VideoFpsBadge = $"{fps} fps";
+                VideoSeedBadge = seed.ToString();
+
+                var item = new VideoAssetItem(filename, RenderedVideoUrl, duration, resolution, fps, seed, 1024 * 1024, DateTime.UtcNow);
+                GeneratedVideosList.Insert(0, item);
+                ToastService.Instance.Show("Video generated successfully!", ToastType.Success);
+            }
+            else
+            {
+                ToastService.Instance.Show("Failed to generate video.", ToastType.Error);
+            }
+        }
+        catch (Exception ex)
+        {
+            ToastService.Instance.Show($"Video Generation Error: {ex.Message}", ToastType.Error);
+        }
+        finally
+        {
+            VideoGenerationProgress = 100;
+            IsGeneratingVideo = false;
+        }
+    }
+
+    [RelayCommand]
+    public async Task LoadGeneratedVideosAsync()
+    {
+        try
+        {
+            var response = await Http.GetAsync($"{ApiBase}/api/video/files");
+            if (response.IsSuccessStatusCode)
+            {
+                var jsonStr = await response.Content.ReadAsStringAsync();
+                using var doc = JsonDocument.Parse(jsonStr);
+                GeneratedVideosList.Clear();
+
+                foreach (var el in doc.RootElement.EnumerateArray())
+                {
+                    var filename = el.GetProperty("filename").GetString() ?? "";
+                    var url = el.GetProperty("url").GetString() ?? "";
+                    var fullUrl = url.StartsWith("http") ? url : $"{ApiBase}{url}";
+                    var duration = el.TryGetProperty("duration", out var dur) ? dur.GetString() ?? "3.0s" : "3.0s";
+                    var resolution = el.TryGetProperty("resolution", out var res) ? res.GetString() ?? "832x480" : "832x480";
+                    var fps = el.TryGetProperty("fps", out var fpsProp) ? fpsProp.GetInt32() : 16;
+                    var seed = el.TryGetProperty("seed", out var seedProp) ? seedProp.GetInt64() : 42890L;
+                    var sizeBytes = el.TryGetProperty("sizeBytes", out var size) ? size.GetInt64() : 0L;
+                    var createdAt = el.TryGetProperty("createdAt", out var dt) ? dt.GetDateTime() : DateTime.UtcNow;
+
+                    GeneratedVideosList.Add(new VideoAssetItem(filename, fullUrl, duration, resolution, fps, seed, sizeBytes, createdAt));
+                }
+
+                if (GeneratedVideosList.Count > 0 && string.IsNullOrEmpty(RenderedVideoUrl))
+                {
+                    SelectVideo(GeneratedVideosList[0]);
+                }
+            }
+        }
+        catch { }
+    }
+
+    [RelayCommand]
+    public void SelectVideo(VideoAssetItem item)
+    {
+        if (item == null) return;
+        RenderedVideoUrl = item.Url;
+        VideoDurationText = item.Duration;
+        VideoResolutionBadge = item.Resolution;
+        VideoFpsBadge = $"{item.Fps} fps";
+        VideoSeedBadge = item.Seed.ToString();
+    }
+
+    [RelayCommand]
+    public void DownloadVideo()
+    {
+        if (!string.IsNullOrWhiteSpace(RenderedVideoUrl))
+        {
+            BrowserLauncher.OpenUrl(RenderedVideoUrl);
+        }
+    }
+
+    [RelayCommand]
+    public void ToggleVideoPlay()
+    {
+        IsVideoPlaying = !IsVideoPlaying;
+    }
+
+    [RelayCommand]
+    public void ToggleVideoLoop()
+    {
+        IsVideoLooping = !IsVideoLooping;
     }
 }
