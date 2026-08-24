@@ -24,12 +24,14 @@ public class ToolDiscoveryService : IToolDiscoveryService
         var ollamaTask = Task.Run(DetectOllama);
         var comfyTask = Task.Run(DetectComfyUi);
         var forgeTask = Task.Run(DetectForge);
+        var audioTask = Task.Run(DetectAudioEngine);
 
-        await Task.WhenAll(ollamaTask, comfyTask, forgeTask);
+        await Task.WhenAll(ollamaTask, comfyTask, forgeTask, audioTask);
 
         var ollama = await ollamaTask;
         var comfy = await comfyTask;
         var forge = await forgeTask;
+        var audio = await audioTask;
 
         var suggested3D = comfy.ModelsDirectory ?? forge.ModelsDirectory ?? Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "AI", "3D");
         var suggestedWorkflows = comfy.WorkflowsDirectory ?? Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "AI", "Workflows");
@@ -39,7 +41,8 @@ public class ToolDiscoveryService : IToolDiscoveryService
             ComfyUi: comfy,
             Forge: forge,
             SuggestedThreeDPath: suggested3D,
-            SuggestedWorkflowsPath: suggestedWorkflows
+            SuggestedWorkflowsPath: suggestedWorkflows,
+            AudioEngine: audio
         );
     }
 
@@ -335,6 +338,106 @@ public class ToolDiscoveryService : IToolDiscoveryService
             ModelsDirectory: null,
             WorkflowsDirectory: null,
             StatusMessage: "SD Forge not detected"
+        );
+    }
+
+    public DiscoveredToolInfo DetectAudioEngine()
+    {
+        var targetSubdirs = new[]
+        {
+            "Kokoro-FastAPI",
+            "kokoro-fastapi",
+            "Kokoro",
+            "kokoro",
+            "AllTalk",
+            "alltalk",
+            "alltalk_tts",
+            "tts",
+            "TTS"
+        };
+
+        var runnerNames = new[]
+        {
+            "main.py",
+            "app.py",
+            "api.py",
+            "start.bat",
+            "run.bat",
+            "start.sh"
+        };
+
+        foreach (var baseRoot in _searchRoots)
+        {
+            var candidateDirectories = new List<string>();
+            foreach (var sub in targetSubdirs)
+            {
+                candidateDirectories.Add(Path.Combine(baseRoot, sub));
+            }
+            candidateDirectories.Add(baseRoot);
+
+            foreach (var dir in candidateDirectories)
+            {
+                if (!Directory.Exists(dir))
+                    continue;
+
+                string? foundRunner = null;
+                foreach (var runner in runnerNames)
+                {
+                    var runnerPath = Path.Combine(dir, runner);
+                    if (File.Exists(runnerPath))
+                    {
+                        if (runner.Equals("run.bat", StringComparison.OrdinalIgnoreCase) || runner.Equals("start.bat", StringComparison.OrdinalIgnoreCase))
+                        {
+                            var hasAudioSignature = File.Exists(Path.Combine(dir, "main.py")) ||
+                                                    File.Exists(Path.Combine(dir, "app.py")) ||
+                                                    File.Exists(Path.Combine(dir, "api.py")) ||
+                                                    Directory.Exists(Path.Combine(dir, "voices")) ||
+                                                    Directory.Exists(Path.Combine(dir, "models"));
+                            if (!hasAudioSignature)
+                                continue;
+                        }
+
+                        foundRunner = runnerPath;
+                        break;
+                    }
+                }
+
+                if (foundRunner != null)
+                {
+                    var modelsDir = FindDirectory(dir, "voices", "models", "voice_models");
+
+                    return new DiscoveredToolInfo(
+                        IsInstalled: true,
+                        ExecutablePath: foundRunner,
+                        RootDirectory: dir,
+                        ModelsDirectory: modelsDir,
+                        WorkflowsDirectory: null,
+                        StatusMessage: $"Discovered Audio Engine at {foundRunner}"
+                    );
+                }
+            }
+        }
+
+        var dockerExe = FindExecutableOnPath(RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? "docker.exe" : "docker");
+        if (!string.IsNullOrEmpty(dockerExe))
+        {
+            return new DiscoveredToolInfo(
+                IsInstalled: true,
+                ExecutablePath: "docker run -d -p 8880:8880 ghcr.io/resemble-ai/kokoro-fastapi",
+                RootDirectory: null,
+                ModelsDirectory: null,
+                WorkflowsDirectory: null,
+                StatusMessage: "Docker detected for Audio Engine container"
+            );
+        }
+
+        return new DiscoveredToolInfo(
+            IsInstalled: false,
+            ExecutablePath: null,
+            RootDirectory: null,
+            ModelsDirectory: null,
+            WorkflowsDirectory: null,
+            StatusMessage: "Audio Engine not detected"
         );
     }
 

@@ -91,4 +91,27 @@ public class ServicesAndEngineManagerTests
         bool isRunning = manager.IsProcessRunning("non_existent_process_name_999");
         Assert.False(isRunning);
     }
+
+    [Fact]
+    public async Task AiEngineManager_AudioEngine_StartStop_HandlesGracefully()
+    {
+        var manager = new AiEngineManager();
+        var logger = NullLogger.Instance;
+
+        Assert.Null(manager.AudioProcess);
+
+        bool started = await manager.StartAudioEngineAsync("non_existent_audio_path.exe", logger);
+        Assert.False(started);
+
+        bool stopped = await manager.StopAudioEngineAsync(logger);
+        Assert.True(stopped);
+
+        var startResult = await manager.StartEngineAsync("audio");
+        Assert.False(startResult.Success);
+        Assert.Equal("audio", startResult.Engine);
+
+        var stopResult = await manager.StopEngineAsync("audio");
+        Assert.True(stopResult.Success);
+        Assert.Equal("audio", stopResult.Engine);
+    }
 }

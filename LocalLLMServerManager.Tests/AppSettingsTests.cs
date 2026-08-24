@@ -26,6 +26,9 @@ public class AppSettingsTests
         Assert.Equal("", settings.ComfyModelsPath);
         Assert.Equal("http://127.0.0.1:5246", settings.LanAccessUrl);
         Assert.Equal("semi", settings.SelectedThemeStyle);
+        Assert.Equal("", settings.AudioEngineExecutablePath);
+        Assert.Equal("http://127.0.0.1:8880", settings.AudioEngineUrl);
+        Assert.Equal("af_heart", settings.PreferredAudioVoice);
     }
 
     [Fact]
@@ -75,7 +78,10 @@ public class AppSettingsTests
             PublishOutputPath: @"D:\Publish",
             ComfyModelsPath: @"C:\AI\ComfyUI\models",
             LanAccessUrl: "http://192.168.1.50:5246",
-            SelectedThemeStyle: "dark"
+            SelectedThemeStyle: "dark",
+            AudioEngineExecutablePath: @"C:\AI\Kokoro-FastAPI\main.py",
+            AudioEngineUrl: "http://127.0.0.1:8880",
+            PreferredAudioVoice: "af_bella"
         );
 
         var json = JsonSerializer.Serialize(original);

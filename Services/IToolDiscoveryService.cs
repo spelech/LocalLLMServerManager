@@ -8,6 +8,7 @@ public interface IToolDiscoveryService
     DiscoveredToolInfo DetectOllama();
     DiscoveredToolInfo DetectComfyUi();
     DiscoveredToolInfo DetectForge();
+    DiscoveredToolInfo DetectAudioEngine();
     PathValidationResult ValidatePath(string? path, PathTargetType targetType);
 }
 
@@ -25,7 +26,8 @@ public record DiscoveredToolsResult(
     DiscoveredToolInfo ComfyUi,
     DiscoveredToolInfo Forge,
     string SuggestedThreeDPath,
-    string SuggestedWorkflowsPath
+    string SuggestedWorkflowsPath,
+    DiscoveredToolInfo AudioEngine = default!
 );
 
 public enum PathTargetType
@@ -47,7 +49,8 @@ public record ValidatePathsRequest(
     string? ComfyModelsPath = null,
     string? ComfyUiExecutablePath = null,
     string? ForgeExecutablePath = null,
-    string? OllamaExecutablePath = null
+    string? OllamaExecutablePath = null,
+    string? AudioEngineExecutablePath = null
 );
 
 public record ValidatePathsResponse(

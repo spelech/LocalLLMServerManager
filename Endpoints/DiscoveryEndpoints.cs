@@ -49,7 +49,11 @@ public static class DiscoveryEndpoints
 
                 ComfyModelsPath = string.IsNullOrWhiteSpace(currentSettings.ComfyModelsPath) && !string.IsNullOrWhiteSpace(detected.ComfyUi.ModelsDirectory)
                     ? detected.ComfyUi.ModelsDirectory
-                    : currentSettings.ComfyModelsPath
+                    : currentSettings.ComfyModelsPath,
+
+                AudioEngineExecutablePath = string.IsNullOrWhiteSpace(currentSettings.AudioEngineExecutablePath) && !string.IsNullOrWhiteSpace(detected.AudioEngine?.ExecutablePath)
+                    ? detected.AudioEngine.ExecutablePath
+                    : currentSettings.AudioEngineExecutablePath
             };
 
             settingsService.SaveSettings(updatedSettings);
@@ -119,6 +123,11 @@ public static class DiscoveryEndpoints
             if (request.OllamaExecutablePath != null)
             {
                 results[nameof(request.OllamaExecutablePath)] = discoveryService.ValidatePath(request.OllamaExecutablePath, PathTargetType.Executable);
+            }
+
+            if (request.AudioEngineExecutablePath != null)
+            {
+                results[nameof(request.AudioEngineExecutablePath)] = discoveryService.ValidatePath(request.AudioEngineExecutablePath, PathTargetType.Executable);
             }
 
             var allValid = results.Values.All(r => r.IsValid);

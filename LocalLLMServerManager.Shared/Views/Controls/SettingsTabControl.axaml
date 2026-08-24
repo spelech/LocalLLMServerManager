@@ -103,6 +103,36 @@
                         </Grid>
                     </StackPanel>
 
+                    <!-- Audio Engine Executable -->
+                    <StackPanel Spacing="4">
+                        <StackPanel Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+                            <TextBlock Text="Audio Engine Executable / Script Path (Kokoro-FastAPI / AllTalk / Docker)" FontSize="13" Foreground="{StaticResource TextMutedBrush}" FontWeight="Medium"/>
+                            <Border Classes="matte-pill" Padding="6,2">
+                                <TextBlock Text="{Binding AudioEngineExecutableStatus}" FontSize="11" FontWeight="Bold"/>
+                            </Border>
+                        </StackPanel>
+                        <Grid ColumnDefinitions="*,Auto">
+                            <TextBox Grid.Column="0" Text="{Binding AudioEngineExecutablePath, Mode=TwoWay}" Classes="matte-input"/>
+                            <Button Grid.Column="1" Content="📁 Browse..." Command="{Binding BrowseAudioEngineExecutableCommand}" Margin="8,0,0,0" Classes="matte-secondary"/>
+                        </Grid>
+                    </StackPanel>
+
+                    <!-- Audio Engine URL & Voice Configuration -->
+                    <Grid ColumnDefinitions="*,*">
+                        <StackPanel Grid.Column="0" Spacing="4" Margin="0,0,8,0">
+                            <TextBlock Text="Audio Engine URL" FontSize="13" Foreground="{StaticResource TextMutedBrush}" FontWeight="Medium"/>
+                            <TextBox Text="{Binding AudioEngineUrl, Mode=TwoWay}" Classes="matte-input"/>
+                        </StackPanel>
+                        <StackPanel Grid.Column="1" Spacing="4" Margin="8,0,0,0">
+                            <TextBlock Text="Preferred Audio Voice" FontSize="13" Foreground="{StaticResource TextMutedBrush}" FontWeight="Medium"/>
+                            <TextBox Text="{Binding PreferredAudioVoice, Mode=TwoWay}" Classes="matte-input"/>
+                        </StackPanel>
+                    </Grid>
+
+                    <Button Content="🔊 Test Voice Synthesizer"
+                            Command="{Binding TestVoiceSynthesizerCommand}"
+                            Classes="matte-secondary" HorizontalAlignment="Left"/>
+
                     <!-- Forge Models -->
                     <StackPanel Spacing="4">
                         <StackPanel Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
