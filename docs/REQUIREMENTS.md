@@ -14,11 +14,14 @@ Requirements are categorized into 12 functional domains using standardized ident
 |---|---|---|
 | **`CORE-xxx`** | Core Host & Infrastructure | ASP.NET Core Kestrel Host, Windows Service, Linux systemd, Win32 Job Objects, Settings |
 | **`LLM-xxx`** | LLM & Ollama Management | Ollama health, local model library, KV Cache calculator, capability profiles, model pulling |
-| **`HUB-xxx`** | Hugging Face Hub Integration | GGUF repository discovery, branch quantization tree, chunked SSE download streaming |
+| **`HUB-xxx`** | Hugging Face Hub Integration | GGUF, Video, and Audio model discovery, quantization trees, chunked download streaming |
 | **`DIFF-xxx`** | Stable Diffusion & CivitAI | SD WebUI / Forge health, CivitAI model gallery, direct-to-disk checkpoint/LoRA downloader |
 | **`3D-xxx`** | 3D Mesh & ComfyUI Generation | ComfyUI proxy, TRELLIS V2 / Hunyuan3D v2 workflows, WebGL `<model-viewer>` canvas |
+| **`VID-xxx`** | Video Generation & Studio | Wan 2.2 / LTX-2.5 / HunyuanVideo presets, generation endpoints, interactive video player |
+| **`AUD-xxx`** | Audio & TTS Generation | Kokoro TTS, OpenAI `/v1/audio/speech`, Stable Audio Open, YuE, waveform visualizer |
+| **`PACK-xxx`** | Modular Feature Packs | Optional component installer (`ext_video`, `ext_audio`), `--with-*` flags, fallback banners |
 | **`VRAM-xxx`** | GPU Telemetry & VRAM Orchestration | NVML CUDA telemetry, OS fallbacks, stacked memory visualizer, auto-unload OOM prevention |
-| **`MCP-xxx`** | Model Context Protocol API | Streamable HTTP / SSE endpoint (`/mcp`), JSON-RPC 2.0, tool discovery (`tools/list`), 8 AI tools |
+| **`MCP-xxx`** | Model Context Protocol API | Streamable HTTP / SSE endpoint (`/mcp`), JSON-RPC 2.0, 11 native AI tools |
 | **`INST-xxx`** | Installer & Upgrade Lifecycle | Inno Setup Windows installer, PowerShell update/install scripts, Linux systemd installer, settings preservation |
 | **`DISC-xxx`** | Tool Discovery & Flexible Paths | Multi-drive filesystem scanner (`IToolDiscoveryService`), `/api/tools/*` endpoints, status badges |
 | **`UI-xxx`** | User Interface & Experience | Fluent dark theme tokens, SOLID UserControls, MVVM bindings, toast notifications, URL launcher |
@@ -69,18 +72,33 @@ Requirements are categorized into 12 functional domains using standardized ident
 * **`3D-005`**: The application shall allow users to inspect and download generated 3D GLB assets.
 * **`3D-006`**: The application shall provide an engine preference selector to switch between Forge and ComfyUI.
 
-### 6. GPU Telemetry & VRAM Orchestration (`VRAM-xxx`)
+### 6. Video Generation & Studio (`VID-xxx`)
+* **`VID-001`**: The application shall bundle workflow presets and execute video generation for **Wan 2.2** (Text-to-Video and Image-to-Video), **LTX-2.5**, and **HunyuanVideo 1.5**.
+* **`VID-002`**: The backend shall expose `/api/video/workflows`, `/api/video/generate`, and `/api/video/files` endpoints.
+* **`VID-003`**: The UI shall host an interactive Video Player Preview component supporting play/pause, scrub, looping, playback speed, and metadata badges (resolution, fps, frame count).
+
+### 7. Audio & Speech Synthesis (`AUD-xxx`)
+* **`AUD-001`**: The application shall supervise and manage local Kokoro TTS engine instances and expose an OpenAI-compatible `POST /v1/audio/speech` endpoint.
+* **`AUD-002`**: The backend shall expose `/api/audio/workflows`, `/api/audio/generate`, and `/api/audio/files` for ComfyUI audio synthesis with Stable Audio Open 3.0 and YuE.
+* **`AUD-003`**: The UI shall host an integrated Audio Studio with waveform visualization, audio player controls, and voice selection.
+
+### 8. Modular Feature Packs & Component Installer (`PACK-xxx`)
+* **`PACK-001`**: The installer and application shall support optional feature packs (`ext_video`, `ext_audio`) via `--with-video` / `--with-audio` CLI flags and Inno Setup components.
+* **`PACK-002`**: The `ComponentManagerService` shall detect installed components and handle on-demand installation/uninstallation via `/api/components`.
+* **`PACK-003`**: The UI shall gracefully render an install prompt banner when accessing video/audio features if the corresponding feature pack is not yet installed.
+
+### 9. GPU Telemetry & VRAM Orchestration (`VRAM-xxx`)
 * **`VRAM-001`**: The application shall read real-time GPU name and VRAM memory telemetry via NVML CUDA (`nvidia-smi`).
 * **`VRAM-002`**: The application shall provide fallback telemetry resolution via Windows Registry and Linux `/proc/meminfo` when NVML is unavailable.
 * **`VRAM-003`**: The application shall display a stacked visualizer indicating loaded model VRAM vs free GPU headroom.
-* **`VRAM-004`**: The VRAM Orchestrator shall automatically detect active LLMs in VRAM and release them before initiating heavy Stable Diffusion or ComfyUI 3D render jobs to prevent Out-Of-Memory (OOM) errors.
+* **`VRAM-004`**: The VRAM Orchestrator shall automatically detect active LLMs in VRAM and release them before initiating heavy Stable Diffusion, ComfyUI 3D, or Video render jobs to prevent Out-Of-Memory (OOM) errors.
 * **`VRAM-005`**: The application shall allow customizing telemetry polling intervals and auto-unload thresholds.
 
-### 7. Model Context Protocol API (`MCP-xxx`)
+### 10. Model Context Protocol API (`MCP-xxx`)
 * **`MCP-001`**: The application shall expose a Model Context Protocol (MCP) server over Streamable HTTP and SSE transports mapped to `/mcp` compliant with the official 2024-11-05 MCP specification via `ModelContextProtocol.AspNetCore`.
-* **`MCP-002`**: The MCP server shall implement tool schema discovery (`tools/list`) exposing all 8 management tools (`get_gpu_vram`, `check_health`, `list_models`, `pull_model`, `unload_vram`, `start_engine`, `stop_engine`, `detect_tools`) with rich descriptions and parameter metadata.
-* **`MCP-003`**: The MCP server shall implement tool execution dispatch (`tools/call`) allowing AI assistants (Claude Desktop, Cursor, Antigravity) to execute GPU telemetry queries, health probing, model pulling/unloading, engine start/stop, and tool auto-discovery.
-* **`MCP-004`**: The MCP tools class (`LocalLlmMcpTools`) shall resolve required services (`IGpuTelemetryProvider`, `IAiEngineManager`, `IOllamaModelService`, `IToolDiscoveryService`, `IHttpClientFactory`) via dependency injection with robust error handling and structured JSON responses.
+* **`MCP-002`**: The MCP server shall implement tool schema discovery (`tools/list`) exposing 11 management and generation tools (`get_gpu_vram`, `check_health`, `list_models`, `pull_model`, `unload_vram`, `start_engine`, `stop_engine`, `detect_tools`, `generate_video`, `synthesize_speech`, `generate_audio`) with rich descriptions and parameter metadata.
+* **`MCP-003`**: The MCP server shall implement tool execution dispatch (`tools/call`) allowing AI assistants (Claude Desktop, Cursor, Antigravity) to execute GPU telemetry queries, health probing, model pulling/unloading, engine start/stop, video generation, speech synthesis, and audio generation.
+* **`MCP-004`**: The MCP tools class (`LocalLlmMcpTools`) shall resolve required services (`IGpuTelemetryProvider`, `IAiEngineManager`, `IOllamaModelService`, `IToolDiscoveryService`, `IHttpClientFactory`, `ISettingsService`, `VramOrchestrator`) via dependency injection with robust error handling and structured JSON responses.
 
 ### 8. Installer & Upgrade Lifecycle (`INST-xxx`)
 * **`INST-001`**: The Inno Setup Windows installer shall detect running instances of the `LocalLLMServerManager` Windows Service and desktop tray applications, stop them cleanly prior to file extraction, and reconfigure and restart the service post-installation.
@@ -147,6 +165,15 @@ Requirements are categorized into 12 functional domains using standardized ident
 | **`3D-004`** | Interactive WebGL 3D Canvas | `LocalLLMServerManager.Shared/Views/Controls/EngineStudioTabControl.axaml` | `WorkflowPerformanceTests.ModelViewer_WebGLCanvas_Initializes` | **100% VERIFIED** |
 | **`3D-005`** | 3D GLB Export & File Inspection | `Endpoints/WorkflowEndpoints.cs` | `WorkflowPerformanceTests.ExportGlbEndpoint_ReturnsValidBinaryHeader` | **100% VERIFIED** |
 | **`3D-006`** | Engine Preference Switcher | `LocalLLMServerManager.Shared/ViewModels/SettingsViewModel.cs` | `AppSettingsTests.AppSettings_SerializationAndDeserialization_PreservesData`<br>`MainViewModelCoverageTests.SettingsViewModel_TogglesPreferredEngine` | **100% VERIFIED** |
+| **`VID-001`** | Wan / LTX / Hunyuan Video Presets | `Endpoints/WorkflowEndpoints.cs`, `Workflows/Video/*` | `WorkflowEndpointsTests.GetVideoWorkflows_ReturnsAvailablePresets`<br>`WorkflowEndpointsTests.GenerateVideo_QueuesPrompt_AndReturnsResponse` | **100% VERIFIED** |
+| **`VID-002`** | Video Generation & Media Endpoints | `Endpoints/WorkflowEndpoints.cs` | `WorkflowEndpointsTests.GenerateVideo_QueuesPrompt_AndReturnsResponse`<br>`WorkflowEndpointsTests.GetVideoFiles_ReturnsGeneratedVideos` | **100% VERIFIED** |
+| **`VID-003`** | Interactive Video Player UI | `EngineStudioTabControl.axaml`, `MainViewModel.cs` | `MainViewModelTests.VideoPlayer_PlaybackControls_WorkAsExpected` | **100% VERIFIED** |
+| **`AUD-001`** | Kokoro TTS & OpenAI Proxy | `Endpoints/ModelProxyEndpoints.cs`, `AiEngineManager.cs` | `ManagedTtsEngineTests.SynthesizeSpeech_ReturnsAudioStream`<br>`ManagedTtsEngineTests.OpenAiSpeechProxy_RoutesCorrectly` | **100% VERIFIED** |
+| **`AUD-002`** | Stable Audio & YuE Workflows | `Endpoints/WorkflowEndpoints.cs`, `Workflows/Audio/*` | `AudioWorkflowEndpointsTests.GenerateAudio_QueuesPrompt_AndReturnsResponse` | **100% VERIFIED** |
+| **`AUD-003`** | Waveform Visualizer & Audio UI | `EngineStudioTabControl.axaml`, `MainViewModel.cs` | `MainViewModelTests.AudioStudio_Playback_UpdatesState` | **100% VERIFIED** |
+| **`PACK-001`** | Modular Feature Pack Installers | `scripts/installer.iss`, `scripts/install.ps1`, `scripts/install_linux.sh` | `ComponentManagerAndEndpointsTests.ComponentManager_DetectsPacks` | **100% VERIFIED** |
+| **`PACK-002`** | Component Manager Service & API | `Services/ComponentManagerService.cs`, `Endpoints/ComponentEndpoints.cs` | `ComponentManagerAndEndpointsTests.GetComponentsEndpoint_ReturnsList`<br>`ComponentManagerAndEndpointsTests.InstallComponentEndpoint_InstallsPack` | **100% VERIFIED** |
+| **`PACK-003`** | Feature Pack Missing Banner UI | `Controls/FeaturePackBannerControl.axaml` | `MainViewModelTests.FeaturePackBanner_RendersGracefully` | **100% VERIFIED** |
 | **`VRAM-001`** | NVML CUDA GPU Telemetry | `Services/GpuTelemetryProvider.cs` | `ProgramEndpointsAndServicesTests.GpuVramEndpoint_ReturnsHardwareTelemetry`<br>`ServicesAndEngineManagerCoverageTests.GpuTelemetryProvider_ParsesNvidiaSmi` | **100% VERIFIED** |
 | **`VRAM-002`** | OS Telemetry Fallbacks | `Services/GpuTelemetryProvider.cs` | `ServicesAndEngineManagerCoverageTests.GpuTelemetryProvider_LinuxProcMemInfoFallback`<br>`DeepCoveragePushTests.GpuTelemetryProvider_RegistryFallback` | **100% VERIFIED** |
 | **`VRAM-003`** | Real-Time Stacked Visualizer | `LocalLLMServerManager.Shared/ViewModels/TelemetryViewModel.cs` | `MainViewModelCoverageTests.TelemetryViewModel_CalculatesAllocatedPercentage` | **100% VERIFIED** |
