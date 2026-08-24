@@ -44,14 +44,33 @@ public static class ModelProxyEndpoints
             return Results.Ok(new { models = new object[0] });
         });
 
-        app.MapGet("/api/hf/search", async (string? q, HttpClient httpClient) =>
+        app.MapGet("/api/hf/search", async (string? q, string? pipeline_tag, HttpClient httpClient) =>
         {
             try
             {
-                using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(3));
-                var query = string.IsNullOrWhiteSpace(q) ? "llama" : q;
-                var requestUrl = $"https://huggingface.co/api/models?search={Uri.EscapeDataString(query)}&filter=gguf&sort=downloads&direction=-1&limit=20";
+                using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(5));
+                var query = string.IsNullOrWhiteSpace(q) ? (string.IsNullOrWhiteSpace(pipeline_tag) ? "llama" : "") : q;
                 
+                string requestUrl;
+                if (!string.IsNullOrWhiteSpace(pipeline_tag))
+                {
+                    if (pipeline_tag.Equals("gguf", StringComparison.OrdinalIgnoreCase))
+                    {
+                        var qParam = string.IsNullOrWhiteSpace(query) ? "llama" : query;
+                        requestUrl = $"https://huggingface.co/api/models?search={Uri.EscapeDataString(qParam)}&filter=gguf&sort=downloads&direction=-1&limit=20";
+                    }
+                    else
+                    {
+                        var qParam = Uri.EscapeDataString(query);
+                        requestUrl = $"https://huggingface.co/api/models?search={qParam}&pipeline_tag={Uri.EscapeDataString(pipeline_tag)}&sort=downloads&direction=-1&limit=20";
+                    }
+                }
+                else
+                {
+                    var qParam = string.IsNullOrWhiteSpace(query) ? "llama" : query;
+                    requestUrl = $"https://huggingface.co/api/models?search={Uri.EscapeDataString(qParam)}&filter=gguf&sort=downloads&direction=-1&limit=20";
+                }
+
                 using var req = new HttpRequestMessage(HttpMethod.Get, requestUrl);
                 req.Headers.UserAgent.ParseAdd("LocalLLMServerManager/3.5.0");
                 var response = await httpClient.SendAsync(req, cts.Token);
@@ -60,6 +79,58 @@ public static class ModelProxyEndpoints
                 {
                     var jsonStr = await response.Content.ReadAsStringAsync(cts.Token);
                     return Results.Content(jsonStr, "application/json");
+                }
+                return Results.StatusCode((int)response.StatusCode);
+            }
+            catch (Exception ex)
+            {
+                return Results.Problem(ex.Message);
+            }
+        });
+
+        app.MapGet("/api/civitai/download", async (string fileUrl, string? modelType, string? fileName, HttpClient httpClient) =>
+        {
+            try
+            {
+                var safeFileName = string.IsNullOrWhiteSpace(fileName) ? "model.safetensors" : fileName;
+                var targetDir = LocalLLMServerManager.Shared.Services.DownloadManager.ResolveTargetDirectory(modelType, safeFileName);
+                Directory.CreateDirectory(targetDir);
+                var targetPath = Path.Combine(targetDir, safeFileName);
+
+                using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(30));
+                using var response = await httpClient.GetAsync(fileUrl, HttpCompletionOption.ResponseHeadersRead, cts.Token);
+                if (response.IsSuccessStatusCode)
+                {
+                    using var stream = await response.Content.ReadAsStreamAsync(cts.Token);
+                    using var fileStream = File.Create(targetPath);
+                    await stream.CopyToAsync(fileStream, cts.Token);
+                    return Results.Ok(new { status = "success", path = targetPath });
+                }
+                return Results.StatusCode((int)response.StatusCode);
+            }
+            catch (Exception ex)
+            {
+                return Results.Problem(ex.Message);
+            }
+        });
+
+        app.MapGet("/api/hf/download", async (string fileUrl, string? pipelineTag, string? fileName, HttpClient httpClient) =>
+        {
+            try
+            {
+                var safeFileName = string.IsNullOrWhiteSpace(fileName) ? "model.safetensors" : fileName;
+                var targetDir = LocalLLMServerManager.Shared.Services.DownloadManager.ResolveTargetDirectory(pipelineTag, safeFileName);
+                Directory.CreateDirectory(targetDir);
+                var targetPath = Path.Combine(targetDir, safeFileName);
+
+                using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(30));
+                using var response = await httpClient.GetAsync(fileUrl, HttpCompletionOption.ResponseHeadersRead, cts.Token);
+                if (response.IsSuccessStatusCode)
+                {
+                    using var stream = await response.Content.ReadAsStreamAsync(cts.Token);
+                    using var fileStream = File.Create(targetPath);
+                    await stream.CopyToAsync(fileStream, cts.Token);
+                    return Results.Ok(new { status = "success", path = targetPath });
                 }
                 return Results.StatusCode((int)response.StatusCode);
             }

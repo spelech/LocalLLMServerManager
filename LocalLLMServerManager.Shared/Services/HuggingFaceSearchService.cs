@@ -12,10 +12,16 @@ public class HuggingFaceSearchService : IHuggingFaceSearchService
 {
     public async Task<List<HuggingFaceRepoItem>> SearchRepositoriesAsync(string apiBase, string query, HttpClient http)
     {
+        return await SearchRepositoriesAsync(apiBase, query, null, http);
+    }
+
+    public async Task<List<HuggingFaceRepoItem>> SearchRepositoriesAsync(string apiBase, string query, string? pipelineTag, HttpClient http)
+    {
         var result = new List<HuggingFaceRepoItem>();
         try
         {
-            var url = $"{apiBase}/api/hf/search?q={Uri.EscapeDataString(query)}";
+            var tagParam = string.IsNullOrWhiteSpace(pipelineTag) ? "" : $"&pipeline_tag={Uri.EscapeDataString(pipelineTag)}";
+            var url = $"{apiBase}/api/hf/search?q={Uri.EscapeDataString(query)}{tagParam}";
             var response = await http.GetAsync(url);
             if (response.IsSuccessStatusCode)
             {
@@ -29,9 +35,48 @@ public class HuggingFaceSearchService : IHuggingFaceSearchService
                         string author = repo?["author"]?.ToString() ?? "Community";
                         int downloads = repo?["downloads"]?.GetValue<int>() ?? 0;
                         int likes = repo?["likes"]?.GetValue<int>() ?? 0;
+                        string tag = repo?["pipeline_tag"]?.ToString() ?? "";
                         if (!string.IsNullOrEmpty(id))
                         {
-                            result.Add(new HuggingFaceRepoItem(id, author, likes, $"{downloads:N0} downloads"));
+                            result.Add(new HuggingFaceRepoItem(id, author, likes, $"{downloads:N0} downloads", tag));
+                        }
+                    }
+                }
+            }
+        }
+        catch { }
+
+        return result;
+    }
+
+    public async Task<List<HuggingFaceRepoItem>> SearchModelsAsync(string query, string? pipelineTag = null, System.Threading.CancellationToken ct = default)
+    {
+        using var http = new HttpClient();
+        var tagParam = string.IsNullOrWhiteSpace(pipelineTag) ? "" : $"&pipeline_tag={Uri.EscapeDataString(pipelineTag)}";
+        var requestUrl = $"https://huggingface.co/api/models?search={Uri.EscapeDataString(query)}{tagParam}&sort=downloads&direction=-1&limit=20";
+        var result = new List<HuggingFaceRepoItem>();
+        try
+        {
+            using var req = new HttpRequestMessage(HttpMethod.Get, requestUrl);
+            req.Headers.UserAgent.ParseAdd("LocalLLMServerManager/3.5.0");
+            var response = await http.SendAsync(req, ct);
+            if (response.IsSuccessStatusCode)
+            {
+                var jsonStr = await response.Content.ReadAsStringAsync(ct);
+                var doc = JsonNode.Parse(jsonStr);
+                var repos = doc?.AsArray();
+                if (repos != null)
+                {
+                    foreach (var repo in repos)
+                    {
+                        string id = repo?["id"]?.ToString() ?? "";
+                        string author = repo?["author"]?.ToString() ?? "Community";
+                        int downloads = repo?["downloads"]?.GetValue<int>() ?? 0;
+                        int likes = repo?["likes"]?.GetValue<int>() ?? 0;
+                        string tag = repo?["pipeline_tag"]?.ToString() ?? "";
+                        if (!string.IsNullOrEmpty(id))
+                        {
+                            result.Add(new HuggingFaceRepoItem(id, author, likes, $"{downloads:N0} downloads", tag));
                         }
                     }
                 }

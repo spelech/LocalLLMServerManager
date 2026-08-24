@@ -13,6 +13,7 @@ public partial class HuggingFaceSearchViewModel : ObservableObject
     private readonly IHuggingFaceSearchService _hfSearchService;
 
     [ObservableProperty] private string _hfSearchQuery = "";
+    [ObservableProperty] private string? _selectedPipelineTag = null;
     public ObservableCollection<HuggingFaceRepoItem> HuggingFaceResults { get; } = new();
 
     [ObservableProperty] private bool _isHfModalOpen = false;
@@ -31,11 +32,18 @@ public partial class HuggingFaceSearchViewModel : ObservableObject
         await SearchHuggingFaceAsync("http://127.0.0.1:5246", new HttpClient());
     }
 
+    [RelayCommand]
+    public async Task SelectCategoryAsync(string? tag)
+    {
+        SelectedPipelineTag = string.IsNullOrWhiteSpace(tag) ? null : tag;
+        await SearchHuggingFaceAsync();
+    }
+
     public async Task SearchHuggingFaceAsync(string apiBase, HttpClient http)
     {
         try
         {
-            var results = await _hfSearchService.SearchRepositoriesAsync(apiBase, HfSearchQuery, http);
+            var results = await _hfSearchService.SearchRepositoriesAsync(apiBase, HfSearchQuery, SelectedPipelineTag, http);
             HuggingFaceResults.Clear();
             foreach (var r in results)
             {
