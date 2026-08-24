@@ -56,7 +56,10 @@ public partial class TelemetryViewModel : ObservableObject
     public async Task CheckGpuVramAsync(string apiBase, HttpClient http)
     {
         var info = await _telemetryService.QueryGpuVramAsync(apiBase, http);
-        GpuName = info.GpuName;
+        if (info.GpuName != "GPU Telemetry Active" || GpuName == "GPU Telemetry Active")
+        {
+            GpuName = info.GpuName;
+        }
         VramTotalGb = info.TotalVramGb;
         VramUsedGb = info.UsedVramGb;
         VramPercentage = info.Percent;

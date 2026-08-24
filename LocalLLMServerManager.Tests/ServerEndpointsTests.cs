@@ -141,6 +141,53 @@ public class ServerEndpointsTests : IClassFixture<AppTestServerFixture>
     }
 
     [Fact]
+    public async Task AudioWorkflowsEndpoint_ReturnsAvailablePresets()
+    {
+        var response = await _client.GetAsync("/api/audio/workflows");
+        Assert.True(response.IsSuccessStatusCode);
+
+        var json = await response.Content.ReadFromJsonAsync<JsonElement>();
+        Assert.Equal(JsonValueKind.Array, json.ValueKind);
+        Assert.True(json.GetArrayLength() > 0);
+    }
+
+    [Fact]
+    public async Task AudioGenerateEndpoint_QueuesWorkflowAndReturnsQueuePayload()
+    {
+        var requestPayload = new
+        {
+            workflowId = "stable_audio_open_sfx",
+            prompt = "Cyberpunk atmospheric ambient drone, heavy synthesizer, cinematic low end, 48kHz stereo",
+            negativePrompt = "low quality, harsh distortion",
+            durationSeconds = 30,
+            seed = -1
+        };
+
+        var response = await _client.PostAsJsonAsync("/api/audio/generate", requestPayload);
+        Assert.True(response.IsSuccessStatusCode);
+
+        var json = await response.Content.ReadFromJsonAsync<JsonElement>();
+        Assert.True(json.TryGetProperty("promptId", out var pidProp));
+        Assert.False(string.IsNullOrWhiteSpace(pidProp.GetString()));
+
+        Assert.True(json.TryGetProperty("status", out var statusProp));
+        Assert.Equal("queued", statusProp.GetString());
+
+        Assert.True(json.TryGetProperty("wsUrl", out var wsUrlProp));
+        Assert.Contains("ws://", wsUrlProp.GetString());
+    }
+
+    [Fact]
+    public async Task AudioFilesEndpoint_ReturnsAudioOutputDirectoryList()
+    {
+        var response = await _client.GetAsync("/api/audio/files");
+        Assert.True(response.IsSuccessStatusCode);
+
+        var json = await response.Content.ReadFromJsonAsync<JsonElement>();
+        Assert.Equal(JsonValueKind.Array, json.ValueKind);
+    }
+
+    [Fact]
     public async Task CivitaiDownloadAndOllamaPull_Endpoints_ReturnStreamingResponse()
     {
         try
