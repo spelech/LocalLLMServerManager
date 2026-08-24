@@ -62,7 +62,7 @@ public class VramOrchestrator
 
     public async Task EnsureVramForComfyUiAsync()
     {
-        await UnloadOllamaModelsAsync("ComfyUI Workflows (3D / Image)");
+        await UnloadOllamaModelsAsync("ComfyUI Workflows (Video / 3D / Image)");
     }
 
     public async Task FreeComfyUiVramAsync(string comfyUrl = "http://127.0.0.1:8188")

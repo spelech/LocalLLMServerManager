@@ -29,6 +29,8 @@ public class AppSettingsTests
         Assert.Equal("", settings.AudioEngineExecutablePath);
         Assert.Equal("http://127.0.0.1:8880", settings.AudioEngineUrl);
         Assert.Equal("af_heart", settings.PreferredAudioVoice);
+        Assert.Equal("", settings.VideoModelsPath);
+        Assert.Equal("", settings.VideoOutputPath);
     }
 
     [Fact]
@@ -81,7 +83,9 @@ public class AppSettingsTests
             SelectedThemeStyle: "dark",
             AudioEngineExecutablePath: @"C:\AI\Kokoro-FastAPI\main.py",
             AudioEngineUrl: "http://127.0.0.1:8880",
-            PreferredAudioVoice: "af_bella"
+            PreferredAudioVoice: "af_bella",
+            VideoModelsPath: @"C:\AI\VideoModels",
+            VideoOutputPath: @"C:\AI\VideoOutput"
         );
 
         var json = JsonSerializer.Serialize(original);
