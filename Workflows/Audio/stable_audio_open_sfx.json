@@ -1,0 +1,78 @@
+{
+  "name": "Stable Audio Open 3.0 (SFX & Ambient)",
+  "type": "audio",
+  "description": "Text-to-sound-effects and ambient audio generation up to 47 seconds stereo using Stable Audio Open 3.0 in ComfyUI",
+  "workflow": {
+    "1": {
+      "inputs": {
+        "text": "Cyberpunk atmospheric ambient drone, heavy synthesizer, cinematic low end, 48kHz stereo",
+        "clip": [ "2", 0 ]
+      },
+      "class_type": "CLIPTextEncode",
+      "_meta": { "title": "CLIP Text Encode (Positive Prompt)" }
+    },
+    "2": {
+      "inputs": {
+        "clip_name": "stable_audio_open_1_0.safetensors"
+      },
+      "class_type": "CLIPLoader",
+      "_meta": { "title": "Load Audio CLIP" }
+    },
+    "3": {
+      "inputs": {
+        "text": "low quality, harsh distortion",
+        "clip": [ "2", 0 ]
+      },
+      "class_type": "CLIPTextEncode",
+      "_meta": { "title": "CLIP Text Encode (Negative Prompt)" }
+    },
+    "4": {
+      "inputs": {
+        "seed": 123456,
+        "steps": 100,
+        "cfg": 7.0,
+        "sampler_name": "dpmpp_2m",
+        "scheduler": "karras",
+        "denoise": 1.0,
+        "model": [ "5", 0 ],
+        "positive": [ "1", 0 ],
+        "negative": [ "3", 0 ],
+        "latent_image": [ "6", 0 ]
+      },
+      "class_type": "KSampler",
+      "_meta": { "title": "KSampler (Stable Audio)" }
+    },
+    "5": {
+      "inputs": {
+        "model_name": "stable_audio_open_1_0.safetensors"
+      },
+      "class_type": "StableAudioModelLoader",
+      "_meta": { "title": "Load Stable Audio Open Model" }
+    },
+    "6": {
+      "inputs": {
+        "seconds": 30,
+        "batch_size": 1
+      },
+      "class_type": "EmptyAudioLatent",
+      "_meta": { "title": "Empty Audio Latent (Duration)" }
+    },
+    "7": {
+      "inputs": {
+        "samples": [ "4", 0 ],
+        "vae": [ "5", 1 ]
+      },
+      "class_type": "VAEDecodeAudio",
+      "_meta": { "title": "VAE Decode Audio" }
+    },
+    "8": {
+      "inputs": {
+        "filename_prefix": "StableAudio_SFX",
+        "audio": [ "7", 0 ],
+        "format": "wav"
+      },
+      "class_type": "SaveAudio",
+      "_meta": { "title": "Save Audio Wav" }
+    }
+  }
+}

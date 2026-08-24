@@ -56,6 +56,49 @@
                 </StackPanel>
             </Border>
 
+            <!-- Installed Components & Add-ons -->
+            <Border Classes="matte-card" Padding="16">
+                <StackPanel Spacing="12">
+                    <Grid ColumnDefinitions="*, Auto">
+                        <TextBlock Text="📦 Installed Components &amp; Add-ons" FontSize="16" FontWeight="Bold" Foreground="{StaticResource TextMainBrush}" VerticalAlignment="Center"/>
+                        <Button Grid.Column="1" Content="🔄 Refresh Status" Command="{Binding RefreshComponentStatusesCommand}" Classes="matte-secondary" Padding="10,4"/>
+                    </Grid>
+                    <TextBlock Text="Manage optional feature packs and inspect estimated disk usage:" FontSize="13" Foreground="{StaticResource TextMutedBrush}"/>
+
+                    <!-- Video Pack Card -->
+                    <Border Classes="matte-pill" Padding="12" Margin="0,4">
+                        <Grid ColumnDefinitions="*, Auto">
+                            <StackPanel Grid.Column="0" Spacing="4">
+                                <StackPanel Orientation="Horizontal" Spacing="8">
+                                    <TextBlock Text="🎬 ComfyUI Video Generation Pack" FontSize="14" FontWeight="Bold" Foreground="{StaticResource TextMainBrush}"/>
+                                    <Border Classes="matte-pill" Padding="6,2">
+                                        <TextBlock Text="{Binding VideoPackStatusText}" FontSize="11" Foreground="{StaticResource PrimaryBrush}" FontWeight="Bold"/>
+                                    </Border>
+                                </StackPanel>
+                                <TextBlock Text="DiT Wan 2.2, LTX-2.5 &amp; HunyuanVideo nodes | Estimated disk size: 14.2 GB" FontSize="12" Foreground="{StaticResource TextMutedBrush}"/>
+                            </StackPanel>
+                            <Button Grid.Column="1" Content="Toggle / Uninstall" Command="{Binding ToggleVideoPackCommand}" Classes="matte-secondary" VerticalAlignment="Center"/>
+                        </Grid>
+                    </Border>
+
+                    <!-- Audio Pack Card -->
+                    <Border Classes="matte-pill" Padding="12" Margin="0,4">
+                        <Grid ColumnDefinitions="*, Auto">
+                            <StackPanel Grid.Column="0" Spacing="4">
+                                <StackPanel Orientation="Horizontal" Spacing="8">
+                                    <TextBlock Text="🔊 Kokoro TTS &amp; Audio Engine Pack" FontSize="14" FontWeight="Bold" Foreground="{StaticResource TextMainBrush}"/>
+                                    <Border Classes="matte-pill" Padding="6,2">
+                                        <TextBlock Text="{Binding AudioPackStatusText}" FontSize="11" Foreground="{StaticResource AccentBrush}" FontWeight="Bold"/>
+                                    </Border>
+                                </StackPanel>
+                                <TextBlock Text="FastAPI text-to-speech engine &amp; models | Estimated disk size: 350 MB" FontSize="12" Foreground="{StaticResource TextMutedBrush}"/>
+                            </StackPanel>
+                            <Button Grid.Column="1" Content="Toggle / Uninstall" Command="{Binding ToggleAudioPackCommand}" Classes="matte-secondary" VerticalAlignment="Center"/>
+                        </Grid>
+                    </Border>
+                </StackPanel>
+            </Border>
+
             <!-- Paths and Settings -->
             <Border Classes="matte-card" Padding="16">
                 <StackPanel Spacing="14">
@@ -102,6 +145,36 @@
                             <Button Grid.Column="1" Content="📁 Browse..." Command="{Binding BrowseOllamaExecutableCommand}" Margin="8,0,0,0" Classes="matte-secondary"/>
                         </Grid>
                     </StackPanel>
+
+                    <!-- Audio Engine Executable -->
+                    <StackPanel Spacing="4">
+                        <StackPanel Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+                            <TextBlock Text="Audio Engine Executable / Script Path (Kokoro-FastAPI / AllTalk / Docker)" FontSize="13" Foreground="{StaticResource TextMutedBrush}" FontWeight="Medium"/>
+                            <Border Classes="matte-pill" Padding="6,2">
+                                <TextBlock Text="{Binding AudioEngineExecutableStatus}" FontSize="11" FontWeight="Bold"/>
+                            </Border>
+                        </StackPanel>
+                        <Grid ColumnDefinitions="*,Auto">
+                            <TextBox Grid.Column="0" Text="{Binding AudioEngineExecutablePath, Mode=TwoWay}" Classes="matte-input"/>
+                            <Button Grid.Column="1" Content="📁 Browse..." Command="{Binding BrowseAudioEngineExecutableCommand}" Margin="8,0,0,0" Classes="matte-secondary"/>
+                        </Grid>
+                    </StackPanel>
+
+                    <!-- Audio Engine URL & Voice Configuration -->
+                    <Grid ColumnDefinitions="*,*">
+                        <StackPanel Grid.Column="0" Spacing="4" Margin="0,0,8,0">
+                            <TextBlock Text="Audio Engine URL" FontSize="13" Foreground="{StaticResource TextMutedBrush}" FontWeight="Medium"/>
+                            <TextBox Text="{Binding AudioEngineUrl, Mode=TwoWay}" Classes="matte-input"/>
+                        </StackPanel>
+                        <StackPanel Grid.Column="1" Spacing="4" Margin="8,0,0,0">
+                            <TextBlock Text="Preferred Audio Voice" FontSize="13" Foreground="{StaticResource TextMutedBrush}" FontWeight="Medium"/>
+                            <TextBox Text="{Binding PreferredAudioVoice, Mode=TwoWay}" Classes="matte-input"/>
+                        </StackPanel>
+                    </Grid>
+
+                    <Button Content="🔊 Test Voice Synthesizer"
+                            Command="{Binding TestVoiceSynthesizerCommand}"
+                            Classes="matte-secondary" HorizontalAlignment="Left"/>
 
                     <!-- Forge Models -->
                     <StackPanel Spacing="4">

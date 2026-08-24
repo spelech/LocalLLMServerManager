@@ -26,6 +26,9 @@ public partial class SettingsViewModel : ObservableObject
     [ObservableProperty] private string _selectedThemeStyle = "semi";
     [ObservableProperty] private string _serviceName = "LocalLLMServerManager";
     [ObservableProperty] private string _publishOutputPath = "C:\\LocalLLMServerManager";
+    [ObservableProperty] private string _audioEngineExecutablePath = "";
+    [ObservableProperty] private string _audioEngineUrl = "http://127.0.0.1:8880";
+    [ObservableProperty] private string _preferredAudioVoice = "af_heart";
 
     [ObservableProperty] private IStorageProvider? _storageProvider;
     [ObservableProperty] private bool _isAutoDetecting;
@@ -38,6 +41,16 @@ public partial class SettingsViewModel : ObservableObject
     [ObservableProperty] private string _comfyModelsStatus = "⚠️ Missing";
     [ObservableProperty] private string _threeDModelsStatus = "⚠️ Missing";
     [ObservableProperty] private string _workflowsStatus = "⚠️ Missing";
+    [ObservableProperty] private string _audioEngineExecutableStatus = "⚠️ Missing";
+
+    // Feature Packs Status & Management
+    [ObservableProperty] private bool _isVideoPackInstalled;
+    [ObservableProperty] private bool _isAudioPackInstalled;
+    [ObservableProperty] private string _videoPackDiskUsage = "14.2 GB";
+    [ObservableProperty] private string _audioPackDiskUsage = "350 MB";
+
+    public string VideoPackStatusText => IsVideoPackInstalled ? "🟢 Installed" : "⚠️ Optional Pack Not Installed";
+    public string AudioPackStatusText => IsAudioPackInstalled ? "🟢 Installed" : "⚠️ Optional Pack Not Installed";
 
     public string OllamaExecutableStatus => OllamaStatus;
 
@@ -69,6 +82,7 @@ public partial class SettingsViewModel : ObservableObject
     partial void OnWorkflowsPathChanged(string value) => WorkflowsStatus = EvaluateDirectoryStatus(value);
     partial void OnComfyUiExecutablePathChanged(string value) => ComfyUiExecutableStatus = EvaluateExecutableStatus(value);
     partial void OnForgeExecutablePathChanged(string value) => ForgeExecutableStatus = EvaluateExecutableStatus(value);
+    partial void OnAudioEngineExecutablePathChanged(string value) => AudioEngineExecutableStatus = EvaluateExecutableStatus(value);
     partial void OnOllamaExecutablePathChanged(string value)
     {
         OllamaStatus = EvaluateExecutableStatus(value);
@@ -104,6 +118,7 @@ public partial class SettingsViewModel : ObservableObject
         ComfyModelsStatus = EvaluateDirectoryStatus(ComfyModelsPath);
         ThreeDModelsStatus = EvaluateDirectoryStatus(ThreeDModelsPath);
         WorkflowsStatus = EvaluateDirectoryStatus(WorkflowsPath);
+        AudioEngineExecutableStatus = EvaluateExecutableStatus(AudioEngineExecutablePath);
         OnPropertyChanged(nameof(OllamaExecutableStatus));
     }
 
@@ -152,6 +167,80 @@ public partial class SettingsViewModel : ObservableObject
         catch { }
 
         return "⚠️ Missing";
+    }
+
+    [RelayCommand]
+    public async Task RefreshComponentStatusesAsync()
+    {
+        var apiBase = string.IsNullOrWhiteSpace(LanAccessUrl) ? "http://127.0.0.1:5246" : LanAccessUrl.TrimEnd('/');
+        await RefreshComponentStatusesAsync(apiBase, new HttpClient());
+    }
+
+    public async Task RefreshComponentStatusesAsync(string apiBase, HttpClient http)
+    {
+        try
+        {
+            var response = await http.GetAsync($"{apiBase}/api/components");
+            if (response.IsSuccessStatusCode)
+            {
+                var json = await response.Content.ReadAsStringAsync();
+                using var doc = JsonDocument.Parse(json);
+                foreach (var elem in doc.RootElement.EnumerateArray())
+                {
+                    var id = elem.GetProperty("id").GetString();
+                    var installed = elem.GetProperty("installed").GetBoolean();
+                    if (id == "video-generation") IsVideoPackInstalled = installed;
+                    else if (id == "audio-tts") IsAudioPackInstalled = installed;
+                }
+                OnPropertyChanged(nameof(VideoPackStatusText));
+                OnPropertyChanged(nameof(AudioPackStatusText));
+            }
+        }
+        catch { }
+    }
+
+    [RelayCommand]
+    public async Task ToggleVideoPackAsync()
+    {
+        await ToggleComponentAsync("video-generation", IsVideoPackInstalled);
+    }
+
+    [RelayCommand]
+    public async Task ToggleAudioPackAsync()
+    {
+        await ToggleComponentAsync("audio-tts", IsAudioPackInstalled);
+    }
+
+    private async Task ToggleComponentAsync(string componentId, bool currentlyInstalled)
+    {
+        var http = new HttpClient();
+        var apiBase = string.IsNullOrWhiteSpace(LanAccessUrl) ? "http://127.0.0.1:5246" : LanAccessUrl.TrimEnd('/');
+        try
+        {
+            if (currentlyInstalled)
+            {
+                var content = new StringContent(JsonSerializer.Serialize(new { componentId }), System.Text.Encoding.UTF8, "application/json");
+                var res = await http.PostAsync($"{apiBase}/api/components/uninstall", content);
+                if (res.IsSuccessStatusCode)
+                {
+                    ToastService.Instance.Show($"Uninstalled component '{componentId}'.", ToastType.Info);
+                }
+            }
+            else
+            {
+                var content = new StringContent(JsonSerializer.Serialize(new { componentId }), System.Text.Encoding.UTF8, "application/json");
+                var res = await http.PostAsync($"{apiBase}/api/components/install", content);
+                if (res.IsSuccessStatusCode)
+                {
+                    ToastService.Instance.Show($"Installed component '{componentId}'.", ToastType.Success);
+                }
+            }
+            await RefreshComponentStatusesAsync();
+        }
+        catch
+        {
+            ToastService.Instance.Show($"Failed component action for '{componentId}'.", ToastType.Error);
+        }
     }
 
     [RelayCommand]
@@ -265,6 +354,19 @@ public partial class SettingsViewModel : ObservableObject
                     }
                 }
 
+                if (root.TryGetProperty("audioEngine", out var audio))
+                {
+                    if (audio.TryGetProperty("executablePath", out var aExe) && aExe.ValueKind == JsonValueKind.String)
+                    {
+                        var val = aExe.GetString();
+                        if (!string.IsNullOrWhiteSpace(val) && string.IsNullOrWhiteSpace(AudioEngineExecutablePath))
+                        {
+                            AudioEngineExecutablePath = val;
+                            AudioEngineExecutableStatus = "🔍 Auto-Discovered";
+                        }
+                    }
+                }
+
                 ToastService.Instance.Show("Auto-detection complete.", ToastType.Success);
             }
             else
@@ -352,6 +454,50 @@ public partial class SettingsViewModel : ObservableObject
         }
     }
 
+    [RelayCommand]
+    public async Task BrowseAudioEngineExecutableAsync(IStorageProvider? provider = null)
+    {
+        var path = await PickFileAsync(provider, "Select Audio Engine Executable or Script", new[] { "*.py", "*.bat", "*.cmd", "*.exe", "*.sh" });
+        if (!string.IsNullOrWhiteSpace(path))
+        {
+            AudioEngineExecutablePath = path;
+        }
+    }
+
+    [RelayCommand]
+    public async Task TestVoiceSynthesizerAsync()
+    {
+        await TestVoiceSynthesizerAsync("http://127.0.0.1:5246", new HttpClient());
+    }
+
+    public async Task TestVoiceSynthesizerAsync(string apiBase, HttpClient http)
+    {
+        try
+        {
+            var payload = new
+            {
+                model = "kokoro",
+                input = "Local LLM Server Manager audio text-to-speech engine test.",
+                voice = string.IsNullOrWhiteSpace(PreferredAudioVoice) ? "af_heart" : PreferredAudioVoice,
+                response_format = "mp3"
+            };
+            var content = new StringContent(JsonSerializer.Serialize(payload), System.Text.Encoding.UTF8, "application/json");
+            var response = await http.PostAsync($"{apiBase}/v1/audio/speech", content);
+            if (response.IsSuccessStatusCode)
+            {
+                ToastService.Instance.Show("TTS Synthesis test succeeded!", ToastType.Success);
+            }
+            else
+            {
+                ToastService.Instance.Show($"TTS Synthesis test returned status code {(int)response.StatusCode}", ToastType.Warning);
+            }
+        }
+        catch
+        {
+            ToastService.Instance.Show("Failed to test TTS Voice Synthesizer.", ToastType.Error);
+        }
+    }
+
     private async Task<string?> PickFileAsync(IStorageProvider? explicitProvider, string title, string[] patterns)
     {
         var provider = explicitProvider ?? StorageProvider;
@@ -431,6 +577,9 @@ public partial class SettingsViewModel : ObservableObject
                     SelectedThemeStyle = settings.SelectedThemeStyle ?? "semi";
                     ServiceName = settings.ServiceName ?? "LocalLLMServerManager";
                     PublishOutputPath = settings.PublishOutputPath ?? "C:\\LocalLLMServerManager";
+                    AudioEngineExecutablePath = settings.AudioEngineExecutablePath ?? "";
+                    AudioEngineUrl = settings.AudioEngineUrl ?? "http://127.0.0.1:8880";
+                    PreferredAudioVoice = settings.PreferredAudioVoice ?? "af_heart";
 
                     RefreshAllStatuses();
                 }
@@ -462,7 +611,10 @@ public partial class SettingsViewModel : ObservableObject
                 PublishOutputPath: this.PublishOutputPath,
                 ComfyModelsPath: this.ComfyModelsPath,
                 LanAccessUrl: this.LanAccessUrl,
-                SelectedThemeStyle: this.SelectedThemeStyle
+                SelectedThemeStyle: this.SelectedThemeStyle,
+                AudioEngineExecutablePath: this.AudioEngineExecutablePath,
+                AudioEngineUrl: this.AudioEngineUrl,
+                PreferredAudioVoice: this.PreferredAudioVoice
             );
 
             var content = new StringContent(

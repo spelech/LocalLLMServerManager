@@ -1,0 +1,78 @@
+{
+  "name": "YuE Full Song Generation (乐)",
+  "type": "audio",
+  "description": "Dual-track lyrics-to-music full song generation using YuE model nodes in ComfyUI",
+  "workflow": {
+    "1": {
+      "inputs": {
+        "text": "[verse]\nIn the neon rain, city lights glow\nSynth bass pulsing down below",
+        "clip": [ "2", 0 ]
+      },
+      "class_type": "CLIPTextEncode",
+      "_meta": { "title": "YuE Lyrics & Prompt Encode (Positive)" }
+    },
+    "2": {
+      "inputs": {
+        "clip_name": "yue_audio_clip.safetensors"
+      },
+      "class_type": "CLIPLoader",
+      "_meta": { "title": "Load YuE Audio CLIP" }
+    },
+    "3": {
+      "inputs": {
+        "text": "out of tune, mono, noise, distortion",
+        "clip": [ "2", 0 ]
+      },
+      "class_type": "CLIPTextEncode",
+      "_meta": { "title": "YuE Negative Prompt" }
+    },
+    "4": {
+      "inputs": {
+        "seed": 424242,
+        "steps": 50,
+        "cfg": 6.0,
+        "sampler_name": "euler",
+        "scheduler": "normal",
+        "denoise": 1.0,
+        "model": [ "5", 0 ],
+        "positive": [ "1", 0 ],
+        "negative": [ "3", 0 ],
+        "latent_image": [ "6", 0 ]
+      },
+      "class_type": "KSampler",
+      "_meta": { "title": "KSampler (YuE Dual-Track)" }
+    },
+    "5": {
+      "inputs": {
+        "model_name": "yue_song_generator.safetensors"
+      },
+      "class_type": "YuEModelLoader",
+      "_meta": { "title": "Load YuE Song Model" }
+    },
+    "6": {
+      "inputs": {
+        "seconds": 60,
+        "batch_size": 1
+      },
+      "class_type": "EmptyAudioLatent",
+      "_meta": { "title": "Empty Audio Latent" }
+    },
+    "7": {
+      "inputs": {
+        "samples": [ "4", 0 ],
+        "vae": [ "5", 1 ]
+      },
+      "class_type": "VAEDecodeAudio",
+      "_meta": { "title": "VAE Decode Audio" }
+    },
+    "8": {
+      "inputs": {
+        "filename_prefix": "YuE_Full_Song",
+        "audio": [ "7", 0 ],
+        "format": "flac"
+      },
+      "class_type": "SaveAudio",
+      "_meta": { "title": "Save Dual-Track Audio" }
+    }
+  }
+}

@@ -1,7 +1,7 @@
 # Local LLM Server Manager
 
-> **v3.6.0** — A unified cross-platform application (.NET 10 + Avalonia UI & WebAssembly), System Tray app, background service/daemon, Model Context Protocol (MCP) AI API, visual orchestrator dashboard, and automated Playwright E2E testing framework to manage local Large Language Models (**Ollama**), Image Generation (**Stable Diffusion / Forge & ComfyUI**), and **3D Mesh Generation (TRELLIS V2 & Hunyuan3D v2)** on Windows, Linux, Mobile, and Web.
-It features the official **`L³M²`** monochromatic brand identity, a high-contrast **Matte Carbon Design System**, a live **Dynamic Theming Engine** (Matte Carbon, OLED Black, Clean Light), integrated **`playwright-layout-inspector`** automated visual & layout audits, NVML CUDA real-time telemetry, **Hugging Face Hub** GGUF discovery, **CivitAI** checkpoint downloads, **3D & ComfyUI Studio** with interactive WebGL viewer, a unified **Avalonia WebAssembly (WASM)** dashboard, and an active **Model Context Protocol (MCP) Server** (`/mcp`).
+> **v3.7.0** — A unified cross-platform application (.NET 10 + Avalonia UI & WebAssembly), System Tray app, background service/daemon, Model Context Protocol (MCP) AI API, visual orchestrator dashboard, and automated Playwright E2E testing framework to manage local Large Language Models (**Ollama**), Image Generation (**Stable Diffusion / Forge & ComfyUI**), **3D Mesh Generation (TRELLIS V2 & Hunyuan3D v2)**, **Video Generation (Wan 2.2, LTX-2.5, HunyuanVideo)**, and **Audio & Speech Generation (Kokoro TTS, Stable Audio Open 3.0, YuE)** on Windows, Linux, Mobile, and Web.
+It features the official **`L³M²`** monochromatic brand identity, a high-contrast **Matte Carbon Design System**, a live **Dynamic Theming Engine** (Matte Carbon, OLED Black, Clean Light), integrated **`playwright-layout-inspector`** automated visual & layout audits, NVML CUDA real-time telemetry, **Hugging Face Hub** Multimodal discovery (GGUF, Text-to-Video, Image-to-Video, TTS, Text-to-Audio), **CivitAI** checkpoint downloads, **Multimodal Studio** with interactive 3D WebGL viewer, Video Player Preview, Audio Waveform Visualizer, a unified **Avalonia WebAssembly (WASM)** dashboard, **Modular Feature Packs** (`--with-video`, `--with-audio`), and an active **Model Context Protocol (MCP) Server** (`/mcp`).
 
 ![Dashboard Overview](docs/images/dashboard_desktop.png)
 
@@ -18,7 +18,7 @@ The application features a dark Fluent Avalonia UI theme (`#0F172A`) organized i
 | GPU VRAM Allocation: 4.2 GB / 16.0 GB (26.3%)                                           |
 | [========================-------------------------------------------------------------] |
 +-----------------------------------------------------------------------------------------+
-| [🦙 Installed Models] [🤗 Hugging Face Hub] [🎨 CivitAI Models] [📦 3D Studio] [⚙️ Settings] |
+| [🦙 Installed Models] [🤗 Hugging Face Hub] [🎨 CivitAI Models] [📦 Studio] [⚙️ Settings]|
 +-----------------------------------------------------------------------------------------+
 | Ollama Local Model Library                                          [🧹 Unload All VRAM] |
 |                                                                                         |
@@ -32,7 +32,7 @@ The application features a dark Fluent Avalonia UI theme (`#0F172A`) organized i
 | [====================================------------------------------------------------]  |
 | 8,192 tokens                                                                            |
 +-----------------------------------------------------------------------------------------+
-| LocalLLMServerManager v3.5.0 -- Unified WASM & Desktop UI         System Tray Enabled 🟢 |
+| LocalLLMServerManager v3.7.0 -- Unified WASM & Desktop UI         System Tray Enabled 🟢 |
 +-----------------------------------------------------------------------------------------+
 ```
 
@@ -46,51 +46,50 @@ The application features a dark Fluent Avalonia UI theme (`#0F172A`) organized i
 3. **Headless Background Services** — Runs headlessly on machine boot via Windows Service or Linux `systemd` daemon (`localllmmanager.service`).
 4. **Automated Tray Attachment** — When a user logs in, the Avalonia System Tray app automatically attaches to the running background service instance.
 5. **Seamless In-Place Upgrades** — Upgrading via Windows Inno Setup installer, PowerShell scripts (`update.ps1`, `install.ps1`), or Linux script (`install_linux.sh`) automatically detects active services and tray apps, terminates them cleanly, preserves user configuration (`settings.json`), and restarts the updated background service without file lock errors.
+6. **Modular Feature Packs** — Optional components for Video (`ext_video`) and Audio (`ext_audio`) can be installed on-demand via `--with-video` / `--with-audio` installer flags or the in-app Component Manager, keeping base installation lightweight.
 
 ### Model Context Protocol (MCP) AI Automation
-6. **Official MCP Streamable HTTP / SSE Endpoint (`/mcp`)** — Fully compliant Model Context Protocol (MCP) server built with `ModelContextProtocol.AspNetCore` enabling AI assistants (Antigravity, Claude Desktop, Cursor, Open WebUI) to automate server operations over JSON-RPC 2.0.
-7. **8 Native MCP AI Tools** — Exposes comprehensive tools for telemetry (`get_gpu_vram`), health probing (`check_health`), model management (`list_models`, `pull_model`, `unload_vram`), process control (`start_engine`, `stop_engine`), and filesystem tool auto-discovery (`detect_tools`).
+7. **Official MCP Streamable HTTP / SSE Endpoint (`/mcp`)** — Fully compliant Model Context Protocol (MCP) server built with `ModelContextProtocol.AspNetCore` enabling AI assistants (Antigravity, Claude Desktop, Cursor, Open WebUI) to automate server operations over JSON-RPC 2.0.
+8. **11 Native MCP AI Tools** — Exposes comprehensive tools for telemetry (`get_gpu_vram`), health probing (`check_health`), model management (`list_models`, `pull_model`, `unload_vram`), process control (`start_engine`, `stop_engine`), filesystem tool auto-discovery (`detect_tools`), video generation (`generate_video`), speech synthesis (`synthesize_speech`), and music/sound generation (`generate_audio`).
 
 ### LLM Management (Ollama & Hugging Face Hub)
-8. **Service Health Checks** — Real-time status indicators for Ollama (`11434`), Stable Diffusion / Forge (`7860`), and ComfyUI (`8188`).
-9. **Cross-Platform VRAM Telemetry** — Reads GPU name and VRAM via NVML CUDA (`nvidia-smi`), Windows Registry, or Linux system memory (`/proc/meminfo`). Correctly reports e.g. *NVIDIA GeForce RTX 4070 Ti SUPER — 16 GB*.
-10. **VRAM Usage Visualizer** — Stacked bar showing loaded-model VRAM vs free GPU memory.
-11. **KV Cache Context Calculator** — Slide target token length (up to 32 K tokens) to preview weights + KV cache sizes and warn when context exceeds VRAM.
-12. **Model Capabilities Profile** — Tags model families (Llama, Gemma, Qwen, Phi, Mistral, DeepSeek) with use-case badges (`Coding`, `Reasoning`, `Math`, `Chat`).
-13. **Hugging Face Hub Integration** — Search GGUF repos, select quantization, inspect file sizes, and download with a live SSE progress stream.
-14. **Ollama Library Quick-Pull** — Pre-populated cards for popular models (gemma2, llama3.2, qwen2.5-coder, phi3) with size estimates and one-click pull.
-15. **Custom Pull** — Type any `user/model:tag` to pull an arbitrary Ollama model.
-16. **Concurrent Model Preloading** — Trigger indefinite VRAM holds (`keep_alive: -1`) to run multiple models side-by-side.
-
-![Ollama Installed Models](docs/images/dashboard_ollama.png)
-
-![Hugging Face GGUF Search](docs/images/dashboard_huggingface.png)
+9. **Service Health Checks** — Real-time status indicators for Ollama (`11434`), Stable Diffusion / Forge (`7860`), ComfyUI (`8188`), and Audio Engine (`8880`).
+10. **Cross-Platform VRAM Telemetry** — Reads GPU name and VRAM via NVML CUDA (`nvidia-smi`), Windows Registry, or Linux system memory (`/proc/meminfo`). Correctly reports e.g. *NVIDIA GeForce RTX 4070 Ti SUPER — 16 GB*.
+11. **VRAM Usage Visualizer** — Stacked bar showing loaded-model VRAM vs free GPU memory.
+12. **KV Cache Context Calculator** — Slide target token length (up to 32 K tokens) to preview weights + KV cache sizes and warn when context exceeds VRAM.
+13. **Model Capabilities Profile** — Tags model families (Llama, Gemma, Qwen, Phi, Mistral, DeepSeek) with use-case badges (`Coding`, `Reasoning`, `Math`, `Chat`).
+14. **Multimodal Hugging Face Hub Discovery** — Search GGUF LLMs, Text-to-Video, Image-to-Video, TTS, and Text-to-Audio models with category chip filters, inspect weights, and stream downloads with live progress.
+15. **Ollama Library Quick-Pull** — Pre-populated cards for popular models (gemma2, llama3.2, qwen2.5-coder, phi3) with size estimates and one-click pull.
+16. **Custom Pull** — Type any `user/model:tag` to pull an arbitrary Ollama model.
+17. **Concurrent Model Preloading** — Trigger indefinite VRAM holds (`keep_alive: -1`) to run multiple models side-by-side.
 
 ### 3D Mesh & ComfyUI Generation (TRELLIS V2 / Hunyuan3D v2)
-17. **ComfyUI Integration** — Proxy ComfyUI workflow execution, API requests, and WebSocket progress directly through port 5246.
-18. **3D Mesh Generation** — Run TRELLIS V2 and Hunyuan3D v2 workflows for Image-to-3D and Text-to-3D mesh generation (.glb / .gltf).
-19. **Interactive WebGL 3D Canvas** — Render generated 3D meshes natively in-browser using `<model-viewer>` with 360° orbital controls, wireframe toggles, lighting options, and GLB export.
-20. **Bundled API Workflow Presets** — Ships with default ready-to-run API JSON templates for TRELLIS V2, Hunyuan3D v2, and FLUX/SDXL image generation.
-21. **Engine Preference Switcher** — Easily set your preferred default image generator engine (Forge vs ComfyUI).
+18. **ComfyUI Integration** — Proxy ComfyUI workflow execution, API requests, and WebSocket progress directly through port 5246.
+19. **3D Mesh Generation** — Run TRELLIS V2 and Hunyuan3D v2 workflows for Image-to-3D and Text-to-3D mesh generation (.glb / .gltf).
+20. **Interactive WebGL 3D Canvas** — Render generated 3D meshes natively in-browser using `<model-viewer>` with 360° orbital controls, wireframe toggles, lighting options, and GLB export.
 
-![3D Mesh & ComfyUI Studio](docs/images/dashboard_3d_studio.png)
+### Video Generation Studio (Wan 2.2, LTX-2.5, HunyuanVideo)
+21. **Video Generation Presets** — Ships with ComfyUI workflow presets for state-of-the-art video models: **Wan 2.2** (Text-to-Video / Image-to-Video), **LTX-2.5**, and **HunyuanVideo 1.5**.
+22. **Interactive Video Player Preview** — Native Desktop & WASM video preview component with playback controls, scrub bar, looping, playback speed selector, resolution badges, frame count overlay, and recent video gallery.
+
+### Audio & Speech Synthesis Studio (Kokoro TTS, Stable Audio, YuE)
+23. **Managed TTS Engine & OpenAI Compatibility** — Auto-detects and supervises local TTS engines (e.g. Kokoro-FastAPI, AllTalk) with native OpenAI-compatible `POST /v1/audio/speech` endpoint.
+24. **Audio & Music Generation** — ComfyUI workflows for **Stable Audio Open 3.0** (sound effects & sample generation) and **YuE** (full-length song and vocal generation).
+25. **Waveform Visualizer & Audio Player** — Integrated audio player with live waveform rendering, duration scrub, volume control, and audio file gallery.
 
 ### Stable Diffusion / Forge & CivitAI
-22. **CivitAI Integration** — Search by name, type (Checkpoint / LoRA / Embedding / VAE / ControlNet), and sort order. Shows preview thumbnails, download counts, and star ratings.
-23. **Direct-to-Disk Downloads** — Stream CivitAI files directly to disk with live progress bars.
-
-![CivitAI SD Checkpoints](docs/images/dashboard_civitai.png)
+26. **CivitAI Integration** — Search by name, type (Checkpoint / LoRA / Embedding / VAE / ControlNet), and sort order. Shows preview thumbnails, download counts, and star ratings.
+27. **Direct-to-Disk Downloads** — Stream CivitAI files directly to disk with live progress bars.
 
 ### Application Settings & Engine Controls
-24. **Flexible Path Configuration & Auto-Discovery** — Customize executable/script paths and model directories for Ollama, Stable Diffusion / Forge, and ComfyUI. Use the one-click "🔍 Auto-Detect Installed Tools" feature (or `POST /api/tools/detect`) to automatically scan common install locations across drives, with real-time path validation badges (`Valid` 🟢 / `Missing` 🔴 / `Unset` ⚪).
-
-![Application Settings](docs/images/dashboard_settings.png)
+28. **Flexible Path Configuration & Auto-Discovery** — Customize executable/script paths and model directories for Ollama, Stable Diffusion / Forge, ComfyUI, and Audio TTS Engine. Use the one-click "🔍 Auto-Detect Installed Tools" feature (or `POST /api/tools/detect`) to automatically scan common install locations across drives, with real-time path validation badges (`Valid` 🟢 / `Missing` 🔴 / `Unset` ⚪).
+29. **Component Manager** — View, install, and uninstall optional feature packs (`ext_video`, `ext_audio`) directly from the Settings UI.
 
 ### Infrastructure & Reverse Proxy
-25. **YARP Reverse Proxy** — Transparently proxies Ollama (`:11434`), Forge (`:7860`), and ComfyUI (`:8188`) traffic through a single endpoint (`:5246`).
-26. **VRAM Orchestrator** — Auto-unloads active LLM models from GPU memory before heavy Stable Diffusion or ComfyUI 3D render jobs to prevent OOM errors.
-27. **Background Engine Management** — UI controls to start/stop engines directly from the dashboard cleanly.
-28. **Lazy Boot** — AI engines can now boot lazily on-demand when first requested, conserving system resources when idle.
+30. **YARP Reverse Proxy** — Transparently proxies Ollama (`:11434`), Forge (`:7860`), ComfyUI (`:8188`), and Audio Engine (`:8880`) traffic through a single unified endpoint (`:5246`).
+31. **VRAM Orchestrator** — Auto-unloads active LLM models from GPU memory before heavy Stable Diffusion, ComfyUI 3D, or Video render jobs to prevent OOM errors.
+32. **Background Engine Management** — UI controls to start/stop engines directly from the dashboard cleanly.
+33. **Lazy Boot** — AI engines can boot lazily on-demand when first requested, conserving system resources when idle.
 
 ---
 
@@ -142,18 +141,21 @@ LocalLLMServerManager includes a native **Model Context Protocol (MCP)** server 
 ### Endpoints
 * **`/mcp` (Streamable HTTP / SSE)**: Standard JSON-RPC 2.0 endpoint implementing the official Model Context Protocol (2024-11-05 specification) via `ModelContextProtocol.AspNetCore`. Supports session streaming, `tools/list`, and `tools/call`.
 
-### Available MCP Tools (8 Tools)
+### Available MCP Tools (11 Tools)
 
 | Tool Name | Parameters | Description | Backend Delegation |
 |---|---|---|---|
 | **`get_gpu_vram`** | *none* | Retrieves real-time GPU VRAM allocation, total/used/free memory in MB, utilization percentage, and hardware name. | `IGpuTelemetryProvider` (NVML CUDA) |
-| **`check_health`** | *none* | Probes real-time connectivity and latency for Ollama (`:11434`), SD Forge (`:7860`), and ComfyUI (`:8188`). | HTTP Health Checks |
+| **`check_health`** | *none* | Probes real-time connectivity and latency for Ollama (`:11434`), SD Forge (`:7860`), ComfyUI (`:8188`), and Audio Engine (`:8880`). | HTTP Health Checks |
 | **`list_models`** | *none* | Lists all installed Ollama LLM models with family classification, disk footprint, and parameter tags. | `IOllamaModelService` |
 | **`pull_model`** | `modelName` *(string, required)* | Initiates an asynchronous download of a model from Ollama Library or Hugging Face. | `IOllamaModelService` |
-| **`unload_vram`** | *none* | Releases all loaded LLM models from GPU VRAM (`keep_alive: 0`) to free memory for diffusion or 3D generation. | `VramOrchestrator` / Ollama |
-| **`start_engine`** | `engine` *('forge' \| 'comfyui')* | Spawns and supervises an AI backend engine process. | `IAiEngineManager` (Win32 Job / Process) |
-| **`stop_engine`** | `engine` *('forge' \| 'comfyui')* | Gracefully terminates an AI backend engine process. | `IAiEngineManager` |
-| **`detect_tools`** | *none* | Scans system drives, environment variables, and default paths for Ollama, ComfyUI, and SD Forge. | `IToolDiscoveryService` || Scans system drives, environment variables, and default paths for Ollama, ComfyUI, and SD Forge. | `IToolDiscoveryService` |
+| **`unload_vram`** | *none* | Releases all loaded LLM models from GPU VRAM (`keep_alive: 0`) to free memory for diffusion, video, or 3D generation. | `VramOrchestrator` / Ollama |
+| **`start_engine`** | `engine` *('forge' \| 'comfyui' \| 'audio')* | Spawns and supervises an AI backend engine process. | `IAiEngineManager` (Win32 Job / Process) |
+| **`stop_engine`** | `engine` *('forge' \| 'comfyui' \| 'audio')* | Gracefully terminates an AI backend engine process. | `IAiEngineManager` |
+| **`detect_tools`** | *none* | Scans system drives, environment variables, and default paths for Ollama, ComfyUI, SD Forge, and TTS Audio Engines. | `IToolDiscoveryService` |
+| **`generate_video`** | `prompt` *(string)*, `workflow` *(string, default 'wan2.2_t2v')*, `width` *(int)*, `height` *(int)*, `frames` *(int)*, `fps` *(int)*, `seed` *(long)* | Queues and orchestrates video generation with ComfyUI presets (Wan 2.2, LTX-2.5, HunyuanVideo). | `POST /api/video/generate` |
+| **`synthesize_speech`** | `text` *(string)*, `voice` *(string, default 'af_heart')*, `speed` *(float)*, `format` *(string)* | Synthesizes speech from text using local Kokoro TTS engine with OpenAI-compatible backend. | `POST /v1/audio/speech` |
+| **`generate_audio`** | `prompt` *(string)*, `workflow` *(string, default 'stable_audio_open_sfx')*, `duration_seconds` *(int)*, `seed` *(long)* | Generates music or audio sound effects with ComfyUI audio presets (Stable Audio Open 3.0, YuE). | `POST /api/audio/generate` |
 
 ### Connecting AI Assistants to LocalLLMServerManager
 
@@ -350,6 +352,8 @@ We use **MAJOR.MINOR.PATCH** (SemVer):
 | `3.3.0` | Major architecture refactoring — decomposed Program.cs and MainViewModel into modular interfaces, services, and endpoint route extensions |
 | `3.4.0` | Added Playwright automated E2E browser testing, real WebAssembly UI screenshot generator, Docker containerization support, and Kestrel WASM static asset MIME type mappings |
 | `3.5.0` | Flexible tool path configuration, multi-drive auto-discovery service (`IToolDiscoveryService`), `POST /api/tools/detect`, official Model Context Protocol (MCP) server endpoint (`/mcp`) with 8 AI automation tools, and graceful in-place update support across Windows Inno Setup and shell installers |
+| `3.6.0` | Monochromatic L³M² brand identity, Matte Carbon Design System, live Dynamic Theming Engine (Matte Carbon, OLED Black, Clean Light), and playwright-layout-inspector visual audits |
+| `3.7.0` | Multimodal Video & Audio Studio (Wan 2.2, LTX-2.5, HunyuanVideo, Kokoro TTS, Stable Audio Open 3.0, YuE), interactive Video Player and Audio Waveform controls, Multimodal Hugging Face Discovery filters, 3 new MCP AI Tools (`generate_video`, `synthesize_speech`, `generate_audio`), OpenAI-compatible `/v1/audio/speech`, and Modular Feature Packs (`--with-video`, `--with-audio`) |
 
 ---
 

@@ -4,9 +4,9 @@
              x:Class="LocalLLMServerManager.Shared.Views.Controls.HuggingFaceTabControl"
              x:DataType="vm:HuggingFaceSearchViewModel">
 
-    <Grid RowDefinitions="Auto, *" Margin="0,12,0,0">
-        <Grid Grid.Row="0" ColumnDefinitions="*, Auto" Margin="0,0,0,12">
-            <TextBox Grid.Column="0" Text="{Binding HfSearchQuery}" PlaceholderText="Search GGUF models (e.g. llama 3.3, qwen2.5-coder)..." 
+    <Grid RowDefinitions="Auto, Auto, *" Margin="0,12,0,0">
+        <Grid Grid.Row="0" ColumnDefinitions="*, Auto" Margin="0,0,0,8">
+            <TextBox Grid.Column="0" Text="{Binding HfSearchQuery}" PlaceholderText="Search Hugging Face models (e.g. llama 3.3, Wan, LTX, Kokoro)..."
                      Classes="matte-input" VerticalAlignment="Center"/>
             <Button Grid.Column="1" Command="{Binding SearchHuggingFaceCommand}" 
                     Classes="matte-primary" Margin="8,0,0,0" VerticalAlignment="Center">
@@ -14,7 +14,18 @@
             </Button>
         </Grid>
 
-        <ScrollViewer Grid.Row="1">
+        <ScrollViewer Grid.Row="1" HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Disabled" Margin="0,0,0,12">
+            <StackPanel Orientation="Horizontal" Spacing="6">
+                <Button Content="All" Command="{Binding SelectCategoryCommand}" CommandParameter="" Classes="matte-pill"/>
+                <Button Content="🦙 LLM (GGUF)" Command="{Binding SelectCategoryCommand}" CommandParameter="gguf" Classes="matte-pill"/>
+                <Button Content="🎬 Video" Command="{Binding SelectCategoryCommand}" CommandParameter="text-to-video" Classes="matte-pill"/>
+                <Button Content="🔊 Speech/TTS" Command="{Binding SelectCategoryCommand}" CommandParameter="text-to-speech" Classes="matte-pill"/>
+                <Button Content="🎵 Music/SFX" Command="{Binding SelectCategoryCommand}" CommandParameter="text-to-audio" Classes="matte-pill"/>
+                <Button Content="📦 3D Mesh" Command="{Binding SelectCategoryCommand}" CommandParameter="text-to-3d" Classes="matte-pill"/>
+            </StackPanel>
+        </ScrollViewer>
+
+        <ScrollViewer Grid.Row="2">
             <ItemsControl ItemsSource="{Binding HuggingFaceResults}">
                 <ItemsControl.ItemTemplate>
                     <DataTemplate DataType="vm:HuggingFaceRepoItem">
@@ -25,6 +36,9 @@
                                     <TextBlock Text="{Binding Author, StringFormat='Author: {0}'}" FontSize="12" Foreground="{StaticResource TextMutedBrush}"/>
                                 </StackPanel>
                                 <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+                                    <Border Classes="matte-pill" Padding="8,4" IsVisible="{Binding PipelineTag, Converter={x:Static StringConverters.IsNotNullOrEmpty}}">
+                                        <TextBlock Text="{Binding PipelineTag}" FontSize="11" Foreground="{StaticResource AccentBrush}" FontWeight="SemiBold"/>
+                                    </Border>
                                     <Border Classes="matte-pill" Padding="8,4">
                                         <TextBlock Text="{Binding Downloads, StringFormat='⬇️ {0:N0}'}" FontSize="11" Foreground="{StaticResource TextMainBrush}" FontWeight="SemiBold"/>
                                     </Border>

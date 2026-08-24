@@ -293,6 +293,132 @@ public class McpServerIntegrationTests : IClassFixture<AppTestServerFixture>
     }
 
     [Fact]
+    public async Task GenerateVideo_ValidPrompt_ReturnsMediaUrlAndStatus()
+    {
+        var handler = new MockHttpMessageHandler(HttpStatusCode.OK, "{\"prompt_id\":\"vid_123\"}");
+        var tools = CreateTools(handler);
+
+        var result = await tools.GenerateVideoAsync("A Cyberpunk city skyline at night", "wan2.2_t2v", 832, 480, 49);
+
+        Assert.NotNull(result);
+        Assert.Contains("true", result.ToLowerInvariant());
+        Assert.Contains("wan2.2_t2v", result);
+        Assert.Contains("/output/video_", result);
+        Assert.Contains("queued", result);
+    }
+
+    [Theory]
+    [InlineData("")]
+    [InlineData("   ")]
+    [InlineData(null)]
+    public async Task GenerateVideo_NullOrEmptyPrompt_ReturnsError(string? prompt)
+    {
+        var tools = CreateTools();
+        var result = await tools.GenerateVideoAsync(prompt!);
+
+        Assert.NotNull(result);
+        Assert.Contains("false", result.ToLowerInvariant());
+        Assert.Contains("prompt is required", result);
+    }
+
+    [Fact]
+    public async Task GenerateVideo_WhenHttpExceptionThrown_ReturnsErrorGracefully()
+    {
+        var throwingHandler = new ThrowingHttpMessageHandler(new HttpRequestException("ComfyUI endpoint offline"));
+        var tools = CreateTools(throwingHandler);
+
+        var result = await tools.GenerateVideoAsync("A sunset landscape");
+
+        Assert.NotNull(result);
+        Assert.Contains("false", result.ToLowerInvariant());
+        Assert.Contains("ComfyUI endpoint offline", result);
+    }
+
+    [Fact]
+    public async Task SynthesizeSpeech_ValidText_ReturnsAudioUrlAndStatus()
+    {
+        var handler = new MockHttpMessageHandler(HttpStatusCode.OK, "{\"status\":\"ok\"}");
+        var tools = CreateTools(handler);
+
+        var result = await tools.SynthesizeSpeechAsync("Hello, welcome to the local AI assistant.", "af_heart", "mp3");
+
+        Assert.NotNull(result);
+        Assert.Contains("true", result.ToLowerInvariant());
+        Assert.Contains("af_heart", result);
+        Assert.Contains("/output/speech_", result);
+        Assert.Contains("completed", result);
+    }
+
+    [Theory]
+    [InlineData("")]
+    [InlineData("   ")]
+    [InlineData(null)]
+    public async Task SynthesizeSpeech_NullOrEmptyText_ReturnsError(string? text)
+    {
+        var tools = CreateTools();
+        var result = await tools.SynthesizeSpeechAsync(text!);
+
+        Assert.NotNull(result);
+        Assert.Contains("false", result.ToLowerInvariant());
+        Assert.Contains("text is required", result);
+    }
+
+    [Fact]
+    public async Task SynthesizeSpeech_WhenHttpExceptionThrown_ReturnsErrorGracefully()
+    {
+        var throwingHandler = new ThrowingHttpMessageHandler(new HttpRequestException("TTS server unreachable"));
+        var tools = CreateTools(throwingHandler);
+
+        var result = await tools.SynthesizeSpeechAsync("Testing TTS failure");
+
+        Assert.NotNull(result);
+        Assert.Contains("false", result.ToLowerInvariant());
+        Assert.Contains("TTS server unreachable", result);
+    }
+
+    [Fact]
+    public async Task GenerateAudio_ValidPrompt_ReturnsAudioUrlAndStatus()
+    {
+        var handler = new MockHttpMessageHandler(HttpStatusCode.OK, "{\"status\":\"queued\"}");
+        var tools = CreateTools(handler);
+
+        var result = await tools.GenerateAudioAsync("Cinematic sci-fi ambient synth loop", 15);
+
+        Assert.NotNull(result);
+        Assert.Contains("true", result.ToLowerInvariant());
+        Assert.Contains("15", result);
+        Assert.Contains("/output/audio_", result);
+        Assert.Contains("queued", result);
+    }
+
+    [Theory]
+    [InlineData("")]
+    [InlineData("   ")]
+    [InlineData(null)]
+    public async Task GenerateAudio_NullOrEmptyPrompt_ReturnsError(string? prompt)
+    {
+        var tools = CreateTools();
+        var result = await tools.GenerateAudioAsync(prompt!);
+
+        Assert.NotNull(result);
+        Assert.Contains("false", result.ToLowerInvariant());
+        Assert.Contains("prompt is required", result);
+    }
+
+    [Fact]
+    public async Task GenerateAudio_WhenHttpExceptionThrown_ReturnsErrorGracefully()
+    {
+        var throwingHandler = new ThrowingHttpMessageHandler(new HttpRequestException("Audio model timeout"));
+        var tools = CreateTools(throwingHandler);
+
+        var result = await tools.GenerateAudioAsync("Rainforest sounds");
+
+        Assert.NotNull(result);
+        Assert.Contains("false", result.ToLowerInvariant());
+        Assert.Contains("Audio model timeout", result);
+    }
+
+    [Fact]
     public void McpToolsClass_HasCorrectAttributesAndDescriptions()
     {
         var toolType = typeof(LocalLlmMcpTools);
@@ -300,7 +426,7 @@ public class McpServerIntegrationTests : IClassFixture<AppTestServerFixture>
         // Class-level attribute
         Assert.NotNull(toolType.GetCustomAttribute<McpServerToolTypeAttribute>());
 
-        // 8 Expected Tool Methods
+        // 11 Expected Tool Methods
         var expectedMethods = new[]
         {
             "GetGpuVramAsync",
@@ -310,7 +436,10 @@ public class McpServerIntegrationTests : IClassFixture<AppTestServerFixture>
             "UnloadVramAsync",
             "StartEngineAsync",
             "StopEngineAsync",
-            "DetectToolsAsync"
+            "DetectToolsAsync",
+            "GenerateVideoAsync",
+            "SynthesizeSpeechAsync",
+            "GenerateAudioAsync"
         };
 
         foreach (var methodName in expectedMethods)
@@ -336,6 +465,18 @@ public class McpServerIntegrationTests : IClassFixture<AppTestServerFixture>
         var stopEngineMethod = toolType.GetMethod("StopEngineAsync");
         var stopEngineParam = stopEngineMethod?.GetParameters().FirstOrDefault(p => p.Name == "engine");
         Assert.NotNull(stopEngineParam?.GetCustomAttribute<DescriptionAttribute>());
+
+        var generateVideoMethod = toolType.GetMethod("GenerateVideoAsync");
+        var videoPromptParam = generateVideoMethod?.GetParameters().FirstOrDefault(p => p.Name == "prompt");
+        Assert.NotNull(videoPromptParam?.GetCustomAttribute<DescriptionAttribute>());
+
+        var synthesizeSpeechMethod = toolType.GetMethod("SynthesizeSpeechAsync");
+        var speechTextParam = synthesizeSpeechMethod?.GetParameters().FirstOrDefault(p => p.Name == "text");
+        Assert.NotNull(speechTextParam?.GetCustomAttribute<DescriptionAttribute>());
+
+        var generateAudioMethod = toolType.GetMethod("GenerateAudioAsync");
+        var audioPromptParam = generateAudioMethod?.GetParameters().FirstOrDefault(p => p.Name == "prompt");
+        Assert.NotNull(audioPromptParam?.GetCustomAttribute<DescriptionAttribute>());
     }
 
     [Fact]

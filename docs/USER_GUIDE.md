@@ -1,6 +1,6 @@
 # Local LLM Server Manager — Detailed User Guide
 
-Welcome to the **Local LLM Server Manager (v3.4.0)**. This guide will walk you through the main tabs of the dashboard, showing you how to manage your local AI engines (Ollama, Stable Diffusion / Forge, and ComfyUI), configure your settings, and successfully generate text, images, and 3D models.
+Welcome to the **Local LLM Server Manager (v3.7.0)**. This guide will walk you through the main tabs of the dashboard, showing you how to manage your local AI engines (Ollama, Stable Diffusion / Forge, ComfyUI, and Kokoro TTS), configure your settings, and successfully generate text, images, 3D models, video, and speech.
 
 ---
 
@@ -61,38 +61,42 @@ The Stable Diffusion tab allows you to configure your Forge engine and seamlessl
 
 ---
 
-## 4. 3D, Video & ComfyUI Studio
+## 4. Multimodal Studio (Images, 3D Mesh, Video & Audio)
 
-This studio tab provides a powerful frontend for interacting with your local ComfyUI installation, complete with a built-in interactive WebGL 3D canvas viewer.
+The Studio tab provides a unified creative environment for image generation, 3D mesh reconstruction, video synthesis, and audio generation via ComfyUI and local AI engines.
 
 ![3D ComfyUI Studio & WebGL Canvas](images/dashboard_3d_studio.png)
 
-### Configuring Your Studio:
-1. Verify the **ComfyUI Service Endpoint** at the top is correct (defaults to `http://127.0.0.1:8188`).
-2. Set your **Preferred Image & Mesh Generator Engine** (toggle between Stable Diffusion/Forge or ComfyUI).
-3. Use the **▶ Boot Engine** button to lazily boot up ComfyUI in the background.
-
-### Running a Workflow:
-1. **Select a Preset Workflow:** Choose from the dropdown (e.g. `TRELLIS V2 (3D Mesh Generator)`, `Hunyuan3D v2`, or `FLUX / SDXL`).
-2. **Generation Prompt:** Enter a detailed prompt describing what you want.
-   * *Sample 3D Prompt:* `"A low-poly stylized wooden treasure chest with glowing blue runes and gold trim"`
-   * *Sample Image Prompt:* `"A futuristic neon-lit cyberpunk street alleyway in Tokyo, raining, 8k resolution, photorealistic"`
-3. Click **🚀 Queue Generation**. 
-
-Behind the scenes, the VRAM orchestrator will automatically free up any LLM models you have loaded if it needs the space. Once ComfyUI finishes the job, the result will automatically populate in your **Recent Media Gallery**. If you generated a `.glb` or `.gltf` 3D mesh, it will load into the **Interactive WebGL 3D Viewer** where you can rotate it 360°, toggle wireframes, and export it!
+### Studio Modes:
+1. **🎨 Images**: Generate high-fidelity images using FLUX, SDXL, or SD 1.5 with ComfyUI or SD Forge.
+2. **📦 3D Mesh**: Reconstruct 3D meshes using **TRELLIS V2** and **Hunyuan3D v2** with interactive 360° orbital WebGL viewer.
+3. **🎬 Video Generation**:
+   * **Supported Models**: **Wan 2.2** (Text-to-Video and Image-to-Video), **LTX-2.5**, and **HunyuanVideo 1.5**.
+   * **Controls**: Set prompt, negative prompt, resolution (Width x Height), frame count, FPS, and seed.
+   * **Interactive Video Player**: Preview generated MP4 videos directly in the desktop or web dashboard with scrub controls, loop toggle, playback speed selector (0.5x–2x), and metadata badges.
+4. **🎵 Audio & Speech Synthesis**:
+   * **Kokoro TTS Engine**: Text-to-Speech synthesis with 50+ high-quality voices (`af_heart`, `am_adam`, etc.) and native OpenAI-compatible `/v1/audio/speech` proxy.
+   * **Stable Audio Open 3.0**: Generate realistic sound effects, ambient audio, and instrumental samples.
+   * **YuE Music Generator**: Generate full-length songs with dual-track lyrics and melody generation.
+   * **Waveform Visualizer**: Live interactive waveform display with scrub bar, duration badges, and download button.
 
 ---
 
-## 5. Settings & Application Configuration
+## 5. Settings, Engine Controls & Modular Feature Packs
 
-The Settings tab provides centralized control over all engine connection endpoints, storage directories, telemetry refresh rates, and background process parameters.
+The Settings tab provides centralized configuration for engine endpoints, model directories, and optional component management.
 
 ![Application Settings & Environment Configuration](images/dashboard_settings.png)
 
-### Key Settings:
-* **Connection Endpoints:** Configure HTTP ports for Ollama (`:11434`), SD Forge (`:7860`), and ComfyUI (`:8188`).
-* **Storage Paths:** Set custom output directories for generated models, images, and 3D GLB assets.
-* **VRAM Telemetry Interval:** Adjust the polling frequency (in milliseconds) for GPU telemetry hardware monitoring.
+### Key Features:
+* **🔍 Auto-Detect Installed Tools**: One-click scanner that discovers Ollama, ComfyUI, Forge, and Kokoro TTS installations across all storage drives.
+* **Feature Packs (Modular Components)**:
+  * **Core**: Ollama LLM management, Hugging Face Hub, CivitAI downloader.
+  * **Video Feature Pack (`ext_video`)**: Video ComfyUI workflow presets, models, and video player preview tools.
+  * **Audio Feature Pack (`ext_audio`)**: Kokoro TTS engine scripts, Stable Audio presets, and waveform audio player.
+  * You can install or uninstall optional packs on-demand directly from the Settings tab without restarting your system.
+* **Connection Endpoints**: Configure HTTP ports for Ollama (`:11434`), SD Forge (`:7860`), ComfyUI (`:8188`), and Audio Engine (`:8880`).
+* **Storage Paths**: Set custom directories for models, output videos, audio files, and 3D meshes.
 
 ---
 

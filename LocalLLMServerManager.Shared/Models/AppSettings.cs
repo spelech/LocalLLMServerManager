@@ -15,7 +15,13 @@ public record AppSettings(
     string ServiceName = "LocalLLMServerManager",
     string PublishOutputPath = "C:\\LocalLLMServerManager",
     string ComfyModelsPath = "",
+    string AudioPath = "",
     string LanAccessUrl = "http://127.0.0.1:5246",
-    string SelectedThemeStyle = "semi"
+    string SelectedThemeStyle = "semi",
+    string AudioEngineExecutablePath = "",
+    string AudioEngineUrl = "http://127.0.0.1:8880",
+    string PreferredAudioVoice = "af_heart",
+    string VideoModelsPath = "",
+    string VideoOutputPath = ""
 );
 

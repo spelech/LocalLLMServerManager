@@ -9,10 +9,12 @@ public class AiEngineManager : IAiEngineManager
 {
     private static Process? _comfyProcess;
     private static Process? _forgeProcess;
+    private static Process? _audioProcess;
     private static readonly JobObject AiEnginesJob = new();
 
     public Process? ComfyProcess => _comfyProcess;
     public Process? ForgeProcess => _forgeProcess;
+    public Process? AudioProcess => _audioProcess;
 
     public bool IsProcessRunning(string name)
     {
@@ -156,6 +158,113 @@ public class AiEngineManager : IAiEngineManager
         }
     }
 
+    public Task<bool> StartAudioEngineAsync(string executablePath, ILogger logger)
+    {
+        try
+        {
+            if (_audioProcess != null && !_audioProcess.HasExited) return Task.FromResult(true);
+
+            var expandedPath = Environment.ExpandEnvironmentVariables(executablePath);
+            ProcessStartInfo startInfo;
+
+            if (expandedPath.TrimStart().StartsWith("docker", StringComparison.OrdinalIgnoreCase))
+            {
+                var parts = expandedPath.Split(' ', 2, StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+                var dockerExe = parts[0];
+                var args = parts.Length > 1 ? parts[1] : "";
+
+                startInfo = new ProcessStartInfo
+                {
+                    FileName = dockerExe,
+                    Arguments = args,
+                    UseShellExecute = false,
+                    CreateNoWindow = true
+                };
+            }
+            else
+            {
+                if (!File.Exists(expandedPath))
+                {
+                    logger.LogWarning("Audio Engine executable path does not exist: {Path}", expandedPath);
+                    return Task.FromResult(false);
+                }
+
+                if (expandedPath.EndsWith(".py", StringComparison.OrdinalIgnoreCase))
+                {
+                    var pyExe = RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? "python" : "python3";
+                    startInfo = new ProcessStartInfo
+                    {
+                        FileName = pyExe,
+                        Arguments = $"\"{expandedPath}\"",
+                        WorkingDirectory = Path.GetDirectoryName(expandedPath),
+                        UseShellExecute = true,
+                        CreateNoWindow = false
+                    };
+                }
+                else
+                {
+                    startInfo = new ProcessStartInfo
+                    {
+                        FileName = expandedPath,
+                        WorkingDirectory = Path.GetDirectoryName(expandedPath),
+                        UseShellExecute = true,
+                        CreateNoWindow = false
+                    };
+                }
+            }
+
+            _audioProcess = Process.Start(startInfo);
+            if (_audioProcess != null && RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+            {
+                AiEnginesJob.AddProcess(_audioProcess);
+            }
+
+            logger.LogInformation("Started Audio Engine process PID {Pid}", _audioProcess?.Id);
+            return Task.FromResult(true);
+        }
+        catch (Exception ex)
+        {
+            logger.LogError(ex, "Failed to start Audio Engine process");
+            return Task.FromResult(false);
+        }
+    }
+
+    public Task<bool> StopAudioEngineAsync(ILogger logger)
+    {
+        try
+        {
+            if (_audioProcess != null && !_audioProcess.HasExited)
+            {
+                _audioProcess.Kill(true);
+                _audioProcess = null;
+                logger.LogInformation("Stopped Audio Engine process");
+                return Task.FromResult(true);
+            }
+
+            var processes = Process.GetProcessesByName("python");
+            foreach (var p in processes)
+            {
+                try
+                {
+                    if (p.MainWindowTitle.Contains("kokoro", StringComparison.OrdinalIgnoreCase) ||
+                        p.MainWindowTitle.Contains("alltalk", StringComparison.OrdinalIgnoreCase) ||
+                        p.MainWindowTitle.Contains("audio", StringComparison.OrdinalIgnoreCase))
+                    {
+                        p.Kill(true);
+                    }
+                }
+                catch { }
+            }
+            _audioProcess = null;
+            return Task.FromResult(true);
+        }
+        catch (Exception ex)
+        {
+            logger.LogError(ex, "Failed to stop Audio Engine process");
+            return Task.FromResult(false);
+        }
+    }
+
     public async Task<EngineOperationResult> StartEngineAsync(string engine)
     {
         var normalized = engine?.Trim().ToLowerInvariant() ?? "";
@@ -180,6 +289,13 @@ public class AiEngineManager : IAiEngineManager
             var isRunning = IsProcessRunning("ollama");
             return new EngineOperationResult(isRunning, "ollama", isRunning ? "Ollama is running" : "Ollama process not detected");
         }
+        else if (normalized == "audio" || normalized == "kokoro" || normalized == "alltalk" || normalized == "tts")
+        {
+            var settings = new SettingsService().LoadSettings();
+            var execPath = string.IsNullOrWhiteSpace(settings.AudioEngineExecutablePath) ? @"C:\AI\Kokoro-FastAPI\main.py" : settings.AudioEngineExecutablePath;
+            var success = await StartAudioEngineAsync(execPath, logger);
+            return new EngineOperationResult(success, "audio", success ? "Audio Engine Started" : "Failed to start Audio Engine", _audioProcess?.Id);
+        }
 
         return new EngineOperationResult(false, engine ?? "unknown", $"Unsupported engine: {engine}");
     }
@@ -198,6 +314,11 @@ public class AiEngineManager : IAiEngineManager
         {
             var success = await StopComfyUiAsync(logger);
             return new EngineOperationResult(success, "comfyui", success ? "ComfyUI Stopped" : "Failed to stop ComfyUI");
+        }
+        else if (normalized == "audio" || normalized == "kokoro" || normalized == "alltalk" || normalized == "tts")
+        {
+            var success = await StopAudioEngineAsync(logger);
+            return new EngineOperationResult(success, "audio", success ? "Audio Engine Stopped" : "Failed to stop Audio Engine");
         }
 
         return new EngineOperationResult(false, engine ?? "unknown", $"Unsupported engine: {engine}");

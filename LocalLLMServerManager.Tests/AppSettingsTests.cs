@@ -24,8 +24,14 @@ public class AppSettingsTests
         Assert.Equal("LocalLLMServerManager", settings.ServiceName);
         Assert.Equal(@"C:\LocalLLMServerManager", settings.PublishOutputPath);
         Assert.Equal("", settings.ComfyModelsPath);
+        Assert.Equal("", settings.AudioPath);
         Assert.Equal("http://127.0.0.1:5246", settings.LanAccessUrl);
         Assert.Equal("semi", settings.SelectedThemeStyle);
+        Assert.Equal("", settings.AudioEngineExecutablePath);
+        Assert.Equal("http://127.0.0.1:8880", settings.AudioEngineUrl);
+        Assert.Equal("af_heart", settings.PreferredAudioVoice);
+        Assert.Equal("", settings.VideoModelsPath);
+        Assert.Equal("", settings.VideoOutputPath);
     }
 
     [Fact]
@@ -75,7 +81,12 @@ public class AppSettingsTests
             PublishOutputPath: @"D:\Publish",
             ComfyModelsPath: @"C:\AI\ComfyUI\models",
             LanAccessUrl: "http://192.168.1.50:5246",
-            SelectedThemeStyle: "dark"
+            SelectedThemeStyle: "dark",
+            AudioEngineExecutablePath: @"C:\AI\Kokoro-FastAPI\main.py",
+            AudioEngineUrl: "http://127.0.0.1:8880",
+            PreferredAudioVoice: "af_bella",
+            VideoModelsPath: @"C:\AI\VideoModels",
+            VideoOutputPath: @"C:\AI\VideoOutput"
         );
 
         var json = JsonSerializer.Serialize(original);

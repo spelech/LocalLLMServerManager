@@ -1,8 +1,8 @@
 # LocalLLMServerManager — System Architecture & Component Design
 
-> **v3.5.0 Architecture Specification & Mermaid Diagrams**
+> **v3.7.0 Architecture Specification & Mermaid Diagrams**
 
-This document provides a visual and structural blueprint of **LocalLLMServerManager**, detailing its component decomposition, MVVM hierarchy, Minimal API route modules, Dependency Injection lifecycle, Model Context Protocol (MCP) AI integration, VRAM orchestration flow, WebAssembly static asset pipeline, Playwright E2E testing layer, and Docker containerization architecture.
+This document provides a visual and structural blueprint of **LocalLLMServerManager**, detailing its component decomposition, MVVM hierarchy, Minimal API route modules, Dependency Injection lifecycle, Model Context Protocol (MCP) Multimodal AI integration, VRAM orchestration flow, Modular Feature Pack management, WebAssembly static asset pipeline, Playwright E2E testing layer, and Docker containerization architecture.
 
 ---
 
@@ -23,7 +23,7 @@ graph TD
         UI_Desktop["Desktop Window (Avalonia UI X11/Wayland/Win32)"]
         UI_Tray["System Tray Notification Icon & Menu"]
         UI_WASM["WebAssembly Browser App (WASM :5246)"]
-        UI_Web["Web Studio & 3D WebGL Canvas (wwwroot)"]
+        UI_Web["Multimodal Studio (3D WebGL / Video Player / Audio Waveform)"]
     end
 
     subgraph DockerContainer["Docker Container & Service Host Environment"]
@@ -37,16 +37,18 @@ graph TD
 
             subgraph Endpoints["Route Extension Modules"]
                 E_Health["HealthEndpoints (/health)"]
-                E_Proxy["ModelProxyEndpoints (/api/models, /api/hf/*, /api/civitai/*)"]
-                E_Engine["EngineEndpoints (/api/gpu/vram, /api/settings, /api/comfy/*, /api/forge/*)"]
-                E_Workflow["WorkflowEndpoints (/api/comfy/workflows, /api/3d/files)"]
+                E_Proxy["ModelProxyEndpoints (/api/models, /api/hf/*, /api/civitai/*, /v1/audio/speech)"]
+                E_Engine["EngineEndpoints (/api/gpu/vram, /api/settings, /api/comfy/*, /api/forge/*, /api/audio/*)"]
+                E_Workflow["WorkflowEndpoints (/api/comfy/workflows, /api/3d/*, /api/video/*, /api/audio/*)"]
                 E_Disc["DiscoveryEndpoints (/api/tools/detect, /api/tools/validate-path)"]
+                E_Comp["ComponentEndpoints (/api/components, /api/components/install)"]
                 E_MCP["McpEndpoints (/mcp Streamable HTTP / SSE)"]
             end
 
             subgraph CoreServices["Application Services (DI Container)"]
-                S_MCP["LocalLlmMcpTools (8 MCP AI Tools)"]
+                S_MCP["LocalLlmMcpTools (11 MCP AI Tools)"]
                 S_Disc["ToolDiscoveryService (Multi-Drive Auto-Discovery)"]
+                S_Comp["ComponentManagerService (Modular Feature Packs)"]
                 S_VRAM["VramOrchestrator"]
                 S_EngineMgr["AiEngineManager (Win32 JobObject / Linux Process)"]
                 S_Telemetry["GpuTelemetryProvider (nvidia-smi / Linux proc)"]
@@ -60,7 +62,8 @@ graph TD
         subgraph ExternalEngineLayer["Managed Engine Processes"]
             OllamaEngine["Ollama Server (:11434)"]
             ForgeEngine["Stable Diffusion Forge (:7860)"]
-            ComfyEngine["ComfyUI 3D Studio (:8188)"]
+            ComfyEngine["ComfyUI 3D & Video Studio (:8188)"]
+            AudioEngine["Managed TTS Audio Engine (:8880)"]
         end
     end
 
@@ -86,10 +89,12 @@ graph TD
     YARP -->|Proxy /v1/chat| OllamaEngine
     YARP -->|Proxy /sdapi| ForgeEngine
     YARP -->|Proxy /comfyapi| ComfyEngine
+    YARP -->|Proxy /v1/audio/speech| AudioEngine
 
     S_VRAM -->|Unload VRAM HTTP| OllamaEngine
     S_EngineMgr -->|Process Control| ForgeEngine
     S_EngineMgr -->|Process Control| ComfyEngine
+    S_EngineMgr -->|Process Control| AudioEngine
 ```
 
 ---

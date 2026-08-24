@@ -103,6 +103,34 @@ public class ServerEndpointsTests : IClassFixture<AppTestServerFixture>
     }
 
     [Fact]
+    public async Task AudioEndpoints_StartStopAndVoices_ExecuteAndReturnExpectedResponses()
+    {
+        var voicesResp = await _client.GetAsync("/api/audio/voices");
+        Assert.True(voicesResp.IsSuccessStatusCode);
+
+        var json = await voicesResp.Content.ReadFromJsonAsync<JsonElement>();
+        Assert.True(json.TryGetProperty("voices", out _));
+
+        var stopResp = await _client.PostAsync("/api/audio/stop", null);
+        Assert.True(stopResp.IsSuccessStatusCode);
+    }
+
+    [Fact]
+    public async Task AudioSpeechProxyEndpoint_ReturnsResponseOrBadGateway()
+    {
+        var speechRequest = new
+        {
+            model = "kokoro",
+            input = "Test speech synthesis",
+            voice = "af_heart",
+            response_format = "mp3"
+        };
+
+        var response = await _client.PostAsJsonAsync("/v1/audio/speech", speechRequest);
+        Assert.NotNull(response);
+    }
+
+    [Fact]
     public async Task ModelAndWorkflowEndpoints_ReturnDirectoryLists()
     {
         var modelsResp = await _client.GetAsync("/api/3d/files");
@@ -110,6 +138,53 @@ public class ServerEndpointsTests : IClassFixture<AppTestServerFixture>
 
         var workflowsResp = await _client.GetAsync("/api/comfy/workflows");
         Assert.True(workflowsResp.IsSuccessStatusCode);
+    }
+
+    [Fact]
+    public async Task AudioWorkflowsEndpoint_ReturnsAvailablePresets()
+    {
+        var response = await _client.GetAsync("/api/audio/workflows");
+        Assert.True(response.IsSuccessStatusCode);
+
+        var json = await response.Content.ReadFromJsonAsync<JsonElement>();
+        Assert.Equal(JsonValueKind.Array, json.ValueKind);
+        Assert.True(json.GetArrayLength() > 0);
+    }
+
+    [Fact]
+    public async Task AudioGenerateEndpoint_QueuesWorkflowAndReturnsQueuePayload()
+    {
+        var requestPayload = new
+        {
+            workflowId = "stable_audio_open_sfx",
+            prompt = "Cyberpunk atmospheric ambient drone, heavy synthesizer, cinematic low end, 48kHz stereo",
+            negativePrompt = "low quality, harsh distortion",
+            durationSeconds = 30,
+            seed = -1
+        };
+
+        var response = await _client.PostAsJsonAsync("/api/audio/generate", requestPayload);
+        Assert.True(response.IsSuccessStatusCode);
+
+        var json = await response.Content.ReadFromJsonAsync<JsonElement>();
+        Assert.True(json.TryGetProperty("promptId", out var pidProp));
+        Assert.False(string.IsNullOrWhiteSpace(pidProp.GetString()));
+
+        Assert.True(json.TryGetProperty("status", out var statusProp));
+        Assert.Equal("queued", statusProp.GetString());
+
+        Assert.True(json.TryGetProperty("wsUrl", out var wsUrlProp));
+        Assert.Contains("ws://", wsUrlProp.GetString());
+    }
+
+    [Fact]
+    public async Task AudioFilesEndpoint_ReturnsAudioOutputDirectoryList()
+    {
+        var response = await _client.GetAsync("/api/audio/files");
+        Assert.True(response.IsSuccessStatusCode);
+
+        var json = await response.Content.ReadFromJsonAsync<JsonElement>();
+        Assert.Equal(JsonValueKind.Array, json.ValueKind);
     }
 
     [Fact]

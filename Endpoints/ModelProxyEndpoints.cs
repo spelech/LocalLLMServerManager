@@ -1,6 +1,7 @@
 using System.Net.Http.Headers;
 using System.Text.Json;
 using System.Text.Json.Nodes;
+using LocalLLMServerManager.Services;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 
@@ -44,14 +45,33 @@ public static class ModelProxyEndpoints
             return Results.Ok(new { models = new object[0] });
         });
 
-        app.MapGet("/api/hf/search", async (string? q, HttpClient httpClient) =>
+        app.MapGet("/api/hf/search", async (string? q, string? pipeline_tag, HttpClient httpClient) =>
         {
             try
             {
-                using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(3));
-                var query = string.IsNullOrWhiteSpace(q) ? "llama" : q;
-                var requestUrl = $"https://huggingface.co/api/models?search={Uri.EscapeDataString(query)}&filter=gguf&sort=downloads&direction=-1&limit=20";
+                using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(5));
+                var query = string.IsNullOrWhiteSpace(q) ? (string.IsNullOrWhiteSpace(pipeline_tag) ? "llama" : "") : q;
                 
+                string requestUrl;
+                if (!string.IsNullOrWhiteSpace(pipeline_tag))
+                {
+                    if (pipeline_tag.Equals("gguf", StringComparison.OrdinalIgnoreCase))
+                    {
+                        var qParam = string.IsNullOrWhiteSpace(query) ? "llama" : query;
+                        requestUrl = $"https://huggingface.co/api/models?search={Uri.EscapeDataString(qParam)}&filter=gguf&sort=downloads&direction=-1&limit=20";
+                    }
+                    else
+                    {
+                        var qParam = Uri.EscapeDataString(query);
+                        requestUrl = $"https://huggingface.co/api/models?search={qParam}&pipeline_tag={Uri.EscapeDataString(pipeline_tag)}&sort=downloads&direction=-1&limit=20";
+                    }
+                }
+                else
+                {
+                    var qParam = string.IsNullOrWhiteSpace(query) ? "llama" : query;
+                    requestUrl = $"https://huggingface.co/api/models?search={Uri.EscapeDataString(qParam)}&filter=gguf&sort=downloads&direction=-1&limit=20";
+                }
+
                 using var req = new HttpRequestMessage(HttpMethod.Get, requestUrl);
                 req.Headers.UserAgent.ParseAdd("LocalLLMServerManager/3.5.0");
                 var response = await httpClient.SendAsync(req, cts.Token);
@@ -60,6 +80,58 @@ public static class ModelProxyEndpoints
                 {
                     var jsonStr = await response.Content.ReadAsStringAsync(cts.Token);
                     return Results.Content(jsonStr, "application/json");
+                }
+                return Results.StatusCode((int)response.StatusCode);
+            }
+            catch (Exception ex)
+            {
+                return Results.Problem(ex.Message);
+            }
+        });
+
+        app.MapGet("/api/civitai/download", async (HttpContext httpContext, string fileUrl, string? modelType, string? fileName, HttpClient httpClient) =>
+        {
+            try
+            {
+                var rawName = string.IsNullOrWhiteSpace(fileName) ? "model.safetensors" : fileName;
+                var safeFileName = Path.GetFileName(rawName);
+                var targetDir = LocalLLMServerManager.Shared.Services.DownloadManager.ResolveTargetDirectory(modelType, safeFileName);
+                Directory.CreateDirectory(targetDir);
+                var targetPath = Path.Combine(targetDir, safeFileName);
+
+                using var response = await httpClient.GetAsync(fileUrl, HttpCompletionOption.ResponseHeadersRead, httpContext.RequestAborted);
+                if (response.IsSuccessStatusCode)
+                {
+                    using var stream = await response.Content.ReadAsStreamAsync(httpContext.RequestAborted);
+                    using var fileStream = File.Create(targetPath);
+                    await stream.CopyToAsync(fileStream, httpContext.RequestAborted);
+                    return Results.Ok(new { status = "success", path = targetPath });
+                }
+                return Results.StatusCode((int)response.StatusCode);
+            }
+            catch (Exception ex)
+            {
+                return Results.Problem(ex.Message);
+            }
+        });
+
+        app.MapGet("/api/hf/download", async (HttpContext httpContext, string fileUrl, string? pipelineTag, string? fileName, HttpClient httpClient) =>
+        {
+            try
+            {
+                var rawName = string.IsNullOrWhiteSpace(fileName) ? "model.safetensors" : fileName;
+                var safeFileName = Path.GetFileName(rawName);
+                var targetDir = LocalLLMServerManager.Shared.Services.DownloadManager.ResolveTargetDirectory(pipelineTag, safeFileName);
+                Directory.CreateDirectory(targetDir);
+                var targetPath = Path.Combine(targetDir, safeFileName);
+
+                using var response = await httpClient.GetAsync(fileUrl, HttpCompletionOption.ResponseHeadersRead, httpContext.RequestAborted);
+                if (response.IsSuccessStatusCode)
+                {
+                    using var stream = await response.Content.ReadAsStreamAsync(httpContext.RequestAborted);
+                    using var fileStream = File.Create(targetPath);
+                    await stream.CopyToAsync(fileStream, httpContext.RequestAborted);
+                    return Results.Ok(new { status = "success", path = targetPath });
                 }
                 return Results.StatusCode((int)response.StatusCode);
             }
@@ -139,6 +211,60 @@ public static class ModelProxyEndpoints
             catch (Exception ex)
             {
                 return Results.Problem(ex.Message);
+            }
+        });
+
+        app.MapPost("/v1/audio/speech", async (HttpContext context, ISettingsService settingsService, IHttpClientFactory clientFactory) =>
+        {
+            try
+            {
+                var settings = settingsService.LoadSettings();
+                var baseUrl = (string.IsNullOrWhiteSpace(settings.AudioEngineUrl) ? "http://127.0.0.1:8880" : settings.AudioEngineUrl).TrimEnd('/');
+                var targetUrl = $"{baseUrl}/v1/audio/speech";
+
+                using var reader = new StreamReader(context.Request.Body);
+                var requestBodyStr = await reader.ReadToEndAsync();
+
+                string outgoingJson = requestBodyStr;
+                if (!string.IsNullOrWhiteSpace(requestBodyStr))
+                {
+                    try
+                    {
+                        using var doc = JsonDocument.Parse(requestBodyStr);
+                        var root = doc.RootElement;
+                        var hasVoice = root.TryGetProperty("voice", out var voiceProp) && !string.IsNullOrWhiteSpace(voiceProp.GetString());
+
+                        if (!hasVoice)
+                        {
+                            var dict = JsonSerializer.Deserialize<Dictionary<string, object>>(requestBodyStr) ?? new Dictionary<string, object>();
+                            dict["voice"] = string.IsNullOrWhiteSpace(settings.PreferredAudioVoice) ? "af_heart" : settings.PreferredAudioVoice;
+                            outgoingJson = JsonSerializer.Serialize(dict);
+                        }
+                    }
+                    catch { }
+                }
+
+                var http = clientFactory.CreateClient();
+                using var targetReq = new HttpRequestMessage(HttpMethod.Post, targetUrl);
+                targetReq.Content = new StringContent(outgoingJson, System.Text.Encoding.UTF8, "application/json");
+
+                var targetResponse = await http.SendAsync(targetReq, HttpCompletionOption.ResponseHeadersRead, context.RequestAborted);
+
+                context.Response.StatusCode = (int)targetResponse.StatusCode;
+                var contentType = targetResponse.Content.Headers.ContentType?.ToString() ?? "audio/mpeg";
+                context.Response.ContentType = contentType;
+
+                await using var responseStream = await targetResponse.Content.ReadAsStreamAsync(context.RequestAborted);
+                await responseStream.CopyToAsync(context.Response.Body, context.RequestAborted);
+            }
+            catch (Exception ex)
+            {
+                if (!context.Response.HasStarted)
+                {
+                    context.Response.StatusCode = StatusCodes.Status502BadGateway;
+                    context.Response.ContentType = "application/json";
+                    await context.Response.WriteAsync(JsonSerializer.Serialize(new { error = ex.Message }));
+                }
             }
         });
     }

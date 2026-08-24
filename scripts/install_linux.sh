@@ -7,6 +7,24 @@ BIN_LINK="/usr/local/bin/localllmmanager"
 SERVICE_FILE="/etc/systemd/system/localllmmanager.service"
 DESKTOP_FILE="/usr/share/applications/localllmmanager.desktop"
 SERVICE_NAME="localllmmanager.service"
+WITH_VIDEO=0
+WITH_AUDIO=0
+
+while [ $# -gt 0 ]; do
+  case "$1" in
+    --with-video)
+      WITH_VIDEO=1
+      shift
+      ;;
+    --with-audio)
+      WITH_AUDIO=1
+      shift
+      ;;
+    *)
+      shift
+      ;;
+  esac
+done
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 ROOT_DIR="$(cd "${SCRIPT_DIR}/.." && pwd)"
@@ -85,7 +103,19 @@ if [ -f "${SCRIPT_DIR}/localllmmanager.service" ]; then
   chmod 644 "${SERVICE_FILE}"
 fi
 
-# 9. Reload systemd daemon and restart service if it was previously running
+# 9. Optional Feature Pack Installation
+if [ "${WITH_VIDEO}" -eq 1 ]; then
+  echo "--> Installing Video Generation Feature Pack..."
+  mkdir -p "${INSTALL_DIR}/Workflows/Video"
+fi
+
+if [ "${WITH_AUDIO}" -eq 1 ]; then
+  echo "--> Installing Audio & Kokoro TTS Feature Pack..."
+  mkdir -p "${INSTALL_DIR}/kokoro-fastapi"
+  mkdir -p "${INSTALL_DIR}/models/audio"
+fi
+
+# 10. Reload systemd daemon and restart service if it was previously running
 echo "--> Reloading systemd daemon..."
 systemctl daemon-reload
 
