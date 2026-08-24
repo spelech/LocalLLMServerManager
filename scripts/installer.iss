@@ -45,6 +45,11 @@ Name: "desktopicon"; Description: "{cm:CreateDesktopIcon}"; GroupDescription: "{
 Name: "autostart"; Description: "Auto-start System Tray App on user login"; GroupDescription: "System Integration"
 Name: "windowsservice"; Description: "Install background Windows Service (starts automatically on system boot)"; GroupDescription: "System Integration"; Flags: checkedonce
 
+[Dirs]
+Name: "{app}\Workflows\Video"; Components: ext_video
+Name: "{app}\kokoro-fastapi"; Components: ext_audio
+Name: "{app}\models\audio"; Components: ext_audio
+
 [Files]
 ; Main published application files (excluding settings.json so existing user settings are preserved on upgrade)
 Source: "..\publish\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs; Excludes: "settings.json"

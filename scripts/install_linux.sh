@@ -10,14 +10,17 @@ SERVICE_NAME="localllmmanager.service"
 WITH_VIDEO=0
 WITH_AUDIO=0
 
-for arg in "$@"; do
-  case $arg in
+while [ $# -gt 0 ]; do
+  case "$1" in
     --with-video)
       WITH_VIDEO=1
       shift
       ;;
     --with-audio)
       WITH_AUDIO=1
+      shift
+      ;;
+    *)
       shift
       ;;
   esac

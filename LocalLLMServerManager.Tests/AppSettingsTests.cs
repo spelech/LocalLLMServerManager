@@ -24,6 +24,7 @@ public class AppSettingsTests
         Assert.Equal("LocalLLMServerManager", settings.ServiceName);
         Assert.Equal(@"C:\LocalLLMServerManager", settings.PublishOutputPath);
         Assert.Equal("", settings.ComfyModelsPath);
+        Assert.Equal("", settings.AudioPath);
         Assert.Equal("http://127.0.0.1:5246", settings.LanAccessUrl);
         Assert.Equal("semi", settings.SelectedThemeStyle);
         Assert.Equal("", settings.AudioEngineExecutablePath);

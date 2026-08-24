@@ -23,6 +23,7 @@ public record AudioGenerateRequest(
 
 public record VideoGenerateRequest(
     string? WorkflowId = "wan2.2_t2v",
+    string? Workflow = null,
     string? Prompt = "",
     string? NegativePrompt = "",
     int Width = 832,
@@ -115,22 +116,19 @@ public static class WorkflowEndpoints
             var settings = settingsService.LoadSettings();
 
             string videoWorkflowsDir = "";
-            if (!string.IsNullOrWhiteSpace(settings.WorkflowsPath) && Directory.Exists(Path.Combine(settings.WorkflowsPath, "Video")))
+            var searchPaths = new List<string>();
+            if (!string.IsNullOrWhiteSpace(settings.WorkflowsPath))
             {
-                videoWorkflowsDir = Path.Combine(settings.WorkflowsPath, "Video");
+                searchPaths.Add(Path.Combine(settings.WorkflowsPath, "Video"));
+                searchPaths.Add(settings.WorkflowsPath);
             }
-            else if (Directory.Exists(Path.Combine(AppContext.BaseDirectory, "Workflows", "Video")))
-            {
-                videoWorkflowsDir = Path.Combine(AppContext.BaseDirectory, "Workflows", "Video");
-            }
-            else if (Directory.Exists(Path.Combine(Directory.GetCurrentDirectory(), "Workflows", "Video")))
-            {
-                videoWorkflowsDir = Path.Combine(Directory.GetCurrentDirectory(), "Workflows", "Video");
-            }
-            else if (!string.IsNullOrWhiteSpace(settings.VideoModelsPath) && Directory.Exists(settings.VideoModelsPath))
-            {
-                videoWorkflowsDir = settings.VideoModelsPath;
-            }
+            searchPaths.Add(Path.Combine(AppContext.BaseDirectory, "Workflows", "Video"));
+            searchPaths.Add(Path.Combine(Directory.GetCurrentDirectory(), "Workflows", "Video"));
+            searchPaths.Add(Path.GetFullPath(Path.Combine(AppContext.BaseDirectory, "..", "..", "..", "Workflows", "Video")));
+            searchPaths.Add(Path.GetFullPath(Path.Combine(AppContext.BaseDirectory, "..", "..", "..", "..", "Workflows", "Video")));
+            if (!string.IsNullOrWhiteSpace(settings.VideoModelsPath)) searchPaths.Add(settings.VideoModelsPath);
+
+            videoWorkflowsDir = searchPaths.FirstOrDefault(Directory.Exists) ?? "";
 
             if (string.IsNullOrEmpty(videoWorkflowsDir) || !Directory.Exists(videoWorkflowsDir))
             {
@@ -165,11 +163,18 @@ public static class WorkflowEndpoints
             possibleDirs.Add(Path.Combine(AppContext.BaseDirectory, "Workflows"));
             possibleDirs.Add(Path.Combine(Directory.GetCurrentDirectory(), "Workflows", "Video"));
             possibleDirs.Add(Path.Combine(Directory.GetCurrentDirectory(), "Workflows"));
+            possibleDirs.Add(Path.GetFullPath(Path.Combine(AppContext.BaseDirectory, "..", "..", "..", "Workflows", "Video")));
+            possibleDirs.Add(Path.GetFullPath(Path.Combine(AppContext.BaseDirectory, "..", "..", "..", "..", "Workflows", "Video")));
             if (!string.IsNullOrWhiteSpace(settings.VideoModelsPath)) possibleDirs.Add(settings.VideoModelsPath);
 
             string? templatePath = null;
-            var rawId = string.IsNullOrWhiteSpace(request.WorkflowId) ? "wan2.2_t2v" : request.WorkflowId;
-            var workflowId = Path.GetFileNameWithoutExtension(rawId);
+            var rawId = string.IsNullOrWhiteSpace(request.WorkflowId)
+                ? (string.IsNullOrWhiteSpace(request.Workflow) ? "wan2.2_t2v" : request.Workflow)
+                : request.WorkflowId;
+
+            var workflowId = rawId.EndsWith(".json", StringComparison.OrdinalIgnoreCase)
+                ? rawId[..^5]
+                : Path.GetFileName(rawId);
 
             foreach (var dir in possibleDirs)
             {
@@ -399,7 +404,11 @@ public static class WorkflowEndpoints
                 ? Path.Combine(AppContext.BaseDirectory, "Workflows")
                 : settings.WorkflowsPath;
 
-            var safeWorkflowId = Path.GetFileNameWithoutExtension(string.IsNullOrWhiteSpace(request.WorkflowId) ? "stable_audio_open_sfx" : request.WorkflowId);
+            var rawAudioId = string.IsNullOrWhiteSpace(request.WorkflowId) ? "stable_audio_open_sfx" : request.WorkflowId;
+            var safeWorkflowId = rawAudioId.EndsWith(".json", StringComparison.OrdinalIgnoreCase)
+                ? rawAudioId[..^5]
+                : Path.GetFileName(rawAudioId);
+
             var audioWorkflowPath = Path.Combine(workflowsDir, "Audio", $"{safeWorkflowId}.json");
             if (!File.Exists(audioWorkflowPath))
             {
@@ -408,6 +417,14 @@ public static class WorkflowEndpoints
             if (!File.Exists(audioWorkflowPath))
             {
                 audioWorkflowPath = Path.Combine(AppContext.BaseDirectory, "Workflows", "Audio", $"{safeWorkflowId}.json");
+            }
+            if (!File.Exists(audioWorkflowPath))
+            {
+                audioWorkflowPath = Path.GetFullPath(Path.Combine(AppContext.BaseDirectory, "..", "..", "..", "Workflows", "Audio", $"{safeWorkflowId}.json"));
+            }
+            if (!File.Exists(audioWorkflowPath))
+            {
+                audioWorkflowPath = Path.GetFullPath(Path.Combine(AppContext.BaseDirectory, "..", "..", "..", "..", "Workflows", "Audio", $"{safeWorkflowId}.json"));
             }
 
             if (!File.Exists(audioWorkflowPath))

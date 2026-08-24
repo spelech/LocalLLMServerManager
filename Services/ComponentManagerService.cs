@@ -12,6 +12,8 @@ public class ComponentManagerService : IComponentManagerService
         _settingsService = settingsService;
     }
 
+    private static string GetAppDir() => AppContext.BaseDirectory;
+
     public bool IsVideoPackInstalled
     {
         get
@@ -20,11 +22,11 @@ public class ComponentManagerService : IComponentManagerService
             var comfyPath = Program.ResolvePath(settings.ComfyUiExecutablePath);
             var comfyDir = !string.IsNullOrEmpty(comfyPath) ? Path.GetDirectoryName(comfyPath) : null;
 
-            // Check for Workflows/Video or ComfyUI video diffusion models directory
-            var videoWorkflowDir = Path.Combine(Directory.GetCurrentDirectory(), "Workflows", "Video");
+            var videoWorkflowDir = Path.Combine(GetAppDir(), "Workflows", "Video");
+            var videoWorkflowDirCurrent = Path.Combine(Directory.GetCurrentDirectory(), "Workflows", "Video");
             var diffusionModelsDir = comfyDir != null ? Path.Combine(comfyDir, "models", "diffusion_models") : null;
 
-            return Directory.Exists(videoWorkflowDir) || (diffusionModelsDir != null && Directory.Exists(diffusionModelsDir));
+            return Directory.Exists(videoWorkflowDir) || Directory.Exists(videoWorkflowDirCurrent) || (diffusionModelsDir != null && Directory.Exists(diffusionModelsDir));
         }
     }
 
@@ -32,11 +34,12 @@ public class ComponentManagerService : IComponentManagerService
     {
         get
         {
-            // Check for kokoro-fastapi directory / audio server binaries / models
-            var kokoroDir = Path.Combine(Directory.GetCurrentDirectory(), "kokoro-fastapi");
-            var audioModelsDir = Path.Combine(Directory.GetCurrentDirectory(), "models", "audio");
+            var kokoroDir = Path.Combine(GetAppDir(), "kokoro-fastapi");
+            var kokoroDirCurrent = Path.Combine(Directory.GetCurrentDirectory(), "kokoro-fastapi");
+            var audioModelsDir = Path.Combine(GetAppDir(), "models", "audio");
+            var audioModelsDirCurrent = Path.Combine(Directory.GetCurrentDirectory(), "models", "audio");
 
-            return Directory.Exists(kokoroDir) || Directory.Exists(audioModelsDir);
+            return Directory.Exists(kokoroDir) || Directory.Exists(kokoroDirCurrent) || Directory.Exists(audioModelsDir) || Directory.Exists(audioModelsDirCurrent);
         }
     }
 
@@ -71,8 +74,12 @@ public class ComponentManagerService : IComponentManagerService
     {
         if (string.Equals(componentId, "video-generation", StringComparison.OrdinalIgnoreCase))
         {
-            var videoWorkflowDir = Path.Combine(Directory.GetCurrentDirectory(), "Workflows", "Video");
+            var videoWorkflowDir = Path.Combine(GetAppDir(), "Workflows", "Video");
             Directory.CreateDirectory(videoWorkflowDir);
+            if (Directory.GetCurrentDirectory() != GetAppDir())
+            {
+                Directory.CreateDirectory(Path.Combine(Directory.GetCurrentDirectory(), "Workflows", "Video"));
+            }
 
             var settings = _settingsService.LoadSettings();
             var comfyPath = Program.ResolvePath(settings.ComfyUiExecutablePath);
@@ -96,11 +103,17 @@ public class ComponentManagerService : IComponentManagerService
 
         if (string.Equals(componentId, "audio-tts", StringComparison.OrdinalIgnoreCase))
         {
-            var kokoroDir = Path.Combine(Directory.GetCurrentDirectory(), "kokoro-fastapi");
-            var audioModelsDir = Path.Combine(Directory.GetCurrentDirectory(), "models", "audio");
+            var kokoroDir = Path.Combine(GetAppDir(), "kokoro-fastapi");
+            var audioModelsDir = Path.Combine(GetAppDir(), "models", "audio");
 
             Directory.CreateDirectory(kokoroDir);
             Directory.CreateDirectory(audioModelsDir);
+
+            if (Directory.GetCurrentDirectory() != GetAppDir())
+            {
+                Directory.CreateDirectory(Path.Combine(Directory.GetCurrentDirectory(), "kokoro-fastapi"));
+                Directory.CreateDirectory(Path.Combine(Directory.GetCurrentDirectory(), "models", "audio"));
+            }
 
             for (int i = 1; i <= 10; i++)
             {
@@ -118,25 +131,32 @@ public class ComponentManagerService : IComponentManagerService
     {
         if (string.Equals(componentId, "video-generation", StringComparison.OrdinalIgnoreCase))
         {
-            var videoWorkflowDir = Path.Combine(Directory.GetCurrentDirectory(), "Workflows", "Video");
-            if (Directory.Exists(videoWorkflowDir))
+            var dirs = new[] { Path.Combine(GetAppDir(), "Workflows", "Video"), Path.Combine(Directory.GetCurrentDirectory(), "Workflows", "Video") };
+            foreach (var dir in dirs.Distinct())
             {
-                Directory.Delete(videoWorkflowDir, true);
+                if (Directory.Exists(dir))
+                {
+                    Directory.Delete(dir, true);
+                }
             }
             return Task.FromResult(true);
         }
 
         if (string.Equals(componentId, "audio-tts", StringComparison.OrdinalIgnoreCase))
         {
-            var kokoroDir = Path.Combine(Directory.GetCurrentDirectory(), "kokoro-fastapi");
-            if (Directory.Exists(kokoroDir))
+            var dirs = new[]
             {
-                Directory.Delete(kokoroDir, true);
-            }
-            var audioModelsDir = Path.Combine(Directory.GetCurrentDirectory(), "models", "audio");
-            if (Directory.Exists(audioModelsDir))
+                Path.Combine(GetAppDir(), "kokoro-fastapi"),
+                Path.Combine(Directory.GetCurrentDirectory(), "kokoro-fastapi"),
+                Path.Combine(GetAppDir(), "models", "audio"),
+                Path.Combine(Directory.GetCurrentDirectory(), "models", "audio")
+            };
+            foreach (var dir in dirs.Distinct())
             {
-                Directory.Delete(audioModelsDir, true);
+                if (Directory.Exists(dir))
+                {
+                    Directory.Delete(dir, true);
+                }
             }
             return Task.FromResult(true);
         }

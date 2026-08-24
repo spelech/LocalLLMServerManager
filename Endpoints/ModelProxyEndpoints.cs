@@ -89,22 +89,22 @@ public static class ModelProxyEndpoints
             }
         });
 
-        app.MapGet("/api/civitai/download", async (string fileUrl, string? modelType, string? fileName, HttpClient httpClient) =>
+        app.MapGet("/api/civitai/download", async (HttpContext httpContext, string fileUrl, string? modelType, string? fileName, HttpClient httpClient) =>
         {
             try
             {
-                var safeFileName = string.IsNullOrWhiteSpace(fileName) ? "model.safetensors" : fileName;
+                var rawName = string.IsNullOrWhiteSpace(fileName) ? "model.safetensors" : fileName;
+                var safeFileName = Path.GetFileName(rawName);
                 var targetDir = LocalLLMServerManager.Shared.Services.DownloadManager.ResolveTargetDirectory(modelType, safeFileName);
                 Directory.CreateDirectory(targetDir);
                 var targetPath = Path.Combine(targetDir, safeFileName);
 
-                using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(30));
-                using var response = await httpClient.GetAsync(fileUrl, HttpCompletionOption.ResponseHeadersRead, cts.Token);
+                using var response = await httpClient.GetAsync(fileUrl, HttpCompletionOption.ResponseHeadersRead, httpContext.RequestAborted);
                 if (response.IsSuccessStatusCode)
                 {
-                    using var stream = await response.Content.ReadAsStreamAsync(cts.Token);
+                    using var stream = await response.Content.ReadAsStreamAsync(httpContext.RequestAborted);
                     using var fileStream = File.Create(targetPath);
-                    await stream.CopyToAsync(fileStream, cts.Token);
+                    await stream.CopyToAsync(fileStream, httpContext.RequestAborted);
                     return Results.Ok(new { status = "success", path = targetPath });
                 }
                 return Results.StatusCode((int)response.StatusCode);
@@ -115,22 +115,22 @@ public static class ModelProxyEndpoints
             }
         });
 
-        app.MapGet("/api/hf/download", async (string fileUrl, string? pipelineTag, string? fileName, HttpClient httpClient) =>
+        app.MapGet("/api/hf/download", async (HttpContext httpContext, string fileUrl, string? pipelineTag, string? fileName, HttpClient httpClient) =>
         {
             try
             {
-                var safeFileName = string.IsNullOrWhiteSpace(fileName) ? "model.safetensors" : fileName;
+                var rawName = string.IsNullOrWhiteSpace(fileName) ? "model.safetensors" : fileName;
+                var safeFileName = Path.GetFileName(rawName);
                 var targetDir = LocalLLMServerManager.Shared.Services.DownloadManager.ResolveTargetDirectory(pipelineTag, safeFileName);
                 Directory.CreateDirectory(targetDir);
                 var targetPath = Path.Combine(targetDir, safeFileName);
 
-                using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(30));
-                using var response = await httpClient.GetAsync(fileUrl, HttpCompletionOption.ResponseHeadersRead, cts.Token);
+                using var response = await httpClient.GetAsync(fileUrl, HttpCompletionOption.ResponseHeadersRead, httpContext.RequestAborted);
                 if (response.IsSuccessStatusCode)
                 {
-                    using var stream = await response.Content.ReadAsStreamAsync(cts.Token);
+                    using var stream = await response.Content.ReadAsStreamAsync(httpContext.RequestAborted);
                     using var fileStream = File.Create(targetPath);
-                    await stream.CopyToAsync(fileStream, cts.Token);
+                    await stream.CopyToAsync(fileStream, httpContext.RequestAborted);
                     return Results.Ok(new { status = "success", path = targetPath });
                 }
                 return Results.StatusCode((int)response.StatusCode);
