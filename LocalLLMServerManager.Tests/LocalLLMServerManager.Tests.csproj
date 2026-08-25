@@ -34,4 +34,11 @@
     <ProjectReference Include="..\LocalLLMServerManager.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Content Include="..\Workflows\**">
+      <Link>Workflows\%(RecursiveDir)%(Filename)%(Extension)</Link>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+  </ItemGroup>
+
 </Project>

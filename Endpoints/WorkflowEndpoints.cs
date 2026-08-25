@@ -115,7 +115,6 @@ public static class WorkflowEndpoints
         {
             var settings = settingsService.LoadSettings();
 
-            string videoWorkflowsDir = "";
             var searchPaths = new List<string>();
             if (!string.IsNullOrWhiteSpace(settings.WorkflowsPath))
             {
@@ -128,23 +127,29 @@ public static class WorkflowEndpoints
             searchPaths.Add(Path.GetFullPath(Path.Combine(AppContext.BaseDirectory, "..", "..", "..", "..", "Workflows", "Video")));
             if (!string.IsNullOrWhiteSpace(settings.VideoModelsPath)) searchPaths.Add(settings.VideoModelsPath);
 
-            videoWorkflowsDir = searchPaths.FirstOrDefault(Directory.Exists) ?? "";
+            var existingDirs = searchPaths.Where(Directory.Exists).Distinct();
+            var list = new List<object>();
+            var seenIds = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 
-            if (string.IsNullOrEmpty(videoWorkflowsDir) || !Directory.Exists(videoWorkflowsDir))
+            foreach (var dir in existingDirs)
             {
-                return Results.Ok(new object[0]);
+                foreach (var f in Directory.GetFiles(dir, "*.json"))
+                {
+                    var id = Path.GetFileNameWithoutExtension(f);
+                    if (seenIds.Add(id))
+                    {
+                        list.Add(new
+                        {
+                            id = id,
+                            name = id.Replace('_', ' '),
+                            filename = Path.GetFileName(f),
+                            path = f
+                        });
+                    }
+                }
             }
 
-            var files = Directory.GetFiles(videoWorkflowsDir, "*.json")
-                .Select(f => new
-                {
-                    id = Path.GetFileNameWithoutExtension(f),
-                    name = Path.GetFileNameWithoutExtension(f).Replace('_', ' '),
-                    filename = Path.GetFileName(f),
-                    path = f
-                });
-
-            return Results.Ok(files);
+            return Results.Ok(list);
         });
 
         app.MapPost("/api/video/generate", async (VideoGenerateRequest request, ISettingsService settingsService, VramOrchestrator vramOrchestrator, HttpClient httpClient) =>

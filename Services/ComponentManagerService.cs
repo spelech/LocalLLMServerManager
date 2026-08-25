@@ -131,12 +131,18 @@ public class ComponentManagerService : IComponentManagerService
     {
         if (string.Equals(componentId, "video-generation", StringComparison.OrdinalIgnoreCase))
         {
-            var dirs = new[] { Path.Combine(GetAppDir(), "Workflows", "Video"), Path.Combine(Directory.GetCurrentDirectory(), "Workflows", "Video") };
-            foreach (var dir in dirs.Distinct())
+            var settings = _settingsService.LoadSettings();
+            var comfyPath = Program.ResolvePath(settings.ComfyUiExecutablePath);
+            if (!string.IsNullOrEmpty(comfyPath))
             {
-                if (Directory.Exists(dir))
+                var comfyDir = Path.GetDirectoryName(comfyPath);
+                if (comfyDir != null)
                 {
-                    Directory.Delete(dir, true);
+                    var diffDir = Path.Combine(comfyDir, "models", "diffusion_models");
+                    if (Directory.Exists(diffDir))
+                    {
+                        Directory.Delete(diffDir, true);
+                    }
                 }
             }
             return Task.FromResult(true);
