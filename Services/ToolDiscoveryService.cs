@@ -149,13 +149,54 @@ public class ToolDiscoveryService : IToolDiscoveryService
 
     public DiscoveredToolInfo DetectComfyUi()
     {
+        // 1. Check running processes
+        try
+        {
+            var runningComfy = Process.GetProcessesByName("Comfy Desktop")
+                .Concat(Process.GetProcessesByName("ComfyUI"))
+                .Concat(Process.GetProcessesByName("comfy"))
+                .FirstOrDefault();
+            if (runningComfy != null)
+            {
+                try
+                {
+                    var procPath = runningComfy.MainModule?.FileName;
+                    if (!string.IsNullOrEmpty(procPath) && File.Exists(procPath))
+                    {
+                        var dir = Path.GetDirectoryName(procPath)!;
+                        var modelsDir = FindDirectory(dir, "models", "ComfyUI/models");
+                        var workflowsDir = FindDirectory(dir, "user/default/workflows", "ComfyUI/user/default/workflows", "workflows", "ComfyUI/workflows");
+                        return new DiscoveredToolInfo(
+                            IsInstalled: true,
+                            ExecutablePath: procPath,
+                            RootDirectory: dir,
+                            ModelsDirectory: modelsDir,
+                            WorkflowsDirectory: workflowsDir,
+                            StatusMessage: $"Discovered running ComfyUI at {procPath}"
+                        );
+                    }
+                }
+                catch
+                {
+                    // Ignore process module inspection errors
+                }
+            }
+        }
+        catch
+        {
+            // Ignore process enumeration failures
+        }
+
         var targetSubdirs = new[]
         {
             "ComfyUI_windows_portable",
             "ComfyUI",
             "comfyui",
             "ComfyUI_windows_portable_nvidia_cu121_or_cpu",
-            "comfy"
+            "comfy",
+            "Comfy Desktop",
+            "comfy-desktop",
+            "ComfyDesktop"
         };
 
         var runnerNames = new[]
@@ -165,7 +206,11 @@ public class ToolDiscoveryService : IToolDiscoveryService
             "run_directml.bat",
             "run_cpu.bat",
             "run.bat",
-            "main.py"
+            "main.py",
+            "Comfy Desktop.exe",
+            "comfy-desktop.exe",
+            "ComfyUI.exe",
+            "comfy.exe"
         };
 
         foreach (var baseRoot in _searchRoots)
@@ -418,6 +463,19 @@ public class ToolDiscoveryService : IToolDiscoveryService
             }
         }
 
+        var kokoroCli = FindExecutableOnPath(RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? "kokoro-fastapi.exe" : "kokoro-fastapi");
+        if (!string.IsNullOrEmpty(kokoroCli))
+        {
+            return new DiscoveredToolInfo(
+                IsInstalled: true,
+                ExecutablePath: kokoroCli,
+                RootDirectory: Path.GetDirectoryName(kokoroCli),
+                ModelsDirectory: null,
+                WorkflowsDirectory: null,
+                StatusMessage: $"Discovered Kokoro TTS CLI at {kokoroCli}"
+            );
+        }
+
         var dockerExe = FindExecutableOnPath(RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? "docker.exe" : "docker");
         if (!string.IsNullOrEmpty(dockerExe))
         {
@@ -608,6 +666,18 @@ public class ToolDiscoveryService : IToolDiscoveryService
         {
             roots.Add(Path.Combine(localAppData, "AI"));
             roots.Add(Path.Combine(localAppData, "Programs"));
+        }
+
+        var progFiles = Environment.GetFolderPath(Environment.SpecialFolder.ProgramFiles);
+        if (!string.IsNullOrEmpty(progFiles))
+        {
+            roots.Add(progFiles);
+        }
+
+        var progFilesX86 = Environment.GetFolderPath(Environment.SpecialFolder.ProgramFilesX86);
+        if (!string.IsNullOrEmpty(progFilesX86))
+        {
+            roots.Add(progFilesX86);
         }
 
         return roots.Where(Directory.Exists).ToList();
