@@ -77,7 +77,22 @@ fi
 
 chmod +x "${INSTALL_DIR}/LocalLLMServerManager"
 
-# 5. Restore preserved settings.json
+# 5. Check & Install Prerequisites (FFmpeg)
+echo "--> Checking FFmpeg prerequisite..."
+if ! command -v ffmpeg >/dev/null 2>&1; then
+  echo "--> FFmpeg not found. Attempting package installation..."
+  if command -v apt-get >/dev/null 2>&1; then
+    apt-get update && apt-get install -y ffmpeg || true
+  elif command -v dnf >/dev/null 2>&1; then
+    dnf install -y ffmpeg || true
+  elif command -v pacman >/dev/null 2>&1; then
+    pacman -Sy --noconfirm ffmpeg || true
+  fi
+else
+  echo "--> FFmpeg detected: $(command -v ffmpeg)"
+fi
+
+# 6. Restore preserved settings.json
 if [ -n "${SETTINGS_BACKUP}" ] && [ -f "${SETTINGS_BACKUP}" ]; then
   echo "--> Restoring preserved settings.json..."
   cp "${SETTINGS_BACKUP}" "${SETTINGS_FILE}"
@@ -85,25 +100,55 @@ if [ -n "${SETTINGS_BACKUP}" ] && [ -f "${SETTINGS_BACKUP}" ]; then
   chmod 666 "${SETTINGS_FILE}" 2>/dev/null || true
 fi
 
-# 6. Create symlink in /usr/local/bin
+# 7. Create symlink in /usr/local/bin
 echo "--> Creating symlink in /usr/local/bin..."
 ln -sf "${INSTALL_DIR}/LocalLLMServerManager" "${BIN_LINK}"
 
-# 7. Install Desktop launcher if file exists
+# 8. Install Desktop launcher if file exists
 if [ -f "${SCRIPT_DIR}/localllmmanager.desktop" ]; then
   echo "--> Installing Desktop launcher..."
   cp "${SCRIPT_DIR}/localllmmanager.desktop" "${DESKTOP_FILE}"
   chmod 644 "${DESKTOP_FILE}"
 fi
 
-# 8. Install systemd service unit if file exists
+# 9. Install systemd service unit
 if [ -f "${SCRIPT_DIR}/localllmmanager.service" ]; then
   echo "--> Installing systemd service..."
   cp "${SCRIPT_DIR}/localllmmanager.service" "${SERVICE_FILE}"
   chmod 644 "${SERVICE_FILE}"
+else
+  echo "--> Creating systemd service unit..."
+  cat << 'EOF' > "${SERVICE_FILE}"
+[Unit]
+Description=Local LLM Server Manager
+After=network.target
+
+[Service]
+Type=simple
+ExecStart=/usr/local/bin/localllmmanager --service
+Restart=always
+RestartSec=5
+User=root
+WorkingDirectory=/usr/local/share/LocalLLMServerManager
+
+[Install]
+WantedBy=multi-user.target
+EOF
+  chmod 644 "${SERVICE_FILE}"
 fi
 
-# 9. Optional Feature Pack Installation
+# 10. Configure Firewall for Port 5246
+echo "--> Configuring firewall for port 5246..."
+if command -v ufw >/dev/null 2>&1 && ufw status | grep -q "Status: active"; then
+  ufw allow 5246/tcp comment 'LocalLLM Server Manager' || true
+  echo "--> UFW port 5246/tcp allowed."
+elif command -v firewall-cmd >/dev/null 2>&1 && systemctl is-active --quiet firewalld 2>/dev/null; then
+  firewall-cmd --add-port=5246/tcp --permanent || true
+  firewall-cmd --reload || true
+  echo "--> firewalld port 5246/tcp allowed."
+fi
+
+# 11. Optional Feature Pack Installation
 if [ "${WITH_VIDEO}" -eq 1 ]; then
   echo "--> Installing Video Generation Feature Pack..."
   mkdir -p "${INSTALL_DIR}/Workflows/Video"
@@ -113,9 +158,13 @@ if [ "${WITH_AUDIO}" -eq 1 ]; then
   echo "--> Installing Audio & Kokoro TTS Feature Pack..."
   mkdir -p "${INSTALL_DIR}/kokoro-fastapi"
   mkdir -p "${INSTALL_DIR}/models/audio"
+  if command -v python3 >/dev/null 2>&1; then
+    echo "--> Installing Python audio packages (kokoro-onnx, soundfile, fastapi, uvicorn, openai)..."
+    python3 -m pip install --break-system-packages kokoro-onnx soundfile fastapi uvicorn openai || python3 -m pip install kokoro-onnx soundfile fastapi uvicorn openai || true
+  fi
 fi
 
-# 10. Reload systemd daemon and restart service if it was previously running
+# 12. Reload systemd daemon and restart service if it was previously running
 echo "--> Reloading systemd daemon..."
 systemctl daemon-reload
 
@@ -124,11 +173,18 @@ if [ "${SERVICE_WAS_ACTIVE}" -eq 1 ] || systemctl is-enabled --quiet "${SERVICE_
   systemctl restart "${SERVICE_NAME}" || true
 fi
 
+# 13. Summary
+HOST_IP="$(hostname -I 2>/dev/null | awk '{print $1}')"
+[ -z "${HOST_IP}" ] && HOST_IP="10.0.0.21"
+
 echo ""
 echo "=========================================="
 echo "  Installation Complete!"
 echo "=========================================="
+echo "Local Dashboard:    http://localhost:5246"
+echo "Local MCP Endpoint: http://localhost:5246/mcp"
+echo "Network Dashboard:  http://${HOST_IP}:5246"
+echo "Network MCP:        http://${HOST_IP}:5246/mcp"
 echo "To start native desktop app: localllmmanager"
-echo "To enable background systemd service: sudo systemctl enable --now localllmmanager"
-echo "Web Dashboard will run at: http://localhost:5246"
+echo "To enable background service: sudo systemctl enable --now localllmmanager"
 echo "=========================================="

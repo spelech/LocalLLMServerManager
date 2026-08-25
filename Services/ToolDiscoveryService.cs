@@ -25,13 +25,17 @@ public class ToolDiscoveryService : IToolDiscoveryService
         var comfyTask = Task.Run(DetectComfyUi);
         var forgeTask = Task.Run(DetectForge);
         var audioTask = Task.Run(DetectAudioEngine);
+        var ffmpegTask = Task.Run(DetectFFmpeg);
+        var pythonTask = Task.Run(DetectPythonEnvironment);
 
-        await Task.WhenAll(ollamaTask, comfyTask, forgeTask, audioTask);
+        await Task.WhenAll(ollamaTask, comfyTask, forgeTask, audioTask, ffmpegTask, pythonTask);
 
         var ollama = await ollamaTask;
         var comfy = await comfyTask;
         var forge = await forgeTask;
         var audio = await audioTask;
+        var ffmpeg = await ffmpegTask;
+        var python = await pythonTask;
 
         var suggested3D = comfy.ModelsDirectory ?? forge.ModelsDirectory ?? Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "AI", "3D");
         var suggestedWorkflows = comfy.WorkflowsDirectory ?? Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "AI", "Workflows");
@@ -42,7 +46,9 @@ public class ToolDiscoveryService : IToolDiscoveryService
             Forge: forge,
             SuggestedThreeDPath: suggested3D,
             SuggestedWorkflowsPath: suggestedWorkflows,
-            AudioEngine: audio
+            AudioEngine: audio,
+            FFmpeg: ffmpeg,
+            PythonEnvironment: python
         );
     }
 
@@ -206,6 +212,8 @@ public class ToolDiscoveryService : IToolDiscoveryService
             "run_directml.bat",
             "run_cpu.bat",
             "run.bat",
+            "run.sh",
+            "start.sh",
             "main.py",
             "Comfy Desktop.exe",
             "comfy-desktop.exe",
@@ -316,7 +324,11 @@ public class ToolDiscoveryService : IToolDiscoveryService
         {
             "webui-user.bat",
             "webui.bat",
+            "webui.sh",
+            "webui-user.sh",
             "run.bat",
+            "run.sh",
+            "start.sh",
             "launch.py",
             "update.bat"
         };
@@ -499,6 +511,363 @@ public class ToolDiscoveryService : IToolDiscoveryService
         );
     }
 
+    public DiscoveredToolInfo DetectFFmpeg()
+    {
+        var binaryName = RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? "ffmpeg.exe" : "ffmpeg";
+        string? exePath = null;
+
+        // 1. Check custom search roots & common portable locations first
+        foreach (var root in _searchRoots)
+        {
+            var candidates = new[]
+            {
+                Path.Combine(root, binaryName),
+                Path.Combine(root, "bin", binaryName),
+                Path.Combine(root, "FFmpeg", "bin", binaryName),
+                Path.Combine(root, "ffmpeg", "bin", binaryName),
+                Path.Combine(root, "ffmpeg", binaryName),
+                Path.Combine(root, "Microsoft", "WinGet", "Links", binaryName)
+            };
+
+            foreach (var candidate in candidates)
+            {
+                if (File.Exists(candidate))
+                {
+                    exePath = candidate;
+                    break;
+                }
+            }
+
+            if (!string.IsNullOrEmpty(exePath))
+                break;
+        }
+
+        // 2. Check PATH
+        if (string.IsNullOrEmpty(exePath))
+        {
+            exePath = FindExecutableOnPath(binaryName);
+        }
+
+        // 3. Check running processes
+        if (string.IsNullOrEmpty(exePath))
+        {
+            try
+            {
+                var processes = Process.GetProcessesByName("ffmpeg");
+                if (processes.Length > 0)
+                {
+                    try
+                    {
+                        var procPath = processes[0].MainModule?.FileName;
+                        if (!string.IsNullOrEmpty(procPath) && File.Exists(procPath))
+                        {
+                            exePath = procPath;
+                        }
+                    }
+                    catch
+                    {
+                        // Ignore process module inspection errors
+                    }
+                }
+            }
+            catch
+            {
+                // Ignore process enumeration failures
+            }
+        }
+
+        // 4. Check OS-specific standard directories
+        if (string.IsNullOrEmpty(exePath))
+        {
+            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+            {
+                var localAppData = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
+                var progFiles = Environment.GetFolderPath(Environment.SpecialFolder.ProgramFiles);
+                var userProfile = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
+
+                var winCandidates = new[]
+                {
+                    !string.IsNullOrEmpty(localAppData) ? Path.Combine(localAppData, "Microsoft", "WinGet", "Links", "ffmpeg.exe") : null,
+                    !string.IsNullOrEmpty(progFiles) ? Path.Combine(progFiles, "FFmpeg", "bin", "ffmpeg.exe") : null,
+                    !string.IsNullOrEmpty(userProfile) ? Path.Combine(userProfile, "scoop", "shims", "ffmpeg.exe") : null,
+                    @"C:\ProgramData\chocolatey\bin\ffmpeg.exe",
+                    @"C:\FFmpeg\bin\ffmpeg.exe"
+                };
+
+                foreach (var candidate in winCandidates)
+                {
+                    if (!string.IsNullOrEmpty(candidate) && File.Exists(candidate))
+                    {
+                        exePath = candidate;
+                        break;
+                    }
+                }
+            }
+            else
+            {
+                var posixCandidates = new[]
+                {
+                    "/usr/bin/ffmpeg",
+                    "/usr/local/bin/ffmpeg",
+                    "/snap/bin/ffmpeg",
+                    "/opt/ffmpeg/bin/ffmpeg"
+                };
+
+                foreach (var candidate in posixCandidates)
+                {
+                    if (File.Exists(candidate))
+                    {
+                        exePath = candidate;
+                        break;
+                    }
+                }
+            }
+        }
+
+        if (string.IsNullOrEmpty(exePath))
+        {
+            return new DiscoveredToolInfo(
+                IsInstalled: false,
+                ExecutablePath: null,
+                RootDirectory: null,
+                ModelsDirectory: null,
+                WorkflowsDirectory: null,
+                StatusMessage: "FFmpeg not detected"
+            );
+        }
+
+        var hardwareAccelerators = new List<string>();
+        try
+        {
+            using var proc = new Process();
+            proc.StartInfo = new ProcessStartInfo
+            {
+                FileName = exePath,
+                Arguments = "-encoders",
+                RedirectStandardOutput = true,
+                RedirectStandardError = true,
+                UseShellExecute = false,
+                CreateNoWindow = true
+            };
+            proc.Start();
+            var output = proc.StandardOutput.ReadToEnd();
+            if (proc.WaitForExit(1500))
+            {
+                if (output.Contains("nvenc", StringComparison.OrdinalIgnoreCase)) hardwareAccelerators.Add("NVENC (CUDA)");
+                if (output.Contains("qsv", StringComparison.OrdinalIgnoreCase)) hardwareAccelerators.Add("Intel QuickSync (QSV)");
+                if (output.Contains("vaapi", StringComparison.OrdinalIgnoreCase)) hardwareAccelerators.Add("VAAPI");
+                if (output.Contains("amf", StringComparison.OrdinalIgnoreCase)) hardwareAccelerators.Add("AMD AMF");
+            }
+        }
+        catch
+        {
+            // Ignore execution failure
+        }
+
+        var hwText = hardwareAccelerators.Count > 0 ? $" (Hardware: {string.Join(", ", hardwareAccelerators)})" : "";
+
+        return new DiscoveredToolInfo(
+            IsInstalled: true,
+            ExecutablePath: exePath,
+            RootDirectory: Path.GetDirectoryName(exePath),
+            ModelsDirectory: null,
+            WorkflowsDirectory: null,
+            StatusMessage: $"Discovered FFmpeg at {exePath}{hwText}"
+        );
+    }
+
+    public DiscoveredToolInfo DetectPythonEnvironment()
+    {
+        var pythonNames = RuntimeInformation.IsOSPlatform(OSPlatform.Windows)
+            ? new[] { "python.exe", "python3.exe", "python" }
+            : new[] { "python3", "python" };
+
+        string? exePath = null;
+
+        // 1. Check custom search roots & standard virtualenvs first
+        foreach (var root in _searchRoots)
+        {
+            var candidates = RuntimeInformation.IsOSPlatform(OSPlatform.Windows)
+                ? new[]
+                {
+                    Path.Combine(root, "python.exe"),
+                    Path.Combine(root, "Scripts", "python.exe"),
+                    Path.Combine(root, "venv", "Scripts", "python.exe"),
+                    Path.Combine(root, ".venv", "Scripts", "python.exe"),
+                    Path.Combine(root, "python_embeded", "python.exe"),
+                    Path.Combine(root, "python", "python.exe")
+                }
+                : new[]
+                {
+                    Path.Combine(root, "bin", "python3"),
+                    Path.Combine(root, "bin", "python"),
+                    Path.Combine(root, "venv", "bin", "python3"),
+                    Path.Combine(root, "venv", "bin", "python"),
+                    Path.Combine(root, ".venv", "bin", "python3"),
+                    Path.Combine(root, ".venv", "bin", "python"),
+                    Path.Combine(root, "python3"),
+                    Path.Combine(root, "python")
+                };
+
+            foreach (var candidate in candidates)
+            {
+                if (File.Exists(candidate))
+                {
+                    exePath = candidate;
+                    break;
+                }
+            }
+
+            if (!string.IsNullOrEmpty(exePath))
+                break;
+        }
+
+        // 2. Check PATH
+        if (string.IsNullOrEmpty(exePath))
+        {
+            foreach (var name in pythonNames)
+            {
+                exePath = FindExecutableOnPath(name);
+                if (!string.IsNullOrEmpty(exePath))
+                    break;
+            }
+        }
+
+        // 3. Check running processes
+        if (string.IsNullOrEmpty(exePath))
+        {
+            try
+            {
+                var processes = Process.GetProcessesByName("python")
+                    .Concat(Process.GetProcessesByName("python3"))
+                    .Concat(Process.GetProcessesByName("uvicorn"));
+
+                foreach (var proc in processes)
+                {
+                    try
+                    {
+                        var procPath = proc.MainModule?.FileName;
+                        if (!string.IsNullOrEmpty(procPath) && File.Exists(procPath))
+                        {
+                            exePath = procPath;
+                            break;
+                        }
+                    }
+                    catch
+                    {
+                        // Ignore process module inspection errors
+                    }
+                }
+            }
+            catch
+            {
+                // Ignore process enumeration failures
+            }
+        }
+
+        // 4. Check OS-specific standard locations
+        if (string.IsNullOrEmpty(exePath))
+        {
+            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+            {
+                var localAppData = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
+                var progFiles = Environment.GetFolderPath(Environment.SpecialFolder.ProgramFiles);
+
+                var candidates = new List<string>();
+                if (!string.IsNullOrEmpty(localAppData))
+                {
+                    var pyDir = Path.Combine(localAppData, "Programs", "Python");
+                    if (Directory.Exists(pyDir))
+                    {
+                        candidates.AddRange(Directory.GetFiles(pyDir, "python.exe", SearchOption.AllDirectories));
+                    }
+                }
+
+                if (!string.IsNullOrEmpty(progFiles))
+                {
+                    var pyDir = Path.Combine(progFiles, "Python");
+                    if (Directory.Exists(pyDir))
+                    {
+                        candidates.AddRange(Directory.GetFiles(pyDir, "python.exe", SearchOption.AllDirectories));
+                    }
+                }
+
+                exePath = candidates.FirstOrDefault(File.Exists);
+            }
+            else
+            {
+                var posixCandidates = new[]
+                {
+                    "/usr/bin/python3",
+                    "/usr/local/bin/python3",
+                    "/usr/bin/python",
+                    "/opt/venv/bin/python3",
+                    "/opt/venv/bin/python"
+                };
+
+                foreach (var candidate in posixCandidates)
+                {
+                    if (File.Exists(candidate))
+                    {
+                        exePath = candidate;
+                        break;
+                    }
+                }
+            }
+        }
+
+        if (string.IsNullOrEmpty(exePath))
+        {
+            return new DiscoveredToolInfo(
+                IsInstalled: false,
+                ExecutablePath: null,
+                RootDirectory: null,
+                ModelsDirectory: null,
+                WorkflowsDirectory: null,
+                StatusMessage: "Python environment not detected"
+            );
+        }
+
+        var missingAudioPackages = new List<string>();
+        try
+        {
+            using var proc = new Process();
+            proc.StartInfo = new ProcessStartInfo
+            {
+                FileName = exePath,
+                Arguments = "-c \"import sys; [print(m) for m in ['kokoro_onnx','soundfile','fastapi','uvicorn','openai'] if __import__('importlib.util').util.find_spec(m) is None]\"",
+                RedirectStandardOutput = true,
+                RedirectStandardError = true,
+                UseShellExecute = false,
+                CreateNoWindow = true
+            };
+            proc.Start();
+            var output = proc.StandardOutput.ReadToEnd();
+            if (proc.WaitForExit(2000))
+            {
+                var lines = output.Split(new[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+                missingAudioPackages.AddRange(lines);
+            }
+        }
+        catch
+        {
+            // Ignore inspection failures
+        }
+
+        var pkgStatus = missingAudioPackages.Count == 0
+            ? " (Audio TTS packages installed)"
+            : $" (Missing audio packages: {string.Join(", ", missingAudioPackages)})";
+
+        return new DiscoveredToolInfo(
+            IsInstalled: true,
+            ExecutablePath: exePath,
+            RootDirectory: Path.GetDirectoryName(exePath),
+            ModelsDirectory: null,
+            WorkflowsDirectory: null,
+            StatusMessage: $"Discovered Python at {exePath}{pkgStatus}"
+        );
+    }
+
     public PathValidationResult ValidatePath(string? path, PathTargetType targetType)
     {
         if (string.IsNullOrWhiteSpace(path))
@@ -643,8 +1012,8 @@ public class ToolDiscoveryService : IToolDiscoveryService
         }
         catch
         {
-            roots.Add(@"C:\");
-            roots.Add(@"C:\AI");
+            roots.Add(RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? @"C:\" : "/");
+            roots.Add(RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? @"C:\AI" : "/AI");
         }
 
         // User profile & AppData
@@ -653,6 +1022,7 @@ public class ToolDiscoveryService : IToolDiscoveryService
         {
             roots.Add(userProfile);
             roots.Add(Path.Combine(userProfile, "AI"));
+            roots.Add(Path.Combine(userProfile, ".local", "share"));
         }
 
         var appData = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData);
@@ -666,6 +1036,7 @@ public class ToolDiscoveryService : IToolDiscoveryService
         {
             roots.Add(Path.Combine(localAppData, "AI"));
             roots.Add(Path.Combine(localAppData, "Programs"));
+            roots.Add(Path.Combine(localAppData, "Microsoft", "WinGet", "Links"));
         }
 
         var progFiles = Environment.GetFolderPath(Environment.SpecialFolder.ProgramFiles);
@@ -678,6 +1049,19 @@ public class ToolDiscoveryService : IToolDiscoveryService
         if (!string.IsNullOrEmpty(progFilesX86))
         {
             roots.Add(progFilesX86);
+        }
+
+        if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+        {
+            roots.Add("/opt");
+            roots.Add("/opt/AI");
+            roots.Add("/srv");
+            roots.Add("/srv/AI");
+            roots.Add("/data");
+            roots.Add("/data/AI");
+            roots.Add("/mnt");
+            roots.Add("/usr/local");
+            roots.Add("/var/lib");
         }
 
         return roots.Where(Directory.Exists).ToList();

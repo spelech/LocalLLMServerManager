@@ -23,11 +23,13 @@ public class Program
     {
         if (args.Contains("--server") || args.Contains("--headless"))
         {
+            Directory.SetCurrentDirectory(AppContext.BaseDirectory);
             var app = CreateWebApplication(args, isServiceMode: false);
             if (runWeb) app.Run();
         }
         else if (args.Contains("--service"))
         {
+            Directory.SetCurrentDirectory(AppContext.BaseDirectory);
             var app = CreateWebApplication(args, isServiceMode: true);
             if (runWeb) app.Run();
         }
@@ -135,7 +137,11 @@ public class Program
 
     public static WebApplication CreateWebApplication(string[] args, bool isServiceMode = false, string url = "http://0.0.0.0:5246")
     {
-        var builder = WebApplication.CreateBuilder(args);
+        var builder = WebApplication.CreateBuilder(new WebApplicationOptions
+        {
+            Args = args,
+            ContentRootPath = AppContext.BaseDirectory
+        });
 
         builder.WebHost.UseUrls(url);
         builder.Logging.AddFilter("System.Net.Http.HttpClient", LogLevel.Warning);
@@ -165,9 +171,13 @@ public class Program
         }
         catch { }
 
-        if (isServiceMode)
+        if (isServiceMode && OperatingSystem.IsWindows())
         {
             builder.Host.UseWindowsService(options =>
+            {
+                options.ServiceName = "LocalLLMServerManager";
+            });
+            builder.Services.AddWindowsService(options =>
             {
                 options.ServiceName = "LocalLLMServerManager";
             });

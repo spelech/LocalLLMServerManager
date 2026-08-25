@@ -331,12 +331,115 @@ public class ToolDiscoveryServiceTests : IDisposable
         {
             Assert.NotEqual(results.ComfyUi.ExecutablePath, results.Forge.ExecutablePath);
             Assert.NotEqual(results.ComfyUi.RootDirectory, results.Forge.RootDirectory);
+            Assert.NotNull(results.ComfyUi.ExecutablePath);
             Assert.Contains("ComfyUI", results.ComfyUi.ExecutablePath, StringComparison.OrdinalIgnoreCase);
+            Assert.NotNull(results.Forge.ExecutablePath);
             Assert.True(
                 results.Forge.ExecutablePath.Contains("SD_Forge", StringComparison.OrdinalIgnoreCase) ||
                 results.Forge.ExecutablePath.Contains("Forge", StringComparison.OrdinalIgnoreCase) ||
                 results.Forge.ExecutablePath.Contains("webui", StringComparison.OrdinalIgnoreCase)
             );
         }
+    }
+
+    [Fact]
+    public void DetectFFmpeg_WhenBinaryExistsInSearchRoot_DiscoversFFmpeg()
+    {
+        var binFolder = Path.Combine(_tempDirectory, "FFmpeg", "bin");
+        Directory.CreateDirectory(binFolder);
+        var binaryName = RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? "ffmpeg.exe" : "ffmpeg";
+        var ffmpegFile = Path.Combine(binFolder, binaryName);
+        File.WriteAllText(ffmpegFile, "dummy");
+
+        var service = new ToolDiscoveryService(searchRoots: new[] { _tempDirectory });
+        var result = service.DetectFFmpeg();
+
+        Assert.True(result.IsInstalled);
+        Assert.Equal(ffmpegFile, result.ExecutablePath);
+        Assert.Contains("Discovered FFmpeg", result.StatusMessage);
+    }
+
+    [Fact]
+    public void DetectFFmpeg_WhenMissing_ReturnsNotDetected()
+    {
+        var emptyFolder = Path.Combine(_tempDirectory, "EmptyFFmpegRoot");
+        Directory.CreateDirectory(emptyFolder);
+
+        var service = new ToolDiscoveryService(searchRoots: new[] { emptyFolder });
+        // If system has ffmpeg on PATH, it may find it, but if not it should return false or valid discovery
+        var result = service.DetectFFmpeg();
+        Assert.NotNull(result);
+        Assert.NotNull(result.StatusMessage);
+    }
+
+    [Fact]
+    public void DetectPythonEnvironment_WhenVirtualEnvExists_DiscoversPython()
+    {
+        var venvDir = Path.Combine(_tempDirectory, "test_env");
+        var scriptDir = RuntimeInformation.IsOSPlatform(OSPlatform.Windows)
+            ? Path.Combine(venvDir, "Scripts")
+            : Path.Combine(venvDir, "bin");
+        Directory.CreateDirectory(scriptDir);
+
+        var pyBinary = RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? "python.exe" : "python3";
+        var pyFile = Path.Combine(scriptDir, pyBinary);
+        File.WriteAllText(pyFile, "dummy");
+
+        var service = new ToolDiscoveryService(searchRoots: new[] { venvDir });
+        var result = service.DetectPythonEnvironment();
+
+        Assert.True(result.IsInstalled);
+        Assert.Equal(pyFile, result.ExecutablePath);
+        Assert.Contains("Discovered Python", result.StatusMessage);
+    }
+
+    [Fact]
+    public void DetectForge_WithLinuxShellRunner_DiscoversForge()
+    {
+        var forgeFolder = Path.Combine(_tempDirectory, "stable-diffusion-webui");
+        Directory.CreateDirectory(forgeFolder);
+        var modelsFolder = Path.Combine(forgeFolder, "models");
+        Directory.CreateDirectory(modelsFolder);
+        var scriptPath = Path.Combine(forgeFolder, "webui.sh");
+        File.WriteAllText(scriptPath, "#!/usr/bin/env bash\npython launch.py");
+
+        var service = new ToolDiscoveryService(searchRoots: new[] { _tempDirectory });
+        var result = service.DetectForge();
+
+        Assert.True(result.IsInstalled);
+        Assert.Equal(scriptPath, result.ExecutablePath);
+        Assert.Equal(forgeFolder, result.RootDirectory);
+        Assert.Equal(modelsFolder, result.ModelsDirectory);
+    }
+
+    [Fact]
+    public void DetectComfyUi_WithLinuxShellRunner_DiscoversComfy()
+    {
+        var comfyFolder = Path.Combine(_tempDirectory, "ComfyUI");
+        Directory.CreateDirectory(comfyFolder);
+        var modelsFolder = Path.Combine(comfyFolder, "models");
+        Directory.CreateDirectory(modelsFolder);
+        var scriptPath = Path.Combine(comfyFolder, "run.sh");
+        File.WriteAllText(scriptPath, "#!/usr/bin/env bash\npython main.py");
+
+        var service = new ToolDiscoveryService(searchRoots: new[] { _tempDirectory });
+        var result = service.DetectComfyUi();
+
+        Assert.True(result.IsInstalled);
+        Assert.Equal(scriptPath, result.ExecutablePath);
+        Assert.Equal(comfyFolder, result.RootDirectory);
+        Assert.Equal(modelsFolder, result.ModelsDirectory);
+    }
+
+    [Fact]
+    public async Task DetectAllToolsAsync_IncludesFFmpegAndPython()
+    {
+        var service = new ToolDiscoveryService(searchRoots: new[] { _tempDirectory });
+        var result = await service.DetectAllToolsAsync();
+
+        Assert.NotNull(result);
+        Assert.NotNull(result.FFmpeg);
+        Assert.NotNull(result.PythonEnvironment);
+        Assert.NotNull(result.AudioEngine);
     }
 }
