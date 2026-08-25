@@ -130,6 +130,16 @@ public static class DiscoveryEndpoints
                 results[nameof(request.AudioEngineExecutablePath)] = discoveryService.ValidatePath(request.AudioEngineExecutablePath, PathTargetType.Executable);
             }
 
+            if (request.FFmpegExecutablePath != null)
+            {
+                results[nameof(request.FFmpegExecutablePath)] = discoveryService.ValidatePath(request.FFmpegExecutablePath, PathTargetType.Executable);
+            }
+
+            if (request.PythonExecutablePath != null)
+            {
+                results[nameof(request.PythonExecutablePath)] = discoveryService.ValidatePath(request.PythonExecutablePath, PathTargetType.Executable);
+            }
+
             var allValid = results.Values.All(r => r.IsValid);
             return Results.Ok(new ValidatePathsResponse(results, allValid));
         });

@@ -1,6 +1,6 @@
-; Script generated for Inno Setup - LocalLLMServerManager v3.7.0
+; Script generated for Inno Setup - LocalLLMServerManager v3.8.0
 #define MyAppName "Local LLM Server Manager"
-#define MyAppVersion "3.7.0"
+#define MyAppVersion "3.8.0"
 #define MyAppPublisher "LocalLLMServerManager Team"
 #define MyAppURL "https://github.com/spelech/LocalLLMServerManager"
 #define MyAppExeName "LocalLLMServerManager.exe"
@@ -44,6 +44,7 @@ Name: "ext_audio"; Description: "Kokoro / Audio Engine Pack (FastAPI TTS server 
 Name: "desktopicon"; Description: "{cm:CreateDesktopIcon}"; GroupDescription: "{cm:AdditionalIcons}"; Flags: unchecked
 Name: "autostart"; Description: "Auto-start System Tray App on user login"; GroupDescription: "System Integration"
 Name: "windowsservice"; Description: "Install background Windows Service (starts automatically on system boot)"; GroupDescription: "System Integration"; Flags: checkedonce
+Name: "firewall"; Description: "Add Windows Defender Firewall rule for port 5246 (allow LAN & MCP Router access)"; GroupDescription: "Network & Access"; Flags: checkedonce
 
 [Dirs]
 Name: "{app}\Workflows\Video"; Components: ext_video
@@ -73,6 +74,9 @@ Filename: "sc.exe"; Parameters: "create LocalLLMServerManager binPath= """"{app}
 Filename: "sc.exe"; Parameters: "config LocalLLMServerManager binPath= """"{app}\{#MyAppExeName}"" --service"" start= auto displayName= ""Local LLM Server Manager"""; Tasks: windowsservice; Flags: runhidden
 Filename: "sc.exe"; Parameters: "description LocalLLMServerManager ""Orchestrates GPU VRAM between Ollama and Forge, and manages local model weights."""; Tasks: windowsservice; Flags: runhidden
 Filename: "net.exe"; Parameters: "start LocalLLMServerManager"; Tasks: windowsservice; Flags: runhidden
+; Add Windows Defender Firewall inbound rule on TCP port 5246
+Filename: "netsh.exe"; Parameters: "advfirewall firewall delete rule name=""LocalLLM Server Manager"""; Tasks: firewall; Flags: runhidden
+Filename: "netsh.exe"; Parameters: "advfirewall firewall add rule name=""LocalLLM Server Manager"" dir=in action=allow protocol=TCP localport=5246"; Tasks: firewall; Flags: runhidden
 ; Launch Tray App after installation completes
 Filename: "{app}\{#MyAppExeName}"; Description: "{cm:LaunchProgram,{#StringChange(MyAppName, '&', '&&')}}"; Flags: nowait postinstall skipifsilent
 
@@ -80,6 +84,8 @@ Filename: "{app}\{#MyAppExeName}"; Description: "{cm:LaunchProgram,{#StringChang
 ; Stop and remove Windows Service on uninstall
 Filename: "net.exe"; Parameters: "stop LocalLLMServerManager"; Flags: runhidden
 Filename: "sc.exe"; Parameters: "delete LocalLLMServerManager"; Flags: runhidden
+; Remove Windows Defender Firewall rule on uninstall
+Filename: "netsh.exe"; Parameters: "advfirewall firewall delete rule name=""LocalLLM Server Manager"""; Flags: runhidden
 Filename: "taskkill.exe"; Parameters: "/F /IM {#MyAppExeName} /T"; Flags: runhidden
 
 [Code]

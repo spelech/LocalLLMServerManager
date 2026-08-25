@@ -9,6 +9,8 @@ public interface IToolDiscoveryService
     DiscoveredToolInfo DetectComfyUi();
     DiscoveredToolInfo DetectForge();
     DiscoveredToolInfo DetectAudioEngine();
+    DiscoveredToolInfo DetectFFmpeg();
+    DiscoveredToolInfo DetectPythonEnvironment();
     PathValidationResult ValidatePath(string? path, PathTargetType targetType);
 }
 
@@ -27,7 +29,9 @@ public record DiscoveredToolsResult(
     DiscoveredToolInfo Forge,
     string SuggestedThreeDPath,
     string SuggestedWorkflowsPath,
-    DiscoveredToolInfo AudioEngine = default!
+    DiscoveredToolInfo AudioEngine = default!,
+    DiscoveredToolInfo FFmpeg = default!,
+    DiscoveredToolInfo PythonEnvironment = default!
 );
 
 public enum PathTargetType
@@ -50,7 +54,9 @@ public record ValidatePathsRequest(
     string? ComfyUiExecutablePath = null,
     string? ForgeExecutablePath = null,
     string? OllamaExecutablePath = null,
-    string? AudioEngineExecutablePath = null
+    string? AudioEngineExecutablePath = null,
+    string? FFmpegExecutablePath = null,
+    string? PythonExecutablePath = null
 );
 
 public record ValidatePathsResponse(

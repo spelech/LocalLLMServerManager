@@ -1,6 +1,6 @@
 # LocalLLMServerManager — System Architecture & Component Design
 
-> **v3.7.0 Architecture Specification & Mermaid Diagrams**
+> **v3.8.0 Architecture Specification & Mermaid Diagrams**
 
 This document provides a visual and structural blueprint of **LocalLLMServerManager**, detailing its component decomposition, MVVM hierarchy, Minimal API route modules, Dependency Injection lifecycle, Model Context Protocol (MCP) Multimodal AI integration, VRAM orchestration flow, Modular Feature Pack management, WebAssembly static asset pipeline, Playwright E2E testing layer, and Docker containerization architecture.
 
