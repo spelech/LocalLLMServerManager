@@ -28,7 +28,7 @@
 - Consumes: `AppSettings.AudioPath`, `AppSettings.AudioEngineExecutablePath`, `IToolDiscoveryService.DetectAudioEngine()`
 - Produces: Discovered audio engine pointing to `D:\AI\audio\engines\kokoro-fastapi` or `D:\AI\audio\engines\alltalk_tts` with valid status.
 
-- [ ] **Step 1: Write the failing unit tests for audio discovery in `D:\AI\audio`**
+- [x] **Step 1: Write the failing unit tests for audio discovery in `D:\AI\audio`**
 
 ```csharp
 using System.IO;
@@ -64,26 +64,26 @@ public class ToolDiscoveryServiceAudioTests
 }
 ```
 
-- [ ] **Step 2: Run test to verify it fails**
+- [x] **Step 2: Run test to verify it fails**
 
 Run: `dotnet test --filter "FullyQualifiedName~ToolDiscoveryServiceAudioTests"`
 Expected: FAIL (subpath `audio/engines/kokoro-fastapi` not in candidate list)
 
-- [ ] **Step 3: Update `ToolDiscoveryService.cs` candidate paths & `DownloadManager.cs`**
+- [x] **Step 3: Update `ToolDiscoveryService.cs` candidate paths & `DownloadManager.cs`**
 
 Add `Path.Combine(baseRoot, "audio", "engines", sub)` and `Path.Combine(baseRoot, "audio", sub)` to candidate search paths in `Services/ToolDiscoveryService.cs`.
 Update `LocalLLMServerManager.Shared/Services/DownloadManager.cs` to route audio downloads to `audio/engines` or `audio/stt`.
 
-- [ ] **Step 4: Run test to verify it passes**
+- [x] **Step 4: Run test to verify it passes**
 
 Run: `dotnet test --filter "FullyQualifiedName~ToolDiscoveryServiceAudioTests"`
 Expected: PASS
 
-- [ ] **Step 5: Run linter and typechecker**
+- [x] **Step 5: Run linter and typechecker**
 
 Run: `npm run lint` and `npx tsc --noEmit`
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add Services/ToolDiscoveryService.cs LocalLLMServerManager.Shared/Services/DownloadManager.cs LocalLLMServerManager.Tests/ToolDiscoveryServiceAudioTests.cs
@@ -103,7 +103,7 @@ git commit -m "feat(audio): support D:\AI\audio directory hierarchy in tool disc
 - Consumes: `D:\AI\audio\engines\kokoro-fastapi`
 - Produces: Automated setup script that installs `kokoro-onnx`, `soundfile`, `fastapi`, `uvicorn` and downloads `kokoro-v1.0.onnx` (~350 MB) + `voices-v1.0.bin`.
 
-- [ ] **Step 1: Write failing test for ComponentManagerService audio pack detection**
+- [x] **Step 1: Write failing test for ComponentManagerService audio pack detection**
 
 ```csharp
 using LocalLLMServerManager.Services;
@@ -130,24 +130,24 @@ public class ComponentManagerAudioPackTests
 }
 ```
 
-- [ ] **Step 2: Run test to verify it fails or passes baseline**
+- [x] **Step 2: Run test to verify it fails or passes baseline**
 
 Run: `dotnet test --filter "FullyQualifiedName~ComponentManagerAudioPackTests"`
 
-- [ ] **Step 3: Create `scripts/setup_kokoro_tts.ps1`**
+- [x] **Step 3: Create `scripts/setup_kokoro_tts.ps1`**
 
 Write script that accepts `-TargetDir` (default `D:\AI\audio\engines\kokoro-fastapi`), creates target directory, downloads `kokoro-v1.0.onnx` and voice models from Hugging Face Hub (`hexgrad/Kokoro-82M`), and writes minimal `main.py` FastAPI server.
 
-- [ ] **Step 4: Run tests**
+- [x] **Step 4: Run tests**
 
 Run: `dotnet test`
 Expected: ALL PASS
 
-- [ ] **Step 5: Run linter and typechecker**
+- [x] **Step 5: Run linter and typechecker**
 
 Run: `npm run lint` and `npx tsc --noEmit`
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add scripts/setup_kokoro_tts.ps1 Services/ComponentManagerService.cs LocalLLMServerManager.Tests/ComponentManagerAudioPackTests.cs
@@ -168,7 +168,7 @@ git commit -m "feat(audio): add Kokoro TTS automated setup script and component 
 - Consumes: Multi-part form audio file at `POST /v1/audio/transcriptions`
 - Produces: OpenAI-compatible JSON transcript response `{ "text": "...", "segments": [...] }`
 
-- [ ] **Step 1: Write failing unit test for `POST /v1/audio/transcriptions` endpoint**
+- [x] **Step 1: Write failing unit test for `POST /v1/audio/transcriptions` endpoint**
 
 ```csharp
 using System.Net;
@@ -198,25 +198,25 @@ public class TranscriptionEndpointsTests : IClassFixture<WebApplicationFactory<P
 }
 ```
 
-- [ ] **Step 2: Run test to verify it fails**
+- [x] **Step 2: Run test to verify it fails**
 
 Run: `dotnet test --filter "FullyQualifiedName~TranscriptionEndpointsTests"`
 Expected: FAIL (404 Not Found)
 
-- [ ] **Step 3: Implement `Endpoints/TranscriptionEndpoints.cs` and map in `Program.cs`**
+- [x] **Step 3: Implement `Endpoints/TranscriptionEndpoints.cs` and map in `Program.cs`**
 
 Implement `POST /v1/audio/transcriptions` with parameter validation (`file`, `model`, `language`, `response_format`), proxying or delegating to local STT runner when available, and returning standardized OpenAI JSON.
 
-- [ ] **Step 4: Run test to verify it passes**
+- [x] **Step 4: Run test to verify it passes**
 
 Run: `dotnet test --filter "FullyQualifiedName~TranscriptionEndpointsTests"`
 Expected: PASS
 
-- [ ] **Step 5: Run linter and typechecker**
+- [x] **Step 5: Run linter and typechecker**
 
 Run: `npm run lint` and `npx tsc --noEmit`
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add Endpoints/TranscriptionEndpoints.cs Program.cs LocalLLMServerManager.Tests/TranscriptionEndpointsTests.cs scripts/setup_whisper_stt.ps1
@@ -236,7 +236,7 @@ git commit -m "feat(stt): add OpenAI-compatible /v1/audio/transcriptions endpoin
 - Consumes: `D:\AI\audio\engines\alltalk_tts`, `D:\AI\audio\custom_voices`
 - Produces: Discovery of AllTalk instance and voice cloning directory mapping.
 
-- [ ] **Step 1: Write failing test for AllTalk voice discovery**
+- [x] **Step 1: Write failing test for AllTalk voice discovery**
 
 ```csharp
 using System.IO;
@@ -275,24 +275,24 @@ public class AllTalkDiscoveryTests
 }
 ```
 
-- [ ] **Step 2: Run test to verify it fails or passes**
+- [x] **Step 2: Run test to verify it fails or passes**
 
 Run: `dotnet test --filter "FullyQualifiedName~AllTalkDiscoveryTests"`
 
-- [ ] **Step 3: Implement `scripts/setup_alltalk_xtts.ps1` and refine `ToolDiscoveryService.cs`**
+- [x] **Step 3: Implement `scripts/setup_alltalk_xtts.ps1` and refine `ToolDiscoveryService.cs`**
 
 Add `scripts/setup_alltalk_xtts.ps1` to automate AllTalk TTS environment setup in `D:\AI\audio\engines\alltalk_tts` and link `custom_voices` directory.
 
-- [ ] **Step 4: Run test to verify it passes**
+- [x] **Step 4: Run test to verify it passes**
 
 Run: `dotnet test --filter "FullyQualifiedName~AllTalkDiscoveryTests"`
 Expected: PASS
 
-- [ ] **Step 5: Run linter and typechecker**
+- [x] **Step 5: Run linter and typechecker**
 
 Run: `npm run lint` and `npx tsc --noEmit`
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add scripts/setup_alltalk_xtts.ps1 Services/ToolDiscoveryService.cs LocalLLMServerManager.Tests/AllTalkDiscoveryTests.cs
@@ -312,7 +312,7 @@ git commit -m "feat(audio): add AllTalk XTTS-v2 voice cloning setup and discover
 - Consumes: `Workflows/Audio/stable_audio_open_sfx.json`, `Workflows/Audio/musicgen_melody.json`
 - Produces: Validated ComfyUI API workflow payloads for audio/music generation.
 
-- [ ] **Step 1: Write failing unit test validating audio workflow structures**
+- [x] **Step 1: Write failing unit test validating audio workflow structures**
 
 ```csharp
 using System.IO;
@@ -355,25 +355,25 @@ public class AudioWorkflowTests
 }
 ```
 
-- [ ] **Step 2: Run test to verify it fails on missing `musicgen_melody.json`**
+- [x] **Step 2: Run test to verify it fails on missing `musicgen_melody.json`**
 
 Run: `dotnet test --filter "FullyQualifiedName~AudioWorkflowTests"`
 Expected: FAIL (missing `musicgen_melody.json`)
 
-- [ ] **Step 3: Create `Workflows/Audio/musicgen_melody.json`**
+- [x] **Step 3: Create `Workflows/Audio/musicgen_melody.json`**
 
 Create the ComfyUI workflow JSON for MusicGen melody generation.
 
-- [ ] **Step 4: Run test to verify it passes**
+- [x] **Step 4: Run test to verify it passes**
 
 Run: `dotnet test --filter "FullyQualifiedName~AudioWorkflowTests"`
 Expected: PASS
 
-- [ ] **Step 5: Run linter and typechecker**
+- [x] **Step 5: Run linter and typechecker**
 
 Run: `npm run lint` and `npx tsc --noEmit`
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add Workflows/Audio/musicgen_melody.json LocalLLMServerManager.Tests/AudioWorkflowTests.cs
@@ -388,17 +388,17 @@ git commit -m "feat(music): add MusicGen melody ComfyUI workflow preset and unit
 - Modify: `docs/superpowers/plans/2026-08-25-audio-studio-setup.md`
 - Test: All project test suites (`LocalLLMServerManager.Tests`)
 
-- [ ] **Step 1: Run complete .NET test suite**
+- [x] **Step 1: Run complete .NET test suite**
 
 Run: `dotnet test`
 Expected: ALL PASS (0 failures)
 
-- [ ] **Step 2: Run frontend linter and TypeScript compiler**
+- [x] **Step 2: Run frontend linter and TypeScript compiler**
 
 Run: `npm run lint` and `npx tsc --noEmit`
 Expected: 0 errors, 0 warnings
 
-- [ ] **Step 3: Final verification commit**
+- [x] **Step 3: Final verification commit**
 
 ```bash
 git add .
