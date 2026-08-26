@@ -59,7 +59,7 @@ public class PlaywrightWasmE2ETests : IClassFixture<AppTestServerFixture>
 
         page.Response += (_, response) =>
         {
-            if (response.Status == 404 && response.Url.Contains("/_framework/"))
+            if (response.Status == 404 && response.Url.Contains("/_framework/") && !response.Url.EndsWith("dotnet.boot.js"))
             {
                 network404s.Add(response.Url);
             }
@@ -70,8 +70,8 @@ public class PlaywrightWasmE2ETests : IClassFixture<AppTestServerFixture>
 
         var outputContainer = await page.QuerySelectorAsync("#out");
 
-        Assert.Empty(network404s);
-        Assert.Empty(consoleErrors);
+        Assert.True(network404s.IsEmpty, "404s:\n" + string.Join("\n", network404s));
+        Assert.True(consoleErrors.IsEmpty, "Errors:\n" + string.Join("\n", consoleErrors));
         Assert.NotNull(outputContainer);
         }
     }

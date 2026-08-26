@@ -10,6 +10,7 @@ globalThis.getOrigin = function () {
 };
 
 const { runMain } = await dotnet
+    .withConfigSrc('./LocalLLMServerManager.Web.runtimeconfig.json')
     .withDiagnosticTracing(false)
     .withApplicationArgumentsFromQuery()
     .create();

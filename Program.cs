@@ -192,6 +192,11 @@ public class Program
         contentTypeProvider.Mappings[".clr"] = "application/octet-stream";
         contentTypeProvider.Mappings[".pdb"] = "application/octet-stream";
         contentTypeProvider.Mappings[".boot.json"] = "application/json";
+        contentTypeProvider.Mappings[".json"] = "application/json";
+        contentTypeProvider.Mappings[".dll"] = "application/octet-stream";
+        contentTypeProvider.Mappings[".a"] = "application/octet-stream";
+        contentTypeProvider.Mappings[".br"] = "application/x-brotli";
+        contentTypeProvider.Mappings[".gz"] = "application/gzip";
 
         app.UseDefaultFiles();
         app.UseStaticFiles(new StaticFileOptions
