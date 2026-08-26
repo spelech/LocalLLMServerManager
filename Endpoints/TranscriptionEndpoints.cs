@@ -44,7 +44,7 @@ public static class TranscriptionEndpoints
             return Results.BadRequest(new { error = new { message = "No file uploaded in 'file' form field." } });
         }
 
-        var file = form.Files["file"] ?? (form.Files.Count > 0 ? form.Files[0] : null);
+        var file = form.Files["file"];
         if (file == null || file.Length == 0)
         {
             return Results.BadRequest(new { error = new { message = "No file uploaded in 'file' form field." } });
@@ -88,29 +88,22 @@ public static class TranscriptionEndpoints
             var http = clientFactory.CreateClient();
             var targetResponse = await http.PostAsync(targetUrl, formData, cts.Token);
 
-            if (targetResponse.IsSuccessStatusCode)
-            {
-                var contentType = targetResponse.Content.Headers.ContentType?.ToString() ?? "application/json";
-                context.Response.StatusCode = (int)targetResponse.StatusCode;
-                context.Response.ContentType = contentType;
-                await using var responseStream = await targetResponse.Content.ReadAsStreamAsync(context.RequestAborted);
-                await responseStream.CopyToAsync(context.Response.Body, context.RequestAborted);
-                return Results.Empty;
-            }
+            var contentType = targetResponse.Content.Headers.ContentType?.ToString() ?? "application/json";
+            context.Response.StatusCode = (int)targetResponse.StatusCode;
+            context.Response.ContentType = contentType;
+            await using var responseStream = await targetResponse.Content.ReadAsStreamAsync(context.RequestAborted);
+            await responseStream.CopyToAsync(context.Response.Body, context.RequestAborted);
+            return Results.Empty;
         }
-        catch
+        catch (Exception ex)
         {
-            // Fall through to structured graceful fallback response
+            return Results.Json(
+                new { error = new { message = $"Upstream audio transcription engine unavailable: {ex.Message}", type = "bad_gateway" } },
+                statusCode: StatusCodes.Status502BadGateway);
         }
-
-        // Generate OpenAI-compatible fallback response
-        var lang = string.IsNullOrWhiteSpace(language) ? "english" : language;
-        var fallbackText = "Whisper audio transcription processed successfully.";
-
-        return FormatTranscriptionResponse(responseFormat, fallbackText, lang, isTranslation);
     }
 
-    private static IResult FormatTranscriptionResponse(string responseFormat, string text, string language, bool isTranslation)
+    public static IResult FormatTranscriptionResponse(string responseFormat, string text, string language = "english", bool isTranslation = false)
     {
         return responseFormat.ToLowerInvariant() switch
         {

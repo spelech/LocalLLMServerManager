@@ -7,7 +7,9 @@ using System.Net.Http.Headers;
 using System.Net.Http.Json;
 using System.Text.Json;
 using System.Threading.Tasks;
+using LocalLLMServerManager.Endpoints;
 using Microsoft.AspNetCore.Builder;
+using Microsoft.AspNetCore.Http.HttpResults;
 using Xunit;
 
 namespace LocalLLMServerManager.Tests;
@@ -36,6 +38,7 @@ public class TranscriptionEndpointsTests : IClassFixture<AppTestServerFixture>
     [Fact]
     public async Task Transcriptions_MissingFile_ReturnsBadRequest()
     {
+        // 1. Empty multipart form
         using var emptyContent = new MultipartFormDataContent();
         var response = await _client.PostAsync("/v1/audio/transcriptions", emptyContent);
 
@@ -43,7 +46,24 @@ public class TranscriptionEndpointsTests : IClassFixture<AppTestServerFixture>
         var json = await response.Content.ReadFromJsonAsync<JsonElement>();
         Assert.True(json.TryGetProperty("error", out var errorProp));
         Assert.True(errorProp.TryGetProperty("message", out var msgProp));
-        Assert.Contains("file", msgProp.GetString(), StringComparison.OrdinalIgnoreCase);
+        Assert.Equal("No file uploaded in 'file' form field.", msgProp.GetString());
+
+        // 2. Non-form content
+        using var stringContent = new StringContent("{}", System.Text.Encoding.UTF8, "application/json");
+        var nonFormResp = await _client.PostAsync("/v1/audio/transcriptions", stringContent);
+        Assert.Equal(HttpStatusCode.BadRequest, nonFormResp.StatusCode);
+
+        // 3. File in wrong field name
+        using var wrongFieldForm = new MultipartFormDataContent();
+        wrongFieldForm.Add(new ByteArrayContent(CreateDummyWavBytes()), "audio_data", "test.wav");
+        var wrongFieldResp = await _client.PostAsync("/v1/audio/transcriptions", wrongFieldForm);
+        Assert.Equal(HttpStatusCode.BadRequest, wrongFieldResp.StatusCode);
+
+        // 4. Empty file content (0 bytes)
+        using var emptyFileForm = new MultipartFormDataContent();
+        emptyFileForm.Add(new ByteArrayContent(Array.Empty<byte>()), "file", "test.wav");
+        var emptyFileResp = await _client.PostAsync("/v1/audio/transcriptions", emptyFileForm);
+        Assert.Equal(HttpStatusCode.BadRequest, emptyFileResp.StatusCode);
     }
 
     [Fact]
@@ -56,11 +76,11 @@ public class TranscriptionEndpointsTests : IClassFixture<AppTestServerFixture>
         var json = await response.Content.ReadFromJsonAsync<JsonElement>();
         Assert.True(json.TryGetProperty("error", out var errorProp));
         Assert.True(errorProp.TryGetProperty("message", out var msgProp));
-        Assert.Contains("file", msgProp.GetString(), StringComparison.OrdinalIgnoreCase);
+        Assert.Equal("No file uploaded in 'file' form field.", msgProp.GetString());
     }
 
     [Fact]
-    public async Task Transcriptions_ValidWavFile_Returns200WithText()
+    public async Task Transcriptions_UpstreamEngineOffline_Returns502BadGateway()
     {
         using var form = new MultipartFormDataContent();
         var dummyWav = CreateDummyWavBytes();
@@ -70,15 +90,18 @@ public class TranscriptionEndpointsTests : IClassFixture<AppTestServerFixture>
         form.Add(new StringContent("whisper-large-v3-turbo"), "model");
 
         var response = await _client.PostAsync("/v1/audio/transcriptions", form);
-        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        Assert.Equal(HttpStatusCode.BadGateway, response.StatusCode);
 
         var json = await response.Content.ReadFromJsonAsync<JsonElement>();
-        Assert.True(json.TryGetProperty("text", out var textProp));
-        Assert.False(string.IsNullOrWhiteSpace(textProp.GetString()));
+        Assert.True(json.TryGetProperty("error", out var errorProp));
+        Assert.True(errorProp.TryGetProperty("message", out var msgProp));
+        Assert.Contains("Upstream audio transcription engine unavailable", msgProp.GetString(), StringComparison.OrdinalIgnoreCase);
+        Assert.True(errorProp.TryGetProperty("type", out var typeProp));
+        Assert.Equal("bad_gateway", typeProp.GetString());
     }
 
     [Fact]
-    public async Task Translations_ValidWavFile_Returns200WithText()
+    public async Task Translations_UpstreamEngineOffline_Returns502BadGateway()
     {
         using var form = new MultipartFormDataContent();
         var dummyWav = CreateDummyWavBytes();
@@ -88,84 +111,87 @@ public class TranscriptionEndpointsTests : IClassFixture<AppTestServerFixture>
         form.Add(new StringContent("whisper-large-v3-turbo"), "model");
 
         var response = await _client.PostAsync("/v1/audio/translations", form);
-        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        Assert.Equal(HttpStatusCode.BadGateway, response.StatusCode);
 
         var json = await response.Content.ReadFromJsonAsync<JsonElement>();
-        Assert.True(json.TryGetProperty("text", out var textProp));
-        Assert.False(string.IsNullOrWhiteSpace(textProp.GetString()));
+        Assert.True(json.TryGetProperty("error", out var errorProp));
+        Assert.True(errorProp.TryGetProperty("message", out var msgProp));
+        Assert.Contains("Upstream audio transcription engine unavailable", msgProp.GetString(), StringComparison.OrdinalIgnoreCase);
+        Assert.True(errorProp.TryGetProperty("type", out var typeProp));
+        Assert.Equal("bad_gateway", typeProp.GetString());
     }
 
     [Fact]
-    public async Task Transcriptions_ResponseFormat_VerboseJson_ReturnsDetailedStructure()
+    public void FormatTranscriptionResponse_Text_ReturnsPlainText()
     {
-        using var form = new MultipartFormDataContent();
-        var dummyWav = CreateDummyWavBytes();
-        var fileContent = new ByteArrayContent(dummyWav);
-        fileContent.Headers.ContentType = new MediaTypeHeaderValue("audio/wav");
-        form.Add(fileContent, "file", "speech.wav");
-        form.Add(new StringContent("verbose_json"), "response_format");
-
-        var response = await _client.PostAsync("/v1/audio/transcriptions", form);
-        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
-
-        var json = await response.Content.ReadFromJsonAsync<JsonElement>();
-        Assert.True(json.TryGetProperty("text", out _));
-        Assert.True(json.TryGetProperty("language", out _));
-        Assert.True(json.TryGetProperty("duration", out _));
-        Assert.True(json.TryGetProperty("segments", out var segmentsProp));
-        Assert.Equal(JsonValueKind.Array, segmentsProp.ValueKind);
+        var result = TranscriptionEndpoints.FormatTranscriptionResponse("text", "Sample transcript", "english", false);
+        var contentResult = Assert.IsAssignableFrom<ContentHttpResult>(result);
+        Assert.Equal("Sample transcript", contentResult.ResponseContent);
+        Assert.Equal("text/plain", contentResult.ContentType);
     }
 
     [Fact]
-    public async Task Transcriptions_ResponseFormat_Text_ReturnsPlainText()
-    {
-        using var form = new MultipartFormDataContent();
-        var dummyWav = CreateDummyWavBytes();
-        var fileContent = new ByteArrayContent(dummyWav);
-        fileContent.Headers.ContentType = new MediaTypeHeaderValue("audio/wav");
-        form.Add(fileContent, "file", "speech.wav");
-        form.Add(new StringContent("text"), "response_format");
-
-        var response = await _client.PostAsync("/v1/audio/transcriptions", form);
-        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
-
-        var text = await response.Content.ReadAsStringAsync();
-        Assert.False(string.IsNullOrWhiteSpace(text));
-    }
-
-    [Fact]
-    public async Task Transcriptions_ResponseFormat_SrtAndVtt_ReturnsSubtitleFormats()
+    public void FormatTranscriptionResponse_SrtAndVtt_ReturnsSubtitleFormats()
     {
         // SRT format
-        using (var srtForm = new MultipartFormDataContent())
         {
-            var dummyWav = CreateDummyWavBytes();
-            var fileContent = new ByteArrayContent(dummyWav);
-            fileContent.Headers.ContentType = new MediaTypeHeaderValue("audio/wav");
-            srtForm.Add(fileContent, "file", "speech.wav");
-            srtForm.Add(new StringContent("srt"), "response_format");
-
-            var response = await _client.PostAsync("/v1/audio/transcriptions", srtForm);
-            Assert.Equal(HttpStatusCode.OK, response.StatusCode);
-
-            var srtText = await response.Content.ReadAsStringAsync();
-            Assert.Contains("-->", srtText);
+            var result = TranscriptionEndpoints.FormatTranscriptionResponse("srt", "Subtitle line", "english", false);
+            var contentResult = Assert.IsAssignableFrom<ContentHttpResult>(result);
+            Assert.Contains("-->", contentResult.ResponseContent);
+            Assert.Contains("Subtitle line", contentResult.ResponseContent);
+            Assert.Equal("text/plain", contentResult.ContentType);
         }
 
         // VTT format
-        using (var vttForm = new MultipartFormDataContent())
         {
-            var dummyWav = CreateDummyWavBytes();
-            var fileContent = new ByteArrayContent(dummyWav);
-            fileContent.Headers.ContentType = new MediaTypeHeaderValue("audio/wav");
-            vttForm.Add(fileContent, "file", "speech.wav");
-            vttForm.Add(new StringContent("vtt"), "response_format");
+            var result = TranscriptionEndpoints.FormatTranscriptionResponse("vtt", "VTT line", "english", false);
+            var contentResult = Assert.IsAssignableFrom<ContentHttpResult>(result);
+            Assert.Contains("WEBVTT", contentResult.ResponseContent);
+            Assert.Contains("VTT line", contentResult.ResponseContent);
+            Assert.Equal("text/vtt", contentResult.ContentType);
+        }
+    }
 
-            var response = await _client.PostAsync("/v1/audio/transcriptions", vttForm);
-            Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+    [Fact]
+    public void FormatTranscriptionResponse_JsonAndVerboseJson_ReturnsExpectedJsonStructure()
+    {
+        // Default json
+        {
+            var result = TranscriptionEndpoints.FormatTranscriptionResponse("json", "Hello transcription", "english", false);
+            var okResult = Assert.IsAssignableFrom<Microsoft.AspNetCore.Http.IValueHttpResult>(result);
+            var json = JsonSerializer.Serialize(okResult.Value);
+            using var doc = JsonDocument.Parse(json);
+            var root = doc.RootElement;
+            Assert.Equal("Hello transcription", root.GetProperty("text").GetString());
+            Assert.Equal("english", root.GetProperty("language").GetString());
+            Assert.Equal(1.0, root.GetProperty("duration").GetDouble());
+            Assert.Equal(JsonValueKind.Array, root.GetProperty("segments").ValueKind);
+        }
 
-            var vttText = await response.Content.ReadAsStringAsync();
-            Assert.Contains("WEBVTT", vttText);
+        // Verbose json (transcribe)
+        {
+            var result = TranscriptionEndpoints.FormatTranscriptionResponse("verbose_json", "Detailed transcript", "spanish", false);
+            var okResult = Assert.IsAssignableFrom<Microsoft.AspNetCore.Http.IValueHttpResult>(result);
+            var json = JsonSerializer.Serialize(okResult.Value);
+            using var doc = JsonDocument.Parse(json);
+            var root = doc.RootElement;
+            Assert.Equal("Detailed transcript", root.GetProperty("text").GetString());
+            Assert.Equal("spanish", root.GetProperty("language").GetString());
+            Assert.Equal("transcribe", root.GetProperty("task").GetString());
+            Assert.Equal(1.0, root.GetProperty("duration").GetDouble());
+            Assert.Equal(JsonValueKind.Array, root.GetProperty("segments").ValueKind);
+        }
+
+        // Verbose json (translate)
+        {
+            var result = TranscriptionEndpoints.FormatTranscriptionResponse("verbose_json", "Translated text", "french", true);
+            var okResult = Assert.IsAssignableFrom<Microsoft.AspNetCore.Http.IValueHttpResult>(result);
+            var json = JsonSerializer.Serialize(okResult.Value);
+            using var doc = JsonDocument.Parse(json);
+            var root = doc.RootElement;
+            Assert.Equal("Translated text", root.GetProperty("text").GetString());
+            Assert.Equal("french", root.GetProperty("language").GetString());
+            Assert.Equal("translate", root.GetProperty("task").GetString());
         }
     }
 
