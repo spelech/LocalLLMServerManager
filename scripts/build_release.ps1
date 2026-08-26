@@ -21,16 +21,14 @@ if ($LASTEXITCODE -ne 0) { throw "dotnet test failed!" }
 Write-Host "--> 2. Building & Publishing Avalonia WebAssembly (Wasm) UI..." -ForegroundColor Yellow
 $WasmTemp = Join-Path $RootDir "wwwroot_wasm"
 if (Test-Path $WasmTemp) { Remove-Item -Path $WasmTemp -Recurse -Force }
-dotnet publish LocalLLMServerManager.Web/LocalLLMServerManager.Web.csproj -c Release -o $WasmTemp --nologo
+dotnet publish LocalLLMServerManager.Web/LocalLLMServerManager.Web.csproj -c Release -r browser-wasm -o $WasmTemp --nologo
 if ($LASTEXITCODE -ne 0) { throw "Avalonia Wasm publish failed!" }
 
-# Overwrite wwwroot root with compiled Wasm launcher and assets
-Remove-Item -Path "$RootDir\wwwroot\app.js" -ErrorAction SilentlyContinue
-Remove-Item -Path "$RootDir\wwwroot\index.css" -ErrorAction SilentlyContinue
-Remove-Item -Path "$RootDir\wwwroot\index.html" -ErrorAction SilentlyContinue
-Remove-Item -Path "$RootDir\wwwroot\wwwroot" -Recurse -Force -ErrorAction SilentlyContinue
-
-Copy-Item -Path "$WasmTemp\wwwroot\*" -Destination "$RootDir\wwwroot" -Recurse -Force
+# Overwrite wwwroot\_framework with compiled Wasm launcher and assets
+$FrameworkDir = Join-Path "$RootDir\wwwroot" "_framework"
+if (Test-Path $FrameworkDir) { Remove-Item -Path $FrameworkDir -Recurse -Force }
+New-Item -ItemType Directory -Path $FrameworkDir -Force | Out-Null
+Copy-Item -Path "$WasmTemp\*" -Destination $FrameworkDir -Recurse -Force
 Remove-Item -Path $WasmTemp -Recurse -Force
 
 Write-Host "--> 3. Publishing Self-Contained win-x64 Executable..." -ForegroundColor Yellow
