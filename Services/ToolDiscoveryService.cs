@@ -402,13 +402,13 @@ public class ToolDiscoveryService : IToolDiscoveryService
     {
         var targetSubdirs = new[]
         {
-            "Kokoro-FastAPI",
             "kokoro-fastapi",
-            "Kokoro",
-            "kokoro",
-            "AllTalk",
-            "alltalk",
+            "Kokoro-FastAPI",
             "alltalk_tts",
+            "alltalk",
+            "AllTalk",
+            "kokoro",
+            "Kokoro",
             "tts",
             "TTS"
         };
@@ -425,12 +425,34 @@ public class ToolDiscoveryService : IToolDiscoveryService
 
         foreach (var baseRoot in _searchRoots)
         {
+            if (!Directory.Exists(baseRoot))
+                continue;
+
             var candidateDirectories = new List<string>();
+            var audioEnginesDir = Path.Combine(baseRoot, "audio", "engines");
+            var audioDir = Path.Combine(baseRoot, "audio");
+
             foreach (var sub in targetSubdirs)
             {
-                candidateDirectories.Add(Path.Combine(baseRoot, sub));
+                var dirInEngines = ResolveActualDirectory(audioEnginesDir, sub);
+                if (dirInEngines != null && !candidateDirectories.Contains(dirInEngines))
+                    candidateDirectories.Add(dirInEngines);
+
+                var dirInAudio = ResolveActualDirectory(audioDir, sub);
+                if (dirInAudio != null && !candidateDirectories.Contains(dirInAudio))
+                    candidateDirectories.Add(dirInAudio);
+
+                var dirInRoot = ResolveActualDirectory(baseRoot, sub);
+                if (dirInRoot != null && !candidateDirectories.Contains(dirInRoot))
+                    candidateDirectories.Add(dirInRoot);
             }
-            candidateDirectories.Add(baseRoot);
+
+            if (Directory.Exists(audioEnginesDir) && !candidateDirectories.Contains(audioEnginesDir))
+                candidateDirectories.Add(audioEnginesDir);
+            if (Directory.Exists(audioDir) && !candidateDirectories.Contains(audioDir))
+                candidateDirectories.Add(audioDir);
+            if (!candidateDirectories.Contains(baseRoot))
+                candidateDirectories.Add(baseRoot);
 
             foreach (var dir in candidateDirectories)
             {
@@ -983,6 +1005,27 @@ public class ToolDiscoveryService : IToolDiscoveryService
         }
 
         return null;
+    }
+
+    private static string? ResolveActualDirectory(string parentDir, string subName)
+    {
+        if (!Directory.Exists(parentDir))
+            return null;
+
+        try
+        {
+            var match = Directory.GetDirectories(parentDir)
+                .FirstOrDefault(d => string.Equals(Path.GetFileName(d), subName, StringComparison.OrdinalIgnoreCase));
+            if (match != null)
+                return match;
+        }
+        catch
+        {
+            // Ignore access errors
+        }
+
+        var direct = Path.Combine(parentDir, subName);
+        return Directory.Exists(direct) ? direct : null;
     }
 
     private static string? FindDirectory(string baseDir, params string[] relativeCandidates)

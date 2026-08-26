@@ -18,10 +18,23 @@ public static class DownloadManager
             return Path.Combine(baseDir, "ComfyUI", "models", "diffusion_models");
         }
 
+        // STT / Speech-to-Text / Whisper -> audio/stt
+        if (tagOrType.Contains("automatic-speech-recognition") || tagOrType.Contains("speech-to-text") ||
+            tagOrType.Contains("stt") || file.Contains("whisper"))
+        {
+            return Path.Combine(baseDir, "audio", "stt");
+        }
+
+        // Audio engines -> audio/engines
+        if (tagOrType.Contains("audio-engine") || tagOrType.Contains("voice-clone") ||
+            file.Contains("alltalk") || file.Contains("kokoro-fastapi"))
+        {
+            return Path.Combine(baseDir, "audio", "engines");
+        }
+
         // TTS / Audio models -> models/tts
         if (tagOrType.Contains("speech") || tagOrType.Contains("tts") || tagOrType.Contains("audio") ||
             tagOrType.Contains("text-to-speech") || tagOrType.Contains("text-to-audio") ||
-            tagOrType.Contains("automatic-speech-recognition") ||
             file.Contains("kokoro") || file.Contains("f5-tts") || file.Contains("stable-audio"))
         {
             return Path.Combine(baseDir, "models", "tts");
