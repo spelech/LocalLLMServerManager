@@ -161,6 +161,17 @@ public class Program
             .WithHttpTransport()
             .WithTools<LocalLlmMcpTools>();
 
+        // Enable permissive CORS for Web UI and LAN browser clients
+        builder.Services.AddCors(options =>
+        {
+            options.AddDefaultPolicy(policy =>
+            {
+                policy.AllowAnyOrigin()
+                      .AllowAnyHeader()
+                      .AllowAnyMethod();
+            });
+        });
+
         try
         {
             var proxySection = builder.Configuration.GetSection("ReverseProxy");
@@ -184,6 +195,8 @@ public class Program
         }
 
         var app = builder.Build();
+
+        app.UseCors();
 
         var contentTypeProvider = new FileExtensionContentTypeProvider();
         contentTypeProvider.Mappings[".dat"] = "application/octet-stream";

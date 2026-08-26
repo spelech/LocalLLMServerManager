@@ -23,6 +23,7 @@ public partial class TelemetryViewModel : ObservableObject
     [ObservableProperty] private string _comfyStatus = "Offline";
     [ObservableProperty] private string _serviceModeText = "Connecting...";
     [ObservableProperty] private bool _isServiceRunning = false;
+    [ObservableProperty] private string _apiBase = "http://127.0.0.1:5246";
 
     public TelemetryViewModel(ITelemetryService telemetryService)
     {
@@ -32,7 +33,7 @@ public partial class TelemetryViewModel : ObservableObject
     [RelayCommand]
     public async Task RefreshStatusAsync()
     {
-        await RefreshStatusAsync("http://127.0.0.1:5246", "http://127.0.0.1:8188", new HttpClient());
+        await RefreshStatusAsync(ApiBase, "http://127.0.0.1:8188", new HttpClient());
     }
 
     public async Task RefreshStatusAsync(string apiBase, string comfyUrl, HttpClient http)

@@ -108,7 +108,7 @@ public partial class MainViewModel : ObservableObject
             ApiBase = GetDefaultApiBase();
         }
 
-        Telemetry = new TelemetryViewModel(telemetryService);
+        Telemetry = new TelemetryViewModel(telemetryService) { ApiBase = ApiBase };
         Ollama = new OllamaLibraryViewModel(ollamaModelService);
         HuggingFace = new HuggingFaceSearchViewModel(hfSearchService);
         Civitai = new CivitaiSearchViewModel(civitaiSearchService);
