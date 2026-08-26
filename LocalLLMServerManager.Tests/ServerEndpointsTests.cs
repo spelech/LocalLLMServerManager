@@ -40,6 +40,7 @@ public class ServerEndpointsTests : IClassFixture<AppTestServerFixture>
 
         LocalLLMServerManager.Endpoints.HealthEndpoints.MapHealthEndpoints(app);
         LocalLLMServerManager.Endpoints.ModelProxyEndpoints.MapModelProxyEndpoints(app);
+        LocalLLMServerManager.Endpoints.TranscriptionEndpoints.MapTranscriptionEndpoints(app);
         LocalLLMServerManager.Endpoints.McpEndpoints.MapMcpEndpoints(app);
         LocalLLMServerManager.Endpoints.EngineEndpoints.MapEngineEndpoints(app);
         LocalLLMServerManager.Endpoints.WorkflowEndpoints.MapWorkflowEndpoints(app);

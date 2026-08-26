@@ -251,6 +251,7 @@ public class Program
 
         app.MapHealthEndpoints();
         app.MapModelProxyEndpoints();
+        app.MapTranscriptionEndpoints();
         app.MapMcpEndpoints();
         app.MapEngineEndpoints();
         app.MapWorkflowEndpoints();
