@@ -1,5 +1,5 @@
 param(
-    [string]$InstallDir = (Join-Path $env:SystemDrive "LocalLLMServerManager"),
+    [string]$InstallDir = $(if (Test-Path "C:\Program Files\LocalLLMServerManager") { "C:\Program Files\LocalLLMServerManager" } else { Join-Path $env:SystemDrive "LocalLLMServerManager" }),
     [switch]$SkipGitPull
 )
 
@@ -54,9 +54,9 @@ Write-Host "Rebuilding and publishing to $InstallDir..." -ForegroundColor Yellow
 $ProjectDir = (Resolve-Path (Join-Path $PSScriptRoot "..")).Path
 $ProjectPath = Join-Path $ProjectDir "LocalLLMServerManager.csproj"
 if (Test-Path $ProjectPath) {
-    dotnet publish "$ProjectPath" -c Release -o "$InstallDir" --nologo
+    dotnet publish "$ProjectPath" -c Release -r win-x64 --self-contained -o "$InstallDir" --nologo /p:PublishSingleFile=false
 } else {
-    dotnet publish -c Release -o "$InstallDir" --nologo
+    dotnet publish -c Release -r win-x64 --self-contained -o "$InstallDir" --nologo /p:PublishSingleFile=false
 }
 
 # 6. Restore preserved settings.json
