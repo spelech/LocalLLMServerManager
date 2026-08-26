@@ -15,11 +15,13 @@ public class VramOrchestrator
         _logger = logger;
     }
 
-    public async Task<bool> IsOllamaHealthyAsync()
+    public async Task<bool> IsOllamaHealthyAsync(CancellationToken cancellationToken = default)
     {
         try
         {
-            var response = await _httpClient.GetAsync("http://127.0.0.1:11434/");
+            using var cts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+            cts.CancelAfter(TimeSpan.FromSeconds(1.5));
+            var response = await _httpClient.GetAsync("http://127.0.0.1:11434/", cts.Token);
             return response.IsSuccessStatusCode;
         }
         catch
@@ -28,11 +30,13 @@ public class VramOrchestrator
         }
     }
 
-    public async Task<bool> IsForgeHealthyAsync()
+    public async Task<bool> IsForgeHealthyAsync(CancellationToken cancellationToken = default)
     {
         try
         {
-            var response = await _httpClient.GetAsync("http://127.0.0.1:7860/sdapi/v1/progress");
+            using var cts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+            cts.CancelAfter(TimeSpan.FromSeconds(1.5));
+            var response = await _httpClient.GetAsync("http://127.0.0.1:7860/sdapi/v1/progress", cts.Token);
             return response.IsSuccessStatusCode;
         }
         catch
@@ -41,12 +45,14 @@ public class VramOrchestrator
         }
     }
 
-    public async Task<bool> IsComfyUiHealthyAsync(string comfyUrl = "http://127.0.0.1:8188")
+    public async Task<bool> IsComfyUiHealthyAsync(string comfyUrl = "http://127.0.0.1:8188", CancellationToken cancellationToken = default)
     {
         try
         {
+            using var cts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+            cts.CancelAfter(TimeSpan.FromSeconds(1.5));
             var baseUrl = comfyUrl.TrimEnd('/');
-            var response = await _httpClient.GetAsync($"{baseUrl}/system_stats");
+            var response = await _httpClient.GetAsync($"{baseUrl}/system_stats", cts.Token);
             return response.IsSuccessStatusCode;
         }
         catch

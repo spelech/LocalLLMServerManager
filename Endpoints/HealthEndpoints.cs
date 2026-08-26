@@ -7,14 +7,20 @@ public static class HealthEndpoints
 {
     public static void MapHealthEndpoints(this WebApplication app)
     {
-        app.MapGet("/health", async (VramOrchestrator orchestrator) =>
+        app.MapGet("/health", async (VramOrchestrator orchestrator, HttpContext context) =>
         {
             var settings = Program.LoadSettings();
             var comfyUrl = string.IsNullOrWhiteSpace(settings.ComfyUiUrl) ? "http://127.0.0.1:8188" : settings.ComfyUiUrl;
 
-            var ollamaHealthy = await orchestrator.IsOllamaHealthyAsync();
-            var forgeHealthy = await orchestrator.IsForgeHealthyAsync();
-            var comfyHealthy = await orchestrator.IsComfyUiHealthyAsync(comfyUrl);
+            var ollamaTask = orchestrator.IsOllamaHealthyAsync(context.RequestAborted);
+            var forgeTask = orchestrator.IsForgeHealthyAsync(context.RequestAborted);
+            var comfyTask = orchestrator.IsComfyUiHealthyAsync(comfyUrl, context.RequestAborted);
+
+            await Task.WhenAll(ollamaTask, forgeTask, comfyTask);
+
+            var ollamaHealthy = await ollamaTask;
+            var forgeHealthy = await forgeTask;
+            var comfyHealthy = await comfyTask;
 
             return Results.Ok(new
             {
