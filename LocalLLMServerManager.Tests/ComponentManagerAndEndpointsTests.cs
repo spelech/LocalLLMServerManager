@@ -25,7 +25,7 @@ public class ComponentManagerAndEndpointsTests : IClassFixture<AppTestServerFixt
 
         var components = await response.Content.ReadFromJsonAsync<List<ComponentPackInfo>>();
         Assert.NotNull(components);
-        Assert.Equal(2, components.Count);
+        Assert.Equal(3, components.Count);
 
         var videoPack = components.FirstOrDefault(c => c.Id == "video-generation");
         Assert.NotNull(videoPack);
@@ -36,6 +36,11 @@ public class ComponentManagerAndEndpointsTests : IClassFixture<AppTestServerFixt
         Assert.NotNull(audioPack);
         Assert.Equal("Kokoro TTS & Audio Engine", audioPack.Name);
         Assert.Equal("350 MB", audioPack.DiskSizeEstimate);
+
+        var musicPack = components.FirstOrDefault(c => c.Id == "audio-music");
+        Assert.NotNull(musicPack);
+        Assert.Equal("MusicGen & Stable Audio Studio", musicPack.Name);
+        Assert.Equal("6.8 GB", musicPack.DiskSizeEstimate);
     }
 
     [Fact]

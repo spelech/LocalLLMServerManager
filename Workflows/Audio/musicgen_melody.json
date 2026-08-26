@@ -1,0 +1,78 @@
+{
+  "name": "MusicGen Melody & Instrumental Studio",
+  "type": "audio",
+  "description": "Text-to-music and melody generation using Meta MusicGen in ComfyUI",
+  "workflow": {
+    "1": {
+      "inputs": {
+        "text": "Cinematic orchestral melody, sweeping violins, energetic rhythm, uplifting epic chord progression, 32kHz high fidelity",
+        "clip": [ "2", 0 ]
+      },
+      "class_type": "CLIPTextEncode",
+      "_meta": { "title": "CLIP Text Encode (Positive Prompt)" }
+    },
+    "2": {
+      "inputs": {
+        "clip_name": "musicgen_melody_clip.safetensors"
+      },
+      "class_type": "CLIPLoader",
+      "_meta": { "title": "Load MusicGen CLIP" }
+    },
+    "3": {
+      "inputs": {
+        "text": "low quality, noisy, out of tune, dissonant, clipping",
+        "clip": [ "2", 0 ]
+      },
+      "class_type": "CLIPTextEncode",
+      "_meta": { "title": "CLIP Text Encode (Negative Prompt)" }
+    },
+    "4": {
+      "inputs": {
+        "seed": 987654321,
+        "steps": 50,
+        "cfg": 3.0,
+        "sampler_name": "euler",
+        "scheduler": "normal",
+        "denoise": 1.0,
+        "model": [ "5", 0 ],
+        "positive": [ "1", 0 ],
+        "negative": [ "3", 0 ],
+        "latent_image": [ "6", 0 ]
+      },
+      "class_type": "MusicGenSampler",
+      "_meta": { "title": "MusicGen Sampler" }
+    },
+    "5": {
+      "inputs": {
+        "model_name": "musicgen_melody.safetensors"
+      },
+      "class_type": "MusicGenModelLoader",
+      "_meta": { "title": "Load MusicGen Model" }
+    },
+    "6": {
+      "inputs": {
+        "seconds": 30,
+        "batch_size": 1
+      },
+      "class_type": "EmptyAudioLatent",
+      "_meta": { "title": "Empty Audio Latent (Duration)" }
+    },
+    "7": {
+      "inputs": {
+        "samples": [ "4", 0 ],
+        "vae": [ "5", 1 ]
+      },
+      "class_type": "VAEDecodeAudio",
+      "_meta": { "title": "VAE Decode Audio" }
+    },
+    "8": {
+      "inputs": {
+        "filename_prefix": "MusicGen_Melody",
+        "audio": [ "7", 0 ],
+        "format": "wav"
+      },
+      "class_type": "SaveAudio",
+      "_meta": { "title": "Save Audio Wav" }
+    }
+  }
+}

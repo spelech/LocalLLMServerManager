@@ -57,6 +57,34 @@ public class ComponentManagerService : IComponentManagerService
         }
     }
 
+    public bool IsMusicPackInstalled
+    {
+        get
+        {
+            var settings = _settingsService.LoadSettings();
+            var comfyPath = Program.ResolvePath(settings.ComfyUiExecutablePath);
+            var comfyDir = !string.IsNullOrEmpty(comfyPath)
+                ? (Directory.Exists(comfyPath) ? comfyPath : (Path.GetDirectoryName(comfyPath) ?? comfyPath))
+                : null;
+
+            var audioModelsDir = Path.Combine(GetAppDir(), "models", "audio");
+            var audioModelsDirCurrent = Path.Combine(Directory.GetCurrentDirectory(), "models", "audio");
+            var musicDir = @"D:\AI\audio\music";
+            var cMusicDir = @"C:\AI\audio\music";
+            var comfyCheckpoint = comfyDir != null ? Path.Combine(comfyDir, "models", "checkpoints", "stable_audio_open_1_0.safetensors") : null;
+            var dComfyCheckpoint = @"D:\AI\comfy_models\checkpoints\stable_audio_open_1_0.safetensors";
+            var cComfyCheckpoint = @"C:\AI\comfy_models\checkpoints\stable_audio_open_1_0.safetensors";
+
+            return Directory.Exists(audioModelsDir)
+                || Directory.Exists(audioModelsDirCurrent)
+                || Directory.Exists(musicDir)
+                || Directory.Exists(cMusicDir)
+                || (comfyCheckpoint != null && File.Exists(comfyCheckpoint))
+                || File.Exists(dComfyCheckpoint)
+                || File.Exists(cComfyCheckpoint);
+        }
+    }
+
     public Task<IEnumerable<ComponentPackInfo>> GetComponentsAsync()
     {
         var components = new List<ComponentPackInfo>
@@ -78,6 +106,15 @@ public class ComponentManagerService : IComponentManagerService
                 Installed = IsAudioPackInstalled,
                 DiskSizeEstimate = "350 MB",
                 MinVramRequired = "CPU / 2 GB"
+            },
+            new ComponentPackInfo
+            {
+                Id = "audio-music",
+                Name = "MusicGen & Stable Audio Studio",
+                Description = "Enables Stable Audio Open 1.0 SFX and MusicGen melody generation workflows in ComfyUI.",
+                Installed = IsMusicPackInstalled,
+                DiskSizeEstimate = "6.8 GB",
+                MinVramRequired = "6 GB"
             }
         };
 
@@ -145,6 +182,40 @@ public class ComponentManagerService : IComponentManagerService
             return true;
         }
 
+        if (string.Equals(componentId, "audio-music", StringComparison.OrdinalIgnoreCase))
+        {
+            var audioWorkflowsDir = Path.Combine(GetAppDir(), "Workflows", "Audio");
+            var audioModelsDir = Path.Combine(GetAppDir(), "models", "audio");
+
+            Directory.CreateDirectory(audioWorkflowsDir);
+            Directory.CreateDirectory(audioModelsDir);
+
+            if (Directory.GetCurrentDirectory() != GetAppDir())
+            {
+                Directory.CreateDirectory(Path.Combine(Directory.GetCurrentDirectory(), "Workflows", "Audio"));
+                Directory.CreateDirectory(Path.Combine(Directory.GetCurrentDirectory(), "models", "audio"));
+            }
+
+            var settings = _settingsService.LoadSettings();
+            var comfyPath = Program.ResolvePath(settings.ComfyUiExecutablePath);
+            if (!string.IsNullOrEmpty(comfyPath))
+            {
+                var comfyDir = Path.GetDirectoryName(comfyPath);
+                if (comfyDir != null)
+                {
+                    Directory.CreateDirectory(Path.Combine(comfyDir, "models", "checkpoints"));
+                }
+            }
+
+            for (int i = 1; i <= 10; i++)
+            {
+                cancellationToken.ThrowIfCancellationRequested();
+                await Task.Delay(100, cancellationToken);
+                progress?.Report(i * 10.0);
+            }
+            return true;
+        }
+
         return false;
     }
 
@@ -185,6 +256,46 @@ public class ComponentManagerService : IComponentManagerService
             {
                 dirs.Add(audioPath);
             }
+
+            foreach (var dir in dirs.Distinct())
+            {
+                if (Directory.Exists(dir))
+                {
+                    try
+                    {
+                        Directory.Delete(dir, true);
+                    }
+                    catch
+                    {
+                        // Ignore deletion errors if directory is busy or locked
+                    }
+                }
+            }
+            return Task.FromResult(true);
+        }
+
+        if (string.Equals(componentId, "audio-music", StringComparison.OrdinalIgnoreCase))
+        {
+            var settings = _settingsService.LoadSettings();
+            var comfyPath = Program.ResolvePath(settings.ComfyUiExecutablePath);
+            if (!string.IsNullOrEmpty(comfyPath))
+            {
+                var comfyDir = Path.GetDirectoryName(comfyPath);
+                if (comfyDir != null)
+                {
+                    var checkpointFile = Path.Combine(comfyDir, "models", "checkpoints", "stable_audio_open_1_0.safetensors");
+                    if (File.Exists(checkpointFile))
+                    {
+                        try { File.Delete(checkpointFile); } catch { }
+                    }
+                }
+            }
+
+            var dirs = new List<string>
+            {
+                Path.Combine(GetAppDir(), "models", "audio", "music"),
+                Path.Combine(Directory.GetCurrentDirectory(), "models", "audio", "music")
+            };
 
             foreach (var dir in dirs.Distinct())
             {
