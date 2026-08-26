@@ -78,6 +78,9 @@ public partial class MainViewModel : ObservableObject
     public SettingsViewModel Settings { get; }
     public AudioStudioViewModel Audio { get; }
 
+    [ObservableProperty]
+    private string _appVersionText = $"LocalLLMServerManager v{typeof(MainViewModel).Assembly.GetName().Version?.ToString(3) ?? "3.9.0"} — Unified WASM & Desktop UI";
+
     public MainViewModel() : this(null)
     {
     }
