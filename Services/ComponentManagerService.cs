@@ -34,12 +34,26 @@ public class ComponentManagerService : IComponentManagerService
     {
         get
         {
+            var settings = _settingsService.LoadSettings();
+            var audioPath = Program.ResolvePath(settings.AudioPath);
+            var audioEngineExe = Program.ResolvePath(settings.AudioEngineExecutablePath);
+            var audioEngineDir = !string.IsNullOrEmpty(audioEngineExe) ? (File.Exists(audioEngineExe) || Directory.Exists(audioEngineExe) ? (Directory.Exists(audioEngineExe) ? audioEngineExe : Path.GetDirectoryName(audioEngineExe)) : null) : null;
+
             var kokoroDir = Path.Combine(GetAppDir(), "kokoro-fastapi");
             var kokoroDirCurrent = Path.Combine(Directory.GetCurrentDirectory(), "kokoro-fastapi");
             var audioModelsDir = Path.Combine(GetAppDir(), "models", "audio");
             var audioModelsDirCurrent = Path.Combine(Directory.GetCurrentDirectory(), "models", "audio");
+            var dKokoroDir = @"D:\AI\audio\engines\kokoro-fastapi";
+            var cKokoroDir = @"C:\AI\audio\engines\kokoro-fastapi";
 
-            return Directory.Exists(kokoroDir) || Directory.Exists(kokoroDirCurrent) || Directory.Exists(audioModelsDir) || Directory.Exists(audioModelsDirCurrent);
+            return Directory.Exists(kokoroDir)
+                || Directory.Exists(kokoroDirCurrent)
+                || Directory.Exists(audioModelsDir)
+                || Directory.Exists(audioModelsDirCurrent)
+                || Directory.Exists(dKokoroDir)
+                || Directory.Exists(cKokoroDir)
+                || (!string.IsNullOrEmpty(audioPath) && Directory.Exists(audioPath))
+                || (audioEngineDir != null && Directory.Exists(audioEngineDir));
         }
     }
 
@@ -115,6 +129,13 @@ public class ComponentManagerService : IComponentManagerService
                 Directory.CreateDirectory(Path.Combine(Directory.GetCurrentDirectory(), "models", "audio"));
             }
 
+            var settings = _settingsService.LoadSettings();
+            var audioPath = Program.ResolvePath(settings.AudioPath);
+            if (!string.IsNullOrEmpty(audioPath))
+            {
+                Directory.CreateDirectory(audioPath);
+            }
+
             for (int i = 1; i <= 10; i++)
             {
                 cancellationToken.ThrowIfCancellationRequested();
@@ -150,18 +171,33 @@ public class ComponentManagerService : IComponentManagerService
 
         if (string.Equals(componentId, "audio-tts", StringComparison.OrdinalIgnoreCase))
         {
-            var dirs = new[]
+            var settings = _settingsService.LoadSettings();
+            var audioPath = Program.ResolvePath(settings.AudioPath);
+
+            var dirs = new List<string>
             {
                 Path.Combine(GetAppDir(), "kokoro-fastapi"),
                 Path.Combine(Directory.GetCurrentDirectory(), "kokoro-fastapi"),
                 Path.Combine(GetAppDir(), "models", "audio"),
                 Path.Combine(Directory.GetCurrentDirectory(), "models", "audio")
             };
+            if (!string.IsNullOrEmpty(audioPath))
+            {
+                dirs.Add(audioPath);
+            }
+
             foreach (var dir in dirs.Distinct())
             {
                 if (Directory.Exists(dir))
                 {
-                    Directory.Delete(dir, true);
+                    try
+                    {
+                        Directory.Delete(dir, true);
+                    }
+                    catch
+                    {
+                        // Ignore deletion errors if directory is busy or locked
+                    }
                 }
             }
             return Task.FromResult(true);
