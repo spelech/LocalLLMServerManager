@@ -1,6 +1,6 @@
 # Local LLM Server Manager — Detailed User Guide
 
-Welcome to the **Local LLM Server Manager (v3.8.0)**. This guide will walk you through the main tabs of the dashboard, showing you how to manage your local AI engines (Ollama, Stable Diffusion / Forge, ComfyUI, and Kokoro TTS), configure your settings, and successfully generate text, images, 3D models, video, and speech.
+Welcome to the **Local LLM Server Manager (v3.9.0)**. This guide will walk you through the main tabs of the dashboard, showing you how to manage your local AI engines (Ollama, Stable Diffusion / Forge, ComfyUI, and Kokoro TTS), configure your settings, and successfully generate text, images, 3D models, video, and speech.
 
 ---
 

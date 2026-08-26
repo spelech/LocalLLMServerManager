@@ -1,6 +1,6 @@
 # Local LLM Server Manager
 
-> **v3.8.0** — A unified cross-platform application (.NET 10 + Avalonia UI & WebAssembly), System Tray app, background service/daemon, Model Context Protocol (MCP) AI API, visual orchestrator dashboard, and automated Playwright E2E testing framework to manage local Large Language Models (**Ollama**), Image Generation (**Stable Diffusion / Forge & ComfyUI**), **3D Mesh Generation (TRELLIS V2 & Hunyuan3D v2)**, **Video Generation (Wan 2.2, LTX-2.5, HunyuanVideo)**, and **Audio & Speech Generation (Kokoro TTS, Stable Audio Open 3.0, YuE)** on Windows, Linux, Mobile, and Web.
+> **v3.9.0** — A unified cross-platform application (.NET 10 + Avalonia UI & WebAssembly), System Tray app, background service/daemon, Model Context Protocol (MCP) AI API, visual orchestrator dashboard, and automated Playwright E2E testing framework to manage local Large Language Models (**Ollama**), Image Generation (**Stable Diffusion / Forge & ComfyUI**), **3D Mesh Generation (TRELLIS V2 & Hunyuan3D v2)**, **Video Generation (Wan 2.2, LTX-2.5, HunyuanVideo)**, and **Audio & Speech Generation (Kokoro TTS, AllTalk XTTS-v2, Faster-Whisper, Stable Audio Open 3.0, MusicGen, YuE)** on Windows, Linux, Mobile, and Web.
 It features the official **`L³M²`** monochromatic brand identity, a high-contrast **Matte Carbon Design System**, a live **Dynamic Theming Engine** (Matte Carbon, OLED Black, Clean Light), integrated **`playwright-layout-inspector`** automated visual & layout audits, NVML CUDA real-time telemetry, **Hugging Face Hub** Multimodal discovery (GGUF, Text-to-Video, Image-to-Video, TTS, Text-to-Audio), **CivitAI** checkpoint downloads, **Multimodal Studio** with interactive 3D WebGL viewer, Video Player Preview, Audio Waveform Visualizer, a unified **Avalonia WebAssembly (WASM)** dashboard, **Modular Feature Packs** (`--with-video`, `--with-audio`), and an active **Model Context Protocol (MCP) Server** (`/mcp`).
 
 ![Dashboard Overview](docs/images/dashboard_desktop.png)
@@ -32,7 +32,7 @@ The application features a dark Fluent Avalonia UI theme (`#0F172A`) organized i
 | [====================================------------------------------------------------]  |
 | 8,192 tokens                                                                            |
 +-----------------------------------------------------------------------------------------+
-| LocalLLMServerManager v3.8.0 -- Unified WASM & Desktop UI         System Tray Enabled 🟢 |
+| LocalLLMServerManager v3.9.0 -- Unified WASM & Desktop UI         System Tray Enabled 🟢 |
 +-----------------------------------------------------------------------------------------+
 ```
 
@@ -355,6 +355,7 @@ We use **MAJOR.MINOR.PATCH** (SemVer):
 | `3.6.0` | Monochromatic L³M² brand identity, Matte Carbon Design System, live Dynamic Theming Engine (Matte Carbon, OLED Black, Clean Light), and playwright-layout-inspector visual audits |
 | `3.7.0` | Multimodal Video & Audio Studio (Wan 2.2, LTX-2.5, HunyuanVideo, Kokoro TTS, Stable Audio Open 3.0, YuE), interactive Video Player and Audio Waveform controls, Multimodal Hugging Face Discovery filters, 3 new MCP AI Tools (`generate_video`, `synthesize_speech`, `generate_audio`), OpenAI-compatible `/v1/audio/speech`, and Modular Feature Packs (`--with-video`, `--with-audio`) |
 | `3.8.0` | Cross-Platform Tool Discovery (FFmpeg hardware encoder detection: NVENC, Intel QSV, VAAPI, AMD AMF; Kokoro Python environment inspection; Linux paths & shell runners), Dual-OS GitHub Actions CI Matrix (`[windows-latest, ubuntu-latest]`), Windows Service directory handling & Linux headless guard, and enhanced Windows & Linux installers with automated Firewall rule creation and LAN/MCP endpoint summaries |
+| `3.9.0` | Local Audio & Music Studio suite (Kokoro TTS, AllTalk XTTS-v2 voice cloning, Faster-Whisper STT with `/v1/audio/transcriptions` & `/v1/audio/translations`, ComfyUI MusicGen & Stable Audio Open presets, automated setup scripts, and `D:\AI\audio` storage isolation) |
 
 ---
 
