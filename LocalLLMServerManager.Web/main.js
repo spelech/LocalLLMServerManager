@@ -9,8 +9,17 @@ globalThis.getOrigin = function () {
     return window.location.origin;
 };
 
+const APP_VERSION = "3.9.0";
+
 const { runMain } = await dotnet
-    .withConfigSrc('./LocalLLMServerManager.Web.runtimeconfig.json')
+    .withConfigSrc(`./dotnet.boot.js?v=${APP_VERSION}`)
+    .withResourceLoader((type, name, defaultUri) => {
+        if (defaultUri) {
+            const sep = defaultUri.includes('?') ? '&' : '?';
+            return `${defaultUri}${sep}v=${APP_VERSION}`;
+        }
+        return defaultUri;
+    })
     .withDiagnosticTracing(false)
     .withApplicationArgumentsFromQuery()
     .create();
