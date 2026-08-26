@@ -129,27 +129,10 @@ public partial class MainViewModel : ObservableObject
     {
         if (OperatingSystem.IsBrowser())
         {
-            try
-            {
-                var origin = GetBrowserOrigin();
-                if (!string.IsNullOrWhiteSpace(origin))
-                {
-                    return origin.TrimEnd('/');
-                }
-            }
-            catch { }
-
-            var envBase = Environment.GetEnvironmentVariable("APP_API_BASE");
-            if (!string.IsNullOrWhiteSpace(envBase))
-            {
-                return envBase.TrimEnd('/');
-            }
+            return "";
         }
         return "http://127.0.0.1:5246";
     }
-
-    [System.Runtime.InteropServices.JavaScript.JSImport("globalThis.getOrigin")]
-    internal static partial string GetBrowserOrigin();
 
     public string ApiBase { get; set; } = GetDefaultApiBase();
 

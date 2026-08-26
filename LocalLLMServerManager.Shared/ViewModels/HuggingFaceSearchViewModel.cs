@@ -20,6 +20,7 @@ public partial class HuggingFaceSearchViewModel : ObservableObject
     [ObservableProperty] private string _modalRepoId = "";
     [ObservableProperty] private string _modalAuthor = "";
     public ObservableCollection<HfFileQuantItem> ModalHfFiles { get; } = new();
+    [ObservableProperty] private string _apiBase = OperatingSystem.IsBrowser() ? "" : "http://127.0.0.1:5246";
 
     public HuggingFaceSearchViewModel(IHuggingFaceSearchService hfSearchService)
     {
@@ -29,7 +30,7 @@ public partial class HuggingFaceSearchViewModel : ObservableObject
     [RelayCommand]
     public async Task SearchHuggingFaceAsync()
     {
-        await SearchHuggingFaceAsync("http://127.0.0.1:5246", new HttpClient());
+        await SearchHuggingFaceAsync(ApiBase, new HttpClient());
     }
 
     [RelayCommand]

@@ -115,7 +115,7 @@ public partial class AudioStudioViewModel : ObservableObject
 
         try
         {
-            var apiBase = ctx?.ApiBase ?? "http://127.0.0.1:5246";
+            var apiBase = ctx?.ApiBase ?? (OperatingSystem.IsBrowser() ? "" : "http://127.0.0.1:5246");
             var http = ctx?.Http ?? MainViewModel.DefaultHttpClient;
 
             var payload = new

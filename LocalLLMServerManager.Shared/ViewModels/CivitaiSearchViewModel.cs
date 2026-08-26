@@ -17,6 +17,8 @@ public partial class CivitaiSearchViewModel : ObservableObject
     [ObservableProperty] private string _selectedCivitaiType = "Checkpoint";
     public ObservableCollection<CivitaiModelItem> CivitaiResults { get; } = new();
 
+    [ObservableProperty] private string _apiBase = OperatingSystem.IsBrowser() ? "" : "http://127.0.0.1:5246";
+
     public CivitaiSearchViewModel(ICivitaiSearchService civitaiSearchService)
     {
         _civitaiSearchService = civitaiSearchService;
@@ -25,7 +27,7 @@ public partial class CivitaiSearchViewModel : ObservableObject
     [RelayCommand]
     public async Task SearchCivitaiAsync()
     {
-        await SearchCivitaiAsync("http://127.0.0.1:5246", new HttpClient());
+        await SearchCivitaiAsync(ApiBase, new HttpClient());
     }
 
     public async Task SearchCivitaiAsync(string apiBase, HttpClient http)

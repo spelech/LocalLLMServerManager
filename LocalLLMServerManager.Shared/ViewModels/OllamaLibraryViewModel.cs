@@ -49,10 +49,12 @@ public partial class OllamaLibraryViewModel : ObservableObject
         }
     }
 
+    [ObservableProperty] private string _apiBase = OperatingSystem.IsBrowser() ? "" : "http://127.0.0.1:5246";
+
     [RelayCommand]
     public async Task UnloadAllVramAsync()
     {
-        await UnloadAllVramAsync("http://127.0.0.1:5246", new HttpClient());
+        await UnloadAllVramAsync(ApiBase, new HttpClient());
     }
 
     public async Task UnloadAllVramAsync(string apiBase, HttpClient http)

@@ -169,11 +169,12 @@ public partial class SettingsViewModel : ObservableObject
         return "⚠️ Missing";
     }
 
+    private string EffectiveApiBase => OperatingSystem.IsBrowser() ? "" : (string.IsNullOrWhiteSpace(LanAccessUrl) ? "http://127.0.0.1:5246" : LanAccessUrl.TrimEnd('/'));
+
     [RelayCommand]
     public async Task RefreshComponentStatusesAsync()
     {
-        var apiBase = string.IsNullOrWhiteSpace(LanAccessUrl) ? "http://127.0.0.1:5246" : LanAccessUrl.TrimEnd('/');
-        await RefreshComponentStatusesAsync(apiBase, new HttpClient());
+        await RefreshComponentStatusesAsync(EffectiveApiBase, new HttpClient());
     }
 
     public async Task RefreshComponentStatusesAsync(string apiBase, HttpClient http)
@@ -214,7 +215,7 @@ public partial class SettingsViewModel : ObservableObject
     private async Task ToggleComponentAsync(string componentId, bool currentlyInstalled)
     {
         var http = new HttpClient();
-        var apiBase = string.IsNullOrWhiteSpace(LanAccessUrl) ? "http://127.0.0.1:5246" : LanAccessUrl.TrimEnd('/');
+        var apiBase = EffectiveApiBase;
         try
         {
             if (currentlyInstalled)
@@ -261,7 +262,7 @@ public partial class SettingsViewModel : ObservableObject
     [RelayCommand]
     public async Task AutoDetectToolsAsync()
     {
-        await AutoDetectToolsAsync("http://127.0.0.1:5246", new HttpClient());
+        await AutoDetectToolsAsync(EffectiveApiBase, new HttpClient());
     }
 
     public async Task AutoDetectToolsAsync(string apiBase, HttpClient http)
@@ -467,7 +468,7 @@ public partial class SettingsViewModel : ObservableObject
     [RelayCommand]
     public async Task TestVoiceSynthesizerAsync()
     {
-        await TestVoiceSynthesizerAsync("http://127.0.0.1:5246", new HttpClient());
+        await TestVoiceSynthesizerAsync(EffectiveApiBase, new HttpClient());
     }
 
     public async Task TestVoiceSynthesizerAsync(string apiBase, HttpClient http)
@@ -481,43 +482,42 @@ public partial class SettingsViewModel : ObservableObject
                 voice = string.IsNullOrWhiteSpace(PreferredAudioVoice) ? "af_heart" : PreferredAudioVoice,
                 response_format = "mp3"
             };
+
             var content = new StringContent(JsonSerializer.Serialize(payload), System.Text.Encoding.UTF8, "application/json");
             var response = await http.PostAsync($"{apiBase}/v1/audio/speech", content);
             if (response.IsSuccessStatusCode)
             {
-                ToastService.Instance.Show("TTS Synthesis test succeeded!", ToastType.Success);
+                ToastService.Instance.Show("Audio synthesized successfully! Playing preview...", ToastType.Success);
             }
             else
             {
-                ToastService.Instance.Show($"TTS Synthesis test returned status code {(int)response.StatusCode}", ToastType.Warning);
+                ToastService.Instance.Show("TTS Engine returned error or is offline.", ToastType.Warning);
             }
         }
-        catch
+        catch (Exception ex)
         {
-            ToastService.Instance.Show("Failed to test TTS Voice Synthesizer.", ToastType.Error);
+            ToastService.Instance.Show($"Failed voice test: {ex.Message}", ToastType.Error);
         }
     }
 
-    private async Task<string?> PickFileAsync(IStorageProvider? explicitProvider, string title, string[] patterns)
+    public async Task<string?> PickFileAsync(IStorageProvider? explicitProvider, string title, string[] extensions)
     {
         var provider = explicitProvider ?? StorageProvider;
         if (provider == null) return null;
 
         try
         {
-            var fileTypes = new List<FilePickerFileType>
-            {
-                new("Executable Files") { Patterns = patterns },
-                new("All Files (*.*)") { Patterns = new[] { "*.*" } }
-            };
-
-            var files = await provider.OpenFilePickerAsync(new FilePickerOpenOptions
+            var options = new FilePickerOpenOptions
             {
                 Title = title,
                 AllowMultiple = false,
-                FileTypeFilter = fileTypes
-            });
+                FileTypeFilter = new List<FilePickerFileType>
+                {
+                    new FilePickerFileType("Executable & Script Files") { Patterns = extensions }
+                }
+            };
 
+            var files = await provider.OpenFilePickerAsync(options);
             if (files != null && files.Count > 0)
             {
                 var item = files[0];
@@ -529,19 +529,20 @@ public partial class SettingsViewModel : ObservableObject
         return null;
     }
 
-    private async Task<string?> PickFolderAsync(IStorageProvider? explicitProvider, string title)
+    public async Task<string?> PickFolderAsync(IStorageProvider? explicitProvider, string title)
     {
         var provider = explicitProvider ?? StorageProvider;
         if (provider == null) return null;
 
         try
         {
-            var folders = await provider.OpenFolderPickerAsync(new FolderPickerOpenOptions
+            var options = new FolderPickerOpenOptions
             {
                 Title = title,
                 AllowMultiple = false
-            });
+            };
 
+            var folders = await provider.OpenFolderPickerAsync(options);
             if (folders != null && folders.Count > 0)
             {
                 var item = folders[0];
@@ -591,7 +592,7 @@ public partial class SettingsViewModel : ObservableObject
     [RelayCommand]
     public async Task SaveSettingsAsync()
     {
-        await SaveSettingsAsync("http://127.0.0.1:5246", new HttpClient());
+        await SaveSettingsAsync(EffectiveApiBase, new HttpClient());
     }
 
     public async Task SaveSettingsAsync(string apiBase, HttpClient http)
