@@ -415,12 +415,13 @@ public class ToolDiscoveryService : IToolDiscoveryService
 
         var runnerNames = new[]
         {
+            "run.bat",
+            "start.bat",
+            "run.sh",
+            "start.sh",
             "main.py",
             "app.py",
-            "api.py",
-            "start.bat",
-            "run.bat",
-            "start.sh"
+            "api.py"
         };
 
         foreach (var baseRoot in _searchRoots)
@@ -471,6 +472,7 @@ public class ToolDiscoveryService : IToolDiscoveryService
                                                     File.Exists(Path.Combine(dir, "app.py")) ||
                                                     File.Exists(Path.Combine(dir, "api.py")) ||
                                                     Directory.Exists(Path.Combine(dir, "voices")) ||
+                                                    Directory.Exists(Path.Combine(dir, "custom_voices")) ||
                                                     Directory.Exists(Path.Combine(dir, "models"));
                             if (!hasAudioSignature)
                                 continue;
@@ -483,7 +485,36 @@ public class ToolDiscoveryService : IToolDiscoveryService
 
                 if (foundRunner != null)
                 {
-                    var modelsDir = FindDirectory(dir, "voices", "models", "voice_models");
+                    var modelsDir = FindDirectory(dir, "voices", "custom_voices", "models", "voice_models");
+                    if (modelsDir == null)
+                    {
+                        var parent = Path.GetDirectoryName(dir);
+                        if (!string.IsNullOrEmpty(parent))
+                        {
+                            if (Directory.Exists(Path.Combine(parent, "custom_voices")))
+                                modelsDir = Path.Combine(parent, "custom_voices");
+                            else if (Directory.Exists(Path.Combine(parent, "voices")))
+                                modelsDir = Path.Combine(parent, "voices");
+                            else
+                            {
+                                var grandParent = Path.GetDirectoryName(parent);
+                                if (!string.IsNullOrEmpty(grandParent))
+                                {
+                                    if (Directory.Exists(Path.Combine(grandParent, "custom_voices")))
+                                        modelsDir = Path.Combine(grandParent, "custom_voices");
+                                    else if (Directory.Exists(Path.Combine(grandParent, "voices")))
+                                        modelsDir = Path.Combine(grandParent, "voices");
+                                }
+                            }
+                        }
+                    }
+
+                    if (modelsDir == null)
+                    {
+                        var audioCustom = Path.Combine(baseRoot, "audio", "custom_voices");
+                        if (Directory.Exists(audioCustom))
+                            modelsDir = audioCustom;
+                    }
 
                     return new DiscoveredToolInfo(
                         IsInstalled: true,
