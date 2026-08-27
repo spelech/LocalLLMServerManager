@@ -49,14 +49,30 @@ if (Test-Path $SettingsFile) {
     Copy-Item -Path $SettingsFile -Destination $SettingsBackup -Force
 }
 
-# 5. Rebuild and publish
-Write-Host "Rebuilding and publishing to $InstallDir..." -ForegroundColor Yellow
-$ProjectDir = (Resolve-Path (Join-Path $PSScriptRoot "..")).Path
+# 5. Rebuild and publish WebAssembly and backend
+Write-Host "Compiling WebAssembly frontend..." -ForegroundColor Cyan
+$WebProjectPath = Join-Path $ProjectDir "LocalLLMServerManager.Web\LocalLLMServerManager.Web.csproj"
+if (Test-Path $WebProjectPath) {
+    dotnet publish "$WebProjectPath" -c Release -r browser-wasm --nologo
+    $AppBundleFramework = Join-Path $ProjectDir "LocalLLMServerManager.Web\bin\Release\net10.0\browser-wasm\AppBundle\_framework"
+    $RepoFramework = Join-Path $ProjectDir "wwwroot\_framework"
+    if (Test-Path $AppBundleFramework) {
+        Copy-Item -Path "$AppBundleFramework\*" -Destination "$RepoFramework" -Recurse -Force
+    }
+}
+
+Write-Host "Rebuilding and publishing backend to $InstallDir..." -ForegroundColor Yellow
 $ProjectPath = Join-Path $ProjectDir "LocalLLMServerManager.csproj"
 if (Test-Path $ProjectPath) {
     dotnet publish "$ProjectPath" -c Release -r win-x64 --self-contained -o "$InstallDir" --nologo /p:PublishSingleFile=false
 } else {
     dotnet publish -c Release -r win-x64 --self-contained -o "$InstallDir" --nologo /p:PublishSingleFile=false
+}
+
+$RepoWwwroot = Join-Path $ProjectDir "wwwroot"
+$InstallWwwroot = Join-Path $InstallDir "wwwroot"
+if (Test-Path $RepoWwwroot) {
+    Copy-Item -Path "$RepoWwwroot\*" -Destination "$InstallWwwroot\" -Recurse -Force
 }
 
 # 6. Restore preserved settings.json
