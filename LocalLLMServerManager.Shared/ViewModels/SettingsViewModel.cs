@@ -169,12 +169,14 @@ public partial class SettingsViewModel : ObservableObject
         return "⚠️ Missing";
     }
 
-    private string EffectiveApiBase => OperatingSystem.IsBrowser() ? "" : (string.IsNullOrWhiteSpace(LanAccessUrl) ? "http://127.0.0.1:5246" : LanAccessUrl.TrimEnd('/'));
+    [ObservableProperty] private string _apiBase = OperatingSystem.IsBrowser() ? "" : "http://127.0.0.1:5246";
+
+    public string EffectiveApiBase => !string.IsNullOrWhiteSpace(ApiBase) ? ApiBase : (OperatingSystem.IsBrowser() ? "" : (string.IsNullOrWhiteSpace(LanAccessUrl) ? "http://127.0.0.1:5246" : LanAccessUrl.TrimEnd('/')));
 
     [RelayCommand]
     public async Task RefreshComponentStatusesAsync()
     {
-        await RefreshComponentStatusesAsync(EffectiveApiBase, new HttpClient());
+        await RefreshComponentStatusesAsync(EffectiveApiBase, HttpHelper.CreateClient(EffectiveApiBase));
     }
 
     public async Task RefreshComponentStatusesAsync(string apiBase, HttpClient http)
@@ -214,8 +216,8 @@ public partial class SettingsViewModel : ObservableObject
 
     private async Task ToggleComponentAsync(string componentId, bool currentlyInstalled)
     {
-        var http = new HttpClient();
         var apiBase = EffectiveApiBase;
+        var http = HttpHelper.CreateClient(apiBase);
         try
         {
             if (currentlyInstalled)
@@ -262,7 +264,7 @@ public partial class SettingsViewModel : ObservableObject
     [RelayCommand]
     public async Task AutoDetectToolsAsync()
     {
-        await AutoDetectToolsAsync(EffectiveApiBase, new HttpClient());
+        await AutoDetectToolsAsync(EffectiveApiBase, HttpHelper.CreateClient(EffectiveApiBase));
     }
 
     public async Task AutoDetectToolsAsync(string apiBase, HttpClient http)
@@ -468,7 +470,7 @@ public partial class SettingsViewModel : ObservableObject
     [RelayCommand]
     public async Task TestVoiceSynthesizerAsync()
     {
-        await TestVoiceSynthesizerAsync(EffectiveApiBase, new HttpClient());
+        await TestVoiceSynthesizerAsync(EffectiveApiBase, HttpHelper.CreateClient(EffectiveApiBase));
     }
 
     public async Task TestVoiceSynthesizerAsync(string apiBase, HttpClient http)
@@ -593,7 +595,7 @@ public partial class SettingsViewModel : ObservableObject
     [RelayCommand]
     public async Task SaveSettingsAsync()
     {
-        await SaveSettingsAsync(EffectiveApiBase, new HttpClient());
+        await SaveSettingsAsync(EffectiveApiBase, HttpHelper.CreateClient(EffectiveApiBase));
     }
 
     public async Task SaveSettingsAsync(string apiBase, HttpClient http)

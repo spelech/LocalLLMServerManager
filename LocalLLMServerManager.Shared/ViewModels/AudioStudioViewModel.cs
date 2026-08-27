@@ -5,6 +5,7 @@ using System.Net.Http.Json;
 using System.Threading.Tasks;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using LocalLLMServerManager.Shared.Services;
 
 namespace LocalLLMServerManager.Shared.ViewModels;
 
@@ -45,6 +46,8 @@ public partial class AudioStudioViewModel : ObservableObject
     {
         OnPropertyChanged(nameof(PlayButtonText));
     }
+
+    [ObservableProperty] private string _apiBase = OperatingSystem.IsBrowser() ? "" : "http://127.0.0.1:5246";
 
     public AudioStudioViewModel()
     {
@@ -106,7 +109,7 @@ public partial class AudioStudioViewModel : ObservableObject
     }
 
     [RelayCommand]
-    public async Task GenerateAudioAsync(ParamContext? ctx)
+    public async Task GenerateAudioAsync(ParamContext? ctx = null)
     {
         if (IsGenerating) return;
 
@@ -115,8 +118,8 @@ public partial class AudioStudioViewModel : ObservableObject
 
         try
         {
-            var apiBase = ctx?.ApiBase ?? (OperatingSystem.IsBrowser() ? "" : "http://127.0.0.1:5246");
-            var http = ctx?.Http ?? MainViewModel.DefaultHttpClient;
+            var apiBase = ctx?.ApiBase ?? (!string.IsNullOrWhiteSpace(ApiBase) ? ApiBase : (OperatingSystem.IsBrowser() ? "" : "http://127.0.0.1:5246"));
+            var http = ctx?.Http ?? HttpHelper.CreateClient(apiBase);
 
             var payload = new
             {

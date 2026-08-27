@@ -57,6 +57,7 @@ public record VideoAssetItem(
 
 public partial class MainViewModel : ObservableObject
 {
+    public static string BrowserOrigin { get; set; } = "";
     public static HttpClient DefaultHttpClient { get; set; } = new();
     private HttpClient? _customHttp;
 
@@ -66,7 +67,7 @@ public partial class MainViewModel : ObservableObject
         set => _customHttp = value;
     }
 
-    public static bool EnableAutomaticPolling { get; set; } = false;
+    public static bool EnableAutomaticPolling { get; set; } = true;
 
     public ObservableCollection<ToastItem> Toasts => ToastService.Instance.ActiveToasts;
 
@@ -79,7 +80,7 @@ public partial class MainViewModel : ObservableObject
     public AudioStudioViewModel Audio { get; }
 
     [ObservableProperty]
-    private string _appVersionText = $"LocalLLMServerManager v{typeof(MainViewModel).Assembly.GetName().Version?.ToString(3) ?? "3.9.0"} — Unified WASM & Desktop UI";
+    private string _appVersionText = $"LocalLLMServerManager v{typeof(MainViewModel).Assembly.GetName().Version?.ToString(3) ?? "3.10.0"} — Unified WASM & Desktop UI";
 
     public MainViewModel() : this(null)
     {
@@ -103,19 +104,24 @@ public partial class MainViewModel : ObservableObject
         {
             ApiBase = Http.BaseAddress.ToString().TrimEnd('/');
         }
+        else if (!string.IsNullOrWhiteSpace(BrowserOrigin))
+        {
+            ApiBase = BrowserOrigin;
+        }
         else if (OperatingSystem.IsBrowser())
         {
             ApiBase = GetDefaultApiBase();
         }
 
         Telemetry = new TelemetryViewModel(telemetryService) { ApiBase = ApiBase };
-        Ollama = new OllamaLibraryViewModel(ollamaModelService);
-        HuggingFace = new HuggingFaceSearchViewModel(hfSearchService);
-        Civitai = new CivitaiSearchViewModel(civitaiSearchService);
-        Settings = new SettingsViewModel();
-        Audio = new AudioStudioViewModel();
+        Ollama = new OllamaLibraryViewModel(ollamaModelService) { ApiBase = ApiBase };
+        HuggingFace = new HuggingFaceSearchViewModel(hfSearchService) { ApiBase = ApiBase };
+        Civitai = new CivitaiSearchViewModel(civitaiSearchService) { ApiBase = ApiBase };
+        Settings = new SettingsViewModel { ApiBase = ApiBase };
+        Audio = new AudioStudioViewModel { ApiBase = ApiBase };
 
         _ = RefreshStatusAsync();
+        _ = Ollama.LoadInstalledModelsAsync(ApiBase, Http);
         _ = Audio.LoadAudioWorkflowsAsync(ApiBase, Http);
         _ = Audio.LoadAudioFilesAsync(ApiBase, Http);
         _ = LoadSettingsAsync();

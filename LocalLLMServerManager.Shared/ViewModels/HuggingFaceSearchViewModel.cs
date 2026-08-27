@@ -30,7 +30,7 @@ public partial class HuggingFaceSearchViewModel : ObservableObject
     [RelayCommand]
     public async Task SearchHuggingFaceAsync()
     {
-        await SearchHuggingFaceAsync(ApiBase, new HttpClient());
+        await SearchHuggingFaceAsync(ApiBase, HttpHelper.CreateClient(ApiBase));
     }
 
     [RelayCommand]
