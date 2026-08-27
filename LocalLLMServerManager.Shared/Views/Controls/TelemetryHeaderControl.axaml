@@ -19,7 +19,7 @@
                         <TextBlock Text="Ollama" FontSize="11" Foreground="{StaticResource TextMutedBrush}" HorizontalAlignment="Center"/>
                         <Border Classes="matte-pill" Padding="8,3">
                             <StackPanel Orientation="Horizontal" Spacing="4" HorizontalAlignment="Center">
-                                <Ellipse Width="6" Height="6" Fill="{StaticResource OnlineBrush}" VerticalAlignment="Center"/>
+                                <Ellipse Width="6" Height="6" Fill="{Binding OllamaStatusColor}" VerticalAlignment="Center"/>
                                 <TextBlock Text="{Binding OllamaStatus}" FontSize="11" Foreground="{StaticResource TextMainBrush}" FontWeight="Bold"/>
                             </StackPanel>
                         </Border>
@@ -28,7 +28,7 @@
                         <TextBlock Text="Forge SD" FontSize="11" Foreground="{StaticResource TextMutedBrush}" HorizontalAlignment="Center"/>
                         <Border Classes="matte-pill" Padding="8,3">
                             <StackPanel Orientation="Horizontal" Spacing="4" HorizontalAlignment="Center">
-                                <Ellipse Width="6" Height="6" Fill="{StaticResource PrimaryBrush}" VerticalAlignment="Center"/>
+                                <Ellipse Width="6" Height="6" Fill="{Binding ForgeStatusColor}" VerticalAlignment="Center"/>
                                 <TextBlock Text="{Binding ForgeStatus}" FontSize="11" Foreground="{StaticResource TextMainBrush}" FontWeight="Bold"/>
                             </StackPanel>
                         </Border>
@@ -37,7 +37,7 @@
                         <TextBlock Text="ComfyUI" FontSize="11" Foreground="{StaticResource TextMutedBrush}" HorizontalAlignment="Center"/>
                         <Border Classes="matte-pill" Padding="8,3">
                             <StackPanel Orientation="Horizontal" Spacing="4" HorizontalAlignment="Center">
-                                <Ellipse Width="6" Height="6" Fill="{StaticResource AccentBrush}" VerticalAlignment="Center"/>
+                                <Ellipse Width="6" Height="6" Fill="{Binding ComfyStatusColor}" VerticalAlignment="Center"/>
                                 <TextBlock Text="{Binding ComfyStatus}" FontSize="11" Foreground="{StaticResource TextMainBrush}" FontWeight="Bold"/>
                             </StackPanel>
                         </Border>

@@ -1,7 +1,7 @@
 export const config = /*json-start*/{
   "mainAssemblyName": "LocalLLMServerManager.Web.dll",
   "resources": {
-    "hash": "sha256-iL9cDVyJ6hXSoIQ0XInPA9rEXl0jhfi4ZUM6h+hWhcY=",
+    "hash": "sha256-vDSvbC442EjoDLR2xRtOBpa6xyXYKXaNMR6Mz4m3JLs=",
     "jsModuleNative": [
       {
         "name": "dotnet.native.js"
@@ -116,7 +116,7 @@ export const config = /*json-start*/{
       {
         "virtualPath": "CommunityToolkit.Mvvm.wasm",
         "name": "CommunityToolkit.Mvvm.wasm",
-        "hash": "sha256-RVGDq/mfa+JHZQg1UEDBdT7cYbDSAH3cHhcMFiioC6Y="
+        "hash": "sha256-szOhRrNjsjdUVBujSFvyqoKKCUD0M/4AHiIKNEq+eD8="
       },
       {
         "virtualPath": "HarfBuzzSharp.wasm",
@@ -131,12 +131,12 @@ export const config = /*json-start*/{
       {
         "virtualPath": "LocalLLMServerManager.Shared.wasm",
         "name": "LocalLLMServerManager.Shared.wasm",
-        "hash": "sha256-I46Nluf9ep2WtgGBaVOJeGxFeHgLRERIhhp2yTwPJCI="
+        "hash": "sha256-di2RGrHJchrOB061EZ/cOrDUZIdxDM6ls8+eWHgd0qI="
       },
       {
         "virtualPath": "LocalLLMServerManager.Web.wasm",
         "name": "LocalLLMServerManager.Web.wasm",
-        "hash": "sha256-po3vDviJnc2jMaVrPQX/ka+u2WgSPE+nEYnsmXOM8pk="
+        "hash": "sha256-TOa+EB5TXMV6vtQDnSatH9pr2vpWDqtWDjlu6jNuuU0="
       },
       {
         "virtualPath": "Semi.Avalonia.wasm",

@@ -18,9 +18,29 @@ public partial class TelemetryViewModel : ObservableObject
     [ObservableProperty] private double _vramPercentage = 0.0;
     [ObservableProperty] private string _vramStatusText = "0.0 GB / 16.0 GB (0%)";
 
-    [ObservableProperty] private string _ollamaStatus = "Offline";
-    [ObservableProperty] private string _forgeStatus = "Offline";
-    [ObservableProperty] private string _comfyStatus = "Offline";
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(IsOllamaOnline))]
+    [NotifyPropertyChangedFor(nameof(OllamaStatusColor))]
+    private string _ollamaStatus = "Offline";
+
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(IsForgeOnline))]
+    [NotifyPropertyChangedFor(nameof(ForgeStatusColor))]
+    private string _forgeStatus = "Offline";
+
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(IsComfyOnline))]
+    [NotifyPropertyChangedFor(nameof(ComfyStatusColor))]
+    private string _comfyStatus = "Offline";
+
+    public bool IsOllamaOnline => string.Equals(OllamaStatus, "Online", StringComparison.OrdinalIgnoreCase);
+    public bool IsForgeOnline => string.Equals(ForgeStatus, "Online", StringComparison.OrdinalIgnoreCase);
+    public bool IsComfyOnline => string.Equals(ComfyStatus, "Online", StringComparison.OrdinalIgnoreCase);
+
+    public string OllamaStatusColor => IsOllamaOnline ? "#22C55E" : "#64748B";
+    public string ForgeStatusColor => IsForgeOnline ? "#22C55E" : "#64748B";
+    public string ComfyStatusColor => IsComfyOnline ? "#22C55E" : "#64748B";
+
     [ObservableProperty] private string _serviceModeText = "Connecting...";
     [ObservableProperty] private bool _isServiceRunning = false;
     [ObservableProperty] private string _apiBase = OperatingSystem.IsBrowser() ? "" : "http://127.0.0.1:5246";

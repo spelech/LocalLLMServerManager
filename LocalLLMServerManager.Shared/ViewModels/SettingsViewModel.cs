@@ -583,6 +583,7 @@ public partial class SettingsViewModel : ObservableObject
                     PreferredAudioVoice = settings.PreferredAudioVoice ?? "af_heart";
 
                     RefreshAllStatuses();
+                    await RefreshComponentStatusesAsync(apiBase, http);
                 }
             }
         }
