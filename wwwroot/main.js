@@ -5,14 +5,17 @@ if (!is_browser) {
     throw new Error(`Expected to be running in a browser`);
 }
 
+const APP_VERSION = "3.9.0";
+
 globalThis.getOrigin = function () {
     return window.location.origin;
 };
 
-const APP_VERSION = "3.9.0";
+globalThis.getAppVersion = function () {
+    return APP_VERSION;
+};
 
 const { runMain } = await dotnet
-    .withConfigSrc(`./dotnet.boot.js?v=${APP_VERSION}`)
     .withResourceLoader((type, name, defaultUri) => {
         if (defaultUri) {
             const sep = defaultUri.includes('?') ? '&' : '?';
