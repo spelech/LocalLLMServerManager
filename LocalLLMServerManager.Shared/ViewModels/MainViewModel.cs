@@ -181,7 +181,16 @@ public partial class MainViewModel : ObservableObject
 
     // Studio & Video Studio Observable Properties
     [ObservableProperty]
-    private string _selectedStudioMode = "Video"; // "Images", "3D Mesh", "Video"
+    private string _selectedStudioMode = "Video"; // "Images", "3D Mesh", "Video", "Audio"
+
+    [RelayCommand]
+    public void SelectStudioMode(string mode)
+    {
+        if (!string.IsNullOrWhiteSpace(mode))
+        {
+            SelectedStudioMode = mode;
+        }
+    }
 
     [ObservableProperty]
     private string _selectedVideoWorkflow = "AnimateDiff SDXL";

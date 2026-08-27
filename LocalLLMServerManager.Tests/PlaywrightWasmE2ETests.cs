@@ -77,6 +77,20 @@ public class PlaywrightWasmE2ETests : IClassFixture<AppTestServerFixture>
         Assert.NotNull(outputContainer);
         Assert.NotNull(canvas);
         Assert.Equal("3.9.0", loadedVersion);
+
+        // Exercise interactive browser pointer & keyboard events
+        var boundingBox = await canvas.BoundingBoxAsync();
+        Assert.NotNull(boundingBox);
+        Assert.True(boundingBox.Width > 100);
+        Assert.True(boundingBox.Height > 100);
+
+        // Click top navigation area using raw mouse coordinates
+        await page.Mouse.ClickAsync(boundingBox.X + (boundingBox.Width / 2), boundingBox.Y + 50);
+        await page.Keyboard.PressAsync("Tab");
+        await page.Keyboard.TypeAsync("local-llm-test");
+
+        // Confirm app continues running without errors after interactive inputs
+        Assert.True(consoleErrors.IsEmpty, "Errors after interaction:\n" + string.Join("\n", consoleErrors));
         }
     }
 }
