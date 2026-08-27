@@ -117,13 +117,30 @@ if (Test-Path $SettingsFile) {
 }
 
 # 6. Build and Publish the application
-Write-Host "Compiling and publishing application in Release mode..." -ForegroundColor Yellow
+Write-Host "Compiling WebAssembly frontend..." -ForegroundColor Cyan
 $ProjectDir = (Resolve-Path (Join-Path $PSScriptRoot "..")).Path
+$WebProjectPath = Join-Path $ProjectDir "LocalLLMServerManager.Web\LocalLLMServerManager.Web.csproj"
+if (Test-Path $WebProjectPath) {
+    dotnet publish "$WebProjectPath" -c Release -r browser-wasm --nologo
+    $AppBundleFramework = Join-Path $ProjectDir "LocalLLMServerManager.Web\bin\Release\net10.0\browser-wasm\AppBundle\_framework"
+    $RepoFramework = Join-Path $ProjectDir "wwwroot\_framework"
+    if (Test-Path $AppBundleFramework) {
+        Copy-Item -Path "$AppBundleFramework\*" -Destination "$RepoFramework" -Recurse -Force
+    }
+}
+
+Write-Host "Compiling and publishing backend application in Release mode..." -ForegroundColor Yellow
 $ProjectPath = Join-Path $ProjectDir "LocalLLMServerManager.csproj"
 if (Test-Path $ProjectPath) {
-    dotnet publish "$ProjectPath" -c Release -r win-x64 --self-contained false -o "$InstallDir" --nologo
+    dotnet publish "$ProjectPath" -c Release -r win-x64 --self-contained -o "$InstallDir" --nologo /p:PublishSingleFile=false
 } else {
-    dotnet publish -c Release -r win-x64 --self-contained false -o "$InstallDir" --nologo
+    dotnet publish -c Release -r win-x64 --self-contained -o "$InstallDir" --nologo /p:PublishSingleFile=false
+}
+
+$RepoWwwroot = Join-Path $ProjectDir "wwwroot"
+$InstallWwwroot = Join-Path $InstallDir "wwwroot"
+if (Test-Path $RepoWwwroot) {
+    Copy-Item -Path "$RepoWwwroot\*" -Destination "$InstallWwwroot\" -Recurse -Force
 }
 
 # 7. Restore preserved settings.json
