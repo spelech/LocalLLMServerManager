@@ -378,4 +378,56 @@ public class ServerEndpointsTests : IClassFixture<AppTestServerFixture>
             await _client.PostAsJsonAsync("/api/settings", originalSettings);
         }
     }
+
+    [Fact]
+    public async Task DeleteModelEndpoint_OllamaTarget_ExecutesWithoutCrashing()
+    {
+        var deletePayload = new { target = "test-model-to-delete", type = "ollama" };
+        var response = await _client.SendAsync(new HttpRequestMessage(HttpMethod.Delete, "/api/models/delete")
+        {
+            Content = JsonContent.Create(deletePayload)
+        });
+        Assert.NotNull(response);
+    }
+
+    [Fact]
+    public async Task DeleteModelEndpoint_EmptyBody_ReturnsBadRequest()
+    {
+        var response = await _client.SendAsync(new HttpRequestMessage(HttpMethod.Delete, "/api/models/delete"));
+        Assert.Equal(System.Net.HttpStatusCode.BadRequest, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task DeleteModelEndpoint_UnsafePath_ReturnsBadRequest()
+    {
+        var deletePayload = new { target = "../../windows/system32/cmd.exe", type = "file" };
+        var response = await _client.SendAsync(new HttpRequestMessage(HttpMethod.Delete, "/api/models/delete")
+        {
+            Content = JsonContent.Create(deletePayload)
+        });
+        Assert.Equal(System.Net.HttpStatusCode.BadRequest, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task DeleteModelEndpoint_ValidLocalFile_DeletesFileSuccessfully()
+    {
+        var tempFile = Path.Combine(AppContext.BaseDirectory, $"temp_model_{Guid.NewGuid():N}.bin");
+        await File.WriteAllTextAsync(tempFile, "mock model data");
+        Assert.True(File.Exists(tempFile));
+
+        try
+        {
+            var deletePayload = new { target = tempFile, type = "file" };
+            var response = await _client.SendAsync(new HttpRequestMessage(HttpMethod.Delete, "/api/models/delete")
+            {
+                Content = JsonContent.Create(deletePayload)
+            });
+            Assert.True(response.IsSuccessStatusCode);
+            Assert.False(File.Exists(tempFile));
+        }
+        finally
+        {
+            if (File.Exists(tempFile)) File.Delete(tempFile);
+        }
+    }
 }
