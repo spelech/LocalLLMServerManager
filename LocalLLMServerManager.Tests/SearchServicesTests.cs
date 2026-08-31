@@ -144,4 +144,69 @@ public class SearchServicesTests
         Assert.Equal("Q4_K_M", quants[0].Quantization);
         Assert.Equal("Q8_0", quants[1].Quantization);
     }
+
+    [Fact]
+    public void HuggingFaceSearchViewModel_ResolvePipelineTags_MultimodalVlmReturnsExpectedTags()
+    {
+        var inputs = new[] { "Text", "Image" };
+        var outputs = new[] { "Text" };
+
+        var tags = LocalLLMServerManager.Shared.ViewModels.HuggingFaceSearchViewModel.ResolvePipelineTags(inputs, outputs);
+
+        Assert.Contains("image-text-to-text", tags);
+        Assert.Contains("image-to-text", tags);
+        Assert.Contains("visual-question-answering", tags);
+    }
+
+    [Fact]
+    public void HuggingFaceSearchViewModel_ApplyPreset_UpdatesActiveModalities()
+    {
+        var vm = new LocalLLMServerManager.Shared.ViewModels.HuggingFaceSearchViewModel(new Mock<LocalLLMServerManager.Shared.Interfaces.IHuggingFaceSearchService>().Object);
+
+        vm.ApplyPreset("Multimodal");
+        Assert.True(vm.IsInputTextActive);
+        Assert.True(vm.IsInputImageActive);
+        Assert.False(vm.IsInputAudioActive);
+        Assert.True(vm.IsOutputTextActive);
+        Assert.False(vm.IsOutputImageActive);
+
+        vm.ApplyPreset("Video");
+        Assert.True(vm.IsInputTextActive);
+        Assert.True(vm.IsOutputVideoActive);
+        Assert.False(vm.IsOutputTextActive);
+    }
+
+    [Fact]
+    public void HuggingFaceSearchViewModel_FilterByFitVerdict_FiltersResultsCorrectly()
+    {
+        var vm = new LocalLLMServerManager.Shared.ViewModels.HuggingFaceSearchViewModel(new Mock<LocalLLMServerManager.Shared.Interfaces.IHuggingFaceSearchService>().Object);
+        vm.HuggingFaceResults.Add(new LocalLLMServerManager.Shared.ViewModels.HuggingFaceRepoItem("repo1", "author", 10, "100 downloads", "text-generation",
+            new LocalLLMServerManager.Shared.Models.QuickFitBadge("🟢 Full VRAM", "#10B981", "", LocalLLMServerManager.Shared.Models.FitVerdict.FullVram)));
+        vm.HuggingFaceResults.Add(new LocalLLMServerManager.Shared.ViewModels.HuggingFaceRepoItem("repo2", "author", 20, "200 downloads", "text-generation",
+            new LocalLLMServerManager.Shared.Models.QuickFitBadge("🔴 Won't Fit (OOM)", "#EF4444", "", LocalLLMServerManager.Shared.Models.FitVerdict.OutOfMemory)));
+
+        vm.IsOomActive = false;
+        Assert.Single(vm.FilteredHuggingFaceResults);
+        Assert.Equal("repo1", vm.FilteredHuggingFaceResults[0].Id);
+
+        vm.ToggleFitVerdict("oom");
+        Assert.Equal(2, vm.FilteredHuggingFaceResults.Count);
+    }
+
+    [Fact]
+    public void CivitaiSearchViewModel_FilterByFitVerdict_FiltersResultsCorrectly()
+    {
+        var vm = new LocalLLMServerManager.Shared.ViewModels.CivitaiSearchViewModel(new Mock<LocalLLMServerManager.Shared.Interfaces.ICivitaiSearchService>().Object);
+        vm.CivitaiResults.Add(new LocalLLMServerManager.Shared.ViewModels.CivitaiModelItem(1, "Flux Dev", "Checkpoint", "http://img/1", "http://dl/1", "flux.safetensors", 5.0, 500,
+            new LocalLLMServerManager.Shared.Models.QuickFitBadge("🟢 Full VRAM", "#10B981", "", LocalLLMServerManager.Shared.Models.FitVerdict.FullVram)));
+        vm.CivitaiResults.Add(new LocalLLMServerManager.Shared.ViewModels.CivitaiModelItem(2, "Mega Checkpoint", "Checkpoint", "http://img/2", "http://dl/2", "mega.safetensors", 4.5, 100,
+            new LocalLLMServerManager.Shared.Models.QuickFitBadge("🔴 Won't Fit (OOM)", "#EF4444", "", LocalLLMServerManager.Shared.Models.FitVerdict.OutOfMemory)));
+
+        vm.IsOomActive = false;
+        Assert.Single(vm.FilteredCivitaiResults);
+        Assert.Equal("Flux Dev", vm.FilteredCivitaiResults[0].Name);
+
+        vm.ToggleFitVerdict("oom");
+        Assert.Equal(2, vm.FilteredCivitaiResults.Count);
+    }
 }

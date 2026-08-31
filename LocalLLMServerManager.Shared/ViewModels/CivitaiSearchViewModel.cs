@@ -19,6 +19,13 @@ public partial class CivitaiSearchViewModel : ObservableObject
     [ObservableProperty] private string _civitaiSearchQuery = "";
     [ObservableProperty] private string _selectedCivitaiType = "Checkpoint";
     public ObservableCollection<CivitaiModelItem> CivitaiResults { get; } = new();
+    public ObservableCollection<CivitaiModelItem> FilteredCivitaiResults { get; } = new();
+
+    // Hardware Compatibility Filter Flags
+    [ObservableProperty] private bool _isFullVramActive = true;
+    [ObservableProperty] private bool _isPartialOffloadActive = true;
+    [ObservableProperty] private bool _isCpuOnlyActive = true;
+    [ObservableProperty] private bool _isOomActive = true;
 
     [ObservableProperty] private string _apiBase = OperatingSystem.IsBrowser() ? "" : "http://127.0.0.1:5246";
 
@@ -40,6 +47,7 @@ public partial class CivitaiSearchViewModel : ObservableObject
         _civitaiSearchService = civitaiSearchService;
         _canIRunItService = canIRunItService ?? new CanIRunItService();
         _telemetryService = telemetryService;
+        CivitaiResults.CollectionChanged += (s, e) => ApplyFilter();
     }
 
     public void UpdateHardwareTelemetry(double totalVramMb, double totalRamMb)
@@ -58,7 +66,63 @@ public partial class CivitaiSearchViewModel : ObservableObject
             var badge = _canIRunItService.EvaluateQuickFit(r.Name, r.SizeBytes > 0 ? r.SizeBytes : null, "Image", (long)TotalVramMb, (long)TotalRamMb);
             CivitaiResults[i] = r with { FitBadge = badge };
         }
+        ApplyFilter();
     }
+
+    public void ApplyFilter()
+    {
+        FilteredCivitaiResults.Clear();
+        foreach (var r in CivitaiResults)
+        {
+            if (r.FitBadge == null)
+            {
+                FilteredCivitaiResults.Add(r);
+                continue;
+            }
+
+            bool matches = r.FitBadge.FitVerdict switch
+            {
+                FitVerdict.FullVram => IsFullVramActive,
+                FitVerdict.PartialOffload => IsPartialOffloadActive,
+                FitVerdict.CpuOnly => IsCpuOnlyActive,
+                FitVerdict.OutOfMemory => IsOomActive,
+                _ => true
+            };
+
+            if (matches)
+            {
+                FilteredCivitaiResults.Add(r);
+            }
+        }
+    }
+
+    [RelayCommand]
+    public void ToggleFitVerdict(string verdict)
+    {
+        var v = (verdict ?? "").Trim().ToLowerInvariant();
+        if (v.Contains("full") || v.Contains("vram"))
+        {
+            IsFullVramActive = !IsFullVramActive;
+        }
+        else if (v.Contains("partial") || v.Contains("offload"))
+        {
+            IsPartialOffloadActive = !IsPartialOffloadActive;
+        }
+        else if (v.Contains("cpu"))
+        {
+            IsCpuOnlyActive = !IsCpuOnlyActive;
+        }
+        else if (v.Contains("oom") || v.Contains("won") || v.Contains("memory"))
+        {
+            IsOomActive = !IsOomActive;
+        }
+        ApplyFilter();
+    }
+
+    partial void OnIsFullVramActiveChanged(bool value) => ApplyFilter();
+    partial void OnIsPartialOffloadActiveChanged(bool value) => ApplyFilter();
+    partial void OnIsCpuOnlyActiveChanged(bool value) => ApplyFilter();
+    partial void OnIsOomActiveChanged(bool value) => ApplyFilter();
 
     [RelayCommand]
     public void NavigateToCanIRunIt(string? modelName)
@@ -95,6 +159,7 @@ public partial class CivitaiSearchViewModel : ObservableObject
                 var badge = _canIRunItService.EvaluateQuickFit(r.Name, r.SizeBytes > 0 ? r.SizeBytes : null, "Image", (long)TotalVramMb, (long)TotalRamMb);
                 CivitaiResults.Add(r with { FitBadge = badge });
             }
+            ApplyFilter();
         }
         catch
         {

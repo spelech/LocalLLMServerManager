@@ -20,6 +20,12 @@ public partial class OllamaLibraryViewModel : ObservableObject
     private readonly ITelemetryService? _telemetryService;
 
     public ObservableCollection<OllamaModelItem> InstalledModels { get; } = new();
+    public ObservableCollection<OllamaModelItem> FilteredInstalledModels { get; } = new();
+
+    [ObservableProperty] private bool _isFullVramActive = true;
+    [ObservableProperty] private bool _isPartialOffloadActive = true;
+    [ObservableProperty] private bool _isCpuOnlyActive = true;
+    [ObservableProperty] private bool _isOomActive = true;
 
     [ObservableProperty] private double _targetContextTokens = 8192;
     [ObservableProperty] private string _estimatedKvCacheText = "~0.5 GB";
@@ -50,6 +56,7 @@ public partial class OllamaLibraryViewModel : ObservableObject
         _ollamaModelService = ollamaModelService;
         _canIRunItService = canIRunItService ?? new CanIRunItService();
         _telemetryService = telemetryService;
+        InstalledModels.CollectionChanged += (s, e) => ApplyFilter();
     }
 
     public void UpdateHardwareTelemetry(double totalVramMb, double totalRamMb)
@@ -68,7 +75,63 @@ public partial class OllamaLibraryViewModel : ObservableObject
             var badge = _canIRunItService.EvaluateQuickFit(m.Name, m.SizeBytes > 0 ? m.SizeBytes : null, "LLM", (long)TotalVramMb, (long)TotalRamMb);
             InstalledModels[i] = m with { FitBadge = badge };
         }
+        ApplyFilter();
     }
+
+    public void ApplyFilter()
+    {
+        FilteredInstalledModels.Clear();
+        foreach (var m in InstalledModels)
+        {
+            if (m.FitBadge == null)
+            {
+                FilteredInstalledModels.Add(m);
+                continue;
+            }
+
+            bool matches = m.FitBadge.FitVerdict switch
+            {
+                FitVerdict.FullVram => IsFullVramActive,
+                FitVerdict.PartialOffload => IsPartialOffloadActive,
+                FitVerdict.CpuOnly => IsCpuOnlyActive,
+                FitVerdict.OutOfMemory => IsOomActive,
+                _ => true
+            };
+
+            if (matches)
+            {
+                FilteredInstalledModels.Add(m);
+            }
+        }
+    }
+
+    [RelayCommand]
+    public void ToggleFitVerdict(string verdict)
+    {
+        var v = (verdict ?? "").Trim().ToLowerInvariant();
+        if (v.Contains("full") || v.Contains("vram"))
+        {
+            IsFullVramActive = !IsFullVramActive;
+        }
+        else if (v.Contains("partial") || v.Contains("offload"))
+        {
+            IsPartialOffloadActive = !IsPartialOffloadActive;
+        }
+        else if (v.Contains("cpu"))
+        {
+            IsCpuOnlyActive = !IsCpuOnlyActive;
+        }
+        else if (v.Contains("oom") || v.Contains("won") || v.Contains("memory"))
+        {
+            IsOomActive = !IsOomActive;
+        }
+        ApplyFilter();
+    }
+
+    partial void OnIsFullVramActiveChanged(bool value) => ApplyFilter();
+    partial void OnIsPartialOffloadActiveChanged(bool value) => ApplyFilter();
+    partial void OnIsCpuOnlyActiveChanged(bool value) => ApplyFilter();
+    partial void OnIsOomActiveChanged(bool value) => ApplyFilter();
 
     [RelayCommand]
     public void NavigateToCanIRunIt(string? modelName)
@@ -109,10 +172,37 @@ public partial class OllamaLibraryViewModel : ObservableObject
                 var badge = _canIRunItService.EvaluateQuickFit(m.Name, m.SizeBytes > 0 ? m.SizeBytes : null, "LLM", (long)TotalVramMb, (long)TotalRamMb);
                 InstalledModels.Add(m with { FitBadge = badge });
             }
+            ApplyFilter();
         }
         finally
         {
             _loadLock.Release();
+        }
+    }
+
+    [RelayCommand]
+    public async Task DeleteModelAsync(OllamaModelItem? item)
+    {
+        if (item == null || string.IsNullOrWhiteSpace(item.Name)) return;
+
+        ToastService.Instance.Show($"Deleting model '{item.Name}'...", ToastType.Info);
+        try
+        {
+            var success = await _ollamaModelService.DeleteModelAsync(ApiBase, item.Name, HttpHelper.CreateClient(ApiBase));
+            if (success)
+            {
+                InstalledModels.Remove(item);
+                ApplyFilter();
+                ToastService.Instance.Show($"Model '{item.Name}' deleted successfully.", ToastType.Success);
+            }
+            else
+            {
+                ToastService.Instance.Show($"Failed to delete model '{item.Name}'.", ToastType.Error);
+            }
+        }
+        catch (Exception ex)
+        {
+            ToastService.Instance.Show($"Error deleting model '{item.Name}': {ex.Message}", ToastType.Error);
         }
     }
 

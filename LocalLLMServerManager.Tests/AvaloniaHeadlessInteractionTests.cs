@@ -331,7 +331,7 @@ public class AvaloniaHeadlessInteractionTests
         window.Show();
 
         var buttons = control.GetVisualDescendants().OfType<Button>().ToList();
-        var checkFitBtn = buttons.FirstOrDefault(b => b.CommandParameter == item);
+        var checkFitBtn = buttons.FirstOrDefault(b => b.CommandParameter == item && b.Content is StackPanel);
         Assert.NotNull(checkFitBtn);
 
         checkFitBtn.Command?.Execute(checkFitBtn.CommandParameter);

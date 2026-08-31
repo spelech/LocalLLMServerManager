@@ -4,8 +4,8 @@
              x:Class="LocalLLMServerManager.Shared.Views.Controls.OllamaModelsTabControl"
              x:DataType="vm:OllamaLibraryViewModel">
 
-    <Grid RowDefinitions="Auto, *, Auto" Margin="0,12,0,0">
-        <Grid Grid.Row="0" ColumnDefinitions="*, Auto" Margin="0,0,0,12">
+    <Grid RowDefinitions="Auto, Auto, *, Auto" Margin="0,12,0,0">
+        <Grid Grid.Row="0" ColumnDefinitions="*, Auto" Margin="0,0,0,8">
             <StackPanel Grid.Column="0" Spacing="2">
                 <TextBlock Text="🦙 Ollama Local Model Library" FontSize="16" FontWeight="Bold" Foreground="{StaticResource TextMainBrush}" VerticalAlignment="Center"/>
                 <TextBlock Text="Manage installed LLMs and GGUF quantizations" FontSize="12" Foreground="{StaticResource TextMutedBrush}"/>
@@ -16,8 +16,28 @@
             </Button>
         </Grid>
 
-        <ScrollViewer Grid.Row="1" Margin="0,0,0,12">
-            <ItemsControl ItemsSource="{Binding InstalledModels}">
+        <!-- Hardware Compatibility Filter Chips -->
+        <ScrollViewer Grid.Row="1" HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Disabled" Margin="0,0,0,10">
+            <StackPanel Orientation="Horizontal" Spacing="6">
+                <TextBlock Text="Hardware Filter:" FontSize="12" Foreground="{StaticResource TextMutedBrush}" VerticalAlignment="Center" Margin="0,0,4,0"/>
+                <Button Command="{Binding ToggleFitVerdictCommand}" CommandParameter="FullVram" Classes="matte-pill">
+                    <TextBlock Text="🟢 Full VRAM" FontSize="11" FontWeight="Bold" Foreground="#10B981"
+                               Opacity="{Binding IsFullVramActive, Converter={x:Static ObjectConverters.IsNull}}"/>
+                </Button>
+                <Button Command="{Binding ToggleFitVerdictCommand}" CommandParameter="PartialOffload" Classes="matte-pill">
+                    <TextBlock Text="🟡 Partial Offload" FontSize="11" FontWeight="Bold" Foreground="#F59E0B"/>
+                </Button>
+                <Button Command="{Binding ToggleFitVerdictCommand}" CommandParameter="CpuOnly" Classes="matte-pill">
+                    <TextBlock Text="🟠 CPU Only" FontSize="11" FontWeight="Bold" Foreground="#F97316"/>
+                </Button>
+                <Button Command="{Binding ToggleFitVerdictCommand}" CommandParameter="OutOfMemory" Classes="matte-pill">
+                    <TextBlock Text="🔴 Won't Fit" FontSize="11" FontWeight="Bold" Foreground="#EF4444"/>
+                </Button>
+            </StackPanel>
+        </ScrollViewer>
+
+        <ScrollViewer Grid.Row="2" Margin="0,0,0,12">
+            <ItemsControl ItemsSource="{Binding FilteredInstalledModels}">
                 <ItemsControl.ItemTemplate>
                     <DataTemplate DataType="vm:OllamaModelItem">
                         <Border Classes="matte-card" Margin="0,0,0,8" Padding="14,12">
@@ -58,6 +78,16 @@
                                     <Border Classes="matte-pill" VerticalAlignment="Center" Padding="10,4">
                                         <TextBlock Text="Installed 🟢" FontSize="11" Foreground="{StaticResource OnlineBrush}" FontWeight="Bold"/>
                                     </Border>
+
+                                    <!-- Delete Model Button -->
+                                    <Button Command="{Binding $parent[UserControl].((vm:OllamaLibraryViewModel)DataContext).DeleteModelCommand}"
+                                            CommandParameter="{Binding}"
+                                            Classes="matte-secondary"
+                                            ToolTip.Tip="Delete model from local storage"
+                                            Padding="8,4"
+                                            VerticalAlignment="Center">
+                                        <TextBlock Text="🗑️" FontSize="11"/>
+                                    </Button>
                                 </StackPanel>
                             </Grid>
                         </Border>
@@ -66,7 +96,7 @@
             </ItemsControl>
         </ScrollViewer>
 
-        <Border Grid.Row="2" Classes="matte-card" Padding="16,14">
+        <Border Grid.Row="3" Classes="matte-card" Padding="16,14">
             <StackPanel Spacing="10">
                 <Grid ColumnDefinitions="*, Auto">
                     <TextBlock Text="🧮 Interactive KV Cache Calculator" FontSize="13" FontWeight="Bold" Foreground="{StaticResource TextMainBrush}"/>

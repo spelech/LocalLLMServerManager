@@ -180,6 +180,7 @@ public partial class MainViewModel : ObservableObject
     public bool IsServiceRunning { get => Telemetry.IsServiceRunning; set => Telemetry.IsServiceRunning = value; }
 
     public ObservableCollection<OllamaModelItem> InstalledModels => Ollama.InstalledModels;
+    public ObservableCollection<OllamaModelItem> FilteredInstalledModels => Ollama.FilteredInstalledModels;
     public double TargetContextTokens { get => Ollama.TargetContextTokens; set => Ollama.TargetContextTokens = value; }
     public string EstimatedKvCacheText { get => Ollama.EstimatedKvCacheText; set => Ollama.EstimatedKvCacheText = value; }
     public string PullModelName { get => Ollama.PullModelName; set => Ollama.PullModelName = value; }
@@ -190,6 +191,7 @@ public partial class MainViewModel : ObservableObject
 
     public string HfSearchQuery { get => HuggingFace.HfSearchQuery; set => HuggingFace.HfSearchQuery = value; }
     public ObservableCollection<HuggingFaceRepoItem> HuggingFaceResults => HuggingFace.HuggingFaceResults;
+    public ObservableCollection<HuggingFaceRepoItem> FilteredHuggingFaceResults => HuggingFace.FilteredHuggingFaceResults;
     public bool IsHfModalOpen { get => HuggingFace.IsHfModalOpen; set => HuggingFace.IsHfModalOpen = value; }
     public string ModalRepoId { get => HuggingFace.ModalRepoId; set => HuggingFace.ModalRepoId = value; }
     public string ModalAuthor { get => HuggingFace.ModalAuthor; set => HuggingFace.ModalAuthor = value; }
@@ -198,6 +200,7 @@ public partial class MainViewModel : ObservableObject
     public string CivitaiSearchQuery { get => Civitai.CivitaiSearchQuery; set => Civitai.CivitaiSearchQuery = value; }
     public string SelectedCivitaiType { get => Civitai.SelectedCivitaiType; set => Civitai.SelectedCivitaiType = value; }
     public ObservableCollection<CivitaiModelItem> CivitaiResults => Civitai.CivitaiResults;
+    public ObservableCollection<CivitaiModelItem> FilteredCivitaiResults => Civitai.FilteredCivitaiResults;
 
     public string ForgeModelsPath { get => Settings.ForgeModelsPath; set => Settings.ForgeModelsPath = value; }
     public string ComfyUiUrl { get => Settings.ComfyUiUrl; set => Settings.ComfyUiUrl = value; }

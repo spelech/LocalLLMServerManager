@@ -12,4 +12,6 @@ public interface IOllamaModelService
     Task<bool> PreloadModelAsync(string apiBase, string modelName, HttpClient http);
     Task<List<OllamaModelItem>> GetInstalledModelsAsync();
     Task<bool> PullModelAsync(string modelName);
+    Task<bool> DeleteModelAsync(string apiBase, string modelName, HttpClient http) => Task.FromResult(true);
+    Task<bool> DeleteLocalModelFileAsync(string apiBase, string filePath, HttpClient http) => Task.FromResult(true);
 }

@@ -4,8 +4,8 @@
              x:Class="LocalLLMServerManager.Shared.Views.Controls.CivitaiTabControl"
              x:DataType="vm:CivitaiSearchViewModel">
 
-    <Grid RowDefinitions="Auto, *" Margin="0,12,0,0">
-        <Grid Grid.Row="0" ColumnDefinitions="*, Auto" Margin="0,0,0,12">
+    <Grid RowDefinitions="Auto, Auto, *" Margin="0,12,0,0">
+        <Grid Grid.Row="0" ColumnDefinitions="*, Auto" Margin="0,0,0,8">
             <TextBox Grid.Column="0" Text="{Binding CivitaiSearchQuery}" PlaceholderText="Search Stable Diffusion checkpoints &amp; LoRAs..." 
                      Classes="matte-input" VerticalAlignment="Center"/>
             <Button Grid.Column="1" Command="{Binding SearchCivitaiCommand}" 
@@ -14,8 +14,27 @@
             </Button>
         </Grid>
 
-        <ScrollViewer Grid.Row="1">
-            <ItemsControl ItemsSource="{Binding CivitaiResults}">
+        <!-- Hardware Compatibility Filter Chips -->
+        <ScrollViewer Grid.Row="1" HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Disabled" Margin="0,0,0,10">
+            <StackPanel Orientation="Horizontal" Spacing="6">
+                <TextBlock Text="Hardware Filter:" FontSize="11" Foreground="{StaticResource TextMutedBrush}" VerticalAlignment="Center" Margin="0,0,4,0"/>
+                <Button Command="{Binding ToggleFitVerdictCommand}" CommandParameter="FullVram" Classes="matte-pill" Padding="6,2">
+                    <TextBlock Text="🟢 Full VRAM" FontSize="11" FontWeight="Bold" Foreground="#10B981"/>
+                </Button>
+                <Button Command="{Binding ToggleFitVerdictCommand}" CommandParameter="PartialOffload" Classes="matte-pill" Padding="6,2">
+                    <TextBlock Text="🟡 Partial Offload" FontSize="11" FontWeight="Bold" Foreground="#F59E0B"/>
+                </Button>
+                <Button Command="{Binding ToggleFitVerdictCommand}" CommandParameter="CpuOnly" Classes="matte-pill" Padding="6,2">
+                    <TextBlock Text="🟠 CPU Only" FontSize="11" FontWeight="Bold" Foreground="#F97316"/>
+                </Button>
+                <Button Command="{Binding ToggleFitVerdictCommand}" CommandParameter="OutOfMemory" Classes="matte-pill" Padding="6,2">
+                    <TextBlock Text="🔴 Won't Fit" FontSize="11" FontWeight="Bold" Foreground="#EF4444"/>
+                </Button>
+            </StackPanel>
+        </ScrollViewer>
+
+        <ScrollViewer Grid.Row="2">
+            <ItemsControl ItemsSource="{Binding FilteredCivitaiResults}">
                 <ItemsControl.ItemTemplate>
                     <DataTemplate DataType="vm:CivitaiModelItem">
                         <Border Classes="matte-card" Margin="0,0,0,8" Padding="14,12">

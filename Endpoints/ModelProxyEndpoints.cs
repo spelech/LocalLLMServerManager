@@ -45,31 +45,108 @@ public static class ModelProxyEndpoints
             return Results.Ok(new { models = new object[0] });
         });
 
-        app.MapGet("/api/hf/search", async (string? q, string? pipeline_tag, HttpClient httpClient) =>
+        app.MapDelete("/api/models/delete", async (HttpContext context, IHttpClientFactory clientFactory) =>
+        {
+            try
+            {
+                using var reader = new StreamReader(context.Request.Body);
+                var bodyStr = await reader.ReadToEndAsync();
+                if (string.IsNullOrWhiteSpace(bodyStr))
+                {
+                    return Results.BadRequest(new { error = "Request body is required." });
+                }
+
+                using var doc = JsonDocument.Parse(bodyStr);
+                var root = doc.RootElement;
+                var target = root.TryGetProperty("target", out var targetProp) ? targetProp.GetString() : null;
+                var type = root.TryGetProperty("type", out var typeProp) ? typeProp.GetString() : "ollama";
+
+                if (string.IsNullOrWhiteSpace(target))
+                {
+                    return Results.BadRequest(new { error = "Target is required." });
+                }
+
+                if (string.Equals(type, "ollama", StringComparison.OrdinalIgnoreCase))
+                {
+                    var http = clientFactory.CreateClient();
+                    using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(10));
+                    var ollamaDeletePayload = new StringContent(
+                        JsonSerializer.Serialize(new { name = target }),
+                        System.Text.Encoding.UTF8,
+                        "application/json"
+                    );
+
+                    using var req = new HttpRequestMessage(HttpMethod.Delete, "http://127.0.0.1:11434/api/delete") { Content = ollamaDeletePayload };
+                    var response = await http.SendAsync(req, cts.Token);
+                    if (response.IsSuccessStatusCode)
+                    {
+                        return Results.Ok(new { status = "success", target, message = "Ollama model deleted successfully." });
+                    }
+                    return Results.StatusCode((int)response.StatusCode);
+                }
+                else
+                {
+                    if (!Program.IsSafePath(target))
+                    {
+                        return Results.BadRequest(new { error = "Target path is invalid or unsafe." });
+                    }
+
+                    var fullPath = Path.IsPathRooted(target)
+                        ? Path.GetFullPath(target)
+                        : Path.GetFullPath(Path.Combine(AppContext.BaseDirectory, target));
+
+                    if (!Program.IsSafePath(fullPath))
+                    {
+                        return Results.BadRequest(new { error = "Target path is invalid or unsafe." });
+                    }
+
+                    if (File.Exists(fullPath))
+                    {
+                        File.Delete(fullPath);
+                        return Results.Ok(new { status = "success", target = fullPath, message = "Model file deleted successfully." });
+                    }
+                    else if (Directory.Exists(fullPath))
+                    {
+                        Directory.Delete(fullPath, recursive: true);
+                        return Results.Ok(new { status = "success", target = fullPath, message = "Model directory deleted successfully." });
+                    }
+
+                    return Results.NotFound(new { error = $"Model file not found: {target}" });
+                }
+            }
+            catch (Exception ex)
+            {
+                return Results.Problem(ex.Message);
+            }
+        });
+
+        app.MapGet("/api/hf/search", async (string? q, string? pipeline_tag, string? pipeline_tags, HttpClient httpClient) =>
         {
             try
             {
                 using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(5));
-                var query = string.IsNullOrWhiteSpace(q) ? (string.IsNullOrWhiteSpace(pipeline_tag) ? "llama" : "") : q;
+                var query = string.IsNullOrWhiteSpace(q) ? "" : q;
+                var tag = !string.IsNullOrWhiteSpace(pipeline_tag) ? pipeline_tag : pipeline_tags;
                 
                 string requestUrl;
-                if (!string.IsNullOrWhiteSpace(pipeline_tag))
+                if (!string.IsNullOrWhiteSpace(tag))
                 {
-                    if (pipeline_tag.Equals("gguf", StringComparison.OrdinalIgnoreCase))
+                    if (tag.Equals("gguf", StringComparison.OrdinalIgnoreCase))
                     {
                         var qParam = string.IsNullOrWhiteSpace(query) ? "llama" : query;
-                        requestUrl = $"https://huggingface.co/api/models?search={Uri.EscapeDataString(qParam)}&filter=gguf&sort=downloads&direction=-1&limit=20";
+                        requestUrl = $"https://huggingface.co/api/models?search={Uri.EscapeDataString(qParam)}&filter=gguf&sort=downloads&direction=-1&limit=25";
                     }
                     else
                     {
                         var qParam = Uri.EscapeDataString(query);
-                        requestUrl = $"https://huggingface.co/api/models?search={qParam}&pipeline_tag={Uri.EscapeDataString(pipeline_tag)}&sort=downloads&direction=-1&limit=20";
+                        var tagParam = Uri.EscapeDataString(tag);
+                        requestUrl = $"https://huggingface.co/api/models?search={qParam}&pipeline_tag={tagParam}&sort=downloads&direction=-1&limit=25";
                     }
                 }
                 else
                 {
                     var qParam = string.IsNullOrWhiteSpace(query) ? "llama" : query;
-                    requestUrl = $"https://huggingface.co/api/models?search={Uri.EscapeDataString(qParam)}&filter=gguf&sort=downloads&direction=-1&limit=20";
+                    requestUrl = $"https://huggingface.co/api/models?search={Uri.EscapeDataString(qParam)}&filter=gguf&sort=downloads&direction=-1&limit=25";
                 }
 
                 using var req = new HttpRequestMessage(HttpMethod.Get, requestUrl);

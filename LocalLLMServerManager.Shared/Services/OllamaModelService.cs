@@ -148,4 +148,60 @@ public class OllamaModelService : IOllamaModelService
             return false;
         }
     }
+
+    public async Task<bool> DeleteModelAsync(string apiBase, string modelName, HttpClient http)
+    {
+        if (string.IsNullOrWhiteSpace(modelName)) return false;
+        try
+        {
+            var content = new StringContent(
+                JsonSerializer.Serialize(new { target = modelName, type = "ollama" }),
+                System.Text.Encoding.UTF8,
+                "application/json"
+            );
+
+            using var req = new HttpRequestMessage(HttpMethod.Delete, $"{apiBase}/api/models/delete") { Content = content };
+            var resp = await http.SendAsync(req);
+            if (resp.IsSuccessStatusCode) return true;
+
+            if (!OperatingSystem.IsBrowser())
+            {
+                var directContent = new StringContent(
+                    JsonSerializer.Serialize(new { name = modelName }),
+                    System.Text.Encoding.UTF8,
+                    "application/json"
+                );
+                using var directReq = new HttpRequestMessage(HttpMethod.Delete, "http://127.0.0.1:11434/api/delete") { Content = directContent };
+                var directResp = await http.SendAsync(directReq);
+                return directResp.IsSuccessStatusCode;
+            }
+
+            return false;
+        }
+        catch
+        {
+            return false;
+        }
+    }
+
+    public async Task<bool> DeleteLocalModelFileAsync(string apiBase, string filePath, HttpClient http)
+    {
+        if (string.IsNullOrWhiteSpace(filePath)) return false;
+        try
+        {
+            var content = new StringContent(
+                JsonSerializer.Serialize(new { target = filePath, type = "file" }),
+                System.Text.Encoding.UTF8,
+                "application/json"
+            );
+
+            using var req = new HttpRequestMessage(HttpMethod.Delete, $"{apiBase}/api/models/delete") { Content = content };
+            var resp = await http.SendAsync(req);
+            return resp.IsSuccessStatusCode;
+        }
+        catch
+        {
+            return false;
+        }
+    }
 }
