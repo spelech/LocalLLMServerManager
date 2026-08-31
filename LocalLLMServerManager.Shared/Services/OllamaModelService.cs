@@ -155,19 +155,32 @@ public class OllamaModelService : IOllamaModelService
         try
         {
             var content = new StringContent(
-                JsonSerializer.Serialize(new { target = modelName, type = "ollama" }),
+                JsonSerializer.Serialize(new { model = modelName, name = modelName, type = "ollama" }),
                 System.Text.Encoding.UTF8,
                 "application/json"
             );
 
-            using var req = new HttpRequestMessage(HttpMethod.Delete, $"{apiBase}/api/models/delete") { Content = content };
+            // 1. Try server proxy endpoint with query params and body via DELETE
+            var endpointUrl = $"{apiBase}/api/models/delete?model={Uri.EscapeDataString(modelName)}&type=ollama";
+            using var req = new HttpRequestMessage(HttpMethod.Delete, endpointUrl) { Content = content };
             var resp = await http.SendAsync(req);
             if (resp.IsSuccessStatusCode) return true;
 
+            // 2. Fallback to POST on proxy endpoint in case browser fetch or proxy blocks DELETE body
+            using var postContent = new StringContent(
+                JsonSerializer.Serialize(new { model = modelName, name = modelName, type = "ollama" }),
+                System.Text.Encoding.UTF8,
+                "application/json"
+            );
+            using var postReq = new HttpRequestMessage(HttpMethod.Post, endpointUrl) { Content = postContent };
+            var postResp = await http.SendAsync(postReq);
+            if (postResp.IsSuccessStatusCode) return true;
+
+            // 3. If on desktop/native, try direct Ollama daemon
             if (!OperatingSystem.IsBrowser())
             {
                 var directContent = new StringContent(
-                    JsonSerializer.Serialize(new { name = modelName }),
+                    JsonSerializer.Serialize(new { model = modelName, name = modelName }),
                     System.Text.Encoding.UTF8,
                     "application/json"
                 );
@@ -190,14 +203,24 @@ public class OllamaModelService : IOllamaModelService
         try
         {
             var content = new StringContent(
-                JsonSerializer.Serialize(new { target = filePath, type = "file" }),
+                JsonSerializer.Serialize(new { file_path = filePath, filePath, type = "file" }),
                 System.Text.Encoding.UTF8,
                 "application/json"
             );
 
-            using var req = new HttpRequestMessage(HttpMethod.Delete, $"{apiBase}/api/models/delete") { Content = content };
+            var endpointUrl = $"{apiBase}/api/models/delete?file_path={Uri.EscapeDataString(filePath)}&type=file";
+            using var req = new HttpRequestMessage(HttpMethod.Delete, endpointUrl) { Content = content };
             var resp = await http.SendAsync(req);
-            return resp.IsSuccessStatusCode;
+            if (resp.IsSuccessStatusCode) return true;
+
+            using var postContent = new StringContent(
+                JsonSerializer.Serialize(new { file_path = filePath, filePath, type = "file" }),
+                System.Text.Encoding.UTF8,
+                "application/json"
+            );
+            using var postReq = new HttpRequestMessage(HttpMethod.Post, endpointUrl) { Content = postContent };
+            var postResp = await http.SendAsync(postReq);
+            return postResp.IsSuccessStatusCode;
         }
         catch
         {

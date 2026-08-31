@@ -417,11 +417,30 @@ public class ServerEndpointsTests : IClassFixture<AppTestServerFixture>
 
         try
         {
-            var deletePayload = new { target = tempFile, type = "file" };
+            var deletePayload = new { file_path = tempFile, type = "file" };
             var response = await _client.SendAsync(new HttpRequestMessage(HttpMethod.Delete, "/api/models/delete")
             {
                 Content = JsonContent.Create(deletePayload)
             });
+            Assert.True(response.IsSuccessStatusCode);
+            Assert.False(File.Exists(tempFile));
+        }
+        finally
+        {
+            if (File.Exists(tempFile)) File.Delete(tempFile);
+        }
+    }
+
+    [Fact]
+    public async Task DeleteModelEndpoint_PostMethodAndQueryParams_DeletesFileSuccessfully()
+    {
+        var tempFile = Path.Combine(AppContext.BaseDirectory, $"temp_model_{Guid.NewGuid():N}.bin");
+        await File.WriteAllTextAsync(tempFile, "mock model data");
+        Assert.True(File.Exists(tempFile));
+
+        try
+        {
+            var response = await _client.PostAsync($"/api/models/delete?file_path={Uri.EscapeDataString(tempFile)}&type=file", null);
             Assert.True(response.IsSuccessStatusCode);
             Assert.False(File.Exists(tempFile));
         }

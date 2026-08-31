@@ -6,6 +6,8 @@
   "scripts": {
     "lint": "eslint .",
     "typecheck": "tsc --noEmit",
+    "update": "pwsh -ExecutionPolicy Bypass -File ./scripts/fast_update.ps1",
+    "build:installer": "pwsh -ExecutionPolicy Bypass -File ./scripts/build_release.ps1",
     "test:layout": "playwright test --config=playwright.config.ts"
   },
   "devDependencies": {

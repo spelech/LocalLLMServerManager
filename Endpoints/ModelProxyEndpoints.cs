@@ -45,33 +45,52 @@ public static class ModelProxyEndpoints
             return Results.Ok(new { models = new object[0] });
         });
 
-        app.MapDelete("/api/models/delete", async (HttpContext context, IHttpClientFactory clientFactory) =>
+        async Task<IResult> HandleDeleteModel(HttpContext context, IHttpClientFactory clientFactory)
         {
             try
             {
-                using var reader = new StreamReader(context.Request.Body);
-                var bodyStr = await reader.ReadToEndAsync();
-                if (string.IsNullOrWhiteSpace(bodyStr))
-                {
-                    return Results.BadRequest(new { error = "Request body is required." });
-                }
-
-                using var doc = JsonDocument.Parse(bodyStr);
-                var root = doc.RootElement;
-                var target = root.TryGetProperty("target", out var targetProp) ? targetProp.GetString() : null;
-                var type = root.TryGetProperty("type", out var typeProp) ? typeProp.GetString() : "ollama";
+                string? target = context.Request.Query["model"].FirstOrDefault()
+                              ?? context.Request.Query["model_name"].FirstOrDefault()
+                              ?? context.Request.Query["name"].FirstOrDefault()
+                              ?? context.Request.Query["target"].FirstOrDefault()
+                              ?? context.Request.Query["file_path"].FirstOrDefault()
+                              ?? context.Request.Query["filePath"].FirstOrDefault();
+                string type = context.Request.Query["type"].FirstOrDefault() ?? "ollama";
 
                 if (string.IsNullOrWhiteSpace(target))
                 {
-                    return Results.BadRequest(new { error = "Target is required." });
+                    try
+                    {
+                        using var reader = new StreamReader(context.Request.Body);
+                        var bodyStr = await reader.ReadToEndAsync();
+                        if (!string.IsNullOrWhiteSpace(bodyStr))
+                        {
+                            using var doc = JsonDocument.Parse(bodyStr);
+                            var root = doc.RootElement;
+                            if (root.TryGetProperty("model", out var mp)) target = mp.GetString();
+                            else if (root.TryGetProperty("model_name", out var mnp)) target = mnp.GetString();
+                            else if (root.TryGetProperty("name", out var np)) target = np.GetString();
+                            else if (root.TryGetProperty("target", out var tp)) target = tp.GetString();
+                            else if (root.TryGetProperty("file_path", out var fp)) target = fp.GetString();
+                            else if (root.TryGetProperty("filePath", out var fpp)) target = fpp.GetString();
+
+                            if (root.TryGetProperty("type", out var typeProp)) type = typeProp.GetString() ?? type;
+                        }
+                    }
+                    catch { }
+                }
+
+                if (string.IsNullOrWhiteSpace(target))
+                {
+                    return Results.BadRequest(new { error = "Model name or target path is required." });
                 }
 
                 if (string.Equals(type, "ollama", StringComparison.OrdinalIgnoreCase))
                 {
                     var http = clientFactory.CreateClient();
-                    using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(10));
+                    using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(15));
                     var ollamaDeletePayload = new StringContent(
-                        JsonSerializer.Serialize(new { name = target }),
+                        JsonSerializer.Serialize(new { model = target, name = target }),
                         System.Text.Encoding.UTF8,
                         "application/json"
                     );
@@ -80,9 +99,10 @@ public static class ModelProxyEndpoints
                     var response = await http.SendAsync(req, cts.Token);
                     if (response.IsSuccessStatusCode)
                     {
-                        return Results.Ok(new { status = "success", target, message = "Ollama model deleted successfully." });
+                        return Results.Ok(new { status = "success", model = target, target, message = "Ollama model deleted successfully." });
                     }
-                    return Results.StatusCode((int)response.StatusCode);
+                    var errBody = await response.Content.ReadAsStringAsync(cts.Token);
+                    return Results.Json(new { status = "error", error = string.IsNullOrWhiteSpace(errBody) ? $"Ollama delete returned status {(int)response.StatusCode}" : errBody }, statusCode: (int)response.StatusCode);
                 }
                 else
                 {
@@ -118,7 +138,12 @@ public static class ModelProxyEndpoints
             {
                 return Results.Problem(ex.Message);
             }
-        });
+        }
+
+        app.MapDelete("/api/models/delete", HandleDeleteModel);
+        app.MapPost("/api/models/delete", HandleDeleteModel);
+        app.MapDelete("/api/models", HandleDeleteModel);
+        app.MapPost("/api/models/remove", HandleDeleteModel);
 
         app.MapGet("/api/hf/search", async (string? q, string? pipeline_tag, string? pipeline_tags, HttpClient httpClient) =>
         {
