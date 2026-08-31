@@ -1,6 +1,6 @@
 # LocalLLMServerManager — System Architecture & Component Design
 
-> **v3.10.0 Architecture Specification & Mermaid Diagrams**
+> **v3.11.0 Architecture Specification & Mermaid Diagrams**
 
 This document provides a visual and structural blueprint of **LocalLLMServerManager**, detailing its component decomposition, MVVM hierarchy, Minimal API route modules, Dependency Injection lifecycle, Model Context Protocol (MCP) Multimodal AI integration, VRAM orchestration flow, Modular Feature Pack management, WebAssembly static asset pipeline, Playwright E2E testing layer, and Docker containerization architecture.
 
@@ -230,4 +230,5 @@ Each architectural subsystem maps directly to standardized requirement specifica
 | **Tool Discovery** | Multi-Drive Scanner & Path Validation | Tool Discovery | `DISC-001` .. `DISC-005` |
 | **Desktop & Web UI** | Avalonia XAML Controls, MVVM Layer, WASM App | User Interface | `UI-001` .. `UI-004`, `WASM-001` .. `WASM-003` |
 | **Quality & Automation**| Playwright Harness, Screenshot Generator | Test & Automation | `E2E-001` .. `E2E-003` |
+
 

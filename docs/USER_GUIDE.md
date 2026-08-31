@@ -1,6 +1,6 @@
 # Local LLM Server Manager — Detailed User Guide
 
-Welcome to the **Local LLM Server Manager (v3.10.0)**. This guide will walk you through the main tabs of the dashboard, showing you how to manage your local AI engines (Ollama, Stable Diffusion / Forge, ComfyUI, and Kokoro TTS), configure your settings, and successfully generate text, images, 3D models, video, and speech.
+Welcome to the **Local LLM Server Manager (v3.11.0)**. This guide will walk you through the main tabs of the dashboard, showing you how to manage your local AI engines (Ollama, Stable Diffusion / Forge, ComfyUI, and Kokoro TTS), configure your settings, and successfully generate text, images, 3D models, video, and speech.
 
 ---
 
@@ -123,3 +123,4 @@ To access all features of the manager from a remote machine:
    # or run directly: dotnet run -- --service
    ```
 3. Open `http://localhost:5246` in your local client browser. You get 100% of the UI functionality (VRAM telemetry, Hugging Face search, CivitAI downloader, 3D WebGL viewer) at native speed with zero lag over SSH.
+

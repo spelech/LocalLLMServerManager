@@ -4,9 +4,9 @@
     <TargetFramework>net10.0</TargetFramework>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
-    <Version>3.10.0</Version>
-    <AssemblyVersion>3.10.0.0</AssemblyVersion>
-    <FileVersion>3.10.0.0</FileVersion>
+    <Version>3.11.0</Version>
+    <AssemblyVersion>3.11.0.0</AssemblyVersion>
+    <FileVersion>3.11.0.0</FileVersion>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
 
@@ -23,3 +23,4 @@
   </ItemGroup>
 
 </Project>
+

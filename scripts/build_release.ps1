@@ -1,7 +1,7 @@
-# LocalLLMServerManager v3.10.0 — Release Build & Package Script
+# LocalLLMServerManager v3.11.0 — Release Build & Package Script
 $ErrorActionPreference = "Stop"
 
-$Version = "3.10.0"
+$Version = "3.11.0"
 $RootDir = Split-Path $PSScriptRoot -Parent
 $PublishDir = Join-Path $RootDir "publish"
 $DistDir = Join-Path $RootDir "dist"
@@ -19,17 +19,19 @@ if ($LASTEXITCODE -ne 0) { throw "dotnet test failed!" }
 
 # 2. Publish Avalonia WebAssembly to wwwroot & Build Self-Contained Release
 Write-Host "--> 2. Building & Publishing Avalonia WebAssembly (Wasm) UI..." -ForegroundColor Yellow
-$WasmTemp = Join-Path $RootDir "wwwroot_wasm"
-if (Test-Path $WasmTemp) { Remove-Item -Path $WasmTemp -Recurse -Force }
-dotnet publish LocalLLMServerManager.Web/LocalLLMServerManager.Web.csproj -c Release -r browser-wasm -o $WasmTemp --nologo
+dotnet publish LocalLLMServerManager.Web/LocalLLMServerManager.Web.csproj -c Release -r browser-wasm --nologo
 if ($LASTEXITCODE -ne 0) { throw "Avalonia Wasm publish failed!" }
 
 # Overwrite wwwroot\_framework with compiled Wasm launcher and assets
+$AppBundleFramework = Join-Path "$RootDir\LocalLLMServerManager.Web\bin\Release\net10.0\browser-wasm\AppBundle" "_framework"
 $FrameworkDir = Join-Path "$RootDir\wwwroot" "_framework"
 if (Test-Path $FrameworkDir) { Remove-Item -Path $FrameworkDir -Recurse -Force }
 New-Item -ItemType Directory -Path $FrameworkDir -Force | Out-Null
-Copy-Item -Path "$WasmTemp\*" -Destination $FrameworkDir -Recurse -Force
-Remove-Item -Path $WasmTemp -Recurse -Force
+
+Copy-Item -Path "$AppBundleFramework\*" -Destination $FrameworkDir -Recurse -Force
+# Remove any precompressed .br or .gz files
+Get-ChildItem -Path $FrameworkDir -Include *.br, *.gz -Recurse | Remove-Item -Force
+Get-ChildItem -Path "$RootDir\wwwroot" -Include *.br, *.gz -Recurse | Remove-Item -Force
 
 Write-Host "--> 3. Publishing Self-Contained win-x64 Executable..." -ForegroundColor Yellow
 if (Test-Path $PublishDir) { Remove-Item -Path $PublishDir -Recurse -Force }
@@ -77,3 +79,4 @@ Write-Host "==========================================" -ForegroundColor Green
 Write-Host "  Release Build Complete!" -ForegroundColor Green
 Write-Host "  Outputs located in: $DistDir" -ForegroundColor Green
 Write-Host "==========================================" -ForegroundColor Green
+
