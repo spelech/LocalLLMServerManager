@@ -6,6 +6,7 @@ using System.Threading.Tasks;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using LocalLLMServerManager.Shared.Interfaces;
+using LocalLLMServerManager.Shared.Models;
 using LocalLLMServerManager.Shared.Services;
 
 namespace LocalLLMServerManager.Shared.ViewModels;
@@ -15,7 +16,9 @@ public record OllamaModelItem(
     string FormatSize,
     string CapabilityTag,
     string CapabilityColor,
-    bool IsLoaded
+    bool IsLoaded,
+    QuickFitBadge? FitBadge = null,
+    long SizeBytes = 0
 );
 
 public record HuggingFaceRepoItem(
@@ -23,14 +26,16 @@ public record HuggingFaceRepoItem(
     string Author,
     int Likes,
     string Downloads,
-    string PipelineTag = ""
+    string PipelineTag = "",
+    QuickFitBadge? FitBadge = null
 );
 
 public record HfFileQuantItem(
     string Filename,
     string Quantization,
     string FormatSize,
-    long SizeBytes
+    long SizeBytes,
+    QuickFitBadge? FitBadge = null
 );
 
 public record CivitaiModelItem(
@@ -41,7 +46,9 @@ public record CivitaiModelItem(
     string DownloadUrl,
     string FileName,
     double Rating,
-    int DownloadCount
+    int DownloadCount,
+    QuickFitBadge? FitBadge = null,
+    long SizeBytes = 0
 );
 
 public record VideoAssetItem(
@@ -78,6 +85,10 @@ public partial class MainViewModel : ObservableObject
     public CivitaiSearchViewModel Civitai { get; }
     public SettingsViewModel Settings { get; }
     public AudioStudioViewModel Audio { get; }
+    public CanIRunItViewModel HardwareFit { get; }
+
+    [ObservableProperty]
+    private int _selectedTabIndex = 0;
 
     [ObservableProperty]
     private string _appVersionText = $"LocalLLMServerManager v{typeof(MainViewModel).Assembly.GetName().Version?.ToString(3) ?? "3.10.0"} — Unified WASM & Desktop UI";
@@ -113,10 +124,24 @@ public partial class MainViewModel : ObservableObject
             ApiBase = GetDefaultApiBase();
         }
 
+        var canIRunItService = new CanIRunItService();
         Telemetry = new TelemetryViewModel(telemetryService) { ApiBase = ApiBase };
-        Ollama = new OllamaLibraryViewModel(ollamaModelService) { ApiBase = ApiBase };
-        HuggingFace = new HuggingFaceSearchViewModel(hfSearchService) { ApiBase = ApiBase };
-        Civitai = new CivitaiSearchViewModel(civitaiSearchService) { ApiBase = ApiBase };
+        HardwareFit = new CanIRunItViewModel(canIRunItService, telemetryService, httpClient) { ApiBase = ApiBase };
+        Ollama = new OllamaLibraryViewModel(ollamaModelService, canIRunItService, telemetryService)
+        {
+            ApiBase = ApiBase,
+            OnInspectModelRequested = (modelName, modality) => NavigateToCanIRunIt(modelName, modality)
+        };
+        HuggingFace = new HuggingFaceSearchViewModel(hfSearchService, canIRunItService, telemetryService)
+        {
+            ApiBase = ApiBase,
+            OnInspectModelRequested = (modelName, modality) => NavigateToCanIRunIt(modelName, modality)
+        };
+        Civitai = new CivitaiSearchViewModel(civitaiSearchService, canIRunItService, telemetryService)
+        {
+            ApiBase = ApiBase,
+            OnInspectModelRequested = (modelName, modality) => NavigateToCanIRunIt(modelName, modality)
+        };
         Settings = new SettingsViewModel { ApiBase = ApiBase };
         Audio = new AudioStudioViewModel { ApiBase = ApiBase };
 
@@ -264,6 +289,34 @@ public partial class MainViewModel : ObservableObject
     {
         await Telemetry.RefreshStatusAsync(ApiBase, ComfyUiUrl, Http);
         await Ollama.LoadInstalledModelsAsync(ApiBase, Http);
+        if (Telemetry != null)
+        {
+            double vramMb = Telemetry.VramTotalGb * 1024.0;
+            double freeVramMb = Math.Max(0, (Telemetry.VramTotalGb - Telemetry.VramUsedGb) * 1024.0);
+            double ramMb = HardwareFit?.TotalRamMb ?? 32768.0;
+            double availRamMb = HardwareFit?.AvailableRamMb ?? 32768.0;
+
+            if (HardwareFit != null)
+            {
+                HardwareFit.UpdateHardwareTelemetry(
+                    vramMb,
+                    freeVramMb,
+                    ramMb,
+                    availRamMb,
+                    Telemetry.GpuName
+                );
+            }
+
+            Ollama?.UpdateHardwareTelemetry(vramMb, ramMb);
+            HuggingFace?.UpdateHardwareTelemetry(vramMb, ramMb);
+            Civitai?.UpdateHardwareTelemetry(vramMb, ramMb);
+        }
+    }
+
+    public void NavigateToCanIRunIt(string modelName, string modality = "LLM")
+    {
+        SelectedTabIndex = 4;
+        HardwareFit.InspectModel(modelName, modality);
     }
 
     [RelayCommand]

@@ -8,6 +8,7 @@ using System.Threading.Tasks;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using LocalLLMServerManager.Shared.Interfaces;
+using LocalLLMServerManager.Shared.Models;
 using LocalLLMServerManager.Shared.Services;
 
 namespace LocalLLMServerManager.Shared.ViewModels;
@@ -15,6 +16,8 @@ namespace LocalLLMServerManager.Shared.ViewModels;
 public partial class OllamaLibraryViewModel : ObservableObject
 {
     private readonly IOllamaModelService _ollamaModelService;
+    private readonly ICanIRunItService _canIRunItService;
+    private readonly ITelemetryService? _telemetryService;
 
     public ObservableCollection<OllamaModelItem> InstalledModels { get; } = new();
 
@@ -27,9 +30,62 @@ public partial class OllamaLibraryViewModel : ObservableObject
     [ObservableProperty] private string _pullStatusLog = "";
     [ObservableProperty] private bool _isPullDrawerOpen = false;
 
+    [ObservableProperty] private string _apiBase = OperatingSystem.IsBrowser() ? "" : "http://127.0.0.1:5246";
+
+    [ObservableProperty] private double _totalVramMb = 16384.0;
+    [ObservableProperty] private double _totalRamMb = 32768.0;
+
+    public Action<string, string>? OnInspectModelRequested { get; set; }
+
     public OllamaLibraryViewModel(IOllamaModelService ollamaModelService)
+        : this(ollamaModelService, new CanIRunItService(), null)
+    {
+    }
+
+    public OllamaLibraryViewModel(
+        IOllamaModelService ollamaModelService,
+        ICanIRunItService? canIRunItService,
+        ITelemetryService? telemetryService = null)
     {
         _ollamaModelService = ollamaModelService;
+        _canIRunItService = canIRunItService ?? new CanIRunItService();
+        _telemetryService = telemetryService;
+    }
+
+    public void UpdateHardwareTelemetry(double totalVramMb, double totalRamMb)
+    {
+        if (totalVramMb > 0) TotalVramMb = totalVramMb;
+        if (totalRamMb > 0) TotalRamMb = totalRamMb;
+
+        RecomputeBadges();
+    }
+
+    public void RecomputeBadges()
+    {
+        for (int i = 0; i < InstalledModels.Count; i++)
+        {
+            var m = InstalledModels[i];
+            var badge = _canIRunItService.EvaluateQuickFit(m.Name, m.SizeBytes > 0 ? m.SizeBytes : null, "LLM", (long)TotalVramMb, (long)TotalRamMb);
+            InstalledModels[i] = m with { FitBadge = badge };
+        }
+    }
+
+    [RelayCommand]
+    public void NavigateToCanIRunIt(string? modelName)
+    {
+        if (!string.IsNullOrWhiteSpace(modelName))
+        {
+            OnInspectModelRequested?.Invoke(modelName, "LLM");
+        }
+    }
+
+    [RelayCommand]
+    public void InspectModel(OllamaModelItem? item)
+    {
+        if (item != null)
+        {
+            OnInspectModelRequested?.Invoke(item.Name, "LLM");
+        }
     }
 
     partial void OnTargetContextTokensChanged(double value)
@@ -50,7 +106,8 @@ public partial class OllamaLibraryViewModel : ObservableObject
             InstalledModels.Clear();
             foreach (var m in models)
             {
-                InstalledModels.Add(m);
+                var badge = _canIRunItService.EvaluateQuickFit(m.Name, m.SizeBytes > 0 ? m.SizeBytes : null, "LLM", (long)TotalVramMb, (long)TotalRamMb);
+                InstalledModels.Add(m with { FitBadge = badge });
             }
         }
         finally
@@ -58,8 +115,6 @@ public partial class OllamaLibraryViewModel : ObservableObject
             _loadLock.Release();
         }
     }
-
-    [ObservableProperty] private string _apiBase = OperatingSystem.IsBrowser() ? "" : "http://127.0.0.1:5246";
 
     [RelayCommand]
     public async Task UnloadAllVramAsync()
