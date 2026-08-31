@@ -128,7 +128,7 @@ public static class HardwareEndpoints
 
             if (modality.Contains("badge") || modality.Contains("quick"))
             {
-                var result = canIRunItService.EvaluateQuickFit(modelName ?? "", sizeBytes, "llm", vramMb, ramMb);
+                var result = canIRunItService.EvaluateQuickFit(modelName ?? "", sizeBytes, modality, vramMb, ramMb);
                 return Results.Ok(result);
             }
 
@@ -239,7 +239,7 @@ public static class HardwareEndpoints
 
                 if (modality.Contains("badge") || modality.Contains("quick"))
                 {
-                    var result = canIRunItService.EvaluateQuickFit(modelName, fileSizeBytes, "llm", availableVram, availableRam);
+                    var result = canIRunItService.EvaluateQuickFit(modelName, fileSizeBytes, modality, availableVram, availableRam);
                     return Results.Ok(result);
                 }
 
