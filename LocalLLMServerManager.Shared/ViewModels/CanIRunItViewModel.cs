@@ -580,8 +580,8 @@ public partial class CanIRunItViewModel : ObservableObject
             SelectedModality = "LLM";
             string lowerName = name.ToLowerInvariant();
 
-            if (lowerName.Contains("llama-3.3-70b") || lowerName.Contains("llama 3.3 70b") || lowerName.Contains("llama3.3 70b") || lowerName.Contains("llama 3.3") || lowerName.Contains("llama-3.3")) SelectedPreset = "Llama 3.3 70B";
-            else if (lowerName.Contains("llama-3.1-8b") || lowerName.Contains("llama 3.1 8b") || lowerName.Contains("llama-3-8b") || lowerName.Contains("llama 3 8b") || lowerName.Contains("llama 3.1") || lowerName.Contains("llama-3.1")) SelectedPreset = "Llama 3.1 8B";
+            if (lowerName.Contains("llama-3.3") || lowerName.Contains("llama 3.3") || lowerName.Contains("llama3.3")) SelectedPreset = "Llama 3.3 70B";
+            else if (lowerName.Contains("llama-3.1") || lowerName.Contains("llama 3.1") || lowerName.Contains("llama3.1") || lowerName.Contains("llama-3") || lowerName.Contains("llama 3") || lowerName.Contains("llama3")) SelectedPreset = "Llama 3.1 8B";
             else if (lowerName.Contains("qwen2.5-32b") || lowerName.Contains("qwen 2.5 32b") || (lowerName.Contains("qwen") && lowerName.Contains("32"))) SelectedPreset = "Qwen 2.5 32B";
             else if (lowerName.Contains("qwen2.5-72b") || lowerName.Contains("qwen 2.5 72b") || (lowerName.Contains("qwen") && lowerName.Contains("72"))) SelectedPreset = "Qwen 2.5 72B";
             else if ((lowerName.Contains("deepseek-r1") || lowerName.Contains("deepseek r1") || lowerName.Contains("deepseek_r1")) && lowerName.Contains("671")) SelectedPreset = "DeepSeek R1 671B";

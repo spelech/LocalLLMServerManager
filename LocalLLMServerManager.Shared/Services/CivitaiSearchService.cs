@@ -33,6 +33,7 @@ public class CivitaiSearchService : ICivitaiSearchService
                         string fileUrl = "";
                         string fileName = "";
 
+                        long sizeBytes = 0;
                         var versions = item?["modelVersions"]?.AsArray();
                         if (versions != null && versions.Count > 0)
                         {
@@ -47,12 +48,14 @@ public class CivitaiSearchService : ICivitaiSearchService
                             {
                                 fileUrl = files[0]?["downloadUrl"]?.ToString() ?? "";
                                 fileName = files[0]?["name"]?.ToString() ?? $"{name}.safetensors";
+                                double sizeKb = files[0]?["sizeKB"]?.GetValue<double>() ?? 0.0;
+                                sizeBytes = (long)(sizeKb * 1024.0);
                             }
                         }
 
                         if (!string.IsNullOrEmpty(name))
                         {
-                            result.Add(new CivitaiModelItem(id, name, type, imageUrl, fileUrl, fileName, 4.8, 1250));
+                            result.Add(new CivitaiModelItem(id, name, type, imageUrl, fileUrl, fileName, 4.8, 1250, null, sizeBytes));
                         }
                     }
                 }

@@ -5,6 +5,7 @@ using System.Threading.Tasks;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using LocalLLMServerManager.Shared.Interfaces;
+using LocalLLMServerManager.Shared.Models;
 using LocalLLMServerManager.Shared.Services;
 
 namespace LocalLLMServerManager.Shared.ViewModels;
@@ -12,6 +13,8 @@ namespace LocalLLMServerManager.Shared.ViewModels;
 public partial class CivitaiSearchViewModel : ObservableObject
 {
     private readonly ICivitaiSearchService _civitaiSearchService;
+    private readonly ICanIRunItService _canIRunItService;
+    private readonly ITelemetryService? _telemetryService;
 
     [ObservableProperty] private string _civitaiSearchQuery = "";
     [ObservableProperty] private string _selectedCivitaiType = "Checkpoint";
@@ -19,9 +22,60 @@ public partial class CivitaiSearchViewModel : ObservableObject
 
     [ObservableProperty] private string _apiBase = OperatingSystem.IsBrowser() ? "" : "http://127.0.0.1:5246";
 
+    [ObservableProperty] private double _totalVramMb = 16384.0;
+    [ObservableProperty] private double _totalRamMb = 32768.0;
+
+    public Action<string, string>? OnInspectModelRequested { get; set; }
+
     public CivitaiSearchViewModel(ICivitaiSearchService civitaiSearchService)
+        : this(civitaiSearchService, new CanIRunItService(), null)
+    {
+    }
+
+    public CivitaiSearchViewModel(
+        ICivitaiSearchService civitaiSearchService,
+        ICanIRunItService? canIRunItService,
+        ITelemetryService? telemetryService = null)
     {
         _civitaiSearchService = civitaiSearchService;
+        _canIRunItService = canIRunItService ?? new CanIRunItService();
+        _telemetryService = telemetryService;
+    }
+
+    public void UpdateHardwareTelemetry(double totalVramMb, double totalRamMb)
+    {
+        if (totalVramMb > 0) TotalVramMb = totalVramMb;
+        if (totalRamMb > 0) TotalRamMb = totalRamMb;
+
+        RecomputeBadges();
+    }
+
+    public void RecomputeBadges()
+    {
+        for (int i = 0; i < CivitaiResults.Count; i++)
+        {
+            var r = CivitaiResults[i];
+            var badge = _canIRunItService.EvaluateQuickFit(r.Name, r.SizeBytes > 0 ? r.SizeBytes : null, "Image", (long)TotalVramMb, (long)TotalRamMb);
+            CivitaiResults[i] = r with { FitBadge = badge };
+        }
+    }
+
+    [RelayCommand]
+    public void NavigateToCanIRunIt(string? modelName)
+    {
+        if (!string.IsNullOrWhiteSpace(modelName))
+        {
+            OnInspectModelRequested?.Invoke(modelName, "Image");
+        }
+    }
+
+    [RelayCommand]
+    public void InspectModel(CivitaiModelItem? item)
+    {
+        if (item != null)
+        {
+            OnInspectModelRequested?.Invoke(item.Name, "Image");
+        }
     }
 
     [RelayCommand]
@@ -38,13 +92,20 @@ public partial class CivitaiSearchViewModel : ObservableObject
             CivitaiResults.Clear();
             foreach (var r in results)
             {
-                CivitaiResults.Add(r);
+                var badge = _canIRunItService.EvaluateQuickFit(r.Name, r.SizeBytes > 0 ? r.SizeBytes : null, "Image", (long)TotalVramMb, (long)TotalRamMb);
+                CivitaiResults.Add(r with { FitBadge = badge });
             }
         }
         catch
         {
             ToastService.Instance.Show("Failed to search CivitAI models.", ToastType.Error);
         }
+    }
+
+    [RelayCommand]
+    public async Task DownloadCivitaiModelAsync(CivitaiModelItem item)
+    {
+        await DownloadCivitaiModelAsync(item, ApiBase, HttpHelper.CreateClient(ApiBase));
     }
 
     public async Task DownloadCivitaiModelAsync(CivitaiModelItem item, string apiBase, HttpClient http)

@@ -6,6 +6,7 @@ using Avalonia.Controls;
 using Avalonia.Headless.XUnit;
 using Avalonia.Interactivity;
 using Avalonia.VisualTree;
+using LocalLLMServerManager.Shared.Models;
 using LocalLLMServerManager.Shared.Services;
 using LocalLLMServerManager.Shared.ViewModels;
 using LocalLLMServerManager.Shared.Views;
@@ -268,6 +269,75 @@ public class AvaloniaHeadlessInteractionTests
             searchBox.Text = "cyberpunk anime";
             Assert.Equal("cyberpunk anime", vm.Civitai.CivitaiSearchQuery);
         }
+
+        window.Close();
+    }
+
+    [AvaloniaFact]
+    public void HuggingFaceTabControl_CardFitBadge_InspectsModelInCanIRunIt()
+    {
+        var vm = new MainViewModel();
+        var item = new HuggingFaceRepoItem("Wan-AI/Wan2.1-T2V-14B", "Wan-AI", 500, "10K", "text-to-video", new QuickFitBadge("🟡 Partial Offload", "#F59E0B", "Offload", FitVerdict.PartialOffload));
+        vm.HuggingFace.HuggingFaceResults.Add(item);
+
+        var control = new HuggingFaceTabControl { DataContext = vm.HuggingFace };
+        var window = new Window { Content = control, Width = 1024, Height = 768 };
+        window.Show();
+
+        var buttons = control.GetVisualDescendants().OfType<Button>().ToList();
+        var checkFitBtn = buttons.FirstOrDefault(b => b.CommandParameter == item);
+        Assert.NotNull(checkFitBtn);
+
+        checkFitBtn.Command?.Execute(checkFitBtn.CommandParameter);
+
+        Assert.Equal(4, vm.SelectedTabIndex);
+        Assert.Equal("Video", vm.HardwareFit.SelectedModality);
+
+        window.Close();
+    }
+
+    [AvaloniaFact]
+    public void CivitaiTabControl_CardFitBadge_InspectsModelInCanIRunIt()
+    {
+        var vm = new MainViewModel();
+        var item = new CivitaiModelItem(1, "Flux.1 Dev", "Checkpoint", "", "", "flux.safetensors", 4.9, 100, new QuickFitBadge("🟢 Full VRAM", "#10B981", "Fits", FitVerdict.FullVram));
+        vm.Civitai.CivitaiResults.Add(item);
+
+        var control = new CivitaiTabControl { DataContext = vm.Civitai };
+        var window = new Window { Content = control, Width = 1024, Height = 768 };
+        window.Show();
+
+        var buttons = control.GetVisualDescendants().OfType<Button>().ToList();
+        var checkFitBtn = buttons.FirstOrDefault(b => b.CommandParameter == item && b.Content is StackPanel);
+        Assert.NotNull(checkFitBtn);
+
+        checkFitBtn.Command?.Execute(checkFitBtn.CommandParameter);
+
+        Assert.Equal(4, vm.SelectedTabIndex);
+        Assert.Equal("Image", vm.HardwareFit.SelectedModality);
+
+        window.Close();
+    }
+
+    [AvaloniaFact]
+    public void OllamaModelsTabControl_CardFitBadge_InspectsModelInCanIRunIt()
+    {
+        var vm = new MainViewModel();
+        var item = new OllamaModelItem("llama3.3:70b", "42 GB", "💻 Coding & General", "#38BDF8", false, new QuickFitBadge("🟡 Partial Offload", "#F59E0B", "Offload", FitVerdict.PartialOffload));
+        vm.Ollama.InstalledModels.Add(item);
+
+        var control = new OllamaModelsTabControl { DataContext = vm.Ollama };
+        var window = new Window { Content = control, Width = 1024, Height = 768 };
+        window.Show();
+
+        var buttons = control.GetVisualDescendants().OfType<Button>().ToList();
+        var checkFitBtn = buttons.FirstOrDefault(b => b.CommandParameter == item);
+        Assert.NotNull(checkFitBtn);
+
+        checkFitBtn.Command?.Execute(checkFitBtn.CommandParameter);
+
+        Assert.Equal(4, vm.SelectedTabIndex);
+        Assert.Equal("LLM", vm.HardwareFit.SelectedModality);
 
         window.Close();
     }

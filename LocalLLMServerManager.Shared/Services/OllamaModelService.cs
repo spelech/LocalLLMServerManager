@@ -51,7 +51,7 @@ public class OllamaModelService : IOllamaModelService
                         if (name.Contains("math", StringComparison.OrdinalIgnoreCase)) { cap = "🧮 Mathematics"; color = "#C084FC"; }
                         else if (name.Contains("r1", StringComparison.OrdinalIgnoreCase) || name.Contains("deepseek", StringComparison.OrdinalIgnoreCase)) { cap = "🧠 Reasoning profile"; color = "#A855F7"; }
 
-                        result.Add(new OllamaModelItem(name, formatSize, cap, color, false));
+                        result.Add(new OllamaModelItem(name, formatSize, cap, color, false, null, size));
                     }
                 }
             }

@@ -36,9 +36,29 @@
                                         </Border>
                                     </StackPanel>
                                 </StackPanel>
-                                <Border Grid.Column="1" Classes="matte-pill" VerticalAlignment="Center" Padding="10,4">
-                                    <TextBlock Text="Installed 🟢" FontSize="11" Foreground="{StaticResource OnlineBrush}" FontWeight="Bold"/>
-                                </Border>
+                                <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+                                    <!-- Ambient Compatibility Pill with Click-to-Inspect -->
+                                    <Button Command="{Binding $parent[UserControl].((vm:OllamaLibraryViewModel)DataContext).InspectModelCommand}"
+                                            CommandParameter="{Binding}"
+                                            Background="#1E293B"
+                                            BorderBrush="{Binding FitBadge.BadgeColorHex}"
+                                            BorderThickness="1"
+                                            CornerRadius="6"
+                                            Padding="8,4"
+                                            ToolTip.Tip="{Binding FitBadge.Tooltip}"
+                                            IsVisible="{Binding FitBadge, Converter={x:Static ObjectConverters.IsNotNull}}"
+                                            Cursor="Hand"
+                                            VerticalAlignment="Center">
+                                        <StackPanel Orientation="Horizontal" Spacing="4">
+                                            <TextBlock Text="{Binding FitBadge.BadgeText}" FontSize="11" Foreground="{Binding FitBadge.BadgeColorHex}" FontWeight="Bold"/>
+                                            <TextBlock Text="⚡ Check Fit" FontSize="10" Foreground="{StaticResource TextMutedBrush}" VerticalAlignment="Center"/>
+                                        </StackPanel>
+                                    </Button>
+
+                                    <Border Classes="matte-pill" VerticalAlignment="Center" Padding="10,4">
+                                        <TextBlock Text="Installed 🟢" FontSize="11" Foreground="{StaticResource OnlineBrush}" FontWeight="Bold"/>
+                                    </Border>
+                                </StackPanel>
                             </Grid>
                         </Border>
                     </DataTemplate>
