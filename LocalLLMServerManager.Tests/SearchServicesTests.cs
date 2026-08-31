@@ -192,4 +192,21 @@ public class SearchServicesTests
         vm.ToggleFitVerdict("oom");
         Assert.Equal(2, vm.FilteredHuggingFaceResults.Count);
     }
+
+    [Fact]
+    public void CivitaiSearchViewModel_FilterByFitVerdict_FiltersResultsCorrectly()
+    {
+        var vm = new LocalLLMServerManager.Shared.ViewModels.CivitaiSearchViewModel(new Mock<LocalLLMServerManager.Shared.Interfaces.ICivitaiSearchService>().Object);
+        vm.CivitaiResults.Add(new LocalLLMServerManager.Shared.ViewModels.CivitaiModelItem(1, "Flux Dev", "Checkpoint", "http://img/1", "http://dl/1", "flux.safetensors", 5.0, 500,
+            new LocalLLMServerManager.Shared.Models.QuickFitBadge("🟢 Full VRAM", "#10B981", "", LocalLLMServerManager.Shared.Models.FitVerdict.FullVram)));
+        vm.CivitaiResults.Add(new LocalLLMServerManager.Shared.ViewModels.CivitaiModelItem(2, "Mega Checkpoint", "Checkpoint", "http://img/2", "http://dl/2", "mega.safetensors", 4.5, 100,
+            new LocalLLMServerManager.Shared.Models.QuickFitBadge("🔴 Won't Fit (OOM)", "#EF4444", "", LocalLLMServerManager.Shared.Models.FitVerdict.OutOfMemory)));
+
+        vm.IsOomActive = false;
+        Assert.Single(vm.FilteredCivitaiResults);
+        Assert.Equal("Flux Dev", vm.FilteredCivitaiResults[0].Name);
+
+        vm.ToggleFitVerdict("oom");
+        Assert.Equal(2, vm.FilteredCivitaiResults.Count);
+    }
 }
