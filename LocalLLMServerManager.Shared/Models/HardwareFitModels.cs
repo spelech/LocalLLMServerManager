@@ -145,3 +145,16 @@ public record QuickFitBadge(
     string Tooltip,
     FitVerdict FitVerdict
 );
+
+/// <summary>
+/// Hardware telemetry snapshot containing GPU VRAM and System RAM metrics.
+/// </summary>
+public record TelemetryInfo(
+    string GpuName,
+    double TotalVramMb,
+    double FreeVramMb,
+    double UsedVramMb,
+    double TotalRamMb,
+    double AvailableRamMb
+);
+
