@@ -79,7 +79,7 @@
                                     </Border>
 
                                     <!-- Delete Model Button -->
-                                    <Button Command="{Binding $parent[UserControl].((vm:OllamaLibraryViewModel)DataContext).DeleteModelCommand}"
+                                    <Button Command="{Binding $parent[UserControl].((vm:OllamaLibraryViewModel)DataContext).RequestDeleteModelCommand}"
                                             CommandParameter="{Binding}"
                                             Classes="matte-secondary"
                                             ToolTip.Tip="Delete model from local storage"
@@ -110,6 +110,38 @@
                     </Border>
                 </Grid>
             </StackPanel>
+        </Border>
+
+        <!-- Styled Confirmation Modal Overlay -->
+        <Border Grid.Row="0" Grid.RowSpan="4" Background="#AA000000" IsVisible="{Binding IsDeleteModalOpen}" ZIndex="50">
+            <Border Classes="matte-card" Width="440" HorizontalAlignment="Center" VerticalAlignment="Center" Padding="22">
+                <StackPanel Spacing="14">
+                    <Grid ColumnDefinitions="*, Auto">
+                        <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+                            <TextBlock Text="🗑️" FontSize="16" VerticalAlignment="Center"/>
+                            <TextBlock Text="{Binding DeleteModalTitle}" FontWeight="Bold" FontSize="14" Foreground="#EF4444" VerticalAlignment="Center"/>
+                        </StackPanel>
+                        <Button Grid.Column="1" Content="✕" Command="{Binding CancelDeleteModelCommand}" Classes="matte-secondary" Padding="8,4"/>
+                    </Grid>
+
+                    <TextBlock Text="{Binding DeleteModalMessage}" FontSize="12" Foreground="{StaticResource TextMainBrush}" TextWrapping="Wrap" LineHeight="18"/>
+
+                    <Grid ColumnDefinitions="*, *" Margin="0,6,0,0">
+                        <Button Grid.Column="0" Command="{Binding CancelDeleteModelCommand}"
+                                Content="Cancel" Classes="matte-secondary" HorizontalAlignment="Stretch"
+                                HorizontalContentAlignment="Center" Margin="0,0,6,0" Padding="12,8"/>
+                        <Button Grid.Column="1" Command="{Binding ConfirmDeleteModelCommand}"
+                                IsEnabled="{Binding !IsDeleting}"
+                                HorizontalAlignment="Stretch" HorizontalContentAlignment="Center"
+                                Margin="6,0,0,0" Padding="12,8"
+                                Background="#EF4444" Foreground="White" CornerRadius="6" FontWeight="Bold">
+                            <StackPanel Orientation="Horizontal" Spacing="6" HorizontalAlignment="Center">
+                                <TextBlock Text="Delete Model" FontWeight="Bold"/>
+                            </StackPanel>
+                        </Button>
+                    </Grid>
+                </StackPanel>
+            </Border>
         </Border>
     </Grid>
 </UserControl>

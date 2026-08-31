@@ -88,7 +88,22 @@ public static class ModelProxyEndpoints
                 if (string.Equals(type, "ollama", StringComparison.OrdinalIgnoreCase))
                 {
                     var http = clientFactory.CreateClient();
-                    using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(15));
+                    using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(20));
+
+                    // 1. Unload model from Ollama VRAM first to release Windows memory-mapped file locks
+                    try
+                    {
+                        var unloadPayload = new StringContent(
+                            JsonSerializer.Serialize(new { model = target, keep_alive = 0 }),
+                            System.Text.Encoding.UTF8,
+                            "application/json"
+                        );
+                        await http.PostAsync("http://127.0.0.1:11434/api/generate", unloadPayload, cts.Token);
+                        await Task.Delay(200, cts.Token);
+                    }
+                    catch { }
+
+                    // 2. Send DELETE request to Ollama daemon
                     var ollamaDeletePayload = new StringContent(
                         JsonSerializer.Serialize(new { model = target, name = target }),
                         System.Text.Encoding.UTF8,
@@ -101,6 +116,24 @@ public static class ModelProxyEndpoints
                     {
                         return Results.Ok(new { status = "success", model = target, target, message = "Ollama model deleted successfully." });
                     }
+
+                    // 3. Fallback: try alternate tag name (e.g. append or strip :latest)
+                    var alternateTarget = target.EndsWith(":latest", StringComparison.OrdinalIgnoreCase)
+                        ? target.Substring(0, target.Length - 7)
+                        : $"{target}:latest";
+
+                    var altDeletePayload = new StringContent(
+                        JsonSerializer.Serialize(new { model = alternateTarget, name = alternateTarget }),
+                        System.Text.Encoding.UTF8,
+                        "application/json"
+                    );
+                    using var altReq = new HttpRequestMessage(HttpMethod.Delete, "http://127.0.0.1:11434/api/delete") { Content = altDeletePayload };
+                    var altResponse = await http.SendAsync(altReq, cts.Token);
+                    if (altResponse.IsSuccessStatusCode)
+                    {
+                        return Results.Ok(new { status = "success", model = alternateTarget, target = alternateTarget, message = "Ollama model deleted successfully." });
+                    }
+
                     var errBody = await response.Content.ReadAsStringAsync(cts.Token);
                     return Results.Json(new { status = "error", error = string.IsNullOrWhiteSpace(errBody) ? $"Ollama delete returned status {(int)response.StatusCode}" : errBody }, statusCode: (int)response.StatusCode);
                 }

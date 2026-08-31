@@ -341,5 +341,34 @@ public class AvaloniaHeadlessInteractionTests
 
         window.Close();
     }
+
+    [AvaloniaFact]
+    public void OllamaModelsTabControl_DeleteButton_OpensStyledConfirmationModal()
+    {
+        var vm = new MainViewModel();
+        var item = new OllamaModelItem("llama3.3:70b", "42 GB", "💻 Coding & General", "#38BDF8", false);
+        vm.Ollama.InstalledModels.Add(item);
+
+        var control = new OllamaModelsTabControl { DataContext = vm.Ollama };
+        var window = new Window { Content = control, Width = 1024, Height = 768 };
+        window.Show();
+
+        Assert.False(vm.Ollama.IsDeleteModalOpen);
+
+        var buttons = control.GetVisualDescendants().OfType<Button>().ToList();
+        var deleteBtn = buttons.FirstOrDefault(b => b.CommandParameter == item && b.Content is TextBlock tb && tb.Text == "🗑️");
+        Assert.NotNull(deleteBtn);
+
+        deleteBtn.Command?.Execute(deleteBtn.CommandParameter);
+
+        Assert.True(vm.Ollama.IsDeleteModalOpen);
+        Assert.Same(item, vm.Ollama.ModelToDelete);
+        Assert.Contains("llama3.3:70b", vm.Ollama.DeleteModalMessage);
+
+        vm.Ollama.CancelDeleteModel();
+        Assert.False(vm.Ollama.IsDeleteModalOpen);
+
+        window.Close();
+    }
 }
 

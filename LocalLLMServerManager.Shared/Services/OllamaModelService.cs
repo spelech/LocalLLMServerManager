@@ -162,38 +162,67 @@ public class OllamaModelService : IOllamaModelService
                 ? $"/api/models/delete?model={Uri.EscapeDataString(modelName)}&type=ollama"
                 : $"{baseAddress}/api/models/delete?model={Uri.EscapeDataString(modelName)}&type=ollama";
 
-            var content = new StringContent(
-                JsonSerializer.Serialize(new { model = modelName, name = modelName, type = "ollama" }),
-                System.Text.Encoding.UTF8,
-                "application/json"
-            );
+            // 1. Try server proxy endpoint with query params via DELETE (body-less for browser fetch compatibility)
+            try
+            {
+                using var req = new HttpRequestMessage(HttpMethod.Delete, endpointUrl);
+                var resp = await http.SendAsync(req);
+                if (resp.IsSuccessStatusCode) return true;
+            }
+            catch { }
 
-            // 1. Try server proxy endpoint with query params and body via DELETE
-            using var req = new HttpRequestMessage(HttpMethod.Delete, endpointUrl) { Content = content };
-            var resp = await http.SendAsync(req);
-            if (resp.IsSuccessStatusCode) return true;
-
-            // 2. Fallback to POST on proxy endpoint in case browser fetch or proxy blocks DELETE body
-            using var postContent = new StringContent(
-                JsonSerializer.Serialize(new { model = modelName, name = modelName, type = "ollama" }),
-                System.Text.Encoding.UTF8,
-                "application/json"
-            );
-            using var postReq = new HttpRequestMessage(HttpMethod.Post, endpointUrl) { Content = postContent };
-            var postResp = await http.SendAsync(postReq);
-            if (postResp.IsSuccessStatusCode) return true;
+            // 2. Fallback to POST on proxy endpoint
+            try
+            {
+                var postContent = new StringContent(
+                    JsonSerializer.Serialize(new { model = modelName, name = modelName, type = "ollama" }),
+                    System.Text.Encoding.UTF8,
+                    "application/json"
+                );
+                using var postReq = new HttpRequestMessage(HttpMethod.Post, endpointUrl) { Content = postContent };
+                var postResp = await http.SendAsync(postReq);
+                if (postResp.IsSuccessStatusCode) return true;
+            }
+            catch { }
 
             // 3. If on desktop/native, try direct Ollama daemon
             if (!OperatingSystem.IsBrowser())
             {
-                var directContent = new StringContent(
-                    JsonSerializer.Serialize(new { model = modelName, name = modelName }),
-                    System.Text.Encoding.UTF8,
-                    "application/json"
-                );
-                using var directReq = new HttpRequestMessage(HttpMethod.Delete, "http://127.0.0.1:11434/api/delete") { Content = directContent };
-                var directResp = await http.SendAsync(directReq);
-                return directResp.IsSuccessStatusCode;
+                try
+                {
+                    var unloadContent = new StringContent(
+                        JsonSerializer.Serialize(new { model = modelName, keep_alive = 0 }),
+                        System.Text.Encoding.UTF8,
+                        "application/json"
+                    );
+                    await http.PostAsync("http://127.0.0.1:11434/api/generate", unloadContent);
+                }
+                catch { }
+
+                try
+                {
+                    var directContent = new StringContent(
+                        JsonSerializer.Serialize(new { model = modelName, name = modelName }),
+                        System.Text.Encoding.UTF8,
+                        "application/json"
+                    );
+                    using var directReq = new HttpRequestMessage(HttpMethod.Delete, "http://127.0.0.1:11434/api/delete") { Content = directContent };
+                    var directResp = await http.SendAsync(directReq);
+                    if (directResp.IsSuccessStatusCode) return true;
+
+                    var altName = modelName.EndsWith(":latest", StringComparison.OrdinalIgnoreCase)
+                        ? modelName.Substring(0, modelName.Length - 7)
+                        : $"{modelName}:latest";
+                    var altContent = new StringContent(
+                        JsonSerializer.Serialize(new { model = altName, name = altName }),
+                        System.Text.Encoding.UTF8,
+                        "application/json"
+                    );
+                    using var altReq = new HttpRequestMessage(HttpMethod.Delete, "http://127.0.0.1:11434/api/delete") { Content = altContent };
+                    var altResp = await http.SendAsync(altReq);
+                    return altResp.IsSuccessStatusCode;
+                }
+                catch { }
             }
 
             return false;

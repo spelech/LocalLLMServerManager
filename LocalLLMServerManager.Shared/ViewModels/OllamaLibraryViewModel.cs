@@ -27,6 +27,12 @@ public partial class OllamaLibraryViewModel : ObservableObject
     [ObservableProperty] private bool _isCpuOnlyActive = true;
     [ObservableProperty] private bool _isOomActive = true;
 
+    [ObservableProperty] private bool _isDeleteModalOpen = false;
+    [ObservableProperty] private OllamaModelItem? _modelToDelete = null;
+    [ObservableProperty] private string _deleteModalTitle = "Delete Model";
+    [ObservableProperty] private string _deleteModalMessage = "";
+    [ObservableProperty] private bool _isDeleting = false;
+
     [ObservableProperty] private double _targetContextTokens = 8192;
     [ObservableProperty] private string _estimatedKvCacheText = "~0.5 GB";
 
@@ -177,6 +183,46 @@ public partial class OllamaLibraryViewModel : ObservableObject
         finally
         {
             _loadLock.Release();
+        }
+    }
+
+    [RelayCommand]
+    public void RequestDeleteModel(OllamaModelItem? item)
+    {
+        if (item == null || string.IsNullOrWhiteSpace(item.Name)) return;
+        ModelToDelete = item;
+        DeleteModalTitle = $"Delete {item.Name}?";
+        DeleteModalMessage = $"Are you sure you want to permanently delete model '{item.Name}' ({item.FormatSize}) from local storage? This action cannot be undone.";
+        IsDeleteModalOpen = true;
+    }
+
+    [RelayCommand]
+    public void CancelDeleteModel()
+    {
+        IsDeleteModalOpen = false;
+        ModelToDelete = null;
+    }
+
+    [RelayCommand]
+    public async Task ConfirmDeleteModelAsync()
+    {
+        if (ModelToDelete == null)
+        {
+            IsDeleteModalOpen = false;
+            return;
+        }
+
+        IsDeleting = true;
+        var targetItem = ModelToDelete;
+        try
+        {
+            await DeleteModelAsync(targetItem);
+        }
+        finally
+        {
+            IsDeleting = false;
+            IsDeleteModalOpen = false;
+            ModelToDelete = null;
         }
     }
 

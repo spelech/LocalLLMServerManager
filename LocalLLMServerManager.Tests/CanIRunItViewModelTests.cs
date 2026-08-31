@@ -354,4 +354,43 @@ public class CanIRunItViewModelTests
         vm.ToggleFitVerdict("oom");
         Assert.Equal(2, vm.FilteredInstalledModels.Count);
     }
+
+    [Fact]
+    public void OllamaLibraryViewModel_ConfirmationModal_RequestAndCancel_ControlsState()
+    {
+        var vm = new OllamaLibraryViewModel(new Moq.Mock<IOllamaModelService>().Object);
+        var model = new OllamaModelItem("llama3.3:70b", "40.0 GB", "Coding", "#38BDF8", false);
+        vm.InstalledModels.Add(model);
+
+        Assert.False(vm.IsDeleteModalOpen);
+        Assert.Null(vm.ModelToDelete);
+
+        vm.RequestDeleteModel(model);
+        Assert.True(vm.IsDeleteModalOpen);
+        Assert.Same(model, vm.ModelToDelete);
+        Assert.Contains("llama3.3:70b", vm.DeleteModalMessage);
+
+        vm.CancelDeleteModel();
+        Assert.False(vm.IsDeleteModalOpen);
+        Assert.Null(vm.ModelToDelete);
+    }
+
+    [Fact]
+    public async Task OllamaLibraryViewModel_ConfirmationModal_ConfirmDeletesModel()
+    {
+        var mockOllama = new Moq.Mock<IOllamaModelService>();
+        mockOllama.Setup(m => m.DeleteModelAsync(Moq.It.IsAny<string>(), "llama3.3:70b", Moq.It.IsAny<System.Net.Http.HttpClient>()))
+            .ReturnsAsync(true);
+        var vm = new OllamaLibraryViewModel(mockOllama.Object);
+        var model = new OllamaModelItem("llama3.3:70b", "40.0 GB", "Coding", "#38BDF8", false);
+        vm.InstalledModels.Add(model);
+
+        vm.RequestDeleteModel(model);
+        Assert.True(vm.IsDeleteModalOpen);
+
+        await vm.ConfirmDeleteModelAsync();
+        Assert.False(vm.IsDeleteModalOpen);
+        Assert.Null(vm.ModelToDelete);
+        Assert.Empty(vm.InstalledModels);
+    }
 }
