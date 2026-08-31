@@ -52,7 +52,7 @@ public class WasmAssetFreshnessTests
         var mainJsPath = Path.Combine(root, "wwwroot", "main.js");
         var webMainJsPath = Path.Combine(root, "LocalLLMServerManager.Web", "main.js");
 
-        var expectedVersion = typeof(MainViewModel).Assembly.GetName().Version?.ToString(3) ?? "3.9.0";
+        var expectedVersion = typeof(MainViewModel).Assembly.GetName().Version?.ToString(3) ?? "3.10.0";
 
         foreach (var path in new[] { mainJsPath, webMainJsPath })
         {

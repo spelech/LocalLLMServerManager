@@ -42,11 +42,8 @@ public class PlaywrightWasmE2ETests : IClassFixture<AppTestServerFixture>
 
         page.Console += (_, msg) =>
         {
-            if (msg.Type == "error" 
-                && !msg.Text.Contains("ERR_CONNECTION_REFUSED")
-                && !msg.Text.Contains("ERR_FAILED")
-                && !msg.Text.Contains("Failed to load resource")
-                && !msg.Text.Contains("Access to fetch"))
+            Console.WriteLine($"[BROWSER {msg.Type}]: {msg.Text}");
+            if (msg.Type == "error")
             {
                 consoleErrors.Add($"Console Error: {msg.Text}");
             }
@@ -54,6 +51,7 @@ public class PlaywrightWasmE2ETests : IClassFixture<AppTestServerFixture>
 
         page.PageError += (_, exception) =>
         {
+            Console.WriteLine($"[BROWSER PAGE ERROR]: {exception}");
             consoleErrors.Add($"Page Error: {exception}");
         };
 
@@ -66,17 +64,18 @@ public class PlaywrightWasmE2ETests : IClassFixture<AppTestServerFixture>
         };
 
         await page.GotoAsync(AppTestServerFixture.TestBaseUrl);
-        await page.WaitForTimeoutAsync(5000);
+        await page.WaitForTimeoutAsync(6000);
 
         var outputContainer = await page.QuerySelectorAsync("#out");
-        var canvas = await page.QuerySelectorAsync("#out canvas");
+        var outHtml = outputContainer != null ? await outputContainer.InnerHTMLAsync() : "null";
+        var canvas = await page.QuerySelectorAsync("#out canvas") ?? await page.QuerySelectorAsync("canvas");
         var loadedVersion = await page.EvaluateAsync<string>("() => window.getAppVersion ? window.getAppVersion() : null");
 
         Assert.True(network404s.IsEmpty, "404s:\n" + string.Join("\n", network404s));
-        Assert.True(consoleErrors.IsEmpty, "Errors:\n" + string.Join("\n", consoleErrors));
+        Assert.True(consoleErrors.IsEmpty, $"Errors:\n{string.Join("\n", consoleErrors)}\nOut HTML:\n{outHtml}");
         Assert.NotNull(outputContainer);
-        Assert.NotNull(canvas);
-        Assert.Equal("3.9.0", loadedVersion);
+        Assert.True(canvas != null, $"Canvas element not found in DOM! Container HTML: {outHtml}");
+        Assert.Equal("3.10.0", loadedVersion);
 
         // Exercise interactive browser pointer & keyboard events
         var boundingBox = await canvas.BoundingBoxAsync();

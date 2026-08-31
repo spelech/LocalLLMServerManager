@@ -53,7 +53,7 @@ public partial class TelemetryViewModel : ObservableObject
     [RelayCommand]
     public async Task RefreshStatusAsync()
     {
-        await RefreshStatusAsync(ApiBase, "http://127.0.0.1:8188", new HttpClient());
+        await RefreshStatusAsync(ApiBase, "http://127.0.0.1:8188", HttpHelper.CreateClient(ApiBase));
     }
 
     public async Task RefreshStatusAsync(string apiBase, string comfyUrl, HttpClient http)

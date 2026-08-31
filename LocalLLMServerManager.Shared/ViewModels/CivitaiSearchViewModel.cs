@@ -27,7 +27,7 @@ public partial class CivitaiSearchViewModel : ObservableObject
     [RelayCommand]
     public async Task SearchCivitaiAsync()
     {
-        await SearchCivitaiAsync(ApiBase, new HttpClient());
+        await SearchCivitaiAsync(ApiBase, HttpHelper.CreateClient(ApiBase));
     }
 
     public async Task SearchCivitaiAsync(string apiBase, HttpClient http)

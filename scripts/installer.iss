@@ -1,7 +1,7 @@
-; Script generated for Inno Setup - LocalLLMServerManager v3.9.0
+; Script generated for Inno Setup - LocalLLMServerManager v3.10.0
 ; Windows Inno Setup build configuration with automated Firewall configuration, Windows Service management, and system tray startup
 #define MyAppName "Local LLM Server Manager"
-#define MyAppVersion "3.9.0"
+#define MyAppVersion "3.10.0"
 #define MyAppPublisher "LocalLLMServerManager Team"
 #define MyAppURL "https://github.com/spelech/LocalLLMServerManager"
 #define MyAppExeName "LocalLLMServerManager.exe"

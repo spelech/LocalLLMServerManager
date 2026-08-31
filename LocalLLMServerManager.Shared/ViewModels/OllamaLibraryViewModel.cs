@@ -39,13 +39,23 @@ public partial class OllamaLibraryViewModel : ObservableObject
         EstimatedKvCacheText = mb >= 1024 ? $"~{(mb / 1024.0):F1} GB" : $"~{mb:F0} MB";
     }
 
+    private readonly System.Threading.SemaphoreSlim _loadLock = new(1, 1);
+
     public async Task LoadInstalledModelsAsync(string apiBase, HttpClient http)
     {
-        var models = await _ollamaModelService.LoadInstalledModelsAsync(apiBase, http);
-        InstalledModels.Clear();
-        foreach (var m in models)
+        await _loadLock.WaitAsync();
+        try
         {
-            InstalledModels.Add(m);
+            var models = await _ollamaModelService.LoadInstalledModelsAsync(apiBase, http);
+            InstalledModels.Clear();
+            foreach (var m in models)
+            {
+                InstalledModels.Add(m);
+            }
+        }
+        finally
+        {
+            _loadLock.Release();
         }
     }
 
@@ -54,7 +64,7 @@ public partial class OllamaLibraryViewModel : ObservableObject
     [RelayCommand]
     public async Task UnloadAllVramAsync()
     {
-        await UnloadAllVramAsync(ApiBase, new HttpClient());
+        await UnloadAllVramAsync(ApiBase, HttpHelper.CreateClient(ApiBase));
     }
 
     public async Task UnloadAllVramAsync(string apiBase, HttpClient http)
