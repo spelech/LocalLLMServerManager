@@ -77,9 +77,16 @@ public class PlaywrightScreenshotGenerator : IClassFixture<AppTestServerFixture>
         await page.ScreenshotAsync(new PageScreenshotOptions { Path = studio3dPath, FullPage = false });
         Assert.True(File.Exists(studio3dPath) && new FileInfo(studio3dPath).Length > 0, "dashboard_3d_studio.png should exist and be non-empty");
 
-        // 6. Settings tab (Tab 5)
-        string settingsPath = Path.Combine(outputDir, "dashboard_settings.png");
+        // 6. Can I Run It tab (Tab 5)
+        string canIRunItPath = Path.Combine(outputDir, "dashboard_can_i_run_it.png");
         await page.Mouse.ClickAsync(730, 170);
+        await page.WaitForTimeoutAsync(1000);
+        await page.ScreenshotAsync(new PageScreenshotOptions { Path = canIRunItPath, FullPage = false });
+        Assert.True(File.Exists(canIRunItPath) && new FileInfo(canIRunItPath).Length > 0, "dashboard_can_i_run_it.png should exist and be non-empty");
+
+        // 7. Settings tab (Tab 6)
+        string settingsPath = Path.Combine(outputDir, "dashboard_settings.png");
+        await page.Mouse.ClickAsync(880, 170);
         await page.WaitForTimeoutAsync(1000);
         await page.ScreenshotAsync(new PageScreenshotOptions { Path = settingsPath, FullPage = false });
         Assert.True(File.Exists(settingsPath) && new FileInfo(settingsPath).Length > 0, "dashboard_settings.png should exist and be non-empty");
@@ -89,13 +96,16 @@ public class PlaywrightScreenshotGenerator : IClassFixture<AppTestServerFixture>
         byte[] bytesHf = File.ReadAllBytes(hfPath);
         byte[] bytesCivitai = File.ReadAllBytes(civitaiPath);
         byte[] bytes3d = File.ReadAllBytes(studio3dPath);
+        byte[] bytesCanIRunIt = File.ReadAllBytes(canIRunItPath);
         byte[] bytesSettings = File.ReadAllBytes(settingsPath);
 
         Assert.False(bytesDesktop.AsSpan().SequenceEqual(bytesHf), "dashboard_huggingface.png should differ from desktop");
         Assert.False(bytesDesktop.AsSpan().SequenceEqual(bytesCivitai), "dashboard_civitai.png should differ from desktop");
         Assert.False(bytesDesktop.AsSpan().SequenceEqual(bytes3d), "dashboard_3d_studio.png should differ from desktop");
+        Assert.False(bytesDesktop.AsSpan().SequenceEqual(bytesCanIRunIt), "dashboard_can_i_run_it.png should differ from desktop");
         Assert.False(bytesDesktop.AsSpan().SequenceEqual(bytesSettings), "dashboard_settings.png should differ from desktop");
         Assert.False(bytes3d.AsSpan().SequenceEqual(bytesSettings), "dashboard_settings.png should differ from dashboard_3d_studio.png");
         Assert.False(bytesHf.AsSpan().SequenceEqual(bytesCivitai), "dashboard_civitai.png should differ from dashboard_huggingface.png");
+        Assert.False(bytesCanIRunIt.AsSpan().SequenceEqual(bytesSettings), "dashboard_settings.png should differ from dashboard_can_i_run_it.png");
     }
 }
