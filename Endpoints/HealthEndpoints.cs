@@ -29,7 +29,7 @@ public static class HealthEndpoints
                 StableDiffusion = forgeHealthy ? "Online" : "Offline",
                 ComfyUI = comfyHealthy ? "Online" : "Offline",
                 PreferredImageEngine = settings.PreferredImageEngine,
-                Version = typeof(Program).Assembly.GetName().Version?.ToString(3) ?? "3.11.0"
+                Version = typeof(Program).Assembly.GetName().Version?.ToString(3) ?? "3.12.0"
             });
         });
     }
