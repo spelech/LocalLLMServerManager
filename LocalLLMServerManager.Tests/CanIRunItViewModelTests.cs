@@ -1,9 +1,11 @@
 using System;
 using System.Linq;
+using System.Threading.Tasks;
 using LocalLLMServerManager.Shared.Interfaces;
 using LocalLLMServerManager.Shared.Models;
 using LocalLLMServerManager.Shared.Services;
 using LocalLLMServerManager.Shared.ViewModels;
+using Moq;
 using Xunit;
 
 namespace LocalLLMServerManager.Tests;
@@ -319,5 +321,37 @@ public class CanIRunItViewModelTests
         // 3D presets
         Assert.Contains("TRELLIS V2", vm.AvailableThreeDPresets);
         Assert.Contains("Hunyuan3D-2", vm.AvailableThreeDPresets);
+    }
+
+    [Fact]
+    public async Task OllamaLibraryViewModel_DeleteModel_RemovesModelFromCollection()
+    {
+        var mockOllama = new Moq.Mock<IOllamaModelService>();
+        mockOllama.Setup(m => m.DeleteModelAsync(Moq.It.IsAny<string>(), "llama3.2:latest", Moq.It.IsAny<System.Net.Http.HttpClient>()))
+            .ReturnsAsync(true);
+        var vm = new OllamaLibraryViewModel(mockOllama.Object);
+        var model = new OllamaModelItem("llama3.2:latest", "2.0 GB", "Coding", "#38BDF8", false);
+        vm.InstalledModels.Add(model);
+        vm.ApplyFilter();
+        Assert.Single(vm.FilteredInstalledModels);
+
+        await vm.DeleteModelAsync(model);
+        Assert.Empty(vm.InstalledModels);
+        Assert.Empty(vm.FilteredInstalledModels);
+    }
+
+    [Fact]
+    public void OllamaLibraryViewModel_FilterByFitVerdict_FiltersModelsCorrectly()
+    {
+        var vm = new OllamaLibraryViewModel(new Moq.Mock<IOllamaModelService>().Object);
+        vm.InstalledModels.Add(new OllamaModelItem("model1", "2.0 GB", "Coding", "#38BDF8", false, new QuickFitBadge("🟢 Full VRAM", "#10B981", "", FitVerdict.FullVram)));
+        vm.InstalledModels.Add(new OllamaModelItem("model2", "70.0 GB", "Coding", "#38BDF8", false, new QuickFitBadge("🔴 Won't Fit (OOM)", "#EF4444", "", FitVerdict.OutOfMemory)));
+
+        vm.IsOomActive = false;
+        Assert.Single(vm.FilteredInstalledModels);
+        Assert.Equal("model1", vm.FilteredInstalledModels[0].Name);
+
+        vm.ToggleFitVerdict("oom");
+        Assert.Equal(2, vm.FilteredInstalledModels.Count);
     }
 }
