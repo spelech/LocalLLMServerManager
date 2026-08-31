@@ -56,6 +56,7 @@ public partial class OllamaLibraryViewModel : ObservableObject
         _ollamaModelService = ollamaModelService;
         _canIRunItService = canIRunItService ?? new CanIRunItService();
         _telemetryService = telemetryService;
+        InstalledModels.CollectionChanged += (s, e) => ApplyFilter();
     }
 
     public void UpdateHardwareTelemetry(double totalVramMb, double totalRamMb)

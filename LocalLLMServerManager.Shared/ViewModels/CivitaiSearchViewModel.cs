@@ -47,6 +47,7 @@ public partial class CivitaiSearchViewModel : ObservableObject
         _civitaiSearchService = civitaiSearchService;
         _canIRunItService = canIRunItService ?? new CanIRunItService();
         _telemetryService = telemetryService;
+        CivitaiResults.CollectionChanged += (s, e) => ApplyFilter();
     }
 
     public void UpdateHardwareTelemetry(double totalVramMb, double totalRamMb)
