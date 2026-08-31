@@ -21,15 +21,19 @@ public static class HttpHelper
         {
             client.BaseAddress = originUri;
         }
+        else if (!OperatingSystem.IsBrowser())
+        {
+            client.BaseAddress = new Uri("http://127.0.0.1:5246");
+        }
         return client;
     }
 
-    public static string FormatEndpoint(string apiBase, string relativePath)
+    public static string FormatEndpoint(string? apiBase, string relativePath)
     {
         var rel = relativePath.StartsWith("/") ? relativePath : "/" + relativePath;
         if (string.IsNullOrWhiteSpace(apiBase))
         {
-            return rel;
+            return OperatingSystem.IsBrowser() ? rel : $"http://127.0.0.1:5246{rel}";
         }
         return apiBase.TrimEnd('/') + rel;
     }

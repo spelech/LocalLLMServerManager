@@ -68,4 +68,21 @@ public class ComponentManagerAndEndpointsTests : IClassFixture<AppTestServerFixt
         var uninstallResponse = await client.PostAsJsonAsync("/api/components/uninstall", uninstallReq);
         Assert.Equal(HttpStatusCode.BadRequest, uninstallResponse.StatusCode);
     }
+
+    [Fact]
+    public async Task SettingsViewModel_RefreshComponentStatusesAsync_UpdatesInstalledFlags()
+    {
+        var client = _fixture.CreateClient();
+        var vm = new LocalLLMServerManager.Shared.ViewModels.SettingsViewModel();
+
+        Assert.False(vm.IsVideoPackInstalled);
+        Assert.False(vm.IsAudioPackInstalled);
+
+        await vm.RefreshComponentStatusesAsync("", client);
+
+        Assert.True(vm.IsVideoPackInstalled);
+        Assert.True(vm.IsAudioPackInstalled);
+        Assert.Equal("🟢 Installed", vm.VideoPackStatusText);
+        Assert.Equal("🟢 Installed", vm.AudioPackStatusText);
+    }
 }

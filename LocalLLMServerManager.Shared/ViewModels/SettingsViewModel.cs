@@ -183,7 +183,8 @@ public partial class SettingsViewModel : ObservableObject
     {
         try
         {
-            var response = await http.GetAsync($"{apiBase}/api/components");
+            var url = HttpHelper.FormatEndpoint(apiBase, "/api/components");
+            var response = await http.GetAsync(url);
             if (response.IsSuccessStatusCode)
             {
                 var json = await response.Content.ReadAsStringAsync();
@@ -223,7 +224,8 @@ public partial class SettingsViewModel : ObservableObject
             if (currentlyInstalled)
             {
                 var content = new StringContent(JsonSerializer.Serialize(new { componentId }), System.Text.Encoding.UTF8, "application/json");
-                var res = await http.PostAsync($"{apiBase}/api/components/uninstall", content);
+                var url = HttpHelper.FormatEndpoint(apiBase, "/api/components/uninstall");
+                var res = await http.PostAsync(url, content);
                 if (res.IsSuccessStatusCode)
                 {
                     ToastService.Instance.Show($"Uninstalled component '{componentId}'.", ToastType.Info);
@@ -232,7 +234,8 @@ public partial class SettingsViewModel : ObservableObject
             else
             {
                 var content = new StringContent(JsonSerializer.Serialize(new { componentId }), System.Text.Encoding.UTF8, "application/json");
-                var res = await http.PostAsync($"{apiBase}/api/components/install", content);
+                var url = HttpHelper.FormatEndpoint(apiBase, "/api/components/install");
+                var res = await http.PostAsync(url, content);
                 if (res.IsSuccessStatusCode)
                 {
                     ToastService.Instance.Show($"Installed component '{componentId}'.", ToastType.Success);
@@ -486,7 +489,8 @@ public partial class SettingsViewModel : ObservableObject
             };
 
             var content = new StringContent(JsonSerializer.Serialize(payload), System.Text.Encoding.UTF8, "application/json");
-            var response = await http.PostAsync($"{apiBase}/v1/audio/speech", content);
+            var url = HttpHelper.FormatEndpoint(apiBase, "/v1/audio/speech");
+            var response = await http.PostAsync(url, content);
             if (response.IsSuccessStatusCode)
             {
                 ToastService.Instance.Show("Audio synthesized successfully! Playing preview...", ToastType.Success);
@@ -560,7 +564,8 @@ public partial class SettingsViewModel : ObservableObject
     {
         try
         {
-            var response = await http.GetAsync($"{apiBase}/api/settings");
+            var url = HttpHelper.FormatEndpoint(apiBase, "/api/settings");
+            var response = await http.GetAsync(url);
             if (response.IsSuccessStatusCode)
             {
                 var jsonStr = await response.Content.ReadAsStringAsync();
@@ -585,11 +590,14 @@ public partial class SettingsViewModel : ObservableObject
                     PreferredAudioVoice = settings.PreferredAudioVoice ?? "af_heart";
 
                     RefreshAllStatuses();
-                    await RefreshComponentStatusesAsync(apiBase, http);
                 }
             }
         }
         catch { }
+        finally
+        {
+            await RefreshComponentStatusesAsync(apiBase, http);
+        }
     }
 
     [RelayCommand]
@@ -627,15 +635,16 @@ public partial class SettingsViewModel : ObservableObject
                 "application/json"
             );
 
-            var response = await http.PostAsync($"{apiBase}/api/settings", content);
+            var url = HttpHelper.FormatEndpoint(apiBase, "/api/settings");
+            var response = await http.PostAsync(url, content);
             if (response.IsSuccessStatusCode)
             {
                 ToastService.Instance.Show("Settings saved successfully.", ToastType.Success);
             }
         }
-        catch
+        catch (Exception ex)
         {
-            ToastService.Instance.Show("Failed to save settings.", ToastType.Error);
+            ToastService.Instance.Show($"Failed to save settings: {ex.Message}", ToastType.Error);
         }
     }
 }
