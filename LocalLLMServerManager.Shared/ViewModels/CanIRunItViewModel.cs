@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Net.Http;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
+using Avalonia.Controls;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using LocalLLMServerManager.Shared.Interfaces;
@@ -145,9 +146,22 @@ public partial class CanIRunItViewModel : ObservableObject
     [ObservableProperty] private double _availableRamMb = 32768.0;
     [ObservableProperty] private string _vramText = "16.0 GB VRAM";
     [ObservableProperty] private string _ramText = "32.0 GB RAM";
+    [ObservableProperty] private string _apiBase = OperatingSystem.IsBrowser() ? "" : "http://127.0.0.1:5246";
 
     // Modality State
-    [ObservableProperty] private string _selectedModality = "LLM";
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(IsLlmModality))]
+    [NotifyPropertyChangedFor(nameof(IsImageModality))]
+    [NotifyPropertyChangedFor(nameof(IsVideoModality))]
+    [NotifyPropertyChangedFor(nameof(IsAudioModality))]
+    [NotifyPropertyChangedFor(nameof(IsThreeDModality))]
+    private string _selectedModality = "LLM";
+
+    public bool IsLlmModality => SelectedModality == "LLM";
+    public bool IsImageModality => SelectedModality == "Image";
+    public bool IsVideoModality => SelectedModality == "Video";
+    public bool IsAudioModality => SelectedModality == "Audio";
+    public bool IsThreeDModality => SelectedModality == "ThreeD";
 
     // LLM Parameters
     [ObservableProperty] private string _selectedPreset = "Llama 3.1 8B";
@@ -180,11 +194,21 @@ public partial class CanIRunItViewModel : ObservableObject
     [ObservableProperty] private ThreeDFitResult? _threeDResult;
     [ObservableProperty] private QuickFitBadge? _fitVerdictBadge;
 
-    // Visual Percentage Bar
+    // Visual Percentage Bar & Column Widths
     [ObservableProperty] private double _modelWeightsVramPercent = 0.0;
     [ObservableProperty] private double _kvCacheVramPercent = 0.0;
     [ObservableProperty] private double _overheadVramPercent = 0.0;
     [ObservableProperty] private double _freeVramPercent = 100.0;
+    [ObservableProperty] private GridLength _modelWeightsColumnWidth = new(25, GridUnitType.Star);
+    [ObservableProperty] private GridLength _kvCacheColumnWidth = new(25, GridUnitType.Star);
+    [ObservableProperty] private GridLength _overheadColumnWidth = new(25, GridUnitType.Star);
+    [ObservableProperty] private GridLength _freeVramColumnWidth = new(25, GridUnitType.Star);
+
+    // Detailed Segment Text Readouts
+    [ObservableProperty] private string _modelWeightsDetailsText = "";
+    [ObservableProperty] private string _kvCacheDetailsText = "";
+    [ObservableProperty] private string _overheadDetailsText = "";
+    [ObservableProperty] private string _freeVramDetailsText = "";
 
     // Text Summaries & Recommendations
     [ObservableProperty] private string _verdictSummaryText = "";
@@ -193,7 +217,7 @@ public partial class CanIRunItViewModel : ObservableObject
     [ObservableProperty] private string _speedEstimationText = "";
 
     public CanIRunItViewModel()
-        : this(null, null, null)
+        : this((ICanIRunItService?)null, null, null)
     {
     }
 
@@ -487,6 +511,15 @@ public partial class CanIRunItViewModel : ObservableObject
     /// <summary>
     /// Polls live telemetry from backend server.
     /// </summary>
+    [RelayCommand]
+    public async Task RefreshTelemetryAsync()
+    {
+        await RefreshTelemetryAsync(ApiBase, null);
+    }
+
+    /// <summary>
+    /// Polls live telemetry from backend server with custom parameters.
+    /// </summary>
     public async Task RefreshTelemetryAsync(string? apiBase = null, HttpClient? http = null)
     {
         var client = http ?? _httpClient ?? HttpHelper.CreateClient(apiBase ?? "");
@@ -547,17 +580,17 @@ public partial class CanIRunItViewModel : ObservableObject
             SelectedModality = "LLM";
             string lowerName = name.ToLowerInvariant();
 
-            if (lowerName.Contains("llama-3.3-70b") || lowerName.Contains("llama 3.3 70b")) SelectedPreset = "Llama 3.3 70B";
-            else if (lowerName.Contains("llama-3.1-8b") || lowerName.Contains("llama 3.1 8b") || lowerName.Contains("llama-3-8b") || lowerName.Contains("llama 3 8b")) SelectedPreset = "Llama 3.1 8B";
-            else if (lowerName.Contains("qwen2.5-32b") || lowerName.Contains("qwen 2.5 32b")) SelectedPreset = "Qwen 2.5 32B";
-            else if (lowerName.Contains("qwen2.5-72b") || lowerName.Contains("qwen 2.5 72b")) SelectedPreset = "Qwen 2.5 72B";
-            else if (lowerName.Contains("deepseek-r1") && lowerName.Contains("671")) SelectedPreset = "DeepSeek R1 671B";
-            else if (lowerName.Contains("deepseek-r1") && lowerName.Contains("70")) SelectedPreset = "DeepSeek R1 70B";
-            else if (lowerName.Contains("deepseek-r1") && lowerName.Contains("32")) SelectedPreset = "DeepSeek R1 32B";
-            else if (lowerName.Contains("mistral-small") || lowerName.Contains("mistral small 24b")) SelectedPreset = "Mistral Small 24B";
-            else if (lowerName.Contains("gemma-2-9b") || lowerName.Contains("gemma 2 9b")) SelectedPreset = "Gemma 2 9B";
-            else if (lowerName.Contains("gemma-2-27b") || lowerName.Contains("gemma 2 27b")) SelectedPreset = "Gemma 2 27B";
-            else if (lowerName.Contains("phi-4") || lowerName.Contains("phi 4")) SelectedPreset = "Phi-4 14B";
+            if (lowerName.Contains("llama-3.3-70b") || lowerName.Contains("llama 3.3 70b") || lowerName.Contains("llama3.3 70b") || lowerName.Contains("llama 3.3") || lowerName.Contains("llama-3.3")) SelectedPreset = "Llama 3.3 70B";
+            else if (lowerName.Contains("llama-3.1-8b") || lowerName.Contains("llama 3.1 8b") || lowerName.Contains("llama-3-8b") || lowerName.Contains("llama 3 8b") || lowerName.Contains("llama 3.1") || lowerName.Contains("llama-3.1")) SelectedPreset = "Llama 3.1 8B";
+            else if (lowerName.Contains("qwen2.5-32b") || lowerName.Contains("qwen 2.5 32b") || (lowerName.Contains("qwen") && lowerName.Contains("32"))) SelectedPreset = "Qwen 2.5 32B";
+            else if (lowerName.Contains("qwen2.5-72b") || lowerName.Contains("qwen 2.5 72b") || (lowerName.Contains("qwen") && lowerName.Contains("72"))) SelectedPreset = "Qwen 2.5 72B";
+            else if ((lowerName.Contains("deepseek-r1") || lowerName.Contains("deepseek r1") || lowerName.Contains("deepseek_r1")) && lowerName.Contains("671")) SelectedPreset = "DeepSeek R1 671B";
+            else if ((lowerName.Contains("deepseek-r1") || lowerName.Contains("deepseek r1") || lowerName.Contains("deepseek_r1")) && lowerName.Contains("70")) SelectedPreset = "DeepSeek R1 70B";
+            else if ((lowerName.Contains("deepseek-r1") || lowerName.Contains("deepseek r1") || lowerName.Contains("deepseek_r1")) && lowerName.Contains("32")) SelectedPreset = "DeepSeek R1 32B";
+            else if (lowerName.Contains("mistral-small") || lowerName.Contains("mistral small")) SelectedPreset = "Mistral Small 24B";
+            else if ((lowerName.Contains("gemma-2") || lowerName.Contains("gemma 2") || lowerName.Contains("gemma2")) && lowerName.Contains("9")) SelectedPreset = "Gemma 2 9B";
+            else if ((lowerName.Contains("gemma-2") || lowerName.Contains("gemma 2") || lowerName.Contains("gemma2")) && lowerName.Contains("27")) SelectedPreset = "Gemma 2 27B";
+            else if (lowerName.Contains("phi-4") || lowerName.Contains("phi 4") || lowerName.Contains("phi4")) SelectedPreset = "Phi-4 14B";
             else
             {
                 // Custom LLM model
@@ -810,6 +843,16 @@ public partial class CanIRunItViewModel : ObservableObject
                 _ => "0 Layers in VRAM (Out of Memory)"
             };
         }
+
+        ModelWeightsColumnWidth = new GridLength(Math.Max(0.001, ModelWeightsVramPercent), GridUnitType.Star);
+        KvCacheColumnWidth = new GridLength(Math.Max(0.001, KvCacheVramPercent), GridUnitType.Star);
+        OverheadColumnWidth = new GridLength(Math.Max(0.001, OverheadVramPercent), GridUnitType.Star);
+        FreeVramColumnWidth = new GridLength(Math.Max(0.001, FreeVramPercent), GridUnitType.Star);
+
+        ModelWeightsDetailsText = $"{ModelWeightsVramPercent / 100.0 * vram:N0} MB ({ModelWeightsVramPercent:F1}%)";
+        KvCacheDetailsText = $"{KvCacheVramPercent / 100.0 * vram:N0} MB ({KvCacheVramPercent:F1}%)";
+        OverheadDetailsText = $"{OverheadVramPercent / 100.0 * vram:N0} MB ({OverheadVramPercent:F1}%)";
+        FreeVramDetailsText = $"{FreeVramPercent / 100.0 * vram:N0} MB ({FreeVramPercent:F1}%)";
     }
 
     private static QuickFitBadge CreateBadge(FitVerdict verdict, string recommendation)

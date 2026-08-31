@@ -1,0 +1,324 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:vm="using:LocalLLMServerManager.Shared.ViewModels"
+             mc:Ignorable="d" d:DesignWidth="1100" d:DesignHeight="950"
+             x:Class="LocalLLMServerManager.Shared.Views.Controls.CanIRunItView"
+             x:DataType="vm:CanIRunItViewModel">
+
+    <ScrollViewer VerticalScrollBarVisibility="Auto">
+        <StackPanel Spacing="16" Margin="0,12,0,16">
+
+            <!-- 1. Live Hardware Telemetry Banner -->
+            <Border Classes="matte-card" Padding="16,12">
+                <Grid ColumnDefinitions="*, *, *, Auto">
+                    <!-- GPU Telemetry Readout -->
+                    <StackPanel Grid.Column="0" Spacing="3" VerticalAlignment="Center">
+                        <TextBlock Text="🎮 Detected GPU" FontSize="11" Foreground="{StaticResource TextMutedBrush}" FontWeight="SemiBold"/>
+                        <TextBlock Text="{Binding GpuName}" FontSize="13" Foreground="{StaticResource TextMainBrush}" FontWeight="Bold" TextTrimming="CharacterEllipsis"/>
+                    </StackPanel>
+
+                    <!-- VRAM Allocation Readout -->
+                    <StackPanel Grid.Column="1" Spacing="3" VerticalAlignment="Center" Margin="12,0">
+                        <TextBlock Text="⚡ VRAM Capacity" FontSize="11" Foreground="{StaticResource TextMutedBrush}" FontWeight="SemiBold"/>
+                        <StackPanel Orientation="Horizontal" Spacing="6">
+                            <TextBlock Text="{Binding VramText}" FontSize="13" Foreground="{StaticResource PrimaryBrush}" FontWeight="Bold"/>
+                            <Border Classes="matte-pill" Padding="6,2" VerticalAlignment="Center">
+                                <TextBlock Text="{Binding FreeVramMb, StringFormat='{}{0:N0} MB free'}" FontSize="10" Foreground="{StaticResource OnlineBrush}" FontWeight="SemiBold"/>
+                            </Border>
+                        </StackPanel>
+                    </StackPanel>
+
+                    <!-- System RAM Readout -->
+                    <StackPanel Grid.Column="2" Spacing="3" VerticalAlignment="Center" Margin="12,0">
+                        <TextBlock Text="🧠 System RAM" FontSize="11" Foreground="{StaticResource TextMutedBrush}" FontWeight="SemiBold"/>
+                        <StackPanel Orientation="Horizontal" Spacing="6">
+                            <TextBlock Text="{Binding RamText}" FontSize="13" Foreground="{StaticResource SecondaryBrush}" FontWeight="Bold"/>
+                            <Border Classes="matte-pill" Padding="6,2" VerticalAlignment="Center">
+                                <TextBlock Text="{Binding AvailableRamMb, StringFormat='{}{0:N0} MB avail'}" FontSize="10" Foreground="{StaticResource TextMutedBrush}" FontWeight="SemiBold"/>
+                            </Border>
+                        </StackPanel>
+                    </StackPanel>
+
+                    <!-- Refresh Button -->
+                    <Button Grid.Column="3" Content="🔄 Refresh Telemetry" Command="{Binding RefreshTelemetryCommand}"
+                            Classes="matte-secondary" VerticalAlignment="Center" Padding="12,7" FontSize="11"/>
+                </Grid>
+            </Border>
+
+            <!-- 2. Modality Segmented Selector Bar Header -->
+            <Grid ColumnDefinitions="*, Auto">
+                <StackPanel Spacing="2">
+                    <TextBlock Text="⚡ Can I Run It — Hardware Compatibility &amp; Performance Estimator" FontSize="16" FontWeight="Bold" Foreground="{StaticResource TextMainBrush}"/>
+                    <TextBlock Text="Evaluate model sizing, VRAM fit, layer offloading, and throughput estimates based on live hardware" FontSize="12" Foreground="{StaticResource TextMutedBrush}"/>
+                </StackPanel>
+
+                <!-- Modality Buttons -->
+                <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="6">
+                    <Button Content="🦙 Text LLMs" Command="{Binding SelectLlmModalityCommand}"
+                            Classes="matte-secondary" FontSize="12" Padding="10,6"/>
+                    <Button Content="🎨 Image Generation" Command="{Binding SelectImageModalityCommand}"
+                            Classes="matte-secondary" FontSize="12" Padding="10,6"/>
+                    <Button Content="🎬 Video Generation" Command="{Binding SelectVideoModalityCommand}"
+                            Classes="matte-secondary" FontSize="12" Padding="10,6"/>
+                    <Button Content="🎙️ Audio &amp; Speech" Command="{Binding SelectAudioModalityCommand}"
+                            Classes="matte-secondary" FontSize="12" Padding="10,6"/>
+                    <Button Content="🧊 3D Generation" Command="{Binding SelectThreeDModalityCommand}"
+                            Classes="matte-secondary" FontSize="12" Padding="10,6"/>
+                </StackPanel>
+            </Grid>
+
+            <!-- 3. Main Two-Column Workload & Verdict Layout -->
+            <Grid ColumnDefinitions="1.15*, *" RowDefinitions="Auto">
+
+                <!-- LEFT COLUMN: Workload Configuration Controls -->
+                <Border Grid.Column="0" Classes="matte-card" Padding="16">
+                    <StackPanel Spacing="14">
+
+                        <!-- === LLM MODALITY CONTROLS === -->
+                        <StackPanel Spacing="14" IsVisible="{Binding IsLlmModality}">
+                            <TextBlock Text="🦙 Large Language Model Parameters" FontSize="14" FontWeight="Bold" Foreground="{StaticResource TextMainBrush}"/>
+
+                            <!-- Preset Picker -->
+                            <StackPanel Spacing="4">
+                                <TextBlock Text="Model Preset Profile" FontSize="12" Foreground="{StaticResource TextMutedBrush}"/>
+                                <ComboBox ItemsSource="{Binding AvailableLlmPresets}" SelectedItem="{Binding SelectedPreset}"
+                                          HorizontalAlignment="Stretch" Classes="matte-input"/>
+                            </StackPanel>
+
+                            <!-- Parameter Count Slider -->
+                            <StackPanel Spacing="4">
+                                <Grid ColumnDefinitions="*, Auto">
+                                    <TextBlock Text="Model Size (Parameter Count)" FontSize="12" Foreground="{StaticResource TextMutedBrush}"/>
+                                    <Border Grid.Column="1" Classes="matte-pill" Padding="8,2">
+                                        <TextBlock Text="{Binding ParametersBillions, StringFormat='{}{0:F1}B Parameters'}" FontSize="11" Foreground="{StaticResource PrimaryBrush}" FontWeight="Bold"/>
+                                    </Border>
+                                </Grid>
+                                <Slider Value="{Binding ParametersBillions}" Minimum="0.5" Maximum="405" SmallChange="0.5" LargeChange="5"/>
+                            </StackPanel>
+
+                            <!-- Quantization Picker -->
+                            <StackPanel Spacing="4">
+                                <TextBlock Text="GGUF Quantization Level" FontSize="12" Foreground="{StaticResource TextMutedBrush}"/>
+                                <ComboBox ItemsSource="{Binding AvailableQuantizations}" SelectedItem="{Binding SelectedQuantization}"
+                                          HorizontalAlignment="Stretch" Classes="matte-input"/>
+                            </StackPanel>
+
+                            <!-- Context Window Slider -->
+                            <StackPanel Spacing="4">
+                                <Grid ColumnDefinitions="*, Auto">
+                                    <TextBlock Text="Context Window Length" FontSize="12" Foreground="{StaticResource TextMutedBrush}"/>
+                                    <Border Grid.Column="1" Classes="matte-pill" Padding="8,2">
+                                        <TextBlock Text="{Binding ContextLength, StringFormat='{}{0:N0} tokens'}" FontSize="11" Foreground="{StaticResource AccentBrush}" FontWeight="Bold"/>
+                                    </Border>
+                                </Grid>
+                                <Slider Value="{Binding ContextLength}" Minimum="2048" Maximum="131072" SmallChange="2048" LargeChange="8192"/>
+                            </StackPanel>
+
+                            <!-- KV Cache Precision -->
+                            <StackPanel Spacing="4">
+                                <TextBlock Text="KV Cache Quantization Precision" FontSize="12" Foreground="{StaticResource TextMutedBrush}"/>
+                                <ComboBox ItemsSource="{Binding AvailableKvPrecisions}" SelectedItem="{Binding KvCachePrecision}"
+                                          HorizontalAlignment="Stretch" Classes="matte-input"/>
+                            </StackPanel>
+                        </StackPanel>
+
+                        <!-- === IMAGE MODALITY CONTROLS === -->
+                        <StackPanel Spacing="14" IsVisible="{Binding IsImageModality}">
+                            <TextBlock Text="🎨 Image &amp; Diffusion Parameters" FontSize="14" FontWeight="Bold" Foreground="{StaticResource TextMainBrush}"/>
+
+                            <!-- Image Preset -->
+                            <StackPanel Spacing="4">
+                                <TextBlock Text="Diffusion Model Preset" FontSize="12" Foreground="{StaticResource TextMutedBrush}"/>
+                                <ComboBox ItemsSource="{Binding AvailableImagePresets}" SelectedItem="{Binding SelectedImagePreset}"
+                                          HorizontalAlignment="Stretch" Classes="matte-input"/>
+                            </StackPanel>
+
+                            <!-- Resolution -->
+                            <StackPanel Spacing="4">
+                                <TextBlock Text="Target Image Resolution" FontSize="12" Foreground="{StaticResource TextMutedBrush}"/>
+                                <ComboBox ItemsSource="{Binding AvailableImageResolutions}" SelectedItem="{Binding SelectedImageResolution}"
+                                          HorizontalAlignment="Stretch" Classes="matte-input"/>
+                            </StackPanel>
+
+                            <!-- Quantization -->
+                            <StackPanel Spacing="4">
+                                <TextBlock Text="Weight Precision / Quantization" FontSize="12" Foreground="{StaticResource TextMutedBrush}"/>
+                                <ComboBox ItemsSource="{Binding AvailableImageQuantizations}" SelectedItem="{Binding SelectedImageQuantization}"
+                                          HorizontalAlignment="Stretch" Classes="matte-input"/>
+                            </StackPanel>
+
+                            <!-- Batch Size Slider -->
+                            <StackPanel Spacing="4">
+                                <Grid ColumnDefinitions="*, Auto">
+                                    <TextBlock Text="Generation Batch Size" FontSize="12" Foreground="{StaticResource TextMutedBrush}"/>
+                                    <Border Grid.Column="1" Classes="matte-pill" Padding="8,2">
+                                        <TextBlock Text="{Binding ImageBatchSize, StringFormat='{}Batch Size: {0}'}" FontSize="11" Foreground="{StaticResource PrimaryBrush}" FontWeight="Bold"/>
+                                    </Border>
+                                </Grid>
+                                <Slider Value="{Binding ImageBatchSize}" Minimum="1" Maximum="8" SmallChange="1" LargeChange="1"/>
+                            </StackPanel>
+                        </StackPanel>
+
+                        <!-- === VIDEO MODALITY CONTROLS === -->
+                        <StackPanel Spacing="14" IsVisible="{Binding IsVideoModality}">
+                            <TextBlock Text="🎬 Video Generation Parameters (DiT)" FontSize="14" FontWeight="Bold" Foreground="{StaticResource TextMainBrush}"/>
+
+                            <!-- Video Preset -->
+                            <StackPanel Spacing="4">
+                                <TextBlock Text="Video Model Preset" FontSize="12" Foreground="{StaticResource TextMutedBrush}"/>
+                                <ComboBox ItemsSource="{Binding AvailableVideoPresets}" SelectedItem="{Binding SelectedVideoPreset}"
+                                          HorizontalAlignment="Stretch" Classes="matte-input"/>
+                            </StackPanel>
+
+                            <!-- Video Resolution -->
+                            <StackPanel Spacing="4">
+                                <TextBlock Text="Video Resolution" FontSize="12" Foreground="{StaticResource TextMutedBrush}"/>
+                                <ComboBox ItemsSource="{Binding AvailableVideoResolutions}" SelectedItem="{Binding SelectedVideoResolution}"
+                                          HorizontalAlignment="Stretch" Classes="matte-input"/>
+                            </StackPanel>
+
+                            <!-- Video Quantization -->
+                            <StackPanel Spacing="4">
+                                <TextBlock Text="DiT Model Quantization" FontSize="12" Foreground="{StaticResource TextMutedBrush}"/>
+                                <ComboBox ItemsSource="{Binding AvailableVideoQuantizations}" SelectedItem="{Binding SelectedVideoQuantization}"
+                                          HorizontalAlignment="Stretch" Classes="matte-input"/>
+                            </StackPanel>
+
+                            <!-- Frame Count Slider -->
+                            <StackPanel Spacing="4">
+                                <Grid ColumnDefinitions="*, Auto">
+                                    <TextBlock Text="Video Frame Count" FontSize="12" Foreground="{StaticResource TextMutedBrush}"/>
+                                    <Border Grid.Column="1" Classes="matte-pill" Padding="8,2">
+                                        <TextBlock Text="{Binding VideoFrameCount, StringFormat='{}{0} Frames'}" FontSize="11" Foreground="{StaticResource AccentBrush}" FontWeight="Bold"/>
+                                    </Border>
+                                </Grid>
+                                <Slider Value="{Binding VideoFrameCount}" Minimum="49" Maximum="129" SmallChange="8" LargeChange="16"/>
+                            </StackPanel>
+                        </StackPanel>
+
+                        <!-- === AUDIO MODALITY CONTROLS === -->
+                        <StackPanel Spacing="14" IsVisible="{Binding IsAudioModality}">
+                            <TextBlock Text="🎙️ Audio &amp; Speech Engine Profiles" FontSize="14" FontWeight="Bold" Foreground="{StaticResource TextMainBrush}"/>
+
+                            <StackPanel Spacing="4">
+                                <TextBlock Text="Audio Synthesis Model" FontSize="12" Foreground="{StaticResource TextMutedBrush}"/>
+                                <ComboBox ItemsSource="{Binding AvailableAudioPresets}" SelectedItem="{Binding SelectedAudioPreset}"
+                                          HorizontalAlignment="Stretch" Classes="matte-input"/>
+                            </StackPanel>
+
+                            <Border Classes="matte-pill" Padding="12" Background="#1E293B">
+                                <TextBlock Text="Profiles include Kokoro TTS (ultra-lightweight ~400MB), Faster-Whisper Large-v3-Turbo (~2GB), AllTalk XTTS-v2 (~2.5GB), and MusicGen Melody (~3.2GB)."
+                                           FontSize="11" Foreground="{StaticResource TextMutedBrush}" TextWrapping="Wrap"/>
+                            </Border>
+                        </StackPanel>
+
+                        <!-- === 3D MODALITY CONTROLS === -->
+                        <StackPanel Spacing="14" IsVisible="{Binding IsThreeDModality}">
+                            <TextBlock Text="🧊 3D Generation Engine Profiles" FontSize="14" FontWeight="Bold" Foreground="{StaticResource TextMainBrush}"/>
+
+                            <StackPanel Spacing="4">
+                                <TextBlock Text="3D Latent Diffusion Model" FontSize="12" Foreground="{StaticResource TextMutedBrush}"/>
+                                <ComboBox ItemsSource="{Binding AvailableThreeDPresets}" SelectedItem="{Binding SelectedThreeDPreset}"
+                                          HorizontalAlignment="Stretch" Classes="matte-input"/>
+                            </StackPanel>
+
+                            <Border Classes="matte-pill" Padding="12" Background="#1E293B">
+                                <TextBlock Text="Profiles include TRELLIS V2 (~12GB VRAM full pipeline) and Hunyuan3D-2 (~16GB VRAM multi-stage mesh generation)."
+                                           FontSize="11" Foreground="{StaticResource TextMutedBrush}" TextWrapping="Wrap"/>
+                            </Border>
+                        </StackPanel>
+                    </StackPanel>
+                </Border>
+
+                <!-- RIGHT COLUMN: Interactive Fit Verdict & Memory Distribution Bar -->
+                <Border Grid.Column="1" Classes="matte-card" Padding="16" Margin="12,0,0,0">
+                    <StackPanel Spacing="16">
+                        <TextBlock Text="🎯 Compatibility Verdict &amp; Performance" FontSize="14" FontWeight="Bold" Foreground="{StaticResource TextMainBrush}"/>
+
+                        <!-- Verdict Card -->
+                        <Border Background="{StaticResource BgSurfaceBrush}" BorderBrush="{StaticResource GlassBorderBrush}" BorderThickness="1" CornerRadius="8" Padding="14">
+                            <StackPanel Spacing="10">
+                                <Grid ColumnDefinitions="*, Auto">
+                                    <TextBlock Text="{Binding FitVerdictBadge.BadgeText}" FontSize="15" FontWeight="Bold" Foreground="{Binding FitVerdictBadge.BadgeColorHex}" VerticalAlignment="Center"/>
+                                    <Border Grid.Column="1" Classes="matte-pill" Padding="8,3">
+                                        <TextBlock Text="{Binding SpeedEstimationText}" FontSize="12" Foreground="{StaticResource PrimaryBrush}" FontWeight="Bold"/>
+                                    </Border>
+                                </Grid>
+
+                                <TextBlock Text="{Binding VerdictSummaryText}" FontSize="13" FontWeight="SemiBold" Foreground="{StaticResource TextMainBrush}" TextWrapping="Wrap"/>
+
+                                <TextBlock Text="{Binding OffloadSummaryText}" FontSize="12" Foreground="{StaticResource SecondaryBrush}" FontWeight="SemiBold"/>
+
+                                <Border Classes="matte-pill" Padding="10,6" Background="#0F172A">
+                                    <TextBlock Text="{Binding RecommendationText}" FontSize="11" Foreground="{StaticResource TextMutedBrush}" TextWrapping="Wrap"/>
+                                </Border>
+                            </StackPanel>
+                        </Border>
+
+                        <!-- Stacked Memory Allocation Bar -->
+                        <StackPanel Spacing="10">
+                            <TextBlock Text="📊 Visual VRAM Allocation Breakdown" FontSize="13" FontWeight="Bold" Foreground="{StaticResource TextMainBrush}"/>
+
+                            <!-- Stacked Bar -->
+                            <Border Height="26" CornerRadius="6" ClipToBounds="True" Background="#0F172A" BorderBrush="{StaticResource GlassBorderBrush}" BorderThickness="1">
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="{Binding ModelWeightsColumnWidth}"/>
+                                        <ColumnDefinition Width="{Binding KvCacheColumnWidth}"/>
+                                        <ColumnDefinition Width="{Binding OverheadColumnWidth}"/>
+                                        <ColumnDefinition Width="{Binding FreeVramColumnWidth}"/>
+                                    </Grid.ColumnDefinitions>
+                                    <Border Grid.Column="0" Background="#38BDF8" ToolTip.Tip="Model Weights"/>
+                                    <Border Grid.Column="1" Background="#A855F7" ToolTip.Tip="KV Cache / Frame Context Buffer"/>
+                                    <Border Grid.Column="2" Background="#64748B" ToolTip.Tip="CUDA &amp; Runtime Overhead"/>
+                                    <Border Grid.Column="3" Background="#1E293B" ToolTip.Tip="Free Headroom"/>
+                                </Grid>
+                            </Border>
+
+                            <!-- Legend -->
+                            <UniformGrid Columns="2" Rows="2">
+                                <!-- Weights -->
+                                <StackPanel Orientation="Horizontal" Spacing="6" Margin="0,2">
+                                    <Border Width="12" Height="12" Background="#38BDF8" CornerRadius="2" VerticalAlignment="Center"/>
+                                    <StackPanel Orientation="Horizontal" Spacing="4">
+                                        <TextBlock Text="Weights:" FontSize="11" Foreground="{StaticResource TextMutedBrush}"/>
+                                        <TextBlock Text="{Binding ModelWeightsDetailsText}" FontSize="11" Foreground="{StaticResource TextMainBrush}" FontWeight="SemiBold"/>
+                                    </StackPanel>
+                                </StackPanel>
+
+                                <!-- Context / KV -->
+                                <StackPanel Orientation="Horizontal" Spacing="6" Margin="0,2">
+                                    <Border Width="12" Height="12" Background="#A855F7" CornerRadius="2" VerticalAlignment="Center"/>
+                                    <StackPanel Orientation="Horizontal" Spacing="4">
+                                        <TextBlock Text="Context/KV:" FontSize="11" Foreground="{StaticResource TextMutedBrush}"/>
+                                        <TextBlock Text="{Binding KvCacheDetailsText}" FontSize="11" Foreground="{StaticResource TextMainBrush}" FontWeight="SemiBold"/>
+                                    </StackPanel>
+                                </StackPanel>
+
+                                <!-- Overhead -->
+                                <StackPanel Orientation="Horizontal" Spacing="6" Margin="0,2">
+                                    <Border Width="12" Height="12" Background="#64748B" CornerRadius="2" VerticalAlignment="Center"/>
+                                    <StackPanel Orientation="Horizontal" Spacing="4">
+                                        <TextBlock Text="Overhead:" FontSize="11" Foreground="{StaticResource TextMutedBrush}"/>
+                                        <TextBlock Text="{Binding OverheadDetailsText}" FontSize="11" Foreground="{StaticResource TextMainBrush}" FontWeight="SemiBold"/>
+                                    </StackPanel>
+                                </StackPanel>
+
+                                <!-- Free -->
+                                <StackPanel Orientation="Horizontal" Spacing="6" Margin="0,2">
+                                    <Border Width="12" Height="12" Background="#1E293B" CornerRadius="2" VerticalAlignment="Center"/>
+                                    <StackPanel Orientation="Horizontal" Spacing="4">
+                                        <TextBlock Text="Free Headroom:" FontSize="11" Foreground="{StaticResource TextMutedBrush}"/>
+                                        <TextBlock Text="{Binding FreeVramDetailsText}" FontSize="11" Foreground="{StaticResource OnlineBrush}" FontWeight="SemiBold"/>
+                                    </StackPanel>
+                                </StackPanel>
+                            </UniformGrid>
+                        </StackPanel>
+                    </StackPanel>
+                </Border>
+            </Grid>
+        </StackPanel>
+    </ScrollViewer>
+</UserControl>

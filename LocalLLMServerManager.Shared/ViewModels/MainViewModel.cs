@@ -78,6 +78,10 @@ public partial class MainViewModel : ObservableObject
     public CivitaiSearchViewModel Civitai { get; }
     public SettingsViewModel Settings { get; }
     public AudioStudioViewModel Audio { get; }
+    public CanIRunItViewModel HardwareFit { get; }
+
+    [ObservableProperty]
+    private int _selectedTabIndex = 0;
 
     [ObservableProperty]
     private string _appVersionText = $"LocalLLMServerManager v{typeof(MainViewModel).Assembly.GetName().Version?.ToString(3) ?? "3.10.0"} — Unified WASM & Desktop UI";
@@ -119,6 +123,7 @@ public partial class MainViewModel : ObservableObject
         Civitai = new CivitaiSearchViewModel(civitaiSearchService) { ApiBase = ApiBase };
         Settings = new SettingsViewModel { ApiBase = ApiBase };
         Audio = new AudioStudioViewModel { ApiBase = ApiBase };
+        HardwareFit = new CanIRunItViewModel(new CanIRunItService(), telemetryService, httpClient) { ApiBase = ApiBase };
 
         _ = RefreshStatusAsync();
         _ = Ollama.LoadInstalledModelsAsync(ApiBase, Http);
@@ -264,6 +269,22 @@ public partial class MainViewModel : ObservableObject
     {
         await Telemetry.RefreshStatusAsync(ApiBase, ComfyUiUrl, Http);
         await Ollama.LoadInstalledModelsAsync(ApiBase, Http);
+        if (Telemetry != null && HardwareFit != null)
+        {
+            HardwareFit.UpdateHardwareTelemetry(
+                Telemetry.VramTotalGb * 1024.0,
+                Math.Max(0, (Telemetry.VramTotalGb - Telemetry.VramUsedGb) * 1024.0),
+                HardwareFit.TotalRamMb,
+                HardwareFit.AvailableRamMb,
+                Telemetry.GpuName
+            );
+        }
+    }
+
+    public void NavigateToCanIRunIt(string modelName, string modality = "LLM")
+    {
+        SelectedTabIndex = 4;
+        HardwareFit.InspectModel(modelName, modality);
     }
 
     [RelayCommand]

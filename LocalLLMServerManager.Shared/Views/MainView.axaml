@@ -26,7 +26,7 @@
         <controls:TelemetryHeaderControl Grid.Row="0" DataContext="{Binding Telemetry}"/>
 
         <!-- Main Content Area: Native Avalonia XAML Tabs -->
-        <TabControl Grid.Row="1" Background="Transparent" Margin="16,0,16,0">
+        <TabControl Grid.Row="1" SelectedIndex="{Binding SelectedTabIndex}" Background="Transparent" Margin="16,0,16,0">
             <!-- TAB 1: Installed LLM Models & KV Cache Calculator -->
             <TabItem Header="🦙 Installed Models">
                 <controls:OllamaModelsTabControl DataContext="{Binding Ollama}"/>
@@ -47,7 +47,12 @@
                 <controls:EngineStudioTabControl DataContext="{Binding}"/>
             </TabItem>
 
-            <!-- TAB 5: Remote Access & Settings -->
+            <!-- TAB 5: Can I Run It Hardware Fit Calculator -->
+            <TabItem Header="⚡ Can I Run It">
+                <controls:CanIRunItView DataContext="{Binding HardwareFit}"/>
+            </TabItem>
+
+            <!-- TAB 6: Remote Access & Settings -->
             <TabItem Header="⚙️ Settings">
                 <controls:SettingsTabControl DataContext="{Binding Settings}"/>
             </TabItem>

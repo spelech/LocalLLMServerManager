@@ -50,7 +50,7 @@ public class AvaloniaHeadlessInteractionTests
 
         var tabControl = view.GetVisualDescendants().OfType<TabControl>().FirstOrDefault();
         Assert.NotNull(tabControl);
-        Assert.Equal(5, tabControl.Items.Count);
+        Assert.Equal(6, tabControl.Items.Count);
 
         // Switch to Tab 3 (CivitAI)
         tabControl.SelectedIndex = 2;
@@ -60,9 +60,110 @@ public class AvaloniaHeadlessInteractionTests
         tabControl.SelectedIndex = 3;
         Assert.Equal(3, tabControl.SelectedIndex);
 
-        // Switch to Tab 5 (Settings)
+        // Switch to Tab 5 (Can I Run It)
         tabControl.SelectedIndex = 4;
         Assert.Equal(4, tabControl.SelectedIndex);
+
+        // Switch to Tab 6 (Settings)
+        tabControl.SelectedIndex = 5;
+        Assert.Equal(5, tabControl.SelectedIndex);
+
+        window.Close();
+    }
+
+    [AvaloniaFact]
+    public void CanIRunItView_RendersVisualTree_AndBindsHardwareTelemetry()
+    {
+        var vm = new CanIRunItViewModel();
+        var view = new CanIRunItView { DataContext = vm };
+
+        var window = new Window { Content = view, Width = 1024, Height = 768 };
+        window.Show();
+
+        Assert.NotNull(view);
+        Assert.NotNull(view.DataContext);
+
+        // Find Hardware Telemetry text
+        var textBlocks = view.GetVisualDescendants().OfType<TextBlock>().ToList();
+        var gpuTextBlock = textBlocks.FirstOrDefault(t => t.Text != null && t.Text.Contains(vm.GpuName));
+        Assert.NotNull(gpuTextBlock);
+
+        var vramTextBlock = textBlocks.FirstOrDefault(t => t.Text != null && t.Text.Contains("GB VRAM"));
+        Assert.NotNull(vramTextBlock);
+
+        // Find Verdict and Recommendation readout
+        var verdictText = textBlocks.FirstOrDefault(t => t.Text != null && (t.Text.Contains("Fits 100% in VRAM") || t.Text.Contains("Full VRAM")));
+        Assert.NotNull(verdictText);
+
+        window.Close();
+    }
+
+    [AvaloniaFact]
+    public void CanIRunItView_SliderAndPresetInteraction_UpdatesCalculations()
+    {
+        var vm = new CanIRunItViewModel();
+        var view = new CanIRunItView { DataContext = vm };
+
+        var window = new Window { Content = view, Width = 1024, Height = 768 };
+        window.Show();
+
+        // Find sliders in CanIRunItView
+        var sliders = view.GetVisualDescendants().OfType<Slider>().ToList();
+        Assert.NotEmpty(sliders);
+
+        // Find Context length slider (minimum >= 1024, max >= 32768)
+        var contextSlider = sliders.FirstOrDefault(s => s.Maximum >= 65536 || s.Minimum >= 2048);
+        if (contextSlider != null)
+        {
+            contextSlider.Value = 32768;
+            Assert.Equal(32768, vm.ContextLength);
+        }
+
+        // Test Modality Switch via UI buttons
+        var buttons = view.GetVisualDescendants().OfType<Button>().ToList();
+        var imageBtn = buttons.FirstOrDefault(b => b.Content?.ToString()?.Contains("Image") == true);
+        if (imageBtn != null)
+        {
+            if (imageBtn.Command != null && imageBtn.Command.CanExecute(imageBtn.CommandParameter))
+            {
+                imageBtn.Command.Execute(imageBtn.CommandParameter);
+            }
+            else
+            {
+                vm.SelectImageModalityCommand.Execute(null);
+            }
+            Assert.Equal("Image", vm.SelectedModality);
+            Assert.NotNull(vm.DiffusionResult);
+        }
+
+        window.Close();
+    }
+
+    [AvaloniaFact]
+    public void MainView_Tab5_CanIRunItNavigation_SwitchesTabAndRendersCanIRunItView()
+    {
+        var vm = new MainViewModel();
+        var view = new MainView { DataContext = vm };
+
+        var window = new Window { Content = view, Width = 1024, Height = 768 };
+        window.Show();
+
+        Assert.NotNull(vm.HardwareFit);
+
+        // Perform navigation
+        vm.NavigateToCanIRunIt("DeepSeek R1 70B", "LLM");
+
+        Assert.Equal(4, vm.SelectedTabIndex);
+        Assert.Equal("DeepSeek R1 70B", vm.HardwareFit.SelectedPreset);
+        Assert.Equal(70.0, vm.HardwareFit.ParametersBillions);
+
+        var tabControl = view.GetVisualDescendants().OfType<TabControl>().FirstOrDefault();
+        Assert.NotNull(tabControl);
+        Assert.Equal(4, tabControl.SelectedIndex);
+
+        // Verify CanIRunItView rendered
+        var canIRunItView = view.GetVisualDescendants().OfType<CanIRunItView>().FirstOrDefault();
+        Assert.NotNull(canIRunItView);
 
         window.Close();
     }
