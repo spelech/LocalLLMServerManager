@@ -21,8 +21,7 @@
             <StackPanel Orientation="Horizontal" Spacing="6">
                 <TextBlock Text="Hardware Filter:" FontSize="12" Foreground="{StaticResource TextMutedBrush}" VerticalAlignment="Center" Margin="0,0,4,0"/>
                 <Button Command="{Binding ToggleFitVerdictCommand}" CommandParameter="FullVram" Classes="matte-pill">
-                    <TextBlock Text="🟢 Full VRAM" FontSize="11" FontWeight="Bold" Foreground="#10B981"
-                               Opacity="{Binding IsFullVramActive, Converter={x:Static ObjectConverters.IsNull}}"/>
+                    <TextBlock Text="🟢 Full VRAM" FontSize="11" FontWeight="Bold" Foreground="#10B981"/>
                 </Button>
                 <Button Command="{Binding ToggleFitVerdictCommand}" CommandParameter="PartialOffload" Classes="matte-pill">
                     <TextBlock Text="🟡 Partial Offload" FontSize="11" FontWeight="Bold" Foreground="#F59E0B"/>

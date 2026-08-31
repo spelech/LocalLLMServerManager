@@ -56,6 +56,9 @@ if (Test-Path $AppBundleFramework) {
     Copy-Item -Path "$AppBundleFramework\*" -Destination "$RepoFramework" -Recurse -Force
 }
 
+# Clean any stale compressed assets
+Get-ChildItem -Path "$RootDir\wwwroot" -Include *.br, *.gz -Recurse -ErrorAction SilentlyContinue | Remove-Item -Force -ErrorAction SilentlyContinue
+
 # 4. Fast compile & publish backend to installation dir
 Write-Host "Compiling and publishing backend binaries..." -ForegroundColor Yellow
 if (-not (Test-Path $InstallDir)) {
@@ -64,12 +67,13 @@ if (-not (Test-Path $InstallDir)) {
 
 dotnet publish "$RootDir\LocalLLMServerManager.csproj" -c Release -r win-x64 --self-contained -o "$InstallDir" --nologo /p:PublishSingleFile=false
 
-# Copy wwwroot assets to installed folder
+# Copy wwwroot assets to installed folder and remove stale .br / .gz
 $RepoWwwroot = Join-Path $RootDir "wwwroot"
 $InstallWwwroot = Join-Path $InstallDir "wwwroot"
 if (Test-Path $RepoWwwroot) {
     Copy-Item -Path "$RepoWwwroot\*" -Destination "$InstallWwwroot\" -Recurse -Force
 }
+Get-ChildItem -Path "$InstallWwwroot" -Include *.br, *.gz -Recurse -ErrorAction SilentlyContinue | Remove-Item -Force -ErrorAction SilentlyContinue
 
 # 5. Restart service or launch process
 $ExePath = Join-Path $InstallDir "LocalLLMServerManager.exe"

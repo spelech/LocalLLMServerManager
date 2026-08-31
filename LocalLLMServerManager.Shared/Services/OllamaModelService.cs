@@ -154,6 +154,14 @@ public class OllamaModelService : IOllamaModelService
         if (string.IsNullOrWhiteSpace(modelName)) return false;
         try
         {
+            var baseAddress = !string.IsNullOrWhiteSpace(apiBase)
+                ? apiBase.TrimEnd('/')
+                : (http.BaseAddress != null ? "" : (OperatingSystem.IsBrowser() ? "" : "http://127.0.0.1:5246"));
+
+            var endpointUrl = string.IsNullOrWhiteSpace(baseAddress)
+                ? $"/api/models/delete?model={Uri.EscapeDataString(modelName)}&type=ollama"
+                : $"{baseAddress}/api/models/delete?model={Uri.EscapeDataString(modelName)}&type=ollama";
+
             var content = new StringContent(
                 JsonSerializer.Serialize(new { model = modelName, name = modelName, type = "ollama" }),
                 System.Text.Encoding.UTF8,
@@ -161,7 +169,6 @@ public class OllamaModelService : IOllamaModelService
             );
 
             // 1. Try server proxy endpoint with query params and body via DELETE
-            var endpointUrl = $"{apiBase}/api/models/delete?model={Uri.EscapeDataString(modelName)}&type=ollama";
             using var req = new HttpRequestMessage(HttpMethod.Delete, endpointUrl) { Content = content };
             var resp = await http.SendAsync(req);
             if (resp.IsSuccessStatusCode) return true;
@@ -202,13 +209,20 @@ public class OllamaModelService : IOllamaModelService
         if (string.IsNullOrWhiteSpace(filePath)) return false;
         try
         {
+            var baseAddress = !string.IsNullOrWhiteSpace(apiBase)
+                ? apiBase.TrimEnd('/')
+                : (http.BaseAddress != null ? "" : (OperatingSystem.IsBrowser() ? "" : "http://127.0.0.1:5246"));
+
+            var endpointUrl = string.IsNullOrWhiteSpace(baseAddress)
+                ? $"/api/models/delete?file_path={Uri.EscapeDataString(filePath)}&type=file"
+                : $"{baseAddress}/api/models/delete?file_path={Uri.EscapeDataString(filePath)}&type=file";
+
             var content = new StringContent(
                 JsonSerializer.Serialize(new { file_path = filePath, filePath, type = "file" }),
                 System.Text.Encoding.UTF8,
                 "application/json"
             );
 
-            var endpointUrl = $"{apiBase}/api/models/delete?file_path={Uri.EscapeDataString(filePath)}&type=file";
             using var req = new HttpRequestMessage(HttpMethod.Delete, endpointUrl) { Content = content };
             var resp = await http.SendAsync(req);
             if (resp.IsSuccessStatusCode) return true;
