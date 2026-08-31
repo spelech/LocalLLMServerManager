@@ -4,9 +4,10 @@
              x:Class="LocalLLMServerManager.Shared.Views.Controls.HuggingFaceTabControl"
              x:DataType="vm:HuggingFaceSearchViewModel">
 
-    <Grid RowDefinitions="Auto, Auto, *" Margin="0,12,0,0">
+    <Grid RowDefinitions="Auto, Auto, Auto, *" Margin="0,12,0,0">
+        <!-- Search Input Bar -->
         <Grid Grid.Row="0" ColumnDefinitions="*, Auto" Margin="0,0,0,8">
-            <TextBox Grid.Column="0" Text="{Binding HfSearchQuery}" PlaceholderText="Search Hugging Face models (e.g. llama 3.3, Wan, LTX, Kokoro)..."
+            <TextBox Grid.Column="0" Text="{Binding HfSearchQuery}" PlaceholderText="Search Hugging Face models (e.g. llama 3.3, Wan, LTX, Kokoro, Qwen2-VL)..."
                      Classes="matte-input" VerticalAlignment="Center"/>
             <Button Grid.Column="1" Command="{Binding SearchHuggingFaceCommand}" 
                     Classes="matte-primary" Margin="8,0,0,0" VerticalAlignment="Center">
@@ -14,19 +15,62 @@
             </Button>
         </Grid>
 
-        <ScrollViewer Grid.Row="1" HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Disabled" Margin="0,0,0,12">
+        <!-- Quick Presets Row -->
+        <ScrollViewer Grid.Row="1" HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Disabled" Margin="0,0,0,8">
             <StackPanel Orientation="Horizontal" Spacing="6">
-                <Button Content="All" Command="{Binding SelectCategoryCommand}" CommandParameter="" Classes="matte-pill"/>
-                <Button Content="🦙 LLM (GGUF)" Command="{Binding SelectCategoryCommand}" CommandParameter="gguf" Classes="matte-pill"/>
-                <Button Content="🎬 Video" Command="{Binding SelectCategoryCommand}" CommandParameter="text-to-video" Classes="matte-pill"/>
-                <Button Content="🔊 Speech/TTS" Command="{Binding SelectCategoryCommand}" CommandParameter="text-to-speech" Classes="matte-pill"/>
-                <Button Content="🎵 Music/SFX" Command="{Binding SelectCategoryCommand}" CommandParameter="text-to-audio" Classes="matte-pill"/>
-                <Button Content="📦 3D Mesh" Command="{Binding SelectCategoryCommand}" CommandParameter="text-to-3d" Classes="matte-pill"/>
+                <Button Content="🌟 Multimodal / VLM" Command="{Binding ApplyPresetCommand}" CommandParameter="Multimodal" Classes="matte-pill"/>
+                <Button Content="🦙 Text LLM" Command="{Binding ApplyPresetCommand}" CommandParameter="LLM" Classes="matte-pill"/>
+                <Button Content="🎨 Text-to-Image" Command="{Binding ApplyPresetCommand}" CommandParameter="Image" Classes="matte-pill"/>
+                <Button Content="🎬 Video Gen" Command="{Binding ApplyPresetCommand}" CommandParameter="Video" Classes="matte-pill"/>
+                <Button Content="🔊 Speech &amp; Audio" Command="{Binding ApplyPresetCommand}" CommandParameter="Audio" Classes="matte-pill"/>
+                <Button Content="📦 3D Mesh" Command="{Binding ApplyPresetCommand}" CommandParameter="3D" Classes="matte-pill"/>
             </StackPanel>
         </ScrollViewer>
 
-        <ScrollViewer Grid.Row="2">
-            <ItemsControl ItemsSource="{Binding HuggingFaceResults}">
+        <!-- Modality Matrix & Hardware Compatibility Filter -->
+        <Border Grid.Row="2" Classes="matte-card" Margin="0,0,0,10" Padding="12,10">
+            <StackPanel Spacing="8">
+                <!-- Inputs & Outputs Matrix -->
+                <Grid ColumnDefinitions="Auto, *, Auto, *">
+                    <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
+                        <TextBlock Text="Inputs:" FontSize="11" FontWeight="Bold" Foreground="{StaticResource SecondaryBrush}" VerticalAlignment="Center"/>
+                        <Button Content="Text" Command="{Binding ToggleInputModalityCommand}" CommandParameter="Text" Classes="matte-pill" Padding="6,2"/>
+                        <Button Content="Image" Command="{Binding ToggleInputModalityCommand}" CommandParameter="Image" Classes="matte-pill" Padding="6,2"/>
+                        <Button Content="Audio" Command="{Binding ToggleInputModalityCommand}" CommandParameter="Audio" Classes="matte-pill" Padding="6,2"/>
+                        <Button Content="Video" Command="{Binding ToggleInputModalityCommand}" CommandParameter="Video" Classes="matte-pill" Padding="6,2"/>
+                    </StackPanel>
+
+                    <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="6" VerticalAlignment="Center" Margin="16,0,0,0">
+                        <TextBlock Text="Outputs:" FontSize="11" FontWeight="Bold" Foreground="{StaticResource AccentBrush}" VerticalAlignment="Center"/>
+                        <Button Content="Text" Command="{Binding ToggleOutputModalityCommand}" CommandParameter="Text" Classes="matte-pill" Padding="6,2"/>
+                        <Button Content="Image" Command="{Binding ToggleOutputModalityCommand}" CommandParameter="Image" Classes="matte-pill" Padding="6,2"/>
+                        <Button Content="Audio" Command="{Binding ToggleOutputModalityCommand}" CommandParameter="Audio" Classes="matte-pill" Padding="6,2"/>
+                        <Button Content="Video" Command="{Binding ToggleOutputModalityCommand}" CommandParameter="Video" Classes="matte-pill" Padding="6,2"/>
+                        <Button Content="3D" Command="{Binding ToggleOutputModalityCommand}" CommandParameter="3D" Classes="matte-pill" Padding="6,2"/>
+                    </StackPanel>
+                </Grid>
+
+                <!-- Hardware Compatibility Filter Chips -->
+                <StackPanel Orientation="Horizontal" Spacing="6">
+                    <TextBlock Text="Hardware Filter:" FontSize="11" Foreground="{StaticResource TextMutedBrush}" VerticalAlignment="Center" Margin="0,0,4,0"/>
+                    <Button Command="{Binding ToggleFitVerdictCommand}" CommandParameter="FullVram" Classes="matte-pill" Padding="6,2">
+                        <TextBlock Text="🟢 Full VRAM" FontSize="11" FontWeight="Bold" Foreground="#10B981"/>
+                    </Button>
+                    <Button Command="{Binding ToggleFitVerdictCommand}" CommandParameter="PartialOffload" Classes="matte-pill" Padding="6,2">
+                        <TextBlock Text="🟡 Partial Offload" FontSize="11" FontWeight="Bold" Foreground="#F59E0B"/>
+                    </Button>
+                    <Button Command="{Binding ToggleFitVerdictCommand}" CommandParameter="CpuOnly" Classes="matte-pill" Padding="6,2">
+                        <TextBlock Text="🟠 CPU Only" FontSize="11" FontWeight="Bold" Foreground="#F97316"/>
+                    </Button>
+                    <Button Command="{Binding ToggleFitVerdictCommand}" CommandParameter="OutOfMemory" Classes="matte-pill" Padding="6,2">
+                        <TextBlock Text="🔴 Won't Fit" FontSize="11" FontWeight="Bold" Foreground="#EF4444"/>
+                    </Button>
+                </StackPanel>
+            </StackPanel>
+        </Border>
+
+        <ScrollViewer Grid.Row="3">
+            <ItemsControl ItemsSource="{Binding FilteredHuggingFaceResults}">
                 <ItemsControl.ItemTemplate>
                     <DataTemplate DataType="vm:HuggingFaceRepoItem">
                         <Border Classes="matte-card" Margin="0,0,0,8" Padding="14,12">

@@ -12,7 +12,33 @@ public class HuggingFaceSearchService : IHuggingFaceSearchService
 {
     public async Task<List<HuggingFaceRepoItem>> SearchRepositoriesAsync(string apiBase, string query, HttpClient http)
     {
-        return await SearchRepositoriesAsync(apiBase, query, null, http);
+        return await SearchRepositoriesAsync(apiBase, query, null as string, http);
+    }
+
+    public async Task<List<HuggingFaceRepoItem>> SearchRepositoriesAsync(string apiBase, string query, IEnumerable<string>? pipelineTags, HttpClient http)
+    {
+        var tags = pipelineTags?.Where(t => !string.IsNullOrWhiteSpace(t)).ToList();
+        if (tags == null || tags.Count == 0)
+        {
+            return await SearchRepositoriesAsync(apiBase, query, null as string, http);
+        }
+
+        var combined = new List<HuggingFaceRepoItem>();
+        var seenIds = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
+        foreach (var tag in tags)
+        {
+            var results = await SearchRepositoriesAsync(apiBase, query, tag, http);
+            foreach (var item in results)
+            {
+                if (seenIds.Add(item.Id))
+                {
+                    combined.Add(item);
+                }
+            }
+        }
+
+        return combined;
     }
 
     public async Task<List<HuggingFaceRepoItem>> SearchRepositoriesAsync(string apiBase, string query, string? pipelineTag, HttpClient http)
