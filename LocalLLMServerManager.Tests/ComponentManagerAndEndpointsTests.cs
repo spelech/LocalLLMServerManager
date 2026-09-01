@@ -2,6 +2,8 @@ using System.Net;
 using System.Net.Http.Json;
 using LocalLLMServerManager.Services;
 using LocalLLMServerManager.Shared.Models;
+using Moq;
+using Moq.Protected;
 using Xunit;
 
 namespace LocalLLMServerManager.Tests;
