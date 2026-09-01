@@ -75,8 +75,8 @@ public class ComponentManagerAndEndpointsTests : IClassFixture<AppTestServerFixt
     public async Task SettingsViewModel_RefreshComponentStatusesAsync_UpdatesInstalledFlags()
     {
         var jsonResponse = @"[
-            { ""id"": ""video-generation"", ""name"": ""Video"", ""isInstalled"": true },
-            { ""id"": ""audio-tts"", ""name"": ""Audio"", ""isInstalled"": true }
+            { ""id"": ""video-generation"", ""name"": ""Video"", ""installed"": true },
+            { ""id"": ""audio-tts"", ""name"": ""Audio"", ""installed"": true }
         ]";
 
         var handlerMock = new Moq.Mock<HttpMessageHandler>();
