@@ -114,4 +114,39 @@ public class ServicesAndEngineManagerTests
         Assert.True(stopResult.Success);
         Assert.Equal("audio", stopResult.Engine);
     }
+
+    [Theory]
+    [InlineData("forge")]
+    [InlineData("sdforge")]
+    [InlineData("comfyui")]
+    [InlineData("comfy")]
+    [InlineData("ollama")]
+    [InlineData("unknown_engine_xyz")]
+    public async Task AiEngineManager_StartEngineAsync_DispatchesExpectedEngine(string engineName)
+    {
+        var manager = new AiEngineManager();
+        var result = await manager.StartEngineAsync(engineName);
+        Assert.NotNull(result);
+        if (engineName == "unknown_engine_xyz")
+        {
+            Assert.False(result.Success);
+            Assert.Contains("Unsupported", result.Message);
+        }
+    }
+
+    [Theory]
+    [InlineData("forge")]
+    [InlineData("comfyui")]
+    [InlineData("unknown_engine_xyz")]
+    public async Task AiEngineManager_StopEngineAsync_DispatchesExpectedEngine(string engineName)
+    {
+        var manager = new AiEngineManager();
+        var result = await manager.StopEngineAsync(engineName);
+        Assert.NotNull(result);
+        if (engineName == "unknown_engine_xyz")
+        {
+            Assert.False(result.Success);
+            Assert.Contains("Unsupported", result.Message);
+        }
+    }
 }

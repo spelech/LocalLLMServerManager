@@ -441,5 +441,63 @@ public class MainViewModelTests : IClassFixture<AppTestServerFixture>
         Assert.Equal("E:\\Models", postedSettings!.ForgeModelsPath);
         Assert.Equal("http://127.0.0.1:9000", postedSettings.ComfyUiUrl);
     }
+
+    [Fact]
+    public void MainViewModel_VideoControls_UpdateStateProperly()
+    {
+        var vm = new MainViewModel(new HttpClient());
+        var videoItem = new VideoAssetItem("output_001.mp4", "http://localhost:5246/outputs/output_001.mp4", "5.0s", "1280x720", 24, 123456L, 10485760L, DateTime.UtcNow);
+
+        vm.SelectVideo(videoItem);
+        Assert.Equal("http://localhost:5246/outputs/output_001.mp4", vm.RenderedVideoUrl);
+        Assert.Equal("5.0s", vm.VideoDurationText);
+        Assert.Equal("1280x720", vm.VideoResolutionBadge);
+        Assert.Equal("24 fps", vm.VideoFpsBadge);
+        Assert.Equal("123456", vm.VideoSeedBadge);
+
+        vm.ToggleVideoPlay();
+        Assert.False(vm.IsVideoPlaying);
+        vm.ToggleVideoPlay();
+        Assert.True(vm.IsVideoPlaying);
+
+        vm.ToggleVideoLoop();
+        Assert.False(vm.IsVideoLooping);
+        vm.ToggleVideoLoop();
+        Assert.True(vm.IsVideoLooping);
+    }
+
+    [Fact]
+    public async Task MainViewModel_LoadGeneratedVideosAsync_ParsesJsonArray()
+    {
+        var json = @"[
+            {
+                ""filename"": ""test_video.mp4"",
+                ""url"": ""/outputs/test_video.mp4"",
+                ""duration"": ""4.0s"",
+                ""resolution"": ""832x480"",
+                ""fps"": 16,
+                ""seed"": 99999,
+                ""sizeBytes"": 5242880
+            }
+        ]";
+
+        var handlerMock = new Mock<HttpMessageHandler>();
+        handlerMock.Protected()
+            .Setup<Task<HttpResponseMessage>>(
+                "SendAsync",
+                ItExpr.Is<HttpRequestMessage>(req => req.RequestUri!.ToString().Contains("/api/video/files")),
+                ItExpr.IsAny<System.Threading.CancellationToken>()
+            )
+            .ReturnsAsync(new HttpResponseMessage { StatusCode = HttpStatusCode.OK, Content = new StringContent(json, Encoding.UTF8, "application/json") });
+
+        var client = new HttpClient(handlerMock.Object);
+        var vm = new MainViewModel(client) { ApiBase = "http://127.0.0.1:5246" };
+
+        await vm.LoadGeneratedVideosAsync();
+
+        Assert.Single(vm.GeneratedVideosList);
+        Assert.Equal("test_video.mp4", vm.GeneratedVideosList[0].Filename);
+        Assert.Equal("http://127.0.0.1:5246/outputs/test_video.mp4", vm.RenderedVideoUrl);
+    }
 }
 
