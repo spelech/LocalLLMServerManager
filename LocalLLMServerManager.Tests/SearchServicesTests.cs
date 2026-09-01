@@ -146,6 +146,59 @@ public class SearchServicesTests
     }
 
     [Fact]
+    public async Task HuggingFaceSearchService_SearchRepositoriesAsync_MultiTags_CombinesDistinctResults()
+    {
+        var jsonResponse = @"[
+            { ""id"": ""repo/audio-1"", ""author"": ""meta"", ""likes"": 10, ""downloads"": 100, ""pipeline_tag"": ""text-to-speech"" },
+            { ""id"": ""repo/audio-2"", ""author"": ""meta"", ""likes"": 20, ""downloads"": 200, ""pipeline_tag"": ""text-to-audio"" }
+        ]";
+
+        var handlerMock = new Mock<HttpMessageHandler>();
+        handlerMock.Protected()
+            .Setup<Task<HttpResponseMessage>>("SendAsync", ItExpr.IsAny<HttpRequestMessage>(), ItExpr.IsAny<System.Threading.CancellationToken>())
+            .ReturnsAsync(new HttpResponseMessage
+            {
+                StatusCode = HttpStatusCode.OK,
+                Content = new StringContent(jsonResponse)
+            });
+
+        var client = new HttpClient(handlerMock.Object);
+        var service = new HuggingFaceSearchService();
+
+        var results = await service.SearchRepositoriesAsync("http://localhost", "query", new[] { "text-to-speech", "text-to-audio" }, client);
+        Assert.Equal(2, results.Count);
+    }
+
+    [Fact]
+    public async Task HuggingFaceSearchService_FetchQuantizationsAsync_ParsesDifferentQuantizations()
+    {
+        var jsonResponse = @"{
+            ""siblings"": [
+                { ""rfilename"": ""model-Q5_K_M.gguf"", ""size"": 5000000000 },
+                { ""rfilename"": ""model-FP16.gguf"", ""size"": 16000000000 },
+                { ""rfilename"": ""readme.md"", ""size"": 1024 }
+            ]
+        }";
+
+        var handlerMock = new Mock<HttpMessageHandler>();
+        handlerMock.Protected()
+            .Setup<Task<HttpResponseMessage>>("SendAsync", ItExpr.IsAny<HttpRequestMessage>(), ItExpr.IsAny<System.Threading.CancellationToken>())
+            .ReturnsAsync(new HttpResponseMessage
+            {
+                StatusCode = HttpStatusCode.OK,
+                Content = new StringContent(jsonResponse)
+            });
+
+        var client = new HttpClient(handlerMock.Object);
+        var service = new HuggingFaceSearchService();
+
+        var quants = await service.FetchQuantizationsAsync("http://localhost", "org/model", client);
+        Assert.Equal(2, quants.Count);
+        Assert.Equal("Q5_K_M", quants[0].Quantization);
+        Assert.Equal("FP16", quants[1].Quantization);
+    }
+
+    [Fact]
     public void HuggingFaceSearchViewModel_ResolvePipelineTags_MultimodalVlmReturnsExpectedTags()
     {
         var inputs = new[] { "Text", "Image" };
@@ -208,5 +261,37 @@ public class SearchServicesTests
 
         vm.ToggleFitVerdict("oom");
         Assert.Equal(2, vm.FilteredCivitaiResults.Count);
+    }
+
+    [Fact]
+    public async Task SearchServices_EmptyResponses_ReturnEmptyLists()
+    {
+        var handlerMock = new Mock<HttpMessageHandler>();
+        handlerMock.Protected()
+            .Setup<Task<HttpResponseMessage>>("SendAsync", ItExpr.IsAny<HttpRequestMessage>(), ItExpr.IsAny<System.Threading.CancellationToken>())
+            .ReturnsAsync(new HttpResponseMessage
+            {
+                StatusCode = HttpStatusCode.OK,
+                Content = new StringContent("{ \"items\": [] }")
+            });
+
+        var client = new HttpClient(handlerMock.Object);
+        var civitai = new CivitaiSearchService();
+        var civResults = await civitai.SearchModelsAsync("http://localhost", "none", "Checkpoint", "Most Downloaded", client);
+        Assert.Empty(civResults);
+
+        var hf = new HuggingFaceSearchService();
+        var hfResults = await hf.SearchRepositoriesAsync("http://localhost", "query", client);
+        Assert.Empty(hfResults);
+    }
+
+    [Fact]
+    public async Task HuggingFaceSearchService_SearchModelsAsync_ExecutesGracefully()
+    {
+        var service = new HuggingFaceSearchService();
+        using var cts = new System.Threading.CancellationTokenSource();
+        cts.Cancel(); // Cancel immediately to avoid network calls during offline unit tests
+        var results = await service.SearchModelsAsync("llama", "text-generation", cts.Token);
+        Assert.Empty(results);
     }
 }

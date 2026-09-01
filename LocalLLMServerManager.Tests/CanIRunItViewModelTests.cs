@@ -393,4 +393,178 @@ public class CanIRunItViewModelTests
         Assert.Null(vm.ModelToDelete);
         Assert.Empty(vm.InstalledModels);
     }
+
+    [Theory]
+    [InlineData("Qwen 2.5 32B", 32.0)]
+    [InlineData("Qwen 2.5 72B", 72.0)]
+    [InlineData("DeepSeek R1 32B", 32.0)]
+    [InlineData("DeepSeek R1 70B", 70.0)]
+    [InlineData("Mistral Small 24B", 24.0)]
+    [InlineData("Gemma 2 9B", 9.0)]
+    [InlineData("Gemma 2 27B", 27.0)]
+    [InlineData("Phi-4 14B", 14.0)]
+    public void LlmPresets_Switching_SetsParametersCorrectly(string presetName, double expectedParams)
+    {
+        var vm = new CanIRunItViewModel();
+        vm.SelectedPreset = presetName;
+
+        Assert.Equal(expectedParams, vm.ParametersBillions);
+        Assert.Equal("Q4_K_M", vm.SelectedQuantization);
+        Assert.NotNull(vm.LlmResult);
+    }
+
+    [Theory]
+    [InlineData("Flux.1 Schnell", 1024, "FP8")]
+    [InlineData("SDXL", 1024, "FP16")]
+    [InlineData("SD 3.5 Large", 1024, "FP8")]
+    [InlineData("SD 1.5", 512, "FP16")]
+    public void ImagePresets_Switching_SetsResolutionAndQuant(string preset, int expectedRes, string expectedQuant)
+    {
+        var vm = new CanIRunItViewModel();
+        vm.SelectedModality = "Image";
+        vm.SelectedImagePreset = preset;
+
+        Assert.Equal(expectedRes, vm.SelectedImageResolution);
+        Assert.Equal(expectedQuant, vm.SelectedImageQuantization);
+        Assert.NotNull(vm.DiffusionResult);
+    }
+
+    [Theory]
+    [InlineData("Wan 2.2 1.3B")]
+    [InlineData("LTX-Video")]
+    [InlineData("HunyuanVideo")]
+    public void VideoPresets_Switching_UpdatesCalculation(string preset)
+    {
+        var vm = new CanIRunItViewModel();
+        vm.SelectedModality = "Video";
+        vm.SelectedVideoPreset = preset;
+        vm.SelectedVideoResolution = "480p";
+        vm.SelectedVideoQuantization = "Q4";
+
+        Assert.NotNull(vm.VideoResult);
+        Assert.Equal(preset, vm.VideoResult.ModelName);
+    }
+
+    [Theory]
+    [InlineData("Faster-Whisper Large-v3-Turbo")]
+    [InlineData("AllTalk XTTS-v2")]
+    [InlineData("MusicGen Melody")]
+    public void AudioPresets_Switching_UpdatesCalculation(string preset)
+    {
+        var vm = new CanIRunItViewModel();
+        vm.SelectedModality = "Audio";
+        vm.SelectedAudioPreset = preset;
+
+        Assert.NotNull(vm.AudioResult);
+        Assert.Equal(preset, vm.AudioResult.EngineName);
+    }
+
+    [Fact]
+    public void ThreeDPresets_Switching_UpdatesCalculation()
+    {
+        var vm = new CanIRunItViewModel();
+        vm.SelectedModality = "ThreeD";
+        vm.SelectedThreeDPreset = "Hunyuan3D-2";
+
+        Assert.NotNull(vm.ThreeDResult);
+        Assert.Equal("Hunyuan3D-2", vm.ThreeDResult.ModelName);
+    }
+
+    [Theory]
+    [InlineData("DIFFUSION", "Image")]
+    [InlineData("IMAGE", "Image")]
+    [InlineData("VIDEO", "Video")]
+    [InlineData("SPEECH", "Audio")]
+    [InlineData("TTS", "Audio")]
+    [InlineData("AUDIO", "Audio")]
+    [InlineData("3D", "ThreeD")]
+    [InlineData("THREED", "ThreeD")]
+    [InlineData("UNKNOWN_MODALITY", "LLM")]
+    public void SelectModality_StringCommand_MapsCorrectly(string input, string expectedModality)
+    {
+        var vm = new CanIRunItViewModel();
+        vm.SelectModality(input);
+
+        Assert.Equal(expectedModality, vm.SelectedModality);
+    }
+
+    [Fact]
+    public void SelectModality_EmptyInput_DoesNothing()
+    {
+        var vm = new CanIRunItViewModel();
+        vm.SelectedModality = "Video";
+        vm.SelectModality("");
+        Assert.Equal("Video", vm.SelectedModality);
+    }
+
+    [Fact]
+    public void ModalityCommands_RelayExecution_SwitchesState()
+    {
+        var vm = new CanIRunItViewModel();
+        vm.Select3DModality();
+        Assert.Equal("ThreeD", vm.SelectedModality);
+
+        vm.SelectLlmModality();
+        Assert.Equal("LLM", vm.SelectedModality);
+    }
+
+    [Theory]
+    [InlineData("my-custom-model-8b.Q8_0.gguf", 8.0, "Q8_0")]
+    [InlineData("qwen2.5-14b-instruct.fp16.bin", 14.0, "FP16")]
+    [InlineData("custom-model-27b-chat.gguf", 27.0, "Q4_K_M")]
+    [InlineData("tiny-model-1.5b.fp8.safetensors", 1.5, "FP8")]
+    [InlineData("unknown-model-without-params.gguf", 8.0, "Q4_K_M")]
+    public void InspectModel_CustomLlmNames_ExtractsParamsAndQuant(string name, double expectedB, string expectedQuant)
+    {
+        var vm = new CanIRunItViewModel();
+        vm.InspectModel(name, "LLM");
+
+        Assert.Equal("Custom", vm.SelectedPreset);
+        Assert.Equal(expectedB, vm.ParametersBillions);
+        Assert.Equal(expectedQuant, vm.SelectedQuantization);
+    }
+
+    [Fact]
+    public async Task RefreshTelemetryAsync_QueriesServiceAndUpdateHardware()
+    {
+        var mockTelemetry = new Mock<ITelemetryService>();
+        mockTelemetry.Setup(t => t.QueryGpuVramAsync(It.IsAny<string>(), It.IsAny<HttpClient>()))
+            .ReturnsAsync(new GpuTelemetryInfo("NVIDIA RTX 4080", 2.0, 16.0, 14.0, 10));
+
+        var vm = new CanIRunItViewModel(mockTelemetry.Object);
+        using var client = new HttpClient();
+        await vm.RefreshTelemetryAsync("http://localhost:5246", client);
+
+        Assert.Equal("NVIDIA RTX 4080", vm.GpuName);
+        Assert.Equal(16384.0, vm.TotalVramMb);
+    }
+
+    [Fact]
+    public void LowMemory_Verdicts_CoverFormattingBranches()
+    {
+        var vm = new CanIRunItViewModel();
+        // Set VRAM and RAM very low to trigger OOM/CPU verdicts across modalities
+        vm.UpdateHardwareTelemetry(512.0, 512.0, 1024.0, 1024.0, "Low-End iGPU");
+
+        vm.SelectModality("LLM");
+        vm.SelectedPreset = "DeepSeek R1 671B";
+        Assert.Equal(FitVerdict.OutOfMemory, vm.LlmResult?.FitVerdict);
+        Assert.Contains("Out of Memory", vm.VerdictSummaryText);
+
+        vm.SelectModality("Image");
+        vm.SelectedImagePreset = "Flux.1 Dev";
+        Assert.Equal(FitVerdict.OutOfMemory, vm.DiffusionResult?.FitVerdict);
+        Assert.Contains("Out of Memory", vm.VerdictSummaryText);
+
+        vm.SelectModality("Video");
+        vm.SelectedVideoPreset = "Wan 2.2 14B";
+        Assert.Equal(FitVerdict.OutOfMemory, vm.VideoResult?.FitVerdict);
+        Assert.Contains("Out of Memory", vm.VerdictSummaryText);
+
+        vm.SelectModality("Audio");
+        Assert.NotNull(vm.AudioResult);
+
+        vm.SelectModality("ThreeD");
+        Assert.NotNull(vm.ThreeDResult);
+    }
 }

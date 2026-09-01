@@ -93,4 +93,28 @@ public class BrowserLauncherTests
             ToastService.Instance.OnToastShow -= handler;
         }
     }
+
+    [Theory]
+    [InlineData("http://example.com/\"evil\"")]
+    [InlineData("http://example.com/'evil'")]
+    [InlineData("http://example.com/evil`cmd`")]
+    [InlineData("http://example.com/evil$var")]
+    [InlineData("http://example.com/evil\r\nsomething")]
+    public void OpenUrl_WithDangerousCharacters_ReturnsFalseAndShowsToast(string url)
+    {
+        ToastItem? emittedToast = null;
+        Action<ToastItem> handler = t => emittedToast = t;
+        ToastService.Instance.OnToastShow += handler;
+        try
+        {
+            bool result = BrowserLauncher.OpenUrl(url);
+            Assert.False(result);
+            Assert.NotNull(emittedToast);
+            Assert.Contains("dangerous", emittedToast!.Message, StringComparison.OrdinalIgnoreCase);
+        }
+        finally
+        {
+            ToastService.Instance.OnToastShow -= handler;
+        }
+    }
 }

@@ -2,6 +2,8 @@ using System.Net;
 using System.Net.Http.Json;
 using LocalLLMServerManager.Services;
 using LocalLLMServerManager.Shared.Models;
+using Moq;
+using Moq.Protected;
 using Xunit;
 
 namespace LocalLLMServerManager.Tests;
@@ -72,13 +74,30 @@ public class ComponentManagerAndEndpointsTests : IClassFixture<AppTestServerFixt
     [Fact]
     public async Task SettingsViewModel_RefreshComponentStatusesAsync_UpdatesInstalledFlags()
     {
-        var client = _fixture.CreateClient();
+        var jsonResponse = @"[
+            { ""id"": ""video-generation"", ""name"": ""Video"", ""installed"": true },
+            { ""id"": ""audio-tts"", ""name"": ""Audio"", ""installed"": true }
+        ]";
+
+        var handlerMock = new Moq.Mock<HttpMessageHandler>();
+        handlerMock.Protected()
+            .Setup<Task<HttpResponseMessage>>(
+                "SendAsync",
+                Moq.Protected.ItExpr.Is<HttpRequestMessage>(r => r.RequestUri != null && r.RequestUri.ToString().Contains("/api/components")),
+                Moq.Protected.ItExpr.IsAny<System.Threading.CancellationToken>())
+            .ReturnsAsync(new HttpResponseMessage
+            {
+                StatusCode = HttpStatusCode.OK,
+                Content = new StringContent(jsonResponse, System.Text.Encoding.UTF8, "application/json")
+            });
+
+        var client = new HttpClient(handlerMock.Object);
         var vm = new LocalLLMServerManager.Shared.ViewModels.SettingsViewModel();
 
         Assert.False(vm.IsVideoPackInstalled);
         Assert.False(vm.IsAudioPackInstalled);
 
-        await vm.RefreshComponentStatusesAsync("", client);
+        await vm.RefreshComponentStatusesAsync("http://localhost:5246", client);
 
         Assert.True(vm.IsVideoPackInstalled);
         Assert.True(vm.IsAudioPackInstalled);

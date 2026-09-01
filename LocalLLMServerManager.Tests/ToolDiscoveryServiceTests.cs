@@ -138,6 +138,53 @@ public class ToolDiscoveryServiceTests : IDisposable
     }
 
     [Fact]
+    public void DetectOllama_WithEnvVarOllamaModels_ResolvesModelsDirectory()
+    {
+        var customOllamaDir = Path.Combine(_tempDirectory, "Programs", "Ollama");
+        Directory.CreateDirectory(customOllamaDir);
+        var exeName = RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? "ollama.exe" : "ollama";
+        var exePath = Path.Combine(customOllamaDir, exeName);
+        File.WriteAllText(exePath, "fake ollama binary");
+
+        var envModelsDir = Path.Combine(_tempDirectory, "env_ollama_models");
+        Directory.CreateDirectory(envModelsDir);
+
+        var prevEnv = Environment.GetEnvironmentVariable("OLLAMA_MODELS");
+        try
+        {
+            Environment.SetEnvironmentVariable("OLLAMA_MODELS", envModelsDir);
+            var service = new ToolDiscoveryService(searchRoots: new[] { _tempDirectory });
+            var result = service.DetectOllama();
+
+            Assert.True(result.IsInstalled);
+            Assert.Equal(envModelsDir, result.ModelsDirectory);
+        }
+        finally
+        {
+            Environment.SetEnvironmentVariable("OLLAMA_MODELS", prevEnv);
+        }
+    }
+
+    [Fact]
+    public void DetectAudioEngine_WithCustomVoicesDirectory_DiscoversModelsDir()
+    {
+        var kokoroDir = Path.Combine(_tempDirectory, "Kokoro-FastAPI");
+        var customVoicesDir = Path.Combine(_tempDirectory, "audio", "custom_voices");
+        Directory.CreateDirectory(kokoroDir);
+        Directory.CreateDirectory(customVoicesDir);
+
+        var mainPy = Path.Combine(kokoroDir, "main.py");
+        File.WriteAllText(mainPy, "# test");
+
+        var service = new ToolDiscoveryService(searchRoots: new[] { _tempDirectory });
+        var result = service.DetectAudioEngine();
+
+        Assert.True(result.IsInstalled);
+        Assert.Equal(mainPy, result.ExecutablePath);
+        Assert.Equal(customVoicesDir, result.ModelsDirectory);
+    }
+
+    [Fact]
     public void DetectOllama_WhenNotFound_ReturnsNotInstalled()
     {
         var emptyDir = Path.Combine(_tempDirectory, "empty_root");
