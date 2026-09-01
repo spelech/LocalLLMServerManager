@@ -33,7 +33,7 @@ public static class HttpHelper
         var rel = relativePath.StartsWith("/") ? relativePath : "/" + relativePath;
         if (string.IsNullOrWhiteSpace(apiBase))
         {
-            return OperatingSystem.IsBrowser() ? rel : $"http://127.0.0.1:5246{rel}";
+            return rel;
         }
         return apiBase.TrimEnd('/') + rel;
     }
