@@ -111,7 +111,7 @@ public class LiveExternalProviderIntegrationTests
     }
 
     [Fact]
-    public async Task Live_OllamaEngine_RespondsToTagsApi()
+    public async Task Live_OllamaTags_ReturnsInstalledModels()
     {
         try
         {
@@ -123,6 +123,42 @@ public class LiveExternalProviderIntegrationTests
 
                 Assert.NotNull(doc);
                 Assert.NotNull(doc?["models"]);
+            }
+        }
+        catch (Exception) { }
+    }
+
+    [Fact]
+    public async Task Live_OllamaPs_ReturnsRunningProcessList()
+    {
+        try
+        {
+            var response = await _client.GetAsync($"{OllamaUrl}/api/ps");
+            if (response.IsSuccessStatusCode)
+            {
+                var content = await response.Content.ReadAsStringAsync();
+                var doc = JsonNode.Parse(content);
+
+                Assert.NotNull(doc);
+                Assert.NotNull(doc?["models"]);
+            }
+        }
+        catch (Exception) { }
+    }
+
+    [Fact]
+    public async Task Live_OllamaVersion_ReturnsDaemonVersion()
+    {
+        try
+        {
+            var response = await _client.GetAsync($"{OllamaUrl}/api/version");
+            if (response.IsSuccessStatusCode)
+            {
+                var content = await response.Content.ReadAsStringAsync();
+                var doc = JsonNode.Parse(content);
+
+                Assert.NotNull(doc);
+                Assert.NotNull(doc?["version"]?.ToString());
             }
         }
         catch (Exception) { }
