@@ -16,7 +16,7 @@
     "@types/node": "^22.0.0",
     "eslint": "^9.20.0",
     "playwright-layout-inspector": "github:spelech/playwright-layout-inspector",
-    "typescript": "^5.7.0",
+    "typescript": "^7.0.2",
     "typescript-eslint": "^8.24.0"
   }
 }
