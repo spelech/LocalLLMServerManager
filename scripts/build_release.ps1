@@ -1,7 +1,11 @@
-# LocalLLMServerManager v3.12.0 — Release Build & Package Script
+# LocalLLMServerManager v3.12.1 — Release Build & Package Script
+# Builds Win-x64 Desktop exe, Linux-x64 SingleFile daemon, and Browser-WASM distribution.
+
+param(
+    [string]$Version = "3.12.1"
+)
 $ErrorActionPreference = "Stop"
 
-$Version = "3.12.0"
 $RootDir = Split-Path $PSScriptRoot -Parent
 $PublishDir = Join-Path $RootDir "publish"
 $DistDir = Join-Path $RootDir "dist"

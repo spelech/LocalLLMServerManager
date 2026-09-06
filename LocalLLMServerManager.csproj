@@ -11,9 +11,9 @@
         MINOR — new user-facing features (bump per feature PR)
         PATCH — bug fixes, dependency updates, doc-only changes
     -->
-    <Version>3.12.0</Version>
-    <AssemblyVersion>3.12.0.0</AssemblyVersion>
-    <FileVersion>3.12.0.0</FileVersion>
+    <Version>3.12.1</Version>
+    <AssemblyVersion>3.12.1.0</AssemblyVersion>
+    <FileVersion>3.12.1.0</FileVersion>
     <ApplicationIcon>Assets\app-icon.ico</ApplicationIcon>
     <BuiltInComInteropSupport>true</BuiltInComInteropSupport>
   </PropertyGroup>
@@ -23,17 +23,17 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="Avalonia" Version="12.1.1" />
-    <PackageReference Include="Avalonia.Desktop" Version="12.1.1" />
-    <PackageReference Include="Avalonia.Themes.Fluent" Version="12.1.1" />
-    <PackageReference Include="Avalonia.Fonts.Inter" Version="12.1.1" />
+    <PackageReference Include="Avalonia" Version="12.1.2" />
+    <PackageReference Include="Avalonia.Desktop" Version="12.1.2" />
+    <PackageReference Include="Avalonia.Themes.Fluent" Version="12.1.2" />
+    <PackageReference Include="Avalonia.Fonts.Inter" Version="12.1.2" />
     <PackageReference Include="CommunityToolkit.Mvvm" Version="8.4.2" />
-    <PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="10.0.10" />
-    <PackageReference Include="Microsoft.Extensions.Hosting.WindowsServices" Version="10.0.10" />
-    <PackageReference Include="Microsoft.Extensions.Http" Version="10.0.10" />
-    <PackageReference Include="Microsoft.OpenApi" Version="2.0.0" />
+    <PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="10.0.11" />
+    <PackageReference Include="Microsoft.Extensions.Hosting.WindowsServices" Version="10.0.11" />
+    <PackageReference Include="Microsoft.Extensions.Http" Version="10.0.11" />
+    <PackageReference Include="Microsoft.OpenApi" Version="2.7.5" />
     <PackageReference Include="ModelContextProtocol.AspNetCore" Version="2.2.0" />
-    <PackageReference Include="System.Management" Version="10.0.10" />
+    <PackageReference Include="System.Management" Version="10.0.11" />
     <PackageReference Include="Yarp.ReverseProxy" Version="2.3.0" />
   </ItemGroup>
 

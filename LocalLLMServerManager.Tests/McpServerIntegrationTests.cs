@@ -507,6 +507,61 @@ public class McpServerIntegrationTests : IClassFixture<AppTestServerFixture>
         var response = await _client.PostAsync("/mcp", postContent);
         Assert.NotEqual(HttpStatusCode.NotFound, response.StatusCode);
     }
+
+    [Fact]
+    public async Task McpEndpoint_StatelessRequestWithMeta_CompliantWith20260728Spec()
+    {
+        // 2026-07-28 MCP specification: stateless requests include protocol and client context inside _meta
+        var payload = new
+        {
+            jsonrpc = "2.0",
+            id = 2,
+            method = "tools/list",
+            @params = new
+            {
+                _meta = new
+                {
+                    client = "Antigravity/1.0",
+                    protocolVersion = "2026-07-28"
+                }
+            }
+        };
+
+        var postContent = new StringContent(JsonSerializer.Serialize(payload), System.Text.Encoding.UTF8, "application/json");
+        var response = await _client.PostAsync("/mcp", postContent);
+        Assert.NotEqual(HttpStatusCode.NotFound, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task McpEndpoint_StatelessSessionlessCall_DoesNotRequireSessionHeader()
+    {
+        // 2026-07-28 MCP specification deprecated Mcp-Session-Id requirement in favor of stateless requests
+        var payload = new
+        {
+            jsonrpc = "2.0",
+            id = 3,
+            method = "tools/call",
+            @params = new
+            {
+                name = "get_gpu_vram",
+                arguments = new { },
+                _meta = new
+                {
+                    protocolVersion = "2026-07-28"
+                }
+            }
+        };
+
+        var request = new HttpRequestMessage(HttpMethod.Post, "/mcp")
+        {
+            Content = new StringContent(JsonSerializer.Serialize(payload), System.Text.Encoding.UTF8, "application/json")
+        };
+        // Explicitly verify no Mcp-Session-Id header is needed
+        Assert.False(request.Headers.Contains("Mcp-Session-Id"));
+
+        var response = await _client.SendAsync(request);
+        Assert.NotEqual(HttpStatusCode.NotFound, response.StatusCode);
+    }
 }
 
 internal class MockHttpMessageHandler : HttpMessageHandler
