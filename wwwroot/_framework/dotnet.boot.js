@@ -1,7 +1,7 @@
 export const config = /*json-start*/{
   "mainAssemblyName": "LocalLLMServerManager.Web.dll",
   "resources": {
-    "hash": "sha256-13cFOl36tNjXqQEPcHv+TsgLfb76REZdxVl7JhP/jCk=",
+    "hash": "sha256-PdJmSZpfA9GzwtDzFGFPAKg8e2M8gY4WqUKd+rzNd5k=",
     "jsModuleNative": [
       {
         "name": "dotnet.native.js"
@@ -56,62 +56,62 @@ export const config = /*json-start*/{
       {
         "virtualPath": "Avalonia.Base.wasm",
         "name": "Avalonia.Base.wasm",
-        "hash": "sha256-WAMvuHk0s+OKMqc3kX1WpLgwkOGPhRREUve0Ti3uxHo="
+        "hash": "sha256-dZs7t/LzL4KDqzjwRYmoXI4D2fpEB7BQItmTKYQGsZU="
       },
       {
         "virtualPath": "Avalonia.Browser.wasm",
         "name": "Avalonia.Browser.wasm",
-        "hash": "sha256-m+SNp6UTw4t8bzQxbYLb3tfOXOco3FdNsbfqddrfRtE="
+        "hash": "sha256-w52DBigLm3AmSjoSdRxrVHSSLUVyPbMDWQmUUTMEJ/Q="
       },
       {
         "virtualPath": "Avalonia.Controls.wasm",
         "name": "Avalonia.Controls.wasm",
-        "hash": "sha256-0ItkJMMyyAutCeIPWh3EFdptO+jj/XRNYIiqwl+nM/g="
+        "hash": "sha256-amnovl7ZcM8jkPiT9F1xiywqLap7a7isEAdRQiazfhA="
       },
       {
         "virtualPath": "Avalonia.Dialogs.wasm",
         "name": "Avalonia.Dialogs.wasm",
-        "hash": "sha256-pvkObxDmhVkH8NMbwSz3pB/ge6wYiOupwB58JtRSw6s="
+        "hash": "sha256-c+OAnOOyH8Q2Xmy83pJiiI8xGzv3GJLtTLEMwr/mNac="
       },
       {
         "virtualPath": "Avalonia.Fonts.Inter.wasm",
         "name": "Avalonia.Fonts.Inter.wasm",
-        "hash": "sha256-4ncrpjijiJ3m/UI1OtJGbI+iaVb7gF7eQksftVMoJug="
+        "hash": "sha256-pjSw7to1gLtJDRQHsMh7tqtbkom+RGFouMniPpPW6DI="
       },
       {
         "virtualPath": "Avalonia.HarfBuzz.wasm",
         "name": "Avalonia.HarfBuzz.wasm",
-        "hash": "sha256-xrrIw4FJzF/oBJTP73jnU5FgfOaRiQny7X702D0NWO4="
+        "hash": "sha256-pgV+6tmk8cCgqCziXtjIoZ+WpwwgfdC9Q6LZve2VcDo="
       },
       {
         "virtualPath": "Avalonia.Markup.wasm",
         "name": "Avalonia.Markup.wasm",
-        "hash": "sha256-Kfc3dHQnrR/hD08w34/XIFAK94/sCJoEv79kbP+YBc4="
+        "hash": "sha256-992Ay3K81Ke1Sb62CpY+8n6ODmIekj57N33sDu6G3Rk="
       },
       {
         "virtualPath": "Avalonia.Markup.Xaml.wasm",
         "name": "Avalonia.Markup.Xaml.wasm",
-        "hash": "sha256-btlXbVGoEfMyjn3kUzTLVo0tL7qTTXsZTUpgpsKyabk="
+        "hash": "sha256-trYQ8Sm3y2Dp4vRg9a5Rkdmmq6dxdmHrS3PrshHxxWg="
       },
       {
         "virtualPath": "Avalonia.Metal.wasm",
         "name": "Avalonia.Metal.wasm",
-        "hash": "sha256-nYe2GLC17UyEm+zuCyIxKQsQrCXyLC22AHu5vi/9dZw="
+        "hash": "sha256-xP3yhUw5Vsg5j8i3aDzODhue8CtnYX7zLkbasmg9nT4="
       },
       {
         "virtualPath": "Avalonia.OpenGL.wasm",
         "name": "Avalonia.OpenGL.wasm",
-        "hash": "sha256-JZZ7b/fojjKSknWv5DGKgRAG3wusmWNVbeIH/aOVUfc="
+        "hash": "sha256-3IBuI8W62jj8uE5IyiamJ0pgBzJMTzkgC3b6lR107u8="
       },
       {
         "virtualPath": "Avalonia.Skia.wasm",
         "name": "Avalonia.Skia.wasm",
-        "hash": "sha256-miyYtumt9wOwp/2y+A/vgaaAI7DNsoM0Pehyjqsg2UU="
+        "hash": "sha256-1h7JPPtuWnYGWrDVE4R8oIsBhVm5PtBuPHR1Ap0dPRY="
       },
       {
         "virtualPath": "Avalonia.Vulkan.wasm",
         "name": "Avalonia.Vulkan.wasm",
-        "hash": "sha256-rZLPORoYtLO5eh8kvdN1oYrOHKOjCnTEICB3S53begE="
+        "hash": "sha256-9DfOteoAAJHan4AcRatGhBvSb2SVD++yCAlyPW6WMYg="
       },
       {
         "virtualPath": "CommunityToolkit.Mvvm.wasm",
@@ -126,22 +126,22 @@ export const config = /*json-start*/{
       {
         "virtualPath": "Irihi.Avalonia.Shared.wasm",
         "name": "Irihi.Avalonia.Shared.wasm",
-        "hash": "sha256-2QSAwNqbdkO/tLhJ6Ck2Hb67VzPyQ1DO/xB0y81VQe4="
+        "hash": "sha256-zYDtsDjdt3MV4w/tSDv9SI+nh77k/xiLSkZnNE/uJqQ="
       },
       {
         "virtualPath": "LocalLLMServerManager.Shared.wasm",
         "name": "LocalLLMServerManager.Shared.wasm",
-        "hash": "sha256-nv4Kz8OAlXUhfilg5d20OjLYTr7KiuZwz+v0fJvd+7c="
+        "hash": "sha256-PkJucIDYYD2lfyeZI5ZG450PVJPCI0p75g5T0EWfOd8="
       },
       {
         "virtualPath": "LocalLLMServerManager.Web.wasm",
         "name": "LocalLLMServerManager.Web.wasm",
-        "hash": "sha256-dPhrsjKf+HgpJKCB2cYW+ZkOvwy/NlLgcgBUOXQaAgc="
+        "hash": "sha256-eLskVgRALQb239jvo/OOL/WhCO/KXklylE25D4KLdNY="
       },
       {
         "virtualPath": "Semi.Avalonia.wasm",
         "name": "Semi.Avalonia.wasm",
-        "hash": "sha256-C+7eeck12DiKzII26ovmJvVYIILJbwYZmmpNYWU8ups="
+        "hash": "sha256-NJsJd6WklgaWFaOoexxrEbfo2UjUaJ1IJbmOmbDSs4M="
       },
       {
         "virtualPath": "SkiaSharp.wasm",
