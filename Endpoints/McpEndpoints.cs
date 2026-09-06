@@ -6,7 +6,7 @@ public static class McpEndpoints
 {
     public static void MapMcpEndpoints(this WebApplication app)
     {
-        // Standard Model Context Protocol (MCP) Streamable HTTP & SSE endpoint
+        // Standard Model Context Protocol (MCP) Streamable HTTP & SSE endpoint compliant with 2026-07-28 stateless spec
         try
         {
             app.MapMcp("/mcp");

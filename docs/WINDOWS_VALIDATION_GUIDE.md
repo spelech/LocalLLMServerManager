@@ -1,6 +1,6 @@
 # Windows Environment Validation & Handoff Guide
 
-> **Version 3.12.0** | .NET 10 | Windows 10/11 x64 | Avalonia UI | Win32 Job Objects | Playwright E2E
+> **Version 3.12.1** | .NET 10 | Windows 10/11 x64 | Avalonia UI | Win32 Job Objects | Playwright E2E
 
 This runbook provides step-by-step instructions and copy-paste ready PowerShell commands for validating **LocalLLMServerManager** on a native Windows workstation. It bridges the gap between headless Linux development and Windows native runtime capabilities.
 

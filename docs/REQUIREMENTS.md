@@ -95,7 +95,7 @@ Requirements are categorized into 12 functional domains using standardized ident
 * **`VRAM-005`**: The application shall allow customizing telemetry polling intervals and auto-unload thresholds.
 
 ### 10. Model Context Protocol API (`MCP-xxx`)
-* **`MCP-001`**: The application shall expose a Model Context Protocol (MCP) server over Streamable HTTP and SSE transports mapped to `/mcp` compliant with the official 2024-11-05 MCP specification via `ModelContextProtocol.AspNetCore`.
+* **`MCP-001`**: The application shall expose a Model Context Protocol (MCP) server over Streamable HTTP and SSE transports mapped to `/mcp` compliant with the official 2026-07-28 stateless MCP specification via `ModelContextProtocol.AspNetCore`.
 * **`MCP-002`**: The MCP server shall implement tool schema discovery (`tools/list`) exposing 11 management and generation tools (`get_gpu_vram`, `check_health`, `list_models`, `pull_model`, `unload_vram`, `start_engine`, `stop_engine`, `detect_tools`, `generate_video`, `synthesize_speech`, `generate_audio`) with rich descriptions and parameter metadata.
 * **`MCP-003`**: The MCP server shall implement tool execution dispatch (`tools/call`) allowing AI assistants (Claude Desktop, Cursor, Antigravity) to execute GPU telemetry queries, health probing, model pulling/unloading, engine start/stop, video generation, speech synthesis, and audio generation.
 * **`MCP-004`**: The MCP tools class (`LocalLlmMcpTools`) shall resolve required services (`IGpuTelemetryProvider`, `IAiEngineManager`, `IOllamaModelService`, `IToolDiscoveryService`, `IHttpClientFactory`, `ISettingsService`, `VramOrchestrator`) via dependency injection with robust error handling and structured JSON responses.

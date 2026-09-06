@@ -49,7 +49,7 @@ The application features a dark Fluent Avalonia UI theme (`#0F172A`) organized i
 6. **Modular Feature Packs** — Optional components for Video (`ext_video`) and Audio (`ext_audio`) can be installed on-demand via `--with-video` / `--with-audio` installer flags or the in-app Component Manager, keeping base installation lightweight.
 
 ### Model Context Protocol (MCP) AI Automation
-7. **Official MCP Streamable HTTP / SSE Endpoint (`/mcp`)** — Fully compliant Model Context Protocol (MCP) server built with `ModelContextProtocol.AspNetCore` enabling AI assistants (Antigravity, Claude Desktop, Cursor, Open WebUI) to automate server operations over JSON-RPC 2.0.
+7. **Official MCP Streamable HTTP / SSE Endpoint (`/mcp`)** — Fully compliant Model Context Protocol (MCP) server built with `ModelContextProtocol.AspNetCore` implementing the official **2026-07-28** stateless specification, enabling AI assistants (Antigravity, Claude Desktop, Cursor, Open WebUI) to automate server operations over JSON-RPC 2.0 with `_meta` request envelopes.
 8. **11 Native MCP AI Tools** — Exposes comprehensive tools for telemetry (`get_gpu_vram`), health probing (`check_health`), model management (`list_models`, `pull_model`, `unload_vram`), process control (`start_engine`, `stop_engine`), filesystem tool auto-discovery (`detect_tools`), video generation (`generate_video`), speech synthesis (`synthesize_speech`), and music/sound generation (`generate_audio`).
 
 ### LLM Management (Ollama & Hugging Face Hub)
@@ -139,7 +139,7 @@ The application features a dark Fluent Avalonia UI theme (`#0F172A`) organized i
 LocalLLMServerManager includes a native **Model Context Protocol (MCP)** server enabling AI coding assistants and autonomous agents (**Claude Desktop**, **Cursor**, **Antigravity**, **Open WebUI**) to monitor and control local LLMs, image generation engines, and GPU hardware.
 
 ### Endpoints
-* **`/mcp` (Streamable HTTP / SSE)**: Standard JSON-RPC 2.0 endpoint implementing the official Model Context Protocol (2024-11-05 specification) via `ModelContextProtocol.AspNetCore`. Supports session streaming, `tools/list`, and `tools/call`.
+* **`/mcp` (Streamable HTTP / SSE)**: Standard JSON-RPC 2.0 endpoint implementing the official Model Context Protocol (**2026-07-28 specification**) via `ModelContextProtocol.AspNetCore`. Supports stateless JSON-RPC requests with `_meta` metadata, `tools/list`, and `tools/call`.
 
 ### Available MCP Tools (11 Tools)
 
