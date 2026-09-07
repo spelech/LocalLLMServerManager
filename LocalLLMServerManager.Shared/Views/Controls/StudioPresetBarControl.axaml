@@ -1,0 +1,95 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:models="using:LocalLLMServerManager.Shared.Models"
+             xmlns:controls="using:LocalLLMServerManager.Shared.Views.Controls"
+             x:Class="LocalLLMServerManager.Shared.Views.Controls.StudioPresetBarControl"
+             x:Name="RootControl">
+
+    <Border Classes="matte-card" Padding="14,12" Background="{StaticResource BgSurfaceBrush}">
+        <StackPanel Spacing="10">
+            <!-- Row 1: Preset selector ComboBox and Action Buttons -->
+            <Grid ColumnDefinitions="Auto, *, Auto">
+                <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center" Margin="0,0,12,0">
+                    <TextBlock Text="⚙️ Preset:" FontSize="13" FontWeight="Bold" Foreground="{StaticResource TextMainBrush}" VerticalAlignment="Center"/>
+                </StackPanel>
+
+                <!-- ComboBox -->
+                <ComboBox Grid.Column="1"
+                          ItemsSource="{Binding Presets, ElementName=RootControl}"
+                          SelectedItem="{Binding SelectedPreset, ElementName=RootControl}"
+                          HorizontalAlignment="Stretch"
+                          Classes="matte-input"
+                          PlaceholderText="Select a generation preset...">
+                    <ComboBox.ItemTemplate>
+                        <DataTemplate DataType="models:StudioPreset">
+                            <Grid ColumnDefinitions="*, Auto">
+                                <StackPanel Grid.Column="0" Spacing="2">
+                                    <TextBlock Text="{Binding Name}" FontWeight="SemiBold" Foreground="{StaticResource TextMainBrush}"/>
+                                    <TextBlock Text="{Binding Description}" FontSize="11" Foreground="{StaticResource TextMutedBrush}" TextTrimming="CharacterEllipsis"/>
+                                </StackPanel>
+                                <Border Grid.Column="1" Classes="matte-pill" Padding="6,2" VerticalAlignment="Center" Margin="8,0,0,0">
+                                    <TextBlock Text="{Binding WorkflowOrEngine}" FontSize="10" Foreground="{StaticResource AccentBrush}" FontWeight="SemiBold"/>
+                                </Border>
+                            </Grid>
+                        </DataTemplate>
+                    </ComboBox.ItemTemplate>
+                </ComboBox>
+
+                <!-- Preset Action Buttons -->
+                <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="6" Margin="10,0,0,0">
+                    <Button Content="💾 Save Preset"
+                            Command="{Binding SavePresetCommand, ElementName=RootControl}"
+                            CommandParameter="{Binding SelectedPreset, ElementName=RootControl}"
+                            ToolTip.Tip="Save current settings as a new custom preset"
+                            Classes="matte-secondary" Padding="10,6" FontSize="12"/>
+
+                    <Button Content="✏️"
+                            Command="{Binding EditPresetCommand, ElementName=RootControl}"
+                            CommandParameter="{Binding SelectedPreset, ElementName=RootControl}"
+                            ToolTip.Tip="Edit selected custom preset"
+                            Classes="matte-secondary" Padding="8,6" FontSize="12"/>
+
+                    <Button Content="📋"
+                            Command="{Binding DuplicatePresetCommand, ElementName=RootControl}"
+                            CommandParameter="{Binding SelectedPreset, ElementName=RootControl}"
+                            ToolTip.Tip="Duplicate selected preset"
+                            Classes="matte-secondary" Padding="8,6" FontSize="12"/>
+
+                    <Button Content="🗑️"
+                            Command="{Binding DeletePresetCommand, ElementName=RootControl}"
+                            CommandParameter="{Binding SelectedPreset, ElementName=RootControl}"
+                            ToolTip.Tip="Delete custom preset"
+                            Classes="matte-secondary" Padding="8,6" FontSize="12"/>
+                </StackPanel>
+            </Grid>
+
+            <!-- Row 2: Starter Prompt Quick Chips -->
+            <Grid ColumnDefinitions="Auto, *">
+                <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="6" VerticalAlignment="Center" Margin="0,0,8,0">
+                    <TextBlock Text="✨ Quick Starters:" FontSize="11" FontWeight="SemiBold" Foreground="{StaticResource TextMutedBrush}" VerticalAlignment="Center"/>
+                </StackPanel>
+
+                <ItemsControl Grid.Column="1" ItemsSource="{Binding StarterPrompts, ElementName=RootControl}">
+                    <ItemsControl.ItemsPanel>
+                        <ItemsPanelTemplate>
+                            <WrapPanel Orientation="Horizontal" HorizontalAlignment="Left" />
+                        </ItemsPanelTemplate>
+                    </ItemsControl.ItemsPanel>
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate DataType="models:StudioPreset">
+                            <Button Content="{Binding Name}"
+                                    ToolTip.Tip="{Binding SamplePrompt}"
+                                    Command="{Binding ApplyStarterPromptCommand, ElementName=RootControl}"
+                                    CommandParameter="{Binding}"
+                                    Classes="matte-secondary"
+                                    CornerRadius="12"
+                                    Padding="10,4"
+                                    Margin="0,2,6,2"
+                                    FontSize="11"/>
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+            </Grid>
+        </StackPanel>
+    </Border>
+</UserControl>

@@ -1,0 +1,103 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:controls="using:LocalLLMServerManager.Shared.Views.Controls"
+             x:Class="LocalLLMServerManager.Shared.Views.Controls.GenerationStageTrackerControl"
+             x:Name="RootControl">
+
+    <Border Classes="matte-card" Padding="14" Background="{StaticResource BgSurfaceBrush}">
+        <StackPanel Spacing="12">
+            <!-- Header Row: Hardware Pre-Flight Badge, Timer & Cancel Button -->
+            <Grid ColumnDefinitions="*, Auto, Auto">
+                <!-- Hardware Status Badge -->
+                <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+                    <Border Classes="matte-pill" Padding="8,4">
+                        <TextBlock Text="{Binding HardwareStatusBadgeText, ElementName=RootControl}"
+                                   FontSize="11" FontWeight="SemiBold" Foreground="{StaticResource TextMainBrush}"/>
+                    </Border>
+                </StackPanel>
+
+                <!-- Active Elapsed Timer -->
+                <Border Grid.Column="1" Classes="matte-pill" Padding="8,4" VerticalAlignment="Center" Margin="0,0,8,0">
+                    <TextBlock Text="{Binding ElapsedTimerText, ElementName=RootControl}"
+                               FontSize="11" FontWeight="SemiBold" Foreground="{StaticResource SecondaryBrush}"/>
+                </Border>
+
+                <!-- Cancel / Abort Button -->
+                <Button Grid.Column="2" Content="🛑 Cancel / Abort"
+                        Command="{Binding CancelCommand, ElementName=RootControl}"
+                        IsVisible="{Binding IsActive, ElementName=RootControl}"
+                        Classes="matte-secondary" Padding="10,4" FontSize="11" VerticalAlignment="Center"/>
+            </Grid>
+
+            <!-- 4-Stage Stepper Pipeline -->
+            <UniformGrid Columns="4" Rows="1">
+                <!-- Stage 1: VRAM & Model Prep -->
+                <Border Classes="matte-card" Margin="0,0,4,0" Padding="8" Background="{StaticResource BgCardBrush}">
+                    <StackPanel Spacing="2">
+                        <TextBlock Text="📦 1. VRAM &amp; Prep" FontSize="11" FontWeight="Bold" Foreground="{StaticResource TextMainBrush}"/>
+                        <TextBlock Text="{Binding Stage1Status, ElementName=RootControl}" FontSize="10" Foreground="{StaticResource TextMutedBrush}" TextTrimming="CharacterEllipsis"/>
+                    </StackPanel>
+                </Border>
+
+                <!-- Stage 2: Denoising & Sampling -->
+                <Border Classes="matte-card" Margin="4,0,4,0" Padding="8" Background="{StaticResource BgCardBrush}">
+                    <StackPanel Spacing="2">
+                        <TextBlock Text="⚡ 2. Denoising" FontSize="11" FontWeight="Bold" Foreground="{StaticResource PrimaryBrush}"/>
+                        <TextBlock Text="{Binding Stage2Status, ElementName=RootControl}" FontSize="10" Foreground="{StaticResource TextMutedBrush}" TextTrimming="CharacterEllipsis"/>
+                    </StackPanel>
+                </Border>
+
+                <!-- Stage 3: Encoding & Assembly -->
+                <Border Classes="matte-card" Margin="4,0,4,0" Padding="8" Background="{StaticResource BgCardBrush}">
+                    <StackPanel Spacing="2">
+                        <TextBlock Text="🎬 3. Encoding" FontSize="11" FontWeight="Bold" Foreground="{StaticResource AccentBrush}"/>
+                        <TextBlock Text="{Binding Stage3Status, ElementName=RootControl}" FontSize="10" Foreground="{StaticResource TextMutedBrush}" TextTrimming="CharacterEllipsis"/>
+                    </StackPanel>
+                </Border>
+
+                <!-- Stage 4: Ready -->
+                <Border Classes="matte-card" Margin="4,0,0,0" Padding="8" Background="{StaticResource BgCardBrush}">
+                    <StackPanel Spacing="2">
+                        <TextBlock Text="✨ 4. Ready" FontSize="11" FontWeight="Bold" Foreground="{StaticResource OnlineBrush}"/>
+                        <TextBlock Text="{Binding Stage4Status, ElementName=RootControl}" FontSize="10" Foreground="{StaticResource TextMutedBrush}" TextTrimming="CharacterEllipsis"/>
+                    </StackPanel>
+                </Border>
+            </UniformGrid>
+
+            <!-- Main Generation Progress Bar -->
+            <ProgressBar Classes="matte-progress"
+                         Value="{Binding ProgressValue, ElementName=RootControl}"
+                         IsIndeterminate="{Binding IsIndeterminate, ElementName=RootControl}"
+                         Minimum="0" Maximum="100" Height="6"/>
+
+            <!-- Collapsible Live Log Drawer Toggle & Viewer -->
+            <StackPanel Spacing="6">
+                <Button Content="{Binding LogsButtonText, ElementName=RootControl}"
+                        Click="OnToggleLogsClick"
+                        Classes="matte-secondary"
+                        Padding="8,4"
+                        FontSize="11"
+                        HorizontalAlignment="Left"/>
+
+                <Border IsVisible="{Binding IsLogsExpanded, ElementName=RootControl}"
+                        Background="{StaticResource BgDarkBrush}"
+                        BorderBrush="{StaticResource GlassBorderBrush}"
+                        BorderThickness="1"
+                        CornerRadius="6"
+                        Padding="8"
+                        MaxHeight="140">
+                    <ScrollViewer VerticalScrollBarVisibility="Auto">
+                        <TextBox Classes="matte-input"
+                                 Text="{Binding LogsText, ElementName=RootControl}"
+                                 IsReadOnly="True"
+                                 TextWrapping="Wrap"
+                                 FontFamily="Consolas,Menlo,Monospace"
+                                 FontSize="11"
+                                 Background="Transparent"
+                                 BorderThickness="0"/>
+                    </ScrollViewer>
+                </Border>
+            </StackPanel>
+        </StackPanel>
+    </Border>
+</UserControl>

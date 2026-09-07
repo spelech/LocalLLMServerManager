@@ -1,18 +1,31 @@
 using System;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.IO;
+using System.Linq;
 using System.Net.Http;
 using System.Text.Json;
 using System.Threading.Tasks;
 using Avalonia.Platform.Storage;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using LocalLLMServerManager.Shared.Interfaces;
+using LocalLLMServerManager.Shared.Models;
 using LocalLLMServerManager.Shared.Services;
 
 namespace LocalLLMServerManager.Shared.ViewModels;
 
 public partial class SettingsViewModel : ObservableObject
 {
+    private readonly IStudioPresetService _presetService;
+    public IStudioPresetService PresetService => _presetService;
+
+    public ObservableCollection<StudioPreset> AllPresets { get; } = new();
+    public ObservableCollection<StudioPreset> FilteredPresets { get; } = new();
+
+    [ObservableProperty] private string _selectedPresetModalityFilter = "All";
+    [ObservableProperty] private string _presetsJson = "";
+
     [ObservableProperty] private string _forgeModelsPath = "";
     [ObservableProperty] private string _comfyModelsPath = "";
     [ObservableProperty] private string _comfyUiUrl = "http://127.0.0.1:8188";
@@ -65,15 +78,187 @@ public partial class SettingsViewModel : ObservableObject
 
     [ObservableProperty] private string _selectedTheme = "Matte Carbon (Default)";
 
-    public SettingsViewModel() : this(ThemeService.Instance)
+    public SettingsViewModel() : this(new StudioPresetService(), ThemeService.Instance)
     {
     }
 
-    public SettingsViewModel(IThemeService themeService)
+    public SettingsViewModel(IStudioPresetService? presetService, IThemeService? themeService = null)
     {
+        _presetService = presetService ?? new StudioPresetService();
         _themeService = themeService ?? ThemeService.Instance;
         _selectedTheme = MapThemeToString(_themeService.CurrentTheme);
         RefreshAllStatuses();
+        RefreshPresets();
+    }
+
+    public SettingsViewModel(IThemeService themeService) : this(new StudioPresetService(), themeService)
+    {
+    }
+
+    partial void OnSelectedPresetModalityFilterChanged(string value)
+    {
+        FilterPresetsInternal(value);
+    }
+
+    [RelayCommand]
+    public void FilterPresets(string? modality)
+    {
+        SelectedPresetModalityFilter = string.IsNullOrWhiteSpace(modality) ? "All" : modality;
+    }
+
+    private void FilterPresetsInternal(string? modality)
+    {
+        FilteredPresets.Clear();
+        var filter = (modality ?? "All").Trim().ToLowerInvariant();
+        IEnumerable<StudioPreset> matching = filter switch
+        {
+            "video" or "🎬 video" => AllPresets.Where(p => p.Modality == StudioModality.Video),
+            "image" or "🎨 image" => AllPresets.Where(p => p.Modality == StudioModality.Image),
+            "audio" or "audio/tts" or "tts" or "🎵 audio" or "🎵 audio/tts" => AllPresets.Where(p => p.Modality == StudioModality.Audio),
+            _ => AllPresets
+        };
+
+        foreach (var preset in matching)
+        {
+            FilteredPresets.Add(preset);
+        }
+    }
+
+    public void RefreshPresets()
+    {
+        AllPresets.Clear();
+        foreach (var preset in _presetService.GetAllPresets())
+        {
+            AllPresets.Add(preset);
+        }
+        FilterPresetsInternal(SelectedPresetModalityFilter);
+    }
+
+    [RelayCommand]
+    public void CreatePreset(StudioPreset? preset = null)
+    {
+        if (preset != null)
+        {
+            _presetService.SavePreset(preset);
+            RefreshPresets();
+            ToastService.Instance.Show($"Created preset '{preset.Name}'.", ToastType.Success);
+            return;
+        }
+
+        var modality = (SelectedPresetModalityFilter ?? "All").Trim().ToLowerInvariant() switch
+        {
+            "video" or "🎬 video" => StudioModality.Video,
+            "image" or "🎨 image" => StudioModality.Image,
+            "audio" or "audio/tts" or "tts" or "🎵 audio" or "🎵 audio/tts" => StudioModality.Audio,
+            _ => StudioModality.Video
+        };
+
+        var newPreset = new StudioPreset
+        {
+            Id = Guid.NewGuid().ToString(),
+            Name = $"Custom {modality} Preset",
+            Description = "User created generation preset",
+            Modality = modality,
+            WorkflowOrEngine = modality == StudioModality.Audio ? "kokoro" : (modality == StudioModality.Video ? "wan2.2" : "comfy"),
+            Width = modality == StudioModality.Video ? 832 : 1024,
+            Height = modality == StudioModality.Video ? 480 : 1024,
+            FrameCount = modality == StudioModality.Video ? 48 : 1,
+            Fps = modality == StudioModality.Video ? 16 : 1,
+            DurationSeconds = modality == StudioModality.Audio ? 10 : 3,
+            VoiceProfile = modality == StudioModality.Audio ? (string.IsNullOrWhiteSpace(PreferredAudioVoice) ? "af_heart" : PreferredAudioVoice) : "",
+            SamplePrompt = "High quality masterpiece, 4k",
+            IsBuiltIn = false
+        };
+
+        _presetService.SavePreset(newPreset);
+        RefreshPresets();
+        ToastService.Instance.Show($"Created new preset '{newPreset.Name}'.", ToastType.Success);
+    }
+
+    [RelayCommand]
+    public void EditPreset(StudioPreset? preset)
+    {
+        if (preset == null) return;
+
+        if (preset.IsBuiltIn)
+        {
+            ToastService.Instance.Show("Built-in presets cannot be edited directly. Duplicate it to customize.", ToastType.Warning);
+            return;
+        }
+
+        _presetService.SavePreset(preset);
+        RefreshPresets();
+        ToastService.Instance.Show($"Saved preset '{preset.Name}'.", ToastType.Success);
+    }
+
+    [RelayCommand]
+    public void DeletePreset(StudioPreset? preset)
+    {
+        if (preset == null) return;
+
+        if (preset.IsBuiltIn)
+        {
+            ToastService.Instance.Show("Built-in presets cannot be deleted.", ToastType.Warning);
+            return;
+        }
+
+        var deleted = _presetService.DeletePreset(preset.Id);
+        if (deleted)
+        {
+            RefreshPresets();
+            ToastService.Instance.Show($"Deleted preset '{preset.Name}'.", ToastType.Info);
+        }
+    }
+
+    [RelayCommand]
+    public void DuplicatePreset(StudioPreset? preset)
+    {
+        if (preset == null) return;
+
+        var dup = _presetService.DuplicatePreset(preset.Id);
+        if (dup != null)
+        {
+            RefreshPresets();
+            ToastService.Instance.Show($"Duplicated preset as '{dup.Name}'.", ToastType.Success);
+        }
+    }
+
+    [RelayCommand]
+    public void ExportPresets()
+    {
+        var json = _presetService.ExportJson();
+        PresetsJson = json;
+        ToastService.Instance.Show("Exported presets to JSON.", ToastType.Success);
+    }
+
+    [RelayCommand]
+    public void ImportPresets(string? json = null)
+    {
+        var jsonToImport = string.IsNullOrWhiteSpace(json) ? PresetsJson : json;
+        if (string.IsNullOrWhiteSpace(jsonToImport))
+        {
+            ToastService.Instance.Show("No JSON payload provided for import.", ToastType.Warning);
+            return;
+        }
+
+        var success = _presetService.ImportJson(jsonToImport);
+        if (success)
+        {
+            RefreshPresets();
+            ToastService.Instance.Show("Presets imported successfully.", ToastType.Success);
+        }
+        else
+        {
+            ToastService.Instance.Show("Failed to import presets JSON.", ToastType.Error);
+        }
+    }
+
+    [RelayCommand]
+    public void ResetPresetsToDefault()
+    {
+        _presetService.ResetToDefaults();
+        RefreshPresets();
+        ToastService.Instance.Show("Presets reset to factory defaults.", ToastType.Info);
     }
 
     partial void OnForgeModelsPathChanged(string value) => ForgeModelsStatus = EvaluateDirectoryStatus(value);
@@ -589,6 +774,15 @@ public partial class SettingsViewModel : ObservableObject
                     AudioEngineUrl = settings.AudioEngineUrl ?? "http://127.0.0.1:8880";
                     PreferredAudioVoice = settings.PreferredAudioVoice ?? "af_heart";
 
+                    if (settings.CustomPresets != null && settings.CustomPresets.Count > 0)
+                    {
+                        foreach (var preset in settings.CustomPresets)
+                        {
+                            _presetService.SavePreset(preset);
+                        }
+                        RefreshPresets();
+                    }
+
                     RefreshAllStatuses();
                 }
             }
@@ -610,6 +804,15 @@ public partial class SettingsViewModel : ObservableObject
     {
         try
         {
+            var customPresets = new List<StudioPreset>();
+            foreach (var p in _presetService.GetAllPresets())
+            {
+                if (!p.IsBuiltIn)
+                {
+                    customPresets.Add(p);
+                }
+            }
+
             var settings = new AppSettings(
                 ForgeModelsPath: this.ForgeModelsPath,
                 ComfyUiUrl: this.ComfyUiUrl,
@@ -626,7 +829,8 @@ public partial class SettingsViewModel : ObservableObject
                 SelectedThemeStyle: this.SelectedThemeStyle,
                 AudioEngineExecutablePath: this.AudioEngineExecutablePath,
                 AudioEngineUrl: this.AudioEngineUrl,
-                PreferredAudioVoice: this.PreferredAudioVoice
+                PreferredAudioVoice: this.PreferredAudioVoice,
+                CustomPresets: customPresets
             );
 
             var content = new StringContent(

@@ -158,3 +158,14 @@ public record TelemetryInfo(
     double AvailableRamMb
 );
 
+/// <summary>
+/// Pre-flight hardware compatibility assessment for Studio generation jobs.
+/// </summary>
+public record StudioHardwareFit(
+    QuickFitBadge FitBadge,
+    double EstimatedVramMb,
+    string StatusText,
+    string RecommendedPresetName,
+    bool RequiresLlmUnload
+);
+

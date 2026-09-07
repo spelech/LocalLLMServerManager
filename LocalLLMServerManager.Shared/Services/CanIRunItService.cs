@@ -609,6 +609,96 @@ public class CanIRunItService : ICanIRunItService
         );
     }
 
+    /// <inheritdoc />
+    public StudioHardwareFit EstimateStudioHardwareFit(StudioModality modality, int width, int height, int frameCount, string workflow, double freeVramMb, double totalVramMb)
+    {
+        string wf = (workflow ?? "").Trim().ToLowerInvariant();
+        double estimatedVramMb;
+
+        switch (modality)
+        {
+            case StudioModality.Audio:
+                if (wf.Contains("stable") || wf.Contains("music") || wf.Contains("song") || wf.Contains("yue") || wf.Contains("audiocraft"))
+                {
+                    estimatedVramMb = 2500.0;
+                }
+                else
+                {
+                    // Kokoro or default TTS / speech
+                    estimatedVramMb = 1500.0;
+                }
+                break;
+
+            case StudioModality.Image:
+                int imgW = width > 0 ? width : 1024;
+                int imgH = height > 0 ? height : 1024;
+                double imgPixels = (double)imgW * imgH;
+                double baseImagePixels = 1024.0 * 1024.0;
+                estimatedVramMb = Math.Round(4000.0 * (imgPixels / baseImagePixels));
+                break;
+
+            case StudioModality.Video:
+            default:
+                int vidW = width > 0 ? width : 832;
+                int vidH = height > 0 ? height : 480;
+                int vidFrames = frameCount > 0 ? frameCount : 48;
+                double vidPixels = (double)vidW * vidH;
+                // Baseline ~6000 MB for 480p (832x480, 48 frames), ~10000 MB for 720p (1280x720, 48 frames)
+                double baseDitMb = 3000.0;
+                double frameContextScaling = 3000.0 * (vidPixels / (832.0 * 480.0)) * (vidFrames / 48.0);
+                estimatedVramMb = Math.Round(baseDitMb + frameContextScaling);
+                break;
+        }
+
+        QuickFitBadge fitBadge;
+        string statusText;
+        string recommendedPreset = "";
+        bool requiresLlmUnload;
+
+        if (estimatedVramMb <= freeVramMb)
+        {
+            fitBadge = new QuickFitBadge(
+                BadgeText: "🟢 Ready",
+                BadgeColorHex: "#10B981",
+                Tooltip: $"Requires ~{estimatedVramMb:N0} MB VRAM. Fits comfortably in free GPU memory ({freeVramMb:N0} MB free).",
+                FitVerdict: FitVerdict.FullVram
+            );
+            statusText = "Ready";
+            requiresLlmUnload = false;
+        }
+        else if (estimatedVramMb <= totalVramMb)
+        {
+            fitBadge = new QuickFitBadge(
+                BadgeText: "🟡 Tight Fit",
+                BadgeColorHex: "#F59E0B",
+                Tooltip: $"Requires ~{estimatedVramMb:N0} MB VRAM. Exceeds free VRAM ({freeVramMb:N0} MB) but fits in total VRAM ({totalVramMb:N0} MB). Active LLM will be unloaded.",
+                FitVerdict: FitVerdict.PartialOffload
+            );
+            statusText = "Tight Fit";
+            requiresLlmUnload = true;
+        }
+        else
+        {
+            fitBadge = new QuickFitBadge(
+                BadgeText: "🔴 Exceeds GPU Limit",
+                BadgeColorHex: "#EF4444",
+                Tooltip: $"Requires ~{estimatedVramMb:N0} MB VRAM which exceeds total GPU capacity ({totalVramMb:N0} MB). Consider switching to a lower resolution preset.",
+                FitVerdict: FitVerdict.OutOfMemory
+            );
+            statusText = "Exceeds GPU Limit";
+            recommendedPreset = "Quick 480p Preview";
+            requiresLlmUnload = true;
+        }
+
+        return new StudioHardwareFit(
+            FitBadge: fitBadge,
+            EstimatedVramMb: estimatedVramMb,
+            StatusText: statusText,
+            RecommendedPresetName: recommendedPreset,
+            RequiresLlmUnload: requiresLlmUnload
+        );
+    }
+
     private static double ExtractParamBillions(string modelName)
     {
         if (string.IsNullOrWhiteSpace(modelName))
