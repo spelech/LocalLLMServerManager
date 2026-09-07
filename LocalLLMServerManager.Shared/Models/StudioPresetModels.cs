@@ -31,4 +31,24 @@ public record StudioPreset
     public string SamplePrompt { get; init; } = "";
     public string NegativePrompt { get; init; } = "";
     public bool IsBuiltIn { get; init; } = false;
+
+    public bool IsCustom => !IsBuiltIn;
+
+    public string SummaryText => Modality switch
+    {
+        StudioModality.Video => $"{Width}x{Height} • {FrameCount} frames • {Fps} fps",
+        StudioModality.Image => $"{Width}x{Height}",
+        StudioModality.Audio => !string.IsNullOrWhiteSpace(VoiceProfile) ? $"{VoiceProfile} • {DurationSeconds}s" : $"{DurationSeconds}s audio",
+        _ => $"{Width}x{Height}"
+    };
+
+    public string BadgeText => IsBuiltIn ? "🔒 Built-in" : "✨ Custom";
+
+    public string ModalityText => Modality switch
+    {
+        StudioModality.Video => "🎬 Video",
+        StudioModality.Image => "🎨 Image",
+        StudioModality.Audio => "🎵 Audio",
+        _ => Modality.ToString()
+    };
 }

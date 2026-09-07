@@ -148,7 +148,7 @@ public partial class MainViewModel : ObservableObject
             ApiBase = ApiBase,
             OnInspectModelRequested = (modelName, modality) => NavigateToCanIRunIt(modelName, modality)
         };
-        Settings = new SettingsViewModel { ApiBase = ApiBase };
+        Settings = new SettingsViewModel(PresetService) { ApiBase = ApiBase };
         Audio = new AudioStudioViewModel(PresetService, _canIRunItService) { ApiBase = ApiBase };
 
         LoadStudioPresets();
