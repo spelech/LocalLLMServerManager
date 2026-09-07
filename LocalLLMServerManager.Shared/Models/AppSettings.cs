@@ -1,5 +1,8 @@
 namespace LocalLLMServerManager;
 
+using System.Collections.Generic;
+using LocalLLMServerManager.Shared.Models;
+
 /// <summary>
 /// Application settings persisted to settings.json next to the executable.
 /// </summary>
@@ -22,6 +25,8 @@ public record AppSettings(
     string AudioEngineUrl = "http://127.0.0.1:8880",
     string PreferredAudioVoice = "af_heart",
     string VideoModelsPath = "",
-    string VideoOutputPath = ""
+    string VideoOutputPath = "",
+    List<StudioPreset>? CustomPresets = null
 );
+
 
