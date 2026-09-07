@@ -75,7 +75,7 @@ public class PlaywrightWasmE2ETests : IClassFixture<AppTestServerFixture>
         Assert.True(consoleErrors.IsEmpty, $"Errors:\n{string.Join("\n", consoleErrors)}\nOut HTML:\n{outHtml}");
         Assert.NotNull(outputContainer);
         Assert.True(canvas != null, $"Canvas element not found in DOM! Container HTML: {outHtml}");
-        Assert.Equal("3.12.1", loadedVersion);
+        Assert.Equal("3.13.0", loadedVersion);
 
         // Exercise interactive browser pointer & keyboard events
         var boundingBox = await canvas.BoundingBoxAsync();
