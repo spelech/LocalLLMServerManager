@@ -37,4 +37,11 @@ public interface ICanIRunItService
     /// Generates a lightweight compatibility badge suitable for search/library cards.
     /// </summary>
     QuickFitBadge EvaluateQuickFit(string modelName, long? fileSizeBytes, string modality, long vramMb, long ramMb);
+
+    /// <summary>
+    /// Evaluates pre-flight hardware fit for studio generation workloads (Image, Video, Audio)
+    /// based on modality, resolution, frame counts, workflow, and current VRAM telemetry.
+    /// </summary>
+    StudioHardwareFit EstimateStudioHardwareFit(StudioModality modality, int width, int height, int frameCount, string workflow, double freeVramMb, double totalVramMb);
 }
+

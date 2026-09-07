@@ -312,4 +312,64 @@ public class CanIRunItServiceTests
         Assert.Equal(FitVerdict.FullVram, badge.FitVerdict);
         Assert.Contains("Full VRAM", badge.BadgeText);
     }
+
+    [Fact]
+    public void EstimateStudioHardwareFit_CalculatesAccurately()
+    {
+        var service = new CanIRunItService();
+        // 480p Video on 16GB GPU with 12GB Free -> Ready
+        var fit = service.EstimateStudioHardwareFit(StudioModality.Video, 832, 480, 48, "wan2.2", 12000, 16000);
+        Assert.Equal("Ready", fit.StatusText);
+        Assert.False(fit.RequiresLlmUnload);
+
+        // 720p Video with only 4GB Free on 12GB GPU -> Requires LLM unload
+        var fitTight = service.EstimateStudioHardwareFit(StudioModality.Video, 1280, 720, 48, "wan2.2", 4000, 12000);
+        Assert.True(fitTight.RequiresLlmUnload);
+    }
+
+    [Fact]
+    public void EstimateStudioHardwareFit_VideoExceedsGpuLimit_Recommends480pPreview()
+    {
+        var service = new CanIRunItService();
+        // 1080p Video on 8GB GPU (estimated ~18.5GB) -> Exceeds GPU Limit
+        var fitOom = service.EstimateStudioHardwareFit(StudioModality.Video, 1920, 1080, 48, "wan2.2", 4000, 8000);
+        Assert.Equal("Exceeds GPU Limit", fitOom.StatusText);
+        Assert.Equal("Quick 480p Preview", fitOom.RecommendedPresetName);
+        Assert.Equal(FitVerdict.OutOfMemory, fitOom.FitBadge.FitVerdict);
+    }
+
+    [Fact]
+    public void EstimateStudioHardwareFit_ImageModalities_ScalesByPixelArea()
+    {
+        var service = new CanIRunItService();
+        // 1024x1024 Image Baseline ~4000 MB
+        var fit1024 = service.EstimateStudioHardwareFit(StudioModality.Image, 1024, 1024, 0, "flux", 8000, 12000);
+        Assert.Equal(4000, Math.Round(fit1024.EstimatedVramMb));
+        Assert.Equal("Ready", fit1024.StatusText);
+        Assert.False(fit1024.RequiresLlmUnload);
+
+        // 2048x2048 Image (4x pixels) -> ~16000 MB
+        var fit2048 = service.EstimateStudioHardwareFit(StudioModality.Image, 2048, 2048, 0, "flux", 8000, 12000);
+        Assert.Equal(16000, Math.Round(fit2048.EstimatedVramMb));
+        Assert.Equal("Exceeds GPU Limit", fit2048.StatusText);
+        Assert.Equal("Quick 480p Preview", fit2048.RecommendedPresetName);
+    }
+
+    [Fact]
+    public void EstimateStudioHardwareFit_AudioModalities_CalculatesKokoroAndStableAudio()
+    {
+        var service = new CanIRunItService();
+        // Kokoro TTS ~1500 MB
+        var fitKokoro = service.EstimateStudioHardwareFit(StudioModality.Audio, 0, 0, 0, "kokoro", 2000, 8000);
+        Assert.Equal(1500, Math.Round(fitKokoro.EstimatedVramMb));
+        Assert.Equal("Ready", fitKokoro.StatusText);
+        Assert.False(fitKokoro.RequiresLlmUnload);
+
+        // Stable Audio / MusicGen ~2500 MB
+        var fitStable = service.EstimateStudioHardwareFit(StudioModality.Audio, 0, 0, 0, "stable-audio", 1000, 8000);
+        Assert.Equal(2500, Math.Round(fitStable.EstimatedVramMb));
+        Assert.Equal("Tight Fit", fitStable.StatusText);
+        Assert.True(fitStable.RequiresLlmUnload);
+    }
 }
+
