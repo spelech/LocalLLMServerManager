@@ -17,20 +17,16 @@ public partial class App : Application
 
     public static void SetThemeStyle(string styleName)
     {
-        if (Current == null) return;
-        try
+        if (styleName.Equals("semi", StringComparison.OrdinalIgnoreCase))
         {
-            Current.Styles.Clear();
-            if (styleName.Equals("semi", StringComparison.OrdinalIgnoreCase))
-            {
-                Current.Styles.Add(new Semi.Avalonia.SemiTheme());
-            }
-            else
-            {
-                Current.Styles.Add(new Avalonia.Themes.Fluent.FluentTheme());
-            }
+            LocalLLMServerManager.Shared.Services.ThemeService.Instance.SetTheme(
+                LocalLLMServerManager.Shared.Services.AppTheme.MatteCarbon);
         }
-        catch { }
+        else if (styleName.Equals("fluent", StringComparison.OrdinalIgnoreCase))
+        {
+            LocalLLMServerManager.Shared.Services.ThemeService.Instance.SetTheme(
+                LocalLLMServerManager.Shared.Services.AppTheme.OledBlack);
+        }
     }
 
     public override void OnFrameworkInitializationCompleted()
