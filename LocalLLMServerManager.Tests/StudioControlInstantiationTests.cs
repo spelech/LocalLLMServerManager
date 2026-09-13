@@ -8,7 +8,7 @@ namespace LocalLLMServerManager.Tests;
 
 public class StudioControlInstantiationTests
 {
-    [Fact]
+    [AvaloniaFact]
     public void StudioPresetBarControl_InstantiatesAndSetsProperties()
     {
         var control = new StudioPresetBarControl();
@@ -29,7 +29,7 @@ public class StudioControlInstantiationTests
         Assert.True(control.IsCustomPreset);
     }
 
-    [Fact]
+    [AvaloniaFact]
     public void GenerationStageTrackerControl_InstantiatesAndToggles()
     {
         var control = new GenerationStageTrackerControl();
@@ -53,7 +53,7 @@ public class StudioControlInstantiationTests
         Assert.Equal("Allocating tensors...", control.LogsText);
     }
 
-    [Fact]
+    [AvaloniaFact]
     public void TestFlightModalControl_InstantiatesAndSetsDefaults()
     {
         var control = new TestFlightModalControl();

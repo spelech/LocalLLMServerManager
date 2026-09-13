@@ -370,5 +370,315 @@ public class AvaloniaHeadlessInteractionTests
 
         window.Close();
     }
+
+    [AvaloniaFact]
+    public void SettingsTabControl_ThemeSwitching_DoesNotCrashUI()
+    {
+        var vm = new MainViewModel();
+        var view = new MainView { DataContext = vm };
+        var window = new Window { Content = view, Width = 1024, Height = 768 };
+        window.Show();
+
+        // Switch to Settings Tab
+        var tabControl = view.GetVisualDescendants().OfType<TabControl>().FirstOrDefault();
+        Assert.NotNull(tabControl);
+        tabControl.SelectedIndex = 5;
+        Avalonia.Threading.Dispatcher.UIThread.RunJobs();
+
+        var settingsControl = view.GetVisualDescendants().OfType<SettingsTabControl>().FirstOrDefault();
+        Assert.NotNull(settingsControl);
+
+        // 1. Test Theme Palette ComboBox UI element
+        var comboBoxes = settingsControl.GetVisualDescendants().OfType<ComboBox>().ToList();
+        var themeComboBox = comboBoxes.FirstOrDefault(c => c.ItemsSource == vm.Settings.AvailableThemes);
+        Assert.NotNull(themeComboBox);
+
+        themeComboBox.SelectedItem = "Clean Light";
+        Avalonia.Threading.Dispatcher.UIThread.RunJobs();
+        Assert.Equal(AppTheme.Light, ThemeService.Instance.CurrentTheme);
+
+        themeComboBox.SelectedItem = "OLED Pure Black";
+        Avalonia.Threading.Dispatcher.UIThread.RunJobs();
+        Assert.Equal(AppTheme.OledBlack, ThemeService.Instance.CurrentTheme);
+
+        themeComboBox.SelectedItem = "Matte Carbon (Default)";
+        Avalonia.Threading.Dispatcher.UIThread.RunJobs();
+        Assert.Equal(AppTheme.MatteCarbon, ThemeService.Instance.CurrentTheme);
+
+        // 2. Test Framework Theme Style switching via UI buttons
+        var buttons = settingsControl.GetVisualDescendants().OfType<Button>().ToList();
+        var fluentBtn = buttons.FirstOrDefault(b => b.CommandParameter?.ToString() == "fluent");
+        Assert.NotNull(fluentBtn);
+        fluentBtn.Command?.Execute(fluentBtn.CommandParameter);
+        Avalonia.Threading.Dispatcher.UIThread.RunJobs();
+        Assert.Equal(AppTheme.OledBlack, ThemeService.Instance.CurrentTheme);
+
+        var semiBtn = buttons.FirstOrDefault(b => b.CommandParameter?.ToString() == "semi");
+        Assert.NotNull(semiBtn);
+        semiBtn.Command?.Execute(semiBtn.CommandParameter);
+        Avalonia.Threading.Dispatcher.UIThread.RunJobs();
+        Assert.Equal("semi", vm.Settings.SelectedThemeStyle);
+        Assert.Equal(AppTheme.MatteCarbon, ThemeService.Instance.CurrentTheme);
+
+        window.Close();
+    }
+
+    [AvaloniaFact]
+    public void SettingsTabControl_AllActionsAndPickers_InteractCleanly()
+    {
+        var vm = new MainViewModel();
+        var view = new MainView { DataContext = vm };
+        var window = new Window { Content = view, Width = 1024, Height = 768 };
+        window.Show();
+
+        var tabControl = view.GetVisualDescendants().OfType<TabControl>().FirstOrDefault();
+        Assert.NotNull(tabControl);
+        tabControl.SelectedIndex = 5;
+        Avalonia.Threading.Dispatcher.UIThread.RunJobs();
+
+        var settingsControl = view.GetVisualDescendants().OfType<SettingsTabControl>().FirstOrDefault();
+        Assert.NotNull(settingsControl);
+
+        var buttons = settingsControl.GetVisualDescendants().OfType<Button>().ToList();
+
+        // 1. Auto-Detect Tools Button
+        var autoDetectBtn = buttons.FirstOrDefault(b => b.Command == vm.Settings.AutoDetectToolsCommand);
+        Assert.NotNull(autoDetectBtn);
+        if (autoDetectBtn.Command.CanExecute(null))
+        {
+            autoDetectBtn.Command.Execute(null);
+        }
+
+        // 2. Refresh Status Button
+        var refreshBtn = buttons.FirstOrDefault(b => b.Command == vm.Settings.RefreshComponentStatusesCommand);
+        Assert.NotNull(refreshBtn);
+        if (refreshBtn.Command.CanExecute(null))
+        {
+            refreshBtn.Command.Execute(null);
+        }
+
+        // 3. Toggle Video and Audio Pack Buttons
+        var videoToggleBtn = buttons.FirstOrDefault(b => b.Command == vm.Settings.ToggleVideoPackCommand);
+        Assert.NotNull(videoToggleBtn);
+        var audioToggleBtn = buttons.FirstOrDefault(b => b.Command == vm.Settings.ToggleAudioPackCommand);
+        Assert.NotNull(audioToggleBtn);
+
+        // 4. Presets Manager Actions
+        var createPresetBtn = buttons.FirstOrDefault(b => b.Command == vm.Settings.CreatePresetCommand);
+        Assert.NotNull(createPresetBtn);
+        createPresetBtn.Command.Execute(null);
+        Assert.NotEmpty(vm.Settings.AllPresets);
+
+        var resetDefaultsBtn = buttons.FirstOrDefault(b => b.Command == vm.Settings.ResetPresetsToDefaultCommand);
+        Assert.NotNull(resetDefaultsBtn);
+        resetDefaultsBtn.Command.Execute(null);
+
+        // Preset filter buttons
+        var filterBtns = buttons.Where(b => b.Command == vm.Settings.FilterPresetsCommand).ToList();
+        Assert.NotEmpty(filterBtns);
+        foreach (var filterBtn in filterBtns)
+        {
+            filterBtn.Command.Execute(filterBtn.CommandParameter);
+        }
+
+        // Export and Import JSON buttons
+        var exportBtn = buttons.FirstOrDefault(b => b.Command == vm.Settings.ExportPresetsCommand);
+        Assert.NotNull(exportBtn);
+        exportBtn.Command.Execute(null);
+        Assert.False(string.IsNullOrWhiteSpace(vm.Settings.PresetsJson));
+
+        var importBtn = buttons.FirstOrDefault(b => b.Command == vm.Settings.ImportPresetsCommand);
+        Assert.NotNull(importBtn);
+        importBtn.Command.Execute(vm.Settings.PresetsJson);
+
+        // Save Settings button
+        var saveBtn = buttons.FirstOrDefault(b => b.Command == vm.Settings.SaveSettingsCommand);
+        Assert.NotNull(saveBtn);
+        if (saveBtn.Command.CanExecute(null))
+        {
+            saveBtn.Command.Execute(null);
+        }
+
+        Avalonia.Threading.Dispatcher.UIThread.RunJobs();
+        window.Close();
+    }
+
+    [AvaloniaFact]
+    public void TelemetryHeaderControl_ActionsAndBadges_InteractCleanly()
+    {
+        var vm = new MainViewModel();
+        var header = new TelemetryHeaderControl { DataContext = vm.Telemetry };
+        var window = new Window { Content = header, Width = 1024, Height = 200 };
+        window.Show();
+        Avalonia.Threading.Dispatcher.UIThread.RunJobs();
+
+        // Refresh telemetry status button
+        var buttons = header.GetVisualDescendants().OfType<Button>().ToList();
+        var refreshBtn = buttons.FirstOrDefault(b => b.Command == vm.Telemetry.RefreshStatusCommand);
+        Assert.NotNull(refreshBtn);
+        if (refreshBtn.Command.CanExecute(null))
+        {
+            refreshBtn.Command.Execute(null);
+        }
+
+        // Telemetry indicators
+        var textBlocks = header.GetVisualDescendants().OfType<TextBlock>().ToList();
+        Assert.Contains(textBlocks, t => t.Text != null && t.Text.Contains("GB"));
+
+        window.Close();
+    }
+
+    [AvaloniaFact]
+    public void EngineStudioTabControl_GenerationAndTestFlight_InteractCleanly()
+    {
+        var vm = new MainViewModel();
+        var studio = new EngineStudioTabControl { DataContext = vm };
+        var window = new Window { Content = studio, Width = 1024, Height = 768 };
+        window.Show();
+        Avalonia.Threading.Dispatcher.UIThread.RunJobs();
+
+        var buttons = studio.GetVisualDescendants().OfType<Button>().ToList();
+
+        // Test Flight button opens modal
+        var testFlightBtn = buttons.FirstOrDefault(b => b.Command == vm.OpenTestFlightCommand);
+        Assert.NotNull(testFlightBtn);
+        testFlightBtn.Command.Execute(null);
+        Assert.True(vm.IsTestFlightOpen);
+
+        // Test Flight Modal Control is in visual tree
+        var modalControl = studio.GetVisualDescendants().OfType<TestFlightModalControl>().FirstOrDefault();
+        Assert.NotNull(modalControl);
+
+        // Close Test Flight
+        vm.CloseTestFlight();
+        Assert.False(vm.IsTestFlightOpen);
+
+        // Engine toggles
+        var forgeToggleBtn = buttons.FirstOrDefault(b => b.CommandParameter?.ToString() == "forge");
+        Assert.NotNull(forgeToggleBtn);
+        var comfyToggleBtn = buttons.FirstOrDefault(b => b.CommandParameter?.ToString() == "comfy");
+        Assert.NotNull(comfyToggleBtn);
+
+        // Studio Preset bar controls
+        var presetBar = studio.GetVisualDescendants().OfType<StudioPresetBarControl>().FirstOrDefault();
+        Assert.NotNull(presetBar);
+
+        window.Close();
+    }
+
+    [AvaloniaFact]
+    public void OllamaModelsTabControl_ActionsAndFilter_InteractCleanly()
+    {
+        var vm = new MainViewModel();
+        var item = new OllamaModelItem("llama3.3:70b", "42 GB", "💻 Coding & General", "#38BDF8", false);
+        vm.Ollama.InstalledModels.Add(item);
+
+        var control = new OllamaModelsTabControl { DataContext = vm.Ollama };
+        var window = new Window { Content = control, Width = 1024, Height = 768 };
+        window.Show();
+        Avalonia.Threading.Dispatcher.UIThread.RunJobs();
+
+        // Context token slider
+        var slider = control.GetVisualDescendants().OfType<Slider>().FirstOrDefault();
+        Assert.NotNull(slider);
+        slider.Value = 16384;
+        Assert.Equal(16384, vm.Ollama.TargetContextTokens);
+
+        // Unload All VRAM button
+        var buttons = control.GetVisualDescendants().OfType<Button>().ToList();
+        var unloadBtn = buttons.FirstOrDefault(b => b.Command == vm.Ollama.UnloadAllVramCommand);
+        Assert.NotNull(unloadBtn);
+        if (unloadBtn.Command.CanExecute(null))
+        {
+            unloadBtn.Command.Execute(null);
+        }
+
+        // Fit verdict pill filter buttons
+        var verdictBtns = buttons.Where(b => b.Command == vm.Ollama.ToggleFitVerdictCommand).ToList();
+        Assert.NotEmpty(verdictBtns);
+        foreach (var vBtn in verdictBtns)
+        {
+            vBtn.Command.Execute(vBtn.CommandParameter);
+        }
+
+        // Delete modal confirmation flow
+        vm.Ollama.RequestDeleteModel(item);
+        Assert.True(vm.Ollama.IsDeleteModalOpen);
+        vm.Ollama.CancelDeleteModel();
+        Assert.False(vm.Ollama.IsDeleteModalOpen);
+
+        window.Close();
+    }
+
+    [AvaloniaFact]
+    public void HuggingFaceTabControl_PresetsAndActions_InteractCleanly()
+    {
+        var vm = new MainViewModel();
+        var control = new HuggingFaceTabControl { DataContext = vm.HuggingFace };
+        var window = new Window { Content = control, Width = 1024, Height = 768 };
+        window.Show();
+        Avalonia.Threading.Dispatcher.UIThread.RunJobs();
+
+        // Search input text box
+        var searchBox = control.GetVisualDescendants().OfType<TextBox>().FirstOrDefault();
+        Assert.NotNull(searchBox);
+        searchBox.Text = "DeepSeek";
+        Assert.Equal("DeepSeek", vm.HuggingFace.HfSearchQuery);
+
+        // Search button
+        var buttons = control.GetVisualDescendants().OfType<Button>().ToList();
+        var searchBtn = buttons.FirstOrDefault(b => b.Command == vm.HuggingFace.SearchHuggingFaceCommand);
+        Assert.NotNull(searchBtn);
+
+        // Preset pill buttons (Multimodal, LLM, Image, Video, Audio, 3D)
+        var presetBtns = buttons.Where(b => b.Command == vm.HuggingFace.ApplyPresetCommand).ToList();
+        Assert.NotEmpty(presetBtns);
+        foreach (var pBtn in presetBtns)
+        {
+            pBtn.Command.Execute(pBtn.CommandParameter);
+        }
+
+        // Modality toggle buttons
+        var inputModalityBtns = buttons.Where(b => b.Command == vm.HuggingFace.ToggleInputModalityCommand).ToList();
+        Assert.NotEmpty(inputModalityBtns);
+        inputModalityBtns[0].Command.Execute(inputModalityBtns[0].CommandParameter);
+
+        var outputModalityBtns = buttons.Where(b => b.Command == vm.HuggingFace.ToggleOutputModalityCommand).ToList();
+        Assert.NotEmpty(outputModalityBtns);
+        outputModalityBtns[0].Command.Execute(outputModalityBtns[0].CommandParameter);
+
+        window.Close();
+    }
+
+    [AvaloniaFact]
+    public void CivitaiTabControl_PresetsAndActions_InteractCleanly()
+    {
+        var vm = new MainViewModel();
+        var control = new CivitaiTabControl { DataContext = vm.Civitai };
+        var window = new Window { Content = control, Width = 1024, Height = 768 };
+        window.Show();
+        Avalonia.Threading.Dispatcher.UIThread.RunJobs();
+
+        // Search input
+        var searchBox = control.GetVisualDescendants().OfType<TextBox>().FirstOrDefault();
+        Assert.NotNull(searchBox);
+        searchBox.Text = "photorealistic";
+        Assert.Equal("photorealistic", vm.Civitai.CivitaiSearchQuery);
+
+        // Search button
+        var buttons = control.GetVisualDescendants().OfType<Button>().ToList();
+        var searchBtn = buttons.FirstOrDefault(b => b.Command == vm.Civitai.SearchCivitaiCommand);
+        Assert.NotNull(searchBtn);
+
+        // Fit verdict pill buttons
+        var verdictBtns = buttons.Where(b => b.Command == vm.Civitai.ToggleFitVerdictCommand).ToList();
+        Assert.NotEmpty(verdictBtns);
+        foreach (var vBtn in verdictBtns)
+        {
+            vBtn.Command.Execute(vBtn.CommandParameter);
+        }
+
+        window.Close();
+    }
 }
 
