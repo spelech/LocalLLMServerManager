@@ -20,13 +20,10 @@ dotnet test LocalLLMServerManager.sln --nologo -c Release
 
 # 2. Publish Avalonia WebAssembly to wwwroot & Build Self-Contained Release
 echo "--> 2. Building & Publishing Avalonia WebAssembly (Wasm) UI..."
-rm -rf "${ROOT_DIR}/wwwroot_wasm"
-dotnet publish LocalLLMServerManager.Web/LocalLLMServerManager.Web.csproj -c Release -o "${ROOT_DIR}/wwwroot_wasm" --nologo
-
-rm -f "${ROOT_DIR}/wwwroot/app.js" "${ROOT_DIR}/wwwroot/index.css" "${ROOT_DIR}/wwwroot/index.html"
-rm -rf "${ROOT_DIR}/wwwroot/wwwroot"
-cp -r "${ROOT_DIR}/wwwroot_wasm/wwwroot/"* "${ROOT_DIR}/wwwroot/"
-rm -rf "${ROOT_DIR}/wwwroot_wasm"
+dotnet publish LocalLLMServerManager.Web/LocalLLMServerManager.Web.csproj -c Release -r browser-wasm --nologo
+mkdir -p "${ROOT_DIR}/wwwroot/_framework"
+cp -rf "${ROOT_DIR}/LocalLLMServerManager.Web/bin/Release/net10.0/browser-wasm/AppBundle/_framework/"* "${ROOT_DIR}/wwwroot/_framework/"
+find "${ROOT_DIR}/wwwroot" -name "*.br" -o -name "*.gz" | xargs -r rm -f
 
 echo "--> 3. Publishing Self-Contained linux-x64 Executable..."
 rm -rf "${PUBLISH_DIR}" "${DIST_DIR}"

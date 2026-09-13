@@ -18,8 +18,9 @@ RUN dotnet restore "LocalLLMServerManager.slnx"
 COPY . .
 
 # Build WASM UI and copy output to wwwroot
-RUN dotnet publish "LocalLLMServerManager.Web/LocalLLMServerManager.Web.csproj" -c Release -o /app/wwwroot_wasm --nologo \
-    && cp -r /app/wwwroot_wasm/wwwroot/* wwwroot/
+RUN dotnet publish "LocalLLMServerManager.Web/LocalLLMServerManager.Web.csproj" -c Release -r browser-wasm --nologo \
+    && mkdir -p wwwroot/_framework \
+    && cp -rf LocalLLMServerManager.Web/bin/Release/net10.0/browser-wasm/AppBundle/_framework/* wwwroot/_framework/
 
 # Publish Main Server App
 RUN dotnet publish "LocalLLMServerManager.csproj" -c Release -o /app/publish --nologo /p:PublishSingleFile=false
