@@ -1,6 +1,9 @@
 FROM mcr.microsoft.com/dotnet/sdk:10.0 AS build
 WORKDIR /src
 
+# Install python3 required by Emscripten WASM native toolchain
+RUN apt-get update && apt-get install -y python3 && rm -rf /var/lib/apt/lists/*
+
 # Copy solution and project files
 COPY ["LocalLLMServerManager.slnx", "./"]
 COPY ["LocalLLMServerManager.csproj", "./"]
