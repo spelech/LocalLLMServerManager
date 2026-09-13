@@ -16,6 +16,11 @@ public class ThemeService : IThemeService
     public AppTheme CurrentTheme { get; private set; } = AppTheme.MatteCarbon;
 
     public event EventHandler<AppTheme>? ThemeChanged;
+    public event Action? ThemeStyleChanging;
+    public event Action? ThemeStyleChanged;
+
+    public void NotifyThemeStyleChanging() => ThemeStyleChanging?.Invoke();
+    public void NotifyThemeStyleChanged() => ThemeStyleChanged?.Invoke();
 
     public ThemeService(IResourceDictionary? resourceDictionary = null)
     {
@@ -24,6 +29,12 @@ public class ThemeService : IThemeService
 
     public void SetTheme(AppTheme theme)
     {
+        if (Application.Current != null && !Avalonia.Threading.Dispatcher.UIThread.CheckAccess())
+        {
+            Avalonia.Threading.Dispatcher.UIThread.Post(() => SetTheme(theme));
+            return;
+        }
+
         CurrentTheme = theme;
 
         var resources = _resourceDictionary ?? Application.Current?.Resources;

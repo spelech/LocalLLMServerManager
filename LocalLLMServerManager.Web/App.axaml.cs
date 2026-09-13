@@ -12,6 +12,20 @@ public partial class App : Application
         AvaloniaXamlLoader.Load(this);
     }
 
+    public static void SetThemeStyle(string styleName)
+    {
+        if (styleName.Equals("semi", StringComparison.OrdinalIgnoreCase))
+        {
+            LocalLLMServerManager.Shared.Services.ThemeService.Instance.SetTheme(
+                LocalLLMServerManager.Shared.Services.AppTheme.MatteCarbon);
+        }
+        else if (styleName.Equals("fluent", StringComparison.OrdinalIgnoreCase))
+        {
+            LocalLLMServerManager.Shared.Services.ThemeService.Instance.SetTheme(
+                LocalLLMServerManager.Shared.Services.AppTheme.OledBlack);
+        }
+    }
+
     public override void OnFrameworkInitializationCompleted()
     {
         LocalLLMServerManager.Shared.ViewModels.MainViewModel.EnableAutomaticPolling = true;

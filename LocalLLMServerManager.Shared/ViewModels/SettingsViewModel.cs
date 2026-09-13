@@ -439,14 +439,16 @@ public partial class SettingsViewModel : ObservableObject
     {
         if (string.IsNullOrWhiteSpace(style)) return;
         SelectedThemeStyle = style;
-        try
-        {
-            var appType = Type.GetType("LocalLLMServerManager.App, LocalLLMServerManager");
-            var method = appType?.GetMethod("SetThemeStyle", System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Static);
-            method?.Invoke(null, new object[] { style });
-            ToastService.Instance.Show($"Switched theme to '{style.ToUpperInvariant()}' style.", ToastType.Info);
-        }
-        catch { }
+        ThemeService.Instance.NotifyThemeStyleChanging();
+
+        var appType = Type.GetType("LocalLLMServerManager.App, LocalLLMServerManager")
+            ?? Type.GetType("LocalLLMServerManager.App, LocalLLMServerManager.Web")
+            ?? Avalonia.Application.Current?.GetType();
+        var method = appType?.GetMethod("SetThemeStyle", System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Static);
+        method?.Invoke(null, new object[] { style });
+
+        ThemeService.Instance.NotifyThemeStyleChanged();
+        ToastService.Instance.Show($"Switched theme to '{style.ToUpperInvariant()}' style.", ToastType.Info);
     }
 
     [RelayCommand]
