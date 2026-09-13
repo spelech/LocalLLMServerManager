@@ -1,7 +1,7 @@
 export const config = /*json-start*/{
   "mainAssemblyName": "LocalLLMServerManager.Web.dll",
   "resources": {
-    "hash": "sha256-C8/stEApm5XhS2rn8KJXOxjOu1Ss81V2voPyAvL8Ck8=",
+    "hash": "sha256-w7FsJq0KgM+hjhL6lldmSh0VzueDGw2pHw4QHOhovjk=",
     "jsModuleNative": [
       {
         "name": "dotnet.native.js"
@@ -131,12 +131,12 @@ export const config = /*json-start*/{
       {
         "virtualPath": "LocalLLMServerManager.Shared.wasm",
         "name": "LocalLLMServerManager.Shared.wasm",
-        "hash": "sha256-hUk5basIxWHWTNsR9kWlpD5oyerSKkeLmm7QQdllxxk="
+        "hash": "sha256-lySio/s3k7xaK3BWuvWZPG9aIOOZT5rsvmM1BolziGU="
       },
       {
         "virtualPath": "LocalLLMServerManager.Web.wasm",
         "name": "LocalLLMServerManager.Web.wasm",
-        "hash": "sha256-uuW0PmpJHMXFu1Vxy2K4CP1LH+GMzEXmWC12Hn02RlU="
+        "hash": "sha256-BMEyUgDjXp6jVwOnJ3Efw8ojuyy7UUDgjZjtPSum/BU="
       },
       {
         "virtualPath": "Semi.Avalonia.wasm",
