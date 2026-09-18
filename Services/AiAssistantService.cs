@@ -18,8 +18,8 @@ using Microsoft.Extensions.AI;
 using OpenAI;
 using OpenAI.Chat;
 
-namespace LocalLLMServerManager.Services;
-
+namespace LocalLLMServerManager.Services
+{
 public class AiAssistantService : IAiAssistantService
 {
     private readonly ISettingsService _settingsService;
@@ -525,15 +525,9 @@ public class AiAssistantService : IAiAssistantService
                 new(Microsoft.Extensions.AI.ChatRole.System, systemPrompt)
             };
 
-            foreach (var msg in request.Messages.Where(m => !string.IsNullOrWhiteSpace(m.Content)))
+            foreach (var msg in request.Messages.Where(m => !string.IsNullOrWhiteSpace(m.Content) || m.HasAttachments))
             {
-                var role = msg.Role.ToLowerInvariant() switch
-                {
-                    "assistant" => Microsoft.Extensions.AI.ChatRole.Assistant,
-                    "system" => Microsoft.Extensions.AI.ChatRole.System,
-                    _ => Microsoft.Extensions.AI.ChatRole.User
-                };
-                messages.Add(new(role, msg.Content));
+                messages.Add(ToExtensionsAiChatMessage(msg));
             }
 
             var chatOptions = new Microsoft.Extensions.AI.ChatOptions
@@ -590,15 +584,9 @@ public class AiAssistantService : IAiAssistantService
             new(Microsoft.Extensions.AI.ChatRole.System, systemPrompt)
         };
 
-        foreach (var msg in request.Messages.Where(m => !string.IsNullOrWhiteSpace(m.Content)))
+        foreach (var msg in request.Messages.Where(m => !string.IsNullOrWhiteSpace(m.Content) || m.HasAttachments))
         {
-            var role = msg.Role.ToLowerInvariant() switch
-            {
-                "assistant" => Microsoft.Extensions.AI.ChatRole.Assistant,
-                "system" => Microsoft.Extensions.AI.ChatRole.System,
-                _ => Microsoft.Extensions.AI.ChatRole.User
-            };
-            messages.Add(new(role, msg.Content));
+            messages.Add(ToExtensionsAiChatMessage(msg));
         }
 
         var chatOptions = new Microsoft.Extensions.AI.ChatOptions
@@ -711,5 +699,57 @@ public class AiAssistantService : IAiAssistantService
         catch { }
 
         return jsonOrRaw.Length > 200 ? jsonOrRaw[..200] + "..." : jsonOrRaw;
+    }
+
+    public static Microsoft.Extensions.AI.ChatMessage ToExtensionsAiChatMessage(AiChatMessageItem msg)
+    {
+        ArgumentNullException.ThrowIfNull(msg);
+
+        var role = (msg.Role ?? "").ToLowerInvariant() switch
+        {
+            "assistant" => Microsoft.Extensions.AI.ChatRole.Assistant,
+            "system" => Microsoft.Extensions.AI.ChatRole.System,
+            _ => Microsoft.Extensions.AI.ChatRole.User
+        };
+
+        if (msg.Attachments == null || msg.Attachments.Count == 0)
+        {
+            return new Microsoft.Extensions.AI.ChatMessage(role, msg.Content ?? "");
+        }
+
+        var contents = new List<Microsoft.Extensions.AI.AIContent>();
+        if (!string.IsNullOrWhiteSpace(msg.Content))
+        {
+            contents.Add(new Microsoft.Extensions.AI.TextContent(msg.Content));
+        }
+
+        foreach (var att in msg.Attachments)
+        {
+            if (att.RawBytes != null && att.RawBytes.Length > 0)
+            {
+                contents.Add(new Microsoft.Extensions.AI.ImageContent(att.RawBytes, att.ContentType));
+            }
+            else if (!string.IsNullOrWhiteSpace(att.Base64Data))
+            {
+                var uri = att.Base64Data.StartsWith("data:", StringComparison.OrdinalIgnoreCase)
+                    ? new Uri(att.Base64Data)
+                    : new Uri($"data:{att.ContentType};base64,{att.Base64Data}");
+                contents.Add(new Microsoft.Extensions.AI.ImageContent(uri, att.ContentType));
+            }
+        }
+
+        return new Microsoft.Extensions.AI.ChatMessage(role, contents);
+    }
+}
+}
+
+namespace Microsoft.Extensions.AI
+{
+    public class ImageContent : DataContent
+    {
+        public ImageContent(ReadOnlyMemory<byte> data, string mediaType = "image/png") : base(data, mediaType) { }
+        public ImageContent(byte[] data, string mediaType = "image/png") : base(data, mediaType) { }
+        public ImageContent(Uri uri, string mediaType = "image/png") : base(uri, mediaType) { }
+        public ImageContent(string uri, string mediaType = "image/png") : base(uri, mediaType) { }
     }
 }

@@ -135,6 +135,30 @@ public class AiAssistantServiceTests
     }
 
     [Fact]
+    public async Task SendChat_WithImageAttachment_HandlesMultimodalMessage()
+    {
+        var service = CreateService();
+
+        var request = new AiChatRequest(new List<AiChatMessageItem>
+        {
+            new()
+            {
+                Role = "user",
+                Content = "Look at this",
+                Attachments = new List<AiChatMessageAttachment>
+                {
+                    new() { FileName = "pic.png", ContentType = "image/png", Base64Data = "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII=" }
+                }
+            }
+        });
+
+        var response = await service.SendChatAsync(request);
+
+        Assert.False(response.Success);
+        Assert.False(string.IsNullOrWhiteSpace(response.Error));
+    }
+
+    [Fact]
     public void AiModelCapabilityInfo_FormattingAndProperties_AreValid()
     {
         var model = new AiModelCapabilityInfo(
@@ -358,6 +382,100 @@ public class AiAssistantServiceTests
         var service = CreateService(customSettings: new AppSettings(AiAssistantEndpoint: ""));
         await Assert.ThrowsAsync<InvalidOperationException>(() => service.GetModelCapabilitiesAsync(endpoint: ""));
     }
+
+    [Fact]
+    public void BuildExtensionsAiChatMessage_WithImageAttachment_CreatesMultimodalChatMessage()
+    {
+        var item = new AiChatMessageItem
+        {
+            Role = "user",
+            Content = "What is in this diagram?",
+            Attachments = new List<AiChatMessageAttachment>
+            {
+                new()
+                {
+                    FileName = "diagram.png",
+                    ContentType = "image/png",
+                    Base64Data = "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII="
+                }
+            }
+        };
+
+        var chatMessage = AiAssistantService.ToExtensionsAiChatMessage(item);
+
+        Assert.Equal(Microsoft.Extensions.AI.ChatRole.User, chatMessage.Role);
+        Assert.Equal(2, chatMessage.Contents.Count);
+        Assert.IsType<Microsoft.Extensions.AI.TextContent>(chatMessage.Contents[0]);
+        Assert.IsType<Microsoft.Extensions.AI.ImageContent>(chatMessage.Contents[1]);
+    }
+
+    [Fact]
+    public void BuildExtensionsAiChatMessage_WithoutAttachments_ReturnsSimpleChatMessage()
+    {
+        var item = new AiChatMessageItem
+        {
+            Role = "assistant",
+            Content = "I can help with that."
+        };
+
+        var chatMessage = AiAssistantService.ToExtensionsAiChatMessage(item);
+
+        Assert.Equal(Microsoft.Extensions.AI.ChatRole.Assistant, chatMessage.Role);
+        Assert.Equal("I can help with that.", chatMessage.Text);
+    }
+
+    [Fact]
+    public void BuildExtensionsAiChatMessage_WithRawBytesAttachment_CreatesImageContentWithBytes()
+    {
+        var raw = new byte[] { 0x89, 0x50, 0x4E, 0x47 };
+        var item = new AiChatMessageItem
+        {
+            Role = "user",
+            Content = "Raw image test",
+            Attachments = new List<AiChatMessageAttachment>
+            {
+                new()
+                {
+                    FileName = "raw.png",
+                    ContentType = "image/png",
+                    RawBytes = raw
+                }
+            }
+        };
+
+        var chatMessage = AiAssistantService.ToExtensionsAiChatMessage(item);
+
+        Assert.Equal(2, chatMessage.Contents.Count);
+        var imgContent = Assert.IsType<Microsoft.Extensions.AI.ImageContent>(chatMessage.Contents[1]);
+        Assert.Equal("image/png", imgContent.MediaType);
+    }
+
+    [Fact]
+    public void BuildExtensionsAiChatMessage_WithDataUriPrefix_CreatesImageContentWithUri()
+    {
+        var item = new AiChatMessageItem
+        {
+            Role = "user",
+            Content = "",
+            Attachments = new List<AiChatMessageAttachment>
+            {
+                new()
+                {
+                    FileName = "datauri.png",
+                    ContentType = "image/png",
+                    Base64Data = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII="
+                }
+            }
+        };
+
+        var chatMessage = AiAssistantService.ToExtensionsAiChatMessage(item);
+
+        Assert.Single(chatMessage.Contents);
+        var imgContent = Assert.IsType<Microsoft.Extensions.AI.ImageContent>(chatMessage.Contents[0]);
+        Assert.NotNull(imgContent.Uri);
+        Assert.StartsWith("data:image/png;base64,", imgContent.Uri);
+    }
+
 
     private class RoutingHttpMessageHandler : HttpMessageHandler
     {
