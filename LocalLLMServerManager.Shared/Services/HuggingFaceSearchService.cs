@@ -78,8 +78,9 @@ public class HuggingFaceSearchService : IHuggingFaceSearchService
     public async Task<List<HuggingFaceRepoItem>> SearchModelsAsync(string query, string? pipelineTag = null, System.Threading.CancellationToken ct = default)
     {
         using var http = new HttpClient();
-        var tagParam = string.IsNullOrWhiteSpace(pipelineTag) ? "" : $"&pipeline_tag={Uri.EscapeDataString(pipelineTag)}";
-        var requestUrl = $"https://huggingface.co/api/models?search={Uri.EscapeDataString(query)}{tagParam}&sort=downloads&direction=-1&limit=20";
+        var searchParam = string.IsNullOrWhiteSpace(query) ? "" : $"search={Uri.EscapeDataString(query)}&";
+        var tagParam = string.IsNullOrWhiteSpace(pipelineTag) ? "" : $"pipeline_tag={Uri.EscapeDataString(pipelineTag)}&";
+        var requestUrl = $"https://huggingface.co/api/models?{searchParam}{tagParam}sort=downloads&direction=-1&limit=20";
         var result = new List<HuggingFaceRepoItem>();
         try
         {

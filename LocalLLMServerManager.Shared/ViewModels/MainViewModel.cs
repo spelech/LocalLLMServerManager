@@ -167,6 +167,8 @@ public partial class MainViewModel : ObservableObject
 
         _ = RefreshStatusAsync();
         _ = Ollama.LoadInstalledModelsAsync(ApiBase, Http);
+        _ = HuggingFace.LoadDefaultModelsAsync(ApiBase, Http);
+        _ = Civitai.LoadDefaultModelsAsync(ApiBase, Http);
         _ = Audio.LoadAudioWorkflowsAsync(ApiBase, Http);
         _ = Audio.LoadAudioFilesAsync(ApiBase, Http);
         _ = LoadSettingsAsync();

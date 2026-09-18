@@ -7,6 +7,33 @@
              x:Class="LocalLLMServerManager.Shared.Views.Controls.CanIRunItView"
              x:DataType="vm:CanIRunItViewModel">
 
+    <UserControl.Styles>
+        <Style Selector="Button.modality-nav-btn">
+            <Setter Property="Background" Value="#1E293B"/>
+            <Setter Property="Foreground" Value="#94A3B8"/>
+            <Setter Property="BorderBrush" Value="#334155"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="CornerRadius" Value="14"/>
+            <Setter Property="Padding" Value="10,6"/>
+            <Setter Property="FontSize" Value="12"/>
+            <Setter Property="FontWeight" Value="Medium"/>
+            <Setter Property="Cursor" Value="Hand"/>
+        </Style>
+        <Style Selector="Button.modality-nav-btn:pointerover">
+            <Setter Property="Background" Value="#334155"/>
+        </Style>
+        <Style Selector="Button.modality-nav-btn.active">
+            <Setter Property="Background" Value="#1D4ED8"/>
+            <Setter Property="Foreground" Value="#FFFFFF"/>
+            <Setter Property="BorderBrush" Value="#60A5FA"/>
+            <Setter Property="BorderThickness" Value="1.5"/>
+            <Setter Property="FontWeight" Value="Bold"/>
+        </Style>
+        <Style Selector="Button.modality-nav-btn.active:pointerover">
+            <Setter Property="Background" Value="#2563EB"/>
+        </Style>
+    </UserControl.Styles>
+
     <ScrollViewer VerticalScrollBarVisibility="Auto">
         <StackPanel Spacing="16" Margin="0,12,0,16">
 
@@ -56,16 +83,36 @@
 
                 <!-- Modality Buttons -->
                 <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="6">
-                    <Button Content="🦙 Text LLMs" Command="{Binding SelectLlmModalityCommand}"
-                            Classes="matte-secondary" FontSize="12" Padding="10,6"/>
-                    <Button Content="🎨 Image Generation" Command="{Binding SelectImageModalityCommand}"
-                            Classes="matte-secondary" FontSize="12" Padding="10,6"/>
-                    <Button Content="🎬 Video Generation" Command="{Binding SelectVideoModalityCommand}"
-                            Classes="matte-secondary" FontSize="12" Padding="10,6"/>
-                    <Button Content="🎙️ Audio &amp; Speech" Command="{Binding SelectAudioModalityCommand}"
-                            Classes="matte-secondary" FontSize="12" Padding="10,6"/>
-                    <Button Content="🧊 3D Generation" Command="{Binding SelectThreeDModalityCommand}"
-                            Classes="matte-secondary" FontSize="12" Padding="10,6"/>
+                    <Button Command="{Binding SelectLlmModalityCommand}" Classes="modality-nav-btn" Classes.active="{Binding IsLlmModality}">
+                        <StackPanel Orientation="Horizontal" Spacing="5">
+                            <TextBlock Text="✓" IsVisible="{Binding IsLlmModality}" FontWeight="Bold"/>
+                            <TextBlock Text="🦙 Text LLMs"/>
+                        </StackPanel>
+                    </Button>
+                    <Button Command="{Binding SelectImageModalityCommand}" Classes="modality-nav-btn" Classes.active="{Binding IsImageModality}">
+                        <StackPanel Orientation="Horizontal" Spacing="5">
+                            <TextBlock Text="✓" IsVisible="{Binding IsImageModality}" FontWeight="Bold"/>
+                            <TextBlock Text="🎨 Image Generation"/>
+                        </StackPanel>
+                    </Button>
+                    <Button Command="{Binding SelectVideoModalityCommand}" Classes="modality-nav-btn" Classes.active="{Binding IsVideoModality}">
+                        <StackPanel Orientation="Horizontal" Spacing="5">
+                            <TextBlock Text="✓" IsVisible="{Binding IsVideoModality}" FontWeight="Bold"/>
+                            <TextBlock Text="🎬 Video Generation"/>
+                        </StackPanel>
+                    </Button>
+                    <Button Command="{Binding SelectAudioModalityCommand}" Classes="modality-nav-btn" Classes.active="{Binding IsAudioModality}">
+                        <StackPanel Orientation="Horizontal" Spacing="5">
+                            <TextBlock Text="✓" IsVisible="{Binding IsAudioModality}" FontWeight="Bold"/>
+                            <TextBlock Text="🎙️ Audio &amp; Speech"/>
+                        </StackPanel>
+                    </Button>
+                    <Button Command="{Binding SelectThreeDModalityCommand}" Classes="modality-nav-btn" Classes.active="{Binding IsThreeDModality}">
+                        <StackPanel Orientation="Horizontal" Spacing="5">
+                            <TextBlock Text="✓" IsVisible="{Binding IsThreeDModality}" FontWeight="Bold"/>
+                            <TextBlock Text="🧊 3D Generation"/>
+                        </StackPanel>
+                    </Button>
                 </StackPanel>
             </Grid>
 
