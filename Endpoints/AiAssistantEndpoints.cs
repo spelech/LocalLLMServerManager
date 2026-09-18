@@ -89,9 +89,12 @@ public static class AiAssistantEndpoints
                 ? keyVal.ToString()
                 : null;
 
+            bool includeLocal = query.TryGetValue("includeLocal", out var localVal) &&
+                bool.TryParse(localVal.ToString(), out var parsedLocal) && parsedLocal;
+
             try
             {
-                var models = await assistantService.GetAvailableModelsAsync(endpoint, apiKey, httpContext.RequestAborted);
+                var models = await assistantService.GetModelCapabilitiesAsync(endpoint, apiKey, includeLocal, httpContext.RequestAborted);
                 return Results.Ok(models);
             }
             catch (Exception ex)
