@@ -20,6 +20,8 @@ public partial class HuggingFaceSearchViewModel : ObservableObject
 
     [ObservableProperty] private string _hfSearchQuery = "";
     [ObservableProperty] private string? _selectedPipelineTag = null;
+    [ObservableProperty] private bool _isLoading = false;
+    [ObservableProperty] private bool _isModalLoading = false;
     public ObservableCollection<HuggingFaceRepoItem> HuggingFaceResults { get; } = new();
     public ObservableCollection<HuggingFaceRepoItem> FilteredHuggingFaceResults { get; } = new();
 
@@ -416,6 +418,7 @@ public partial class HuggingFaceSearchViewModel : ObservableObject
 
     public async Task SearchHuggingFaceAsync(string apiBase, HttpClient http)
     {
+        IsLoading = true;
         try
         {
             List<HuggingFaceRepoItem> results;
@@ -449,6 +452,10 @@ public partial class HuggingFaceSearchViewModel : ObservableObject
         {
             ToastService.Instance.Show("Failed to query Hugging Face Hub.", ToastType.Error);
         }
+        finally
+        {
+            IsLoading = false;
+        }
     }
 
     public async Task OpenHfModalAsync(string repoId, string apiBase, HttpClient http)
@@ -459,12 +466,20 @@ public partial class HuggingFaceSearchViewModel : ObservableObject
         ModalAuthor = repoId.Contains("/") ? repoId.Split('/')[0] : "Community";
         ModalHfFiles.Clear();
         IsHfModalOpen = true;
+        IsModalLoading = true;
 
-        var quants = await _hfSearchService.FetchQuantizationsAsync(apiBase, repoId, http);
-        foreach (var q in quants)
+        try
         {
-            var badge = _canIRunItService.EvaluateQuickFit(q.Filename, q.SizeBytes > 0 ? q.SizeBytes : null, "LLM", (long)TotalVramMb, (long)TotalRamMb);
-            ModalHfFiles.Add(q with { FitBadge = badge });
+            var quants = await _hfSearchService.FetchQuantizationsAsync(apiBase, repoId, http);
+            foreach (var q in quants)
+            {
+                var badge = _canIRunItService.EvaluateQuickFit(q.Filename, q.SizeBytes > 0 ? q.SizeBytes : null, "LLM", (long)TotalVramMb, (long)TotalRamMb);
+                ModalHfFiles.Add(q with { FitBadge = badge });
+            }
+        }
+        finally
+        {
+            IsModalLoading = false;
         }
     }
 

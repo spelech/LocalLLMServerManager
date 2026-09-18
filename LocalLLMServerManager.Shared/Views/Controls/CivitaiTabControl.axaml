@@ -4,18 +4,45 @@
              x:Class="LocalLLMServerManager.Shared.Views.Controls.CivitaiTabControl"
              x:DataType="vm:CivitaiSearchViewModel">
 
-    <Grid RowDefinitions="Auto, Auto, *" Margin="0,12,0,0">
+    <Grid RowDefinitions="Auto, Auto, Auto, Auto, *" Margin="0,12,0,0">
         <Grid Grid.Row="0" ColumnDefinitions="*, Auto" Margin="0,0,0,8">
             <TextBox Grid.Column="0" Text="{Binding CivitaiSearchQuery}" PlaceholderText="Search Stable Diffusion checkpoints &amp; LoRAs..." 
                      Classes="matte-input" VerticalAlignment="Center"/>
             <Button Grid.Column="1" Command="{Binding SearchCivitaiCommand}" 
+                    IsEnabled="{Binding !IsLoading}"
                     Classes="matte-primary" Margin="8,0,0,0" VerticalAlignment="Center">
-                🔍 Search CivitAI
+                <StackPanel Orientation="Horizontal" Spacing="6">
+                    <TextBlock Text="🔍" IsVisible="{Binding !IsLoading}"/>
+                    <TextBlock Text="⏳" IsVisible="{Binding IsLoading}"/>
+                    <TextBlock Text="Search CivitAI" IsVisible="{Binding !IsLoading}"/>
+                    <TextBlock Text="Searching..." IsVisible="{Binding IsLoading}"/>
+                </StackPanel>
             </Button>
         </Grid>
 
+        <!-- Search Loading Indicator -->
+        <Border Grid.Row="1" IsVisible="{Binding IsLoading}" Background="#1E293B" CornerRadius="6" Padding="12,8" Margin="0,0,0,8">
+            <Grid ColumnDefinitions="Auto, *">
+                <TextBlock Grid.Column="0" Text="🔄 Querying CivitAI Hub API..." FontSize="12" Foreground="{StaticResource PrimaryBrush}" FontWeight="SemiBold" VerticalAlignment="Center"/>
+                <ProgressBar Grid.Column="1" IsIndeterminate="True" Height="4" Margin="16,0,0,0" VerticalAlignment="Center"/>
+            </Grid>
+        </Border>
+
+        <!-- Starter Suggestions Row -->
+        <ScrollViewer Grid.Row="2" HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Disabled" Margin="0,0,0,8">
+            <StackPanel Orientation="Horizontal" Spacing="6">
+                <TextBlock Text="Suggestions:" FontSize="11" Foreground="{StaticResource TextMutedBrush}" VerticalAlignment="Center" Margin="0,0,4,0"/>
+                <Button Content="🌟 SDXL" Command="{Binding ApplyStarterChipCommand}" CommandParameter="🌟 SDXL" Classes="matte-pill"/>
+                <Button Content="📸 Photorealistic" Command="{Binding ApplyStarterChipCommand}" CommandParameter="📸 Photorealistic" Classes="matte-pill"/>
+                <Button Content="🎨 Anime" Command="{Binding ApplyStarterChipCommand}" CommandParameter="🎨 Anime" Classes="matte-pill"/>
+                <Button Content="🎭 Detail LoRA" Command="{Binding ApplyStarterChipCommand}" CommandParameter="🎭 Detail LoRA" Classes="matte-pill"/>
+                <Button Content="⚡ Turbo" Command="{Binding ApplyStarterChipCommand}" CommandParameter="⚡ Turbo" Classes="matte-pill"/>
+                <Button Content="🔮 Flux" Command="{Binding ApplyStarterChipCommand}" CommandParameter="🔮 Flux" Classes="matte-pill"/>
+            </StackPanel>
+        </ScrollViewer>
+
         <!-- Hardware Compatibility Filter Chips -->
-        <ScrollViewer Grid.Row="1" HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Disabled" Margin="0,0,0,10">
+        <ScrollViewer Grid.Row="3" HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Disabled" Margin="0,0,0,10">
             <StackPanel Orientation="Horizontal" Spacing="6">
                 <TextBlock Text="Hardware Filter:" FontSize="11" Foreground="{StaticResource TextMutedBrush}" VerticalAlignment="Center" Margin="0,0,4,0"/>
                 <Button Command="{Binding ToggleFitVerdictCommand}" CommandParameter="FullVram" Classes="matte-pill" Padding="6,2">
@@ -33,54 +60,117 @@
             </StackPanel>
         </ScrollViewer>
 
-        <ScrollViewer Grid.Row="2">
-            <ItemsControl ItemsSource="{Binding FilteredCivitaiResults}">
-                <ItemsControl.ItemTemplate>
-                    <DataTemplate DataType="vm:CivitaiModelItem">
-                        <Border Classes="matte-card" Margin="0,0,0,8" Padding="14,12">
-                            <Grid ColumnDefinitions="*, Auto">
-                                <StackPanel Grid.Column="0" Spacing="4">
-                                    <TextBlock Text="{Binding Name}" FontWeight="Bold" FontSize="14" Foreground="{StaticResource TextMainBrush}"/>
-                                    <StackPanel Orientation="Horizontal" Spacing="8" Margin="0,2,0,0">
-                                        <Border Classes="matte-pill" Padding="8,4">
-                                            <TextBlock Text="{Binding Type}" FontSize="11" Foreground="{StaticResource AccentBrush}" FontWeight="Bold"/>
-                                        </Border>
-                                        <Border Classes="matte-pill" Padding="8,4">
-                                            <TextBlock Text="{Binding DownloadCount, StringFormat='⬇️ {0:N0} downloads'}" FontSize="11" Foreground="{StaticResource TextMutedBrush}" FontWeight="SemiBold"/>
-                                        </Border>
-                                    </StackPanel>
-                                </StackPanel>
-                                <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
-                                    <!-- Ambient Compatibility Pill with Click-to-Inspect -->
-                                    <Button Command="{Binding $parent[UserControl].((vm:CivitaiSearchViewModel)DataContext).InspectModelCommand}"
-                                            CommandParameter="{Binding}"
-                                            Background="#1E293B"
-                                            BorderBrush="{Binding FitBadge.BadgeColorHex}"
-                                            BorderThickness="1"
-                                            CornerRadius="6"
-                                            Padding="8,4"
-                                            ToolTip.Tip="{Binding FitBadge.Tooltip}"
-                                            IsVisible="{Binding FitBadge, Converter={x:Static ObjectConverters.IsNotNull}}"
-                                            Cursor="Hand"
-                                            VerticalAlignment="Center">
-                                        <StackPanel Orientation="Horizontal" Spacing="4">
-                                            <TextBlock Text="{Binding FitBadge.BadgeText}" FontSize="11" Foreground="{Binding FitBadge.BadgeColorHex}" FontWeight="Bold"/>
-                                            <TextBlock Text="⚡ Check Fit" FontSize="10" Foreground="{StaticResource TextMutedBrush}" VerticalAlignment="Center"/>
-                                        </StackPanel>
-                                    </Button>
+        <ScrollViewer Grid.Row="4">
+            <StackPanel>
+                <!-- Starter Recommendations when no search results loaded -->
+                <StackPanel IsVisible="{Binding !FilteredCivitaiResults.Count}" Margin="0,0,0,16">
+                    <Border Classes="matte-card" Padding="14,10" Margin="0,0,0,10" Background="#1A2234">
+                        <Grid ColumnDefinitions="*, Auto">
+                            <StackPanel Grid.Column="0" Spacing="2">
+                                <TextBlock Text="💡 Featured Starters &amp; Popular Checkpoints to Explore" FontWeight="Bold" FontSize="13" Foreground="{StaticResource PrimaryBrush}"/>
+                                <TextBlock Text="Not sure where to begin? Start with these popular community checkpoints and LoRAs, or click a suggestion above:" FontSize="11" Foreground="{StaticResource TextMutedBrush}"/>
+                            </StackPanel>
+                        </Grid>
+                    </Border>
 
-                                    <Button Content="⬇️ Download"
-                                            Command="{Binding $parent[UserControl].((vm:CivitaiSearchViewModel)DataContext).DownloadCivitaiModelCommand}"
-                                            CommandParameter="{Binding}"
-                                            Classes="matte-primary"
-                                            Padding="10,4"
-                                            FontSize="11"/>
-                                </StackPanel>
-                            </Grid>
-                        </Border>
-                    </DataTemplate>
-                </ItemsControl.ItemTemplate>
-            </ItemsControl>
+                    <ItemsControl ItemsSource="{Binding StarterModels}">
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate DataType="vm:CivitaiModelItem">
+                                <Border Classes="matte-card" Margin="0,0,0,8" Padding="14,12">
+                                    <Grid ColumnDefinitions="*, Auto">
+                                        <StackPanel Grid.Column="0" Spacing="4">
+                                            <TextBlock Text="{Binding Name}" FontWeight="Bold" FontSize="14" Foreground="{StaticResource TextMainBrush}"/>
+                                            <StackPanel Orientation="Horizontal" Spacing="8" Margin="0,2,0,0">
+                                                <Border Classes="matte-pill" Padding="8,4">
+                                                    <TextBlock Text="{Binding Type}" FontSize="11" Foreground="{StaticResource AccentBrush}" FontWeight="Bold"/>
+                                                </Border>
+                                                <Border Classes="matte-pill" Padding="8,4">
+                                                    <TextBlock Text="{Binding DownloadCount, StringFormat='⬇️ {0:N0} downloads'}" FontSize="11" Foreground="{StaticResource TextMutedBrush}" FontWeight="SemiBold"/>
+                                                </Border>
+                                            </StackPanel>
+                                        </StackPanel>
+                                        <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+                                            <!-- Ambient Compatibility Pill with Click-to-Inspect -->
+                                            <Button Command="{Binding $parent[UserControl].((vm:CivitaiSearchViewModel)DataContext).InspectModelCommand}"
+                                                    CommandParameter="{Binding}"
+                                                    Background="#1E293B"
+                                                    BorderBrush="{Binding FitBadge.BadgeColorHex}"
+                                                    BorderThickness="1"
+                                                    CornerRadius="6"
+                                                    Padding="8,4"
+                                                    ToolTip.Tip="{Binding FitBadge.Tooltip}"
+                                                    IsVisible="{Binding FitBadge, Converter={x:Static ObjectConverters.IsNotNull}}"
+                                                    Cursor="Hand"
+                                                    VerticalAlignment="Center">
+                                                <StackPanel Orientation="Horizontal" Spacing="4">
+                                                    <TextBlock Text="{Binding FitBadge.BadgeText}" FontSize="11" Foreground="{Binding FitBadge.BadgeColorHex}" FontWeight="Bold"/>
+                                                    <TextBlock Text="⚡ Check Fit" FontSize="10" Foreground="{StaticResource TextMutedBrush}" VerticalAlignment="Center"/>
+                                                </StackPanel>
+                                            </Button>
+
+                                            <Button Content="⬇️ Download"
+                                                    Command="{Binding $parent[UserControl].((vm:CivitaiSearchViewModel)DataContext).DownloadCivitaiModelCommand}"
+                                                    CommandParameter="{Binding}"
+                                                    Classes="matte-primary"
+                                                    Padding="10,4"
+                                                    FontSize="11"/>
+                                        </StackPanel>
+                                    </Grid>
+                                </Border>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                </StackPanel>
+
+                <!-- Filtered Active Results -->
+                <ItemsControl ItemsSource="{Binding FilteredCivitaiResults}" IsVisible="{Binding FilteredCivitaiResults.Count}">
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate DataType="vm:CivitaiModelItem">
+                            <Border Classes="matte-card" Margin="0,0,0,8" Padding="14,12">
+                                <Grid ColumnDefinitions="*, Auto">
+                                    <StackPanel Grid.Column="0" Spacing="4">
+                                        <TextBlock Text="{Binding Name}" FontWeight="Bold" FontSize="14" Foreground="{StaticResource TextMainBrush}"/>
+                                        <StackPanel Orientation="Horizontal" Spacing="8" Margin="0,2,0,0">
+                                            <Border Classes="matte-pill" Padding="8,4">
+                                                <TextBlock Text="{Binding Type}" FontSize="11" Foreground="{StaticResource AccentBrush}" FontWeight="Bold"/>
+                                            </Border>
+                                            <Border Classes="matte-pill" Padding="8,4">
+                                                <TextBlock Text="{Binding DownloadCount, StringFormat='⬇️ {0:N0} downloads'}" FontSize="11" Foreground="{StaticResource TextMutedBrush}" FontWeight="SemiBold"/>
+                                            </Border>
+                                        </StackPanel>
+                                    </StackPanel>
+                                    <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+                                        <!-- Ambient Compatibility Pill with Click-to-Inspect -->
+                                        <Button Command="{Binding $parent[UserControl].((vm:CivitaiSearchViewModel)DataContext).InspectModelCommand}"
+                                                CommandParameter="{Binding}"
+                                                Background="#1E293B"
+                                                BorderBrush="{Binding FitBadge.BadgeColorHex}"
+                                                BorderThickness="1"
+                                                CornerRadius="6"
+                                                Padding="8,4"
+                                                ToolTip.Tip="{Binding FitBadge.Tooltip}"
+                                                IsVisible="{Binding FitBadge, Converter={x:Static ObjectConverters.IsNotNull}}"
+                                                Cursor="Hand"
+                                                VerticalAlignment="Center">
+                                            <StackPanel Orientation="Horizontal" Spacing="4">
+                                                <TextBlock Text="{Binding FitBadge.BadgeText}" FontSize="11" Foreground="{Binding FitBadge.BadgeColorHex}" FontWeight="Bold"/>
+                                                <TextBlock Text="⚡ Check Fit" FontSize="10" Foreground="{StaticResource TextMutedBrush}" VerticalAlignment="Center"/>
+                                            </StackPanel>
+                                        </Button>
+
+                                        <Button Content="⬇️ Download"
+                                                Command="{Binding $parent[UserControl].((vm:CivitaiSearchViewModel)DataContext).DownloadCivitaiModelCommand}"
+                                                CommandParameter="{Binding}"
+                                                Classes="matte-primary"
+                                                Padding="10,4"
+                                                FontSize="11"/>
+                                    </StackPanel>
+                                </Grid>
+                            </Border>
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+            </StackPanel>
         </ScrollViewer>
     </Grid>
 </UserControl>

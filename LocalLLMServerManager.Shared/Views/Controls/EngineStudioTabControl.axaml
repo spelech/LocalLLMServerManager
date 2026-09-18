@@ -27,44 +27,86 @@
                                                    InstallCommand="{Binding Settings.ToggleAudioPackCommand}"
                                                    IsVisible="{Binding !Settings.IsAudioPackInstalled}" Margin="0,0,0,4"/>
 
-                <!-- Studio Mode Segmented Selector Header & Test Flight Button -->
+                <!-- Studio Mode Header with Sequential Modality Selector & Test Flight -->
                 <Grid ColumnDefinitions="*, Auto">
                     <StackPanel Spacing="2">
-                        <TextBlock Text="🎬 Studio &amp; AI Generation Engines" FontSize="16" FontWeight="Bold" Foreground="{StaticResource TextMainBrush}"/>
-                        <TextBlock Text="Interactive video generation, sound/music synthesis, 3D mesh rendering, and engine controls" FontSize="12" Foreground="{StaticResource TextMutedBrush}"/>
+                        <TextBlock Text="⚡ AI Generation Workflows" FontSize="16" FontWeight="Bold" Foreground="{StaticResource TextMainBrush}"/>
+                        <TextBlock Text="Step-by-step sequential pathways to generate Images, Text, Video, 3D Mesh, and Audio" FontSize="12" Foreground="{StaticResource TextMutedBrush}"/>
                     </StackPanel>
 
                     <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
-                        <Button Content="🚀 Run Studio Test Flight" Command="{Binding OpenTestFlightCommand}"
+                        <Button Content="🚀 Diagnostic Test Flight" Command="{Binding OpenTestFlightCommand}"
                                 Classes="matte-primary" Padding="12,6" FontSize="12" VerticalAlignment="Center"/>
 
                         <RadioButton Content="🎨 Images" GroupName="StudioMode" Command="{Binding SelectStudioModeCommand}" CommandParameter="Images" IsChecked="{Binding SelectedStudioMode, Converter={x:Static ObjectConverters.Equal}, ConverterParameter=Images}" Classes="matte-radio"/>
-                        <RadioButton Content="📦 3D Mesh" GroupName="StudioMode" Command="{Binding SelectStudioModeCommand}" CommandParameter="3D Mesh" IsChecked="{Binding SelectedStudioMode, Converter={x:Static ObjectConverters.Equal}, ConverterParameter=3D Mesh}" Classes="matte-radio"/>
+                        <RadioButton Content="💬 Text" GroupName="StudioMode" Command="{Binding SelectStudioModeCommand}" CommandParameter="Text" IsChecked="{Binding SelectedStudioMode, Converter={x:Static ObjectConverters.Equal}, ConverterParameter=Text}" Classes="matte-radio"/>
                         <RadioButton Content="🎬 Video" GroupName="StudioMode" Command="{Binding SelectStudioModeCommand}" CommandParameter="Video" IsChecked="{Binding SelectedStudioMode, Converter={x:Static ObjectConverters.Equal}, ConverterParameter=Video}" Classes="matte-radio"/>
+                        <RadioButton Content="📦 3D Mesh" GroupName="StudioMode" Command="{Binding SelectStudioModeCommand}" CommandParameter="3D Mesh" IsChecked="{Binding SelectedStudioMode, Converter={x:Static ObjectConverters.Equal}, ConverterParameter=3D Mesh}" Classes="matte-radio"/>
                         <RadioButton Content="🎵 Audio" GroupName="StudioMode" Command="{Binding SelectStudioModeCommand}" CommandParameter="Audio" IsChecked="{Binding SelectedStudioMode, Converter={x:Static ObjectConverters.Equal}, ConverterParameter=Audio}" Classes="matte-radio"/>
                     </StackPanel>
                 </Grid>
 
-                <!-- Engine Status Cards -->
-                <UniformGrid Columns="2">
-                    <!-- Forge Card -->
-                    <Border Classes="matte-card" Margin="0,0,8,0" Padding="16">
+                <!-- ======================================================== -->
+                <!-- 1. IMAGE WORKFLOW (Forge / Stable Diffusion)              -->
+                <!-- ======================================================== -->
+                <StackPanel Spacing="16" IsVisible="{Binding SelectedStudioMode, Converter={x:Static ObjectConverters.Equal}, ConverterParameter=Images}">
+                    <!-- Sequential Pathway Indicator Bar -->
+                    <Border Classes="matte-card" Padding="12,8" Background="{StaticResource BgSurfaceBrush}">
+                        <Grid ColumnDefinitions="Auto, *, Auto, *, Auto, *, Auto">
+                            <Border Grid.Column="0" Classes="matte-pill" Padding="8,4" Background="{StaticResource PrimaryBrush}">
+                                <TextBlock Text="Step 1: Check Engine" FontSize="11" FontWeight="Bold" Foreground="#FFFFFF"/>
+                            </Border>
+                            <TextBlock Grid.Column="1" Text="➔" FontSize="12" HorizontalAlignment="Center" VerticalAlignment="Center" Foreground="{StaticResource TextMutedBrush}"/>
+                            <Border Grid.Column="2" Classes="matte-pill" Padding="8,4" Background="#1E293B">
+                                <TextBlock Text="Step 2: Choose Preset" FontSize="11" FontWeight="Bold" Foreground="{StaticResource TextMainBrush}"/>
+                            </Border>
+                            <TextBlock Grid.Column="3" Text="➔" FontSize="12" HorizontalAlignment="Center" VerticalAlignment="Center" Foreground="{StaticResource TextMutedBrush}"/>
+                            <Border Grid.Column="4" Classes="matte-pill" Padding="8,4" Background="#1E293B">
+                                <TextBlock Text="Step 3: Set Parameters" FontSize="11" FontWeight="Bold" Foreground="{StaticResource TextMainBrush}"/>
+                            </Border>
+                            <TextBlock Grid.Column="5" Text="➔" FontSize="12" HorizontalAlignment="Center" VerticalAlignment="Center" Foreground="{StaticResource TextMutedBrush}"/>
+                            <Border Grid.Column="6" Classes="matte-pill" Padding="8,4" Background="#1E293B">
+                                <TextBlock Text="Step 4: Launch &amp; Generate" FontSize="11" FontWeight="Bold" Foreground="{StaticResource AccentBrush}"/>
+                            </Border>
+                        </Grid>
+                    </Border>
+
+                    <!-- Step 1 & 2: Engine Status & Presets -->
+                    <Border Classes="matte-card" Padding="16">
                         <StackPanel Spacing="12">
                             <Grid ColumnDefinitions="*, Auto">
-                                <TextBlock Text="🎨 Stable Diffusion / Forge" FontSize="14" FontWeight="Bold" Foreground="{StaticResource TextMainBrush}" VerticalAlignment="Center"/>
-                                <Border Grid.Column="1" Classes="matte-pill" Padding="8,4">
-                                    <TextBlock Text="{Binding ForgeStatus}" FontSize="11" Foreground="{StaticResource PrimaryBrush}" FontWeight="Bold"/>
-                                </Border>
+                                <StackPanel Spacing="2">
+                                    <TextBlock Text="Step 1: Stable Diffusion / WebUI Forge Engine" FontSize="14" FontWeight="Bold" Foreground="{StaticResource TextMainBrush}"/>
+                                    <TextBlock Text="Local diffusion backend serving SDXL, Flux.1, SD 1.5, and Pony models" FontSize="12" Foreground="{StaticResource TextMutedBrush}"/>
+                                </StackPanel>
+                                <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8">
+                                    <Border Classes="matte-pill" Padding="8,4">
+                                        <TextBlock Text="{Binding ForgeStatus}" FontSize="11" Foreground="{StaticResource PrimaryBrush}" FontWeight="Bold"/>
+                                    </Border>
+                                    <Border Classes="matte-pill" Padding="8,4" Background="{StaticResource BgSurfaceBrush}">
+                                        <TextBlock Text="{Binding ImageHardwareFit.FitBadge.BadgeText, FallbackValue='🟢 Ready'}"
+                                                   ToolTip.Tip="{Binding ImageHardwareFit.FitBadge.Tooltip}"
+                                                   FontSize="11" FontWeight="Bold" Foreground="{StaticResource PrimaryBrush}"/>
+                                    </Border>
+                                </StackPanel>
                             </Grid>
 
-                            <StackPanel Spacing="4">
-                                <TextBlock Text="WebUI &amp; SD API Endpoint" FontSize="12" Foreground="{StaticResource TextMutedBrush}"/>
-                                <Border Classes="matte-pill" HorizontalAlignment="Left" Padding="8,4">
-                                    <TextBlock Text="Port 7860 • Localhost" FontSize="11" Foreground="{StaticResource SecondaryBrush}" FontWeight="SemiBold"/>
-                                </Border>
-                            </StackPanel>
+                            <Grid ColumnDefinitions="*, Auto" Margin="0,4,0,0">
+                                <StackPanel Orientation="Horizontal" Spacing="12" VerticalAlignment="Center">
+                                    <TextBlock Text="Port 7860 • http://127.0.0.1:7860" FontSize="12" Foreground="{StaticResource SecondaryBrush}" FontWeight="SemiBold" VerticalAlignment="Center"/>
+                                </StackPanel>
+                                <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8">
+                                    <Button Content="▶️ Toggle Forge Engine" Command="{Binding ToggleEngineCommand}" CommandParameter="forge"
+                                            Classes="matte-primary" Padding="12,6" FontSize="12"/>
+                                    <Button Content="🌐 Open WebUI in Browser" Command="{Binding OpenForgeWebUiCommand}"
+                                            Padding="12,6" FontSize="12"/>
+                                </StackPanel>
+                            </Grid>
 
-                            <!-- Image Studio Preset Bar -->
+                            <Separator Background="{StaticResource GlassBorderBrush}" Margin="0,4"/>
+
+                            <!-- Step 2: Presets -->
+                            <TextBlock Text="Step 2: Choose Preset or Starter Style" FontSize="14" FontWeight="Bold" Foreground="{StaticResource TextMainBrush}"/>
                             <controls:StudioPresetBarControl
                                 Presets="{Binding ImagePresets}"
                                 SelectedPreset="{Binding SelectedImagePreset, Mode=TwoWay}"
@@ -72,304 +114,587 @@
                                 SavePresetCommand="{Binding SaveCurrentAsImagePresetCommand}"
                                 DeletePresetCommand="{Binding DeleteCurrentImagePresetCommand}"
                                 DuplicatePresetCommand="{Binding DuplicateCurrentImagePresetCommand}"
-                                ApplyStarterPromptCommand="{Binding ApplyStarterChipCommand}"
-                                Margin="0,4,0,4" />
-
-                            <Button Content="▶️ Toggle Forge Engine" Command="{Binding ToggleEngineCommand}" CommandParameter="forge"
-                                    Classes="matte-primary" HorizontalAlignment="Stretch" HorizontalContentAlignment="Center" Margin="0,4,0,0"/>
+                                ApplyStarterPromptCommand="{Binding ApplyStarterChipCommand}" />
                         </StackPanel>
                     </Border>
 
-                    <!-- ComfyUI Card -->
-                    <Border Classes="matte-card" Margin="8,0,0,0" Padding="16">
+                    <!-- Step 3 & 4: Image Parameters & Launch -->
+                    <Border Classes="matte-card" Padding="16">
+                        <StackPanel Spacing="14">
+                            <TextBlock Text="Step 3: Configure Parameters" FontSize="14" FontWeight="Bold" Foreground="{StaticResource TextMainBrush}"/>
+
+                            <Grid ColumnDefinitions="*, *, *">
+                                <StackPanel Grid.Column="0" Spacing="4" Margin="0,0,8,0">
+                                    <TextBlock Text="Workflow Model" FontSize="12" Foreground="{StaticResource TextMutedBrush}"/>
+                                    <TextBox Text="{Binding SelectedImageWorkflow}" PlaceholderText="SDXL Base / Flux.1-dev"/>
+                                </StackPanel>
+                                <StackPanel Grid.Column="1" Spacing="4" Margin="4,0,4,0">
+                                    <TextBlock Text="Resolution (WxH)" FontSize="12" Foreground="{StaticResource TextMutedBrush}"/>
+                                    <TextBox Text="{Binding ImageResolution}" PlaceholderText="1024x1024"/>
+                                </StackPanel>
+                                <StackPanel Grid.Column="2" Spacing="4" Margin="8,0,0,0">
+                                    <TextBlock Text="Seed" FontSize="12" Foreground="{StaticResource TextMutedBrush}"/>
+                                    <NumericUpDown Value="{Binding ImageSeed}" Minimum="1" Maximum="999999999"/>
+                                </StackPanel>
+                            </Grid>
+
+                            <StackPanel Spacing="4">
+                                <TextBlock Text="Positive Prompt" FontSize="12" Foreground="{StaticResource TextMutedBrush}"/>
+                                <TextBox Text="{Binding ImagePrompt}" AcceptsReturn="True" Height="60" TextWrapping="Wrap"/>
+                            </StackPanel>
+
+                            <StackPanel Spacing="4">
+                                <TextBlock Text="Negative Prompt" FontSize="12" Foreground="{StaticResource TextMutedBrush}"/>
+                                <TextBox Text="{Binding ImageNegativePrompt}" AcceptsReturn="True" Height="40" TextWrapping="Wrap"/>
+                            </StackPanel>
+
+                            <Separator Background="{StaticResource GlassBorderBrush}" Margin="0,4"/>
+
+                            <!-- Step 4: Generation Action -->
+                            <TextBlock Text="Step 4: Launch Generation" FontSize="14" FontWeight="Bold" Foreground="{StaticResource TextMainBrush}"/>
+                            <Grid ColumnDefinitions="*, Auto" Margin="0,4,0,0">
+                                <StackPanel Spacing="4" VerticalAlignment="Center">
+                                    <TextBlock Text="Click below to open WebUI or dispatch generation via local Forge API." FontSize="12" Foreground="{StaticResource TextMutedBrush}"/>
+                                    <TextBlock Text="Files will be saved directly into outputs/images/ with embedded metadata." FontSize="11" Foreground="{StaticResource AccentBrush}"/>
+                                </StackPanel>
+                                <Button Grid.Column="1" Content="🎨 Launch Forge Image Studio (Port 7860)" Command="{Binding OpenForgeWebUiCommand}"
+                                        Classes="matte-primary" Padding="16,10" FontSize="13" FontWeight="Bold"/>
+                            </Grid>
+                        </StackPanel>
+                    </Border>
+                </StackPanel>
+
+                <!-- ======================================================== -->
+                <!-- 2. TEXT WORKFLOW (Ollama / Local LLM)                     -->
+                <!-- ======================================================== -->
+                <StackPanel Spacing="16" IsVisible="{Binding SelectedStudioMode, Converter={x:Static ObjectConverters.Equal}, ConverterParameter=Text}">
+                    <!-- Sequential Pathway Indicator Bar -->
+                    <Border Classes="matte-card" Padding="12,8" Background="{StaticResource BgSurfaceBrush}">
+                        <Grid ColumnDefinitions="Auto, *, Auto, *, Auto, *, Auto">
+                            <Border Grid.Column="0" Classes="matte-pill" Padding="8,4" Background="{StaticResource PrimaryBrush}">
+                                <TextBlock Text="Step 1: Check LLM Server" FontSize="11" FontWeight="Bold" Foreground="#FFFFFF"/>
+                            </Border>
+                            <TextBlock Grid.Column="1" Text="➔" FontSize="12" HorizontalAlignment="Center" VerticalAlignment="Center" Foreground="{StaticResource TextMutedBrush}"/>
+                            <Border Grid.Column="2" Classes="matte-pill" Padding="8,4" Background="#1E293B">
+                                <TextBlock Text="Step 2: Choose Model" FontSize="11" FontWeight="Bold" Foreground="{StaticResource TextMainBrush}"/>
+                            </Border>
+                            <TextBlock Grid.Column="3" Text="➔" FontSize="12" HorizontalAlignment="Center" VerticalAlignment="Center" Foreground="{StaticResource TextMutedBrush}"/>
+                            <Border Grid.Column="4" Classes="matte-pill" Padding="8,4" Background="#1E293B">
+                                <TextBlock Text="Step 3: Enter Prompt" FontSize="11" FontWeight="Bold" Foreground="{StaticResource TextMainBrush}"/>
+                            </Border>
+                            <TextBlock Grid.Column="5" Text="➔" FontSize="12" HorizontalAlignment="Center" VerticalAlignment="Center" Foreground="{StaticResource TextMutedBrush}"/>
+                            <Border Grid.Column="6" Classes="matte-pill" Padding="8,4" Background="#1E293B">
+                                <TextBlock Text="Step 4: Generate Output" FontSize="11" FontWeight="Bold" Foreground="{StaticResource AccentBrush}"/>
+                            </Border>
+                        </Grid>
+                    </Border>
+
+                    <!-- Step 1 & 2: Server Status & Model -->
+                    <Border Classes="matte-card" Padding="16">
                         <StackPanel Spacing="12">
                             <Grid ColumnDefinitions="*, Auto">
-                                <TextBlock Text="🧩 ComfyUI 3D, Video &amp; Audio Studio" FontSize="14" FontWeight="Bold" Foreground="{StaticResource TextMainBrush}" VerticalAlignment="Center"/>
+                                <StackPanel Spacing="2">
+                                    <TextBlock Text="Step 1: Local LLM Engine Status" FontSize="14" FontWeight="Bold" Foreground="{StaticResource TextMainBrush}"/>
+                                    <TextBlock Text="Ollama &amp; vLLM high-throughput inference serving GGUF / AWQ models" FontSize="12" Foreground="{StaticResource TextMutedBrush}"/>
+                                </StackPanel>
+                                <Border Grid.Column="1" Classes="matte-pill" Padding="8,4">
+                                    <TextBlock Text="{Binding OllamaStatus}" FontSize="11" Foreground="{StaticResource PrimaryBrush}" FontWeight="Bold"/>
+                                </Border>
+                            </Grid>
+                            <TextBlock Text="Endpoint: http://localhost:11434 • OpenAI Compatible: /v1/chat/completions" FontSize="12" Foreground="{StaticResource SecondaryBrush}"/>
+
+                            <Separator Background="{StaticResource GlassBorderBrush}" Margin="0,4"/>
+
+                            <!-- Step 2: Selected Model Info -->
+                            <TextBlock Text="Step 2: Active Model" FontSize="14" FontWeight="Bold" Foreground="{StaticResource TextMainBrush}"/>
+                            <Border Classes="matte-card" Padding="12" Background="#1E293B">
+                                <Grid ColumnDefinitions="*, Auto">
+                                    <StackPanel Spacing="2">
+                                        <TextBlock Text="{Binding Ollama.SelectedInstalledModel.Name, FallbackValue='Default: llama3.2:latest'}" FontWeight="Bold" FontSize="13" Foreground="{StaticResource TextMainBrush}"/>
+                                        <TextBlock Text="To switch or download other models, use the Models tab." FontSize="11" Foreground="{StaticResource TextMutedBrush}"/>
+                                    </StackPanel>
+                                    <Button Grid.Column="1" Content="📦 Browse Models Tab" Command="{Binding $parent[UserControl].((vm:MainViewModel)DataContext).NavigateToModelsTabCommand}" Classes="matte-primary" Padding="10,4" FontSize="11"/>
+                                </Grid>
+                            </Border>
+                        </StackPanel>
+                    </Border>
+
+                    <!-- Step 3 & 4: Prompt & Generation Output -->
+                    <Border Classes="matte-card" Padding="16">
+                        <StackPanel Spacing="12">
+                            <TextBlock Text="Step 3: Enter Prompt" FontSize="14" FontWeight="Bold" Foreground="{StaticResource TextMainBrush}"/>
+                            <TextBox Text="{Binding OllamaPrompt}" AcceptsReturn="True" Height="70" TextWrapping="Wrap" PlaceholderText="Enter prompt or query for the local LLM..."/>
+
+                            <Button Content="💬 Generate Text from Local Model" Command="{Binding GenerateOllamaTextCommand}"
+                                    IsEnabled="{Binding !IsGeneratingOllamaText}"
+                                    Classes="matte-primary" HorizontalAlignment="Stretch" HorizontalContentAlignment="Center" Height="38"/>
+                            <ProgressBar IsVisible="{Binding IsGeneratingOllamaText}" IsIndeterminate="True" Height="4"/>
+
+                            <Separator Background="{StaticResource GlassBorderBrush}" Margin="0,4"/>
+
+                            <!-- Step 4: Output Viewer -->
+                            <TextBlock Text="Step 4: Streamed Generation Response" FontSize="14" FontWeight="Bold" Foreground="{StaticResource TextMainBrush}"/>
+                            <Border Background="{StaticResource BgDarkBrush}" CornerRadius="6" Padding="12" MinHeight="120" BorderBrush="{StaticResource GlassBorderBrush}" BorderThickness="1">
+                                <ScrollViewer MaxHeight="240">
+                                    <SelectableTextBlock Text="{Binding OllamaResponseText}" TextWrapping="Wrap" FontSize="12" FontFamily="Consolas, monospace" Foreground="{StaticResource TextMainBrush}"/>
+                                </ScrollViewer>
+                            </Border>
+                        </StackPanel>
+                    </Border>
+                </StackPanel>
+
+                <!-- ======================================================== -->
+                <!-- 3. VIDEO WORKFLOW (ComfyUI / Wan / LTX)                   -->
+                <!-- ======================================================== -->
+                <StackPanel Spacing="16" IsVisible="{Binding SelectedStudioMode, Converter={x:Static ObjectConverters.Equal}, ConverterParameter=Video}">
+                    <!-- Sequential Pathway Indicator Bar -->
+                    <Border Classes="matte-card" Padding="12,8" Background="{StaticResource BgSurfaceBrush}">
+                        <Grid ColumnDefinitions="Auto, *, Auto, *, Auto, *, Auto">
+                            <Border Grid.Column="0" Classes="matte-pill" Padding="8,4" Background="{StaticResource PrimaryBrush}">
+                                <TextBlock Text="Step 1: Check ComfyUI" FontSize="11" FontWeight="Bold" Foreground="#FFFFFF"/>
+                            </Border>
+                            <TextBlock Grid.Column="1" Text="➔" FontSize="12" HorizontalAlignment="Center" VerticalAlignment="Center" Foreground="{StaticResource TextMutedBrush}"/>
+                            <Border Grid.Column="2" Classes="matte-pill" Padding="8,4" Background="#1E293B">
+                                <TextBlock Text="Step 2: Choose Preset" FontSize="11" FontWeight="Bold" Foreground="{StaticResource TextMainBrush}"/>
+                            </Border>
+                            <TextBlock Grid.Column="3" Text="➔" FontSize="12" HorizontalAlignment="Center" VerticalAlignment="Center" Foreground="{StaticResource TextMutedBrush}"/>
+                            <Border Grid.Column="4" Classes="matte-pill" Padding="8,4" Background="#1E293B">
+                                <TextBlock Text="Step 3: Motion &amp; Prompt" FontSize="11" FontWeight="Bold" Foreground="{StaticResource TextMainBrush}"/>
+                            </Border>
+                            <TextBlock Grid.Column="5" Text="➔" FontSize="12" HorizontalAlignment="Center" VerticalAlignment="Center" Foreground="{StaticResource TextMutedBrush}"/>
+                            <Border Grid.Column="6" Classes="matte-pill" Padding="8,4" Background="#1E293B">
+                                <TextBlock Text="Step 4: Render &amp; Play" FontSize="11" FontWeight="Bold" Foreground="{StaticResource AccentBrush}"/>
+                            </Border>
+                        </Grid>
+                    </Border>
+
+                    <!-- VIDEO STUDIO MAIN CARD -->
+                    <Border Classes="matte-card" Padding="16">
+                        <StackPanel Spacing="16">
+                            <!-- Step 1: Engine Check Header -->
+                            <Grid ColumnDefinitions="*, Auto">
+                                <StackPanel Spacing="2">
+                                    <TextBlock Text="Step 1: ComfyUI Video Engine Status &amp; Fit" FontSize="14" FontWeight="Bold" Foreground="{StaticResource TextMainBrush}"/>
+                                    <TextBlock Text="DiT diffusion pipeline (Wan 2.2, LTX-2.5, AnimateDiff)" FontSize="12" Foreground="{StaticResource TextMutedBrush}"/>
+                                </StackPanel>
+                                <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8">
+                                    <Border Classes="matte-pill" Padding="8,4">
+                                        <TextBlock Text="{Binding ComfyStatus}" FontSize="11" Foreground="{StaticResource AccentBrush}" FontWeight="Bold"/>
+                                    </Border>
+                                    <Border Classes="matte-pill" Padding="8,4" Background="{StaticResource BgSurfaceBrush}">
+                                        <TextBlock Text="{Binding VideoHardwareFit.FitBadge.BadgeText, FallbackValue='🟢 Ready'}"
+                                                   ToolTip.Tip="{Binding VideoHardwareFit.FitBadge.Tooltip}"
+                                                   FontSize="11" FontWeight="Bold" Foreground="{StaticResource PrimaryBrush}"/>
+                                    </Border>
+                                </StackPanel>
+                            </Grid>
+
+                            <Grid ColumnDefinitions="*, Auto">
+                                <TextBlock Text="Port 8188 • http://127.0.0.1:8188" FontSize="12" Foreground="{StaticResource SecondaryBrush}" FontWeight="SemiBold" VerticalAlignment="Center"/>
+                                <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8">
+                                    <Button Content="▶️ Toggle ComfyUI" Command="{Binding ToggleEngineCommand}" CommandParameter="comfy"
+                                            Classes="matte-primary" Padding="12,6" FontSize="12"/>
+                                    <Button Content="🌐 Open ComfyUI Web" Command="{Binding OpenComfyWebUiCommand}"
+                                            Padding="12,6" FontSize="12"/>
+                                </StackPanel>
+                            </Grid>
+
+                            <Separator Background="{StaticResource GlassBorderBrush}" Margin="0,4"/>
+
+                            <!-- Step 2: Video Studio Preset Bar -->
+                            <TextBlock Text="Step 2: Video Preset &amp; Starter Motion" FontSize="14" FontWeight="Bold" Foreground="{StaticResource TextMainBrush}"/>
+                            <controls:StudioPresetBarControl
+                                Presets="{Binding VideoPresets}"
+                                SelectedPreset="{Binding SelectedVideoPreset, Mode=TwoWay}"
+                                StarterPrompts="{Binding VideoStarterPrompts}"
+                                SavePresetCommand="{Binding SaveCurrentAsVideoPresetCommand}"
+                                DeletePresetCommand="{Binding DeleteCurrentVideoPresetCommand}"
+                                DuplicatePresetCommand="{Binding DuplicateCurrentVideoPresetCommand}"
+                                ApplyStarterPromptCommand="{Binding ApplyStarterChipCommand}" />
+
+                            <!-- Active Generation 4-Stage Tracker -->
+                            <controls:GenerationStageTrackerControl
+                                CurrentStage="{Binding GenerationStage}"
+                                Stage1Status="{Binding Stage1Status}"
+                                Stage2Status="{Binding Stage2Status}"
+                                Stage3Status="{Binding Stage3Status}"
+                                Stage4Status="{Binding Stage4Status}"
+                                ProgressValue="{Binding VideoGenerationProgress}"
+                                ElapsedTimerText="{Binding GenerationElapsedText}"
+                                HardwareStatusBadgeText="{Binding HardwareStatusBadgeText}"
+                                LogsText="{Binding LiveLogOutput}"
+                                IsLogsExpanded="{Binding IsLiveLogsExpanded, Mode=TwoWay}"
+                                IsActive="{Binding IsGeneratingVideo}"
+                                CancelCommand="{Binding CancelGenerationCommand}"
+                                IsVisible="{Binding IsGeneratingVideo}" />
+
+                            <!-- Step 3 & 4: Form & Preview Player -->
+                            <Grid ColumnDefinitions="*, 320" RowDefinitions="Auto">
+                                <!-- Left Panel: Step 3 Video Generation Form -->
+                                <StackPanel Grid.Column="0" Spacing="12" Margin="0,0,16,0">
+                                    <TextBlock Text="Step 3: Motion &amp; Generation Parameters" FontSize="14" FontWeight="Bold" Foreground="{StaticResource TextMainBrush}"/>
+
+                                    <Grid ColumnDefinitions="*, *">
+                                        <StackPanel Grid.Column="0" Spacing="4" Margin="0,0,8,0">
+                                            <TextBlock Text="Workflow Model" FontSize="12" Foreground="{StaticResource TextMutedBrush}"/>
+                                            <TextBox Text="{Binding SelectedVideoWorkflow}" PlaceholderText="Select workflow model..."/>
+                                        </StackPanel>
+
+                                        <StackPanel Grid.Column="1" Spacing="4" Margin="8,0,0,0">
+                                            <TextBlock Text="Resolution" FontSize="12" Foreground="{StaticResource TextMutedBrush}"/>
+                                            <TextBox Text="{Binding VideoResolution}" PlaceholderText="832x480"/>
+                                        </StackPanel>
+                                    </Grid>
+
+                                    <StackPanel Spacing="4">
+                                        <TextBlock Text="Prompt" FontSize="12" Foreground="{StaticResource TextMutedBrush}"/>
+                                        <TextBox Text="{Binding VideoPrompt}" AcceptsReturn="True" Height="60" TextWrapping="Wrap"/>
+                                    </StackPanel>
+
+                                    <StackPanel Spacing="4">
+                                        <TextBlock Text="Negative Prompt" FontSize="12" Foreground="{StaticResource TextMutedBrush}"/>
+                                        <TextBox Text="{Binding VideoNegativePrompt}" AcceptsReturn="True" Height="40" TextWrapping="Wrap"/>
+                                    </StackPanel>
+
+                                    <Grid ColumnDefinitions="*, *">
+                                        <StackPanel Grid.Column="0" Spacing="4" Margin="0,0,8,0">
+                                            <TextBlock Text="Frame Count (FPS: 16)" FontSize="12" Foreground="{StaticResource TextMutedBrush}"/>
+                                            <NumericUpDown Value="{Binding VideoFrameCount}" Minimum="16" Maximum="120" Increment="8"/>
+                                        </StackPanel>
+
+                                        <StackPanel Grid.Column="1" Spacing="4" Margin="8,0,0,0">
+                                            <TextBlock Text="Seed" FontSize="12" Foreground="{StaticResource TextMutedBrush}"/>
+                                            <NumericUpDown Value="{Binding VideoSeed}" Minimum="1" Maximum="999999999"/>
+                                        </StackPanel>
+                                    </Grid>
+
+                                    <Button Content="🎬 Step 4: Generate Video" Command="{Binding GenerateVideoCommand}"
+                                            IsEnabled="{Binding !IsGeneratingVideo}"
+                                            Classes="matte-primary" HorizontalAlignment="Stretch" HorizontalContentAlignment="Center" Height="38"/>
+
+                                    <ProgressBar IsVisible="{Binding IsGeneratingVideo}" Value="{Binding VideoGenerationProgress}" Maximum="100" Height="6"/>
+                                </StackPanel>
+
+                                <!-- Right Panel: Step 4 Interactive Video Player Preview -->
+                                <Border Grid.Column="1" Background="{StaticResource BgDarkBrush}" CornerRadius="8" Padding="12" BorderBrush="{StaticResource GlassBorderBrush}" BorderThickness="1">
+                                    <Grid RowDefinitions="*, Auto, Auto">
+                                        <!-- Video Player Container & Overlay -->
+                                        <Border Grid.Row="0" MinHeight="180" Background="#050B14" CornerRadius="6" ClipToBounds="True">
+                                            <Grid>
+                                                <!-- Placeholder / Rendered URL Display -->
+                                                <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center" Spacing="8">
+                                                    <TextBlock Text="🎬" FontSize="36" HorizontalAlignment="Center"/>
+                                                    <TextBlock Text="Interactive Video Player" FontSize="12" Foreground="{StaticResource TextMutedBrush}" HorizontalAlignment="Center"/>
+                                                    <TextBlock Text="{Binding RenderedVideoUrl}" FontSize="10" Foreground="{StaticResource AccentBrush}" TextWrapping="Wrap" TextAlignment="Center" MaxWidth="260"/>
+                                                </StackPanel>
+
+                                                <!-- Metadata Overlay Badges -->
+                                                <StackPanel VerticalAlignment="Top" HorizontalAlignment="Right" Margin="8" Orientation="Horizontal" Spacing="4">
+                                                    <Border Classes="matte-pill" Padding="6,2" Background="#CC0F172A">
+                                                        <TextBlock Text="{Binding VideoDurationText}" FontSize="10" Foreground="{StaticResource PrimaryBrush}" FontWeight="Bold"/>
+                                                    </Border>
+                                                    <Border Classes="matte-pill" Padding="6,2" Background="#CC0F172A">
+                                                        <TextBlock Text="{Binding VideoResolutionBadge}" FontSize="10" Foreground="{StaticResource SecondaryBrush}"/>
+                                                    </Border>
+                                                    <Border Classes="matte-pill" Padding="6,2" Background="#CC0F172A">
+                                                        <TextBlock Text="{Binding VideoFpsBadge}" FontSize="10" Foreground="{StaticResource TextMainBrush}"/>
+                                                    </Border>
+                                                </StackPanel>
+
+                                                <Border VerticalAlignment="Bottom" HorizontalAlignment="Left" Margin="8" Classes="matte-pill" Padding="6,2" Background="#CC0F172A">
+                                                    <TextBlock Text="{Binding VideoSeedBadge, StringFormat='Seed: {0}'}" FontSize="10" Foreground="{StaticResource TextMutedBrush}"/>
+                                                </Border>
+                                            </Grid>
+                                        </Border>
+
+                                        <!-- Player Controls -->
+                                        <Grid Grid.Row="1" ColumnDefinitions="Auto, *, Auto, Auto" Margin="0,10,0,0">
+                                            <Button Grid.Column="0" Content="⏯️" Command="{Binding ToggleVideoPlayCommand}" Width="32" Height="32" Padding="0"/>
+                                            <Slider Grid.Column="1" Margin="8,0" Value="50" Minimum="0" Maximum="100"/>
+                                            <Button Grid.Column="2" Content="🔄" Command="{Binding ToggleVideoLoopCommand}" Width="32" Height="32" Padding="0" Margin="0,0,4,0"/>
+                                            <Button Grid.Column="3" Content="⬇️ Export" Command="{Binding DownloadVideoCommand}" Classes="matte-primary" Padding="8,4" FontSize="11"/>
+                                        </Grid>
+                                    </Grid>
+                                </Border>
+                            </Grid>
+
+                            <!-- Recent Renders Gallery -->
+                            <StackPanel Spacing="8" Margin="0,8,0,0">
+                                <Grid ColumnDefinitions="*, Auto">
+                                    <TextBlock Text="🖼️ Recent Video Renders" FontSize="13" FontWeight="Bold" Foreground="{StaticResource TextMainBrush}"/>
+                                    <Button Grid.Column="1" Content="🔄 Refresh Gallery" Command="{Binding LoadGeneratedVideosCommand}" Padding="8,4" FontSize="11"/>
+                                </Grid>
+
+                                <ScrollViewer HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Disabled">
+                                    <ItemsControl ItemsSource="{Binding GeneratedVideosList}">
+                                        <ItemsControl.ItemsPanel>
+                                            <ItemsPanelTemplate>
+                                                <StackPanel Orientation="Horizontal" Spacing="8"/>
+                                            </ItemsPanelTemplate>
+                                        </ItemsControl.ItemsPanel>
+                                        <ItemsControl.ItemTemplate>
+                                            <DataTemplate DataType="vm:VideoAssetItem">
+                                                <Button Command="{Binding $parent[UserControl].((vm:MainViewModel)DataContext).SelectVideoCommand}" CommandParameter="{Binding}" Padding="0" Background="Transparent" BorderThickness="0">
+                                                    <Border Classes="matte-card" Width="140" Padding="8">
+                                                        <StackPanel Spacing="4">
+                                                            <Border Height="70" Background="#0F172A" CornerRadius="4">
+                                                                <TextBlock Text="🎬" FontSize="20" VerticalAlignment="Center" HorizontalAlignment="Center"/>
+                                                            </Border>
+                                                            <TextBlock Text="{Binding Filename}" FontSize="11" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" Foreground="{StaticResource TextMainBrush}"/>
+                                                            <Grid ColumnDefinitions="*, Auto">
+                                                                <TextBlock Text="{Binding Resolution}" FontSize="9" Foreground="{StaticResource TextMutedBrush}"/>
+                                                                <TextBlock Grid.Column="1" Text="{Binding Duration}" FontSize="9" Foreground="{StaticResource PrimaryBrush}"/>
+                                                            </Grid>
+                                                        </StackPanel>
+                                                    </Border>
+                                                </Button>
+                                            </DataTemplate>
+                                        </ItemsControl.ItemTemplate>
+                                    </ItemsControl>
+                                </ScrollViewer>
+                            </StackPanel>
+                        </StackPanel>
+                    </Border>
+                </StackPanel>
+
+                <!-- ======================================================== -->
+                <!-- 4. 3D MESH WORKFLOW (TRELLIS / ComfyUI 3D)                -->
+                <!-- ======================================================== -->
+                <StackPanel Spacing="16" IsVisible="{Binding SelectedStudioMode, Converter={x:Static ObjectConverters.Equal}, ConverterParameter=3D Mesh}">
+                    <!-- Sequential Pathway Indicator Bar -->
+                    <Border Classes="matte-card" Padding="12,8" Background="{StaticResource BgSurfaceBrush}">
+                        <Grid ColumnDefinitions="Auto, *, Auto, *, Auto, *, Auto">
+                            <Border Grid.Column="0" Classes="matte-pill" Padding="8,4" Background="{StaticResource PrimaryBrush}">
+                                <TextBlock Text="Step 1: Check 3D Engine" FontSize="11" FontWeight="Bold" Foreground="#FFFFFF"/>
+                            </Border>
+                            <TextBlock Grid.Column="1" Text="➔" FontSize="12" HorizontalAlignment="Center" VerticalAlignment="Center" Foreground="{StaticResource TextMutedBrush}"/>
+                            <Border Grid.Column="2" Classes="matte-pill" Padding="8,4" Background="#1E293B">
+                                <TextBlock Text="Step 2: Select Input" FontSize="11" FontWeight="Bold" Foreground="{StaticResource TextMainBrush}"/>
+                            </Border>
+                            <TextBlock Grid.Column="3" Text="➔" FontSize="12" HorizontalAlignment="Center" VerticalAlignment="Center" Foreground="{StaticResource TextMutedBrush}"/>
+                            <Border Grid.Column="4" Classes="matte-pill" Padding="8,4" Background="#1E293B">
+                                <TextBlock Text="Step 3: Geometry &amp; Quality" FontSize="11" FontWeight="Bold" Foreground="{StaticResource TextMainBrush}"/>
+                            </Border>
+                            <TextBlock Grid.Column="5" Text="➔" FontSize="12" HorizontalAlignment="Center" VerticalAlignment="Center" Foreground="{StaticResource TextMutedBrush}"/>
+                            <Border Grid.Column="6" Classes="matte-pill" Padding="8,4" Background="#1E293B">
+                                <TextBlock Text="Step 4: Generate 3D" FontSize="11" FontWeight="Bold" Foreground="{StaticResource AccentBrush}"/>
+                            </Border>
+                        </Grid>
+                    </Border>
+
+                    <!-- Step 1 & 2: Engine Status & Input -->
+                    <Border Classes="matte-card" Padding="16">
+                        <StackPanel Spacing="12">
+                            <Grid ColumnDefinitions="*, Auto">
+                                <StackPanel Spacing="2">
+                                    <TextBlock Text="Step 1: ComfyUI 3D Engine (TRELLIS V2 &amp; Hunyuan3D)" FontSize="14" FontWeight="Bold" Foreground="{StaticResource TextMainBrush}"/>
+                                    <TextBlock Text="Generates 3D Gaussian Splats, Textured Meshes, and Radiance Fields from text or images" FontSize="12" Foreground="{StaticResource TextMutedBrush}"/>
+                                </StackPanel>
                                 <Border Grid.Column="1" Classes="matte-pill" Padding="8,4">
                                     <TextBlock Text="{Binding ComfyStatus}" FontSize="11" Foreground="{StaticResource AccentBrush}" FontWeight="Bold"/>
                                 </Border>
                             </Grid>
 
-                            <StackPanel Spacing="4">
-                                <TextBlock Text="Wan 2.2, LTX-2.5, Stable Audio &amp; TRELLIS V2" FontSize="12" Foreground="{StaticResource TextMutedBrush}"/>
-                                <Border Classes="matte-pill" HorizontalAlignment="Left" Padding="8,4">
-                                    <TextBlock Text="Port 8188 • Localhost" FontSize="11" Foreground="{StaticResource SecondaryBrush}" FontWeight="SemiBold"/>
-                                </Border>
-                            </StackPanel>
+                            <Border Classes="matte-pill" HorizontalAlignment="Left" Padding="8,4" Background="#1E293B">
+                                <TextBlock Text="⚡ VRAM Recommendation: 12 GB+ for TRELLIS V2 high-detail geometry" FontSize="11" Foreground="{StaticResource PrimaryBrush}" FontWeight="SemiBold"/>
+                            </Border>
 
-                            <Button Content="▶️ Toggle ComfyUI Engine" Command="{Binding ToggleEngineCommand}" CommandParameter="comfy"
-                                    Classes="matte-primary" HorizontalAlignment="Stretch" HorizontalContentAlignment="Center" Margin="0,4,0,0"/>
+                            <Separator Background="{StaticResource GlassBorderBrush}" Margin="0,4"/>
+
+                            <!-- Step 2: Input Mode -->
+                            <TextBlock Text="Step 2: Generation Input Mode" FontSize="14" FontWeight="Bold" Foreground="{StaticResource TextMainBrush}"/>
+                            <StackPanel Orientation="Horizontal" Spacing="12">
+                                <RadioButton Content="📝 Text to 3D" IsChecked="True" Classes="matte-radio"/>
+                                <RadioButton Content="🖼️ Image to 3D" Classes="matte-radio"/>
+                            </StackPanel>
                         </StackPanel>
                     </Border>
-                </UniformGrid>
 
-                <!-- VIDEO STUDIO SECTION -->
-                <Border Classes="matte-card" Padding="16">
-                    <StackPanel Spacing="16">
-                        <Grid ColumnDefinitions="*, Auto">
-                            <TextBlock Text="🎬 AI Video Generator &amp; Preview Player" FontSize="15" FontWeight="Bold" Foreground="{StaticResource TextMainBrush}" VerticalAlignment="Center"/>
-                            <!-- Pre-Flight Hardware Fit Badge -->
-                            <Border Grid.Column="1" Classes="matte-pill" Padding="8,4" Background="{StaticResource BgSurfaceBrush}">
-                                <TextBlock Text="{Binding VideoHardwareFit.FitBadge.BadgeText, FallbackValue='🟢 Ready'}"
-                                           ToolTip.Tip="{Binding VideoHardwareFit.FitBadge.Tooltip}"
-                                           FontSize="11" FontWeight="Bold" Foreground="{StaticResource PrimaryBrush}"/>
-                            </Border>
-                        </Grid>
-
-                        <!-- Video Studio Preset Bar -->
-                        <controls:StudioPresetBarControl
-                            Presets="{Binding VideoPresets}"
-                            SelectedPreset="{Binding SelectedVideoPreset, Mode=TwoWay}"
-                            StarterPrompts="{Binding VideoStarterPrompts}"
-                            SavePresetCommand="{Binding SaveCurrentAsVideoPresetCommand}"
-                            DeletePresetCommand="{Binding DeleteCurrentVideoPresetCommand}"
-                            DuplicatePresetCommand="{Binding DuplicateCurrentVideoPresetCommand}"
-                            ApplyStarterPromptCommand="{Binding ApplyStarterChipCommand}" />
-
-                        <!-- Active Generation 4-Stage Tracker -->
-                        <controls:GenerationStageTrackerControl
-                            CurrentStage="{Binding GenerationStage}"
-                            Stage1Status="{Binding Stage1Status}"
-                            Stage2Status="{Binding Stage2Status}"
-                            Stage3Status="{Binding Stage3Status}"
-                            Stage4Status="{Binding Stage4Status}"
-                            ProgressValue="{Binding VideoGenerationProgress}"
-                            ElapsedTimerText="{Binding GenerationElapsedText}"
-                            HardwareStatusBadgeText="{Binding HardwareStatusBadgeText}"
-                            LogsText="{Binding LiveLogOutput}"
-                            IsLogsExpanded="{Binding IsLiveLogsExpanded, Mode=TwoWay}"
-                            IsActive="{Binding IsGeneratingVideo}"
-                            CancelCommand="{Binding CancelGenerationCommand}"
-                            IsVisible="{Binding IsGeneratingVideo}" />
-
-                        <Grid ColumnDefinitions="*, 320" RowDefinitions="Auto">
-                            <!-- Left Panel: Video Generation Form -->
+                    <!-- Step 3 & 4: 3D Form & Viewport Preview -->
+                    <Border Classes="matte-card" Padding="16">
+                        <Grid ColumnDefinitions="*, 320">
+                            <!-- Left: Step 3 Parameters -->
                             <StackPanel Grid.Column="0" Spacing="12" Margin="0,0,16,0">
-                                <Grid ColumnDefinitions="*, *">
-                                    <StackPanel Grid.Column="0" Spacing="4" Margin="0,0,8,0">
-                                        <TextBlock Text="Workflow Model" FontSize="12" Foreground="{StaticResource TextMutedBrush}"/>
-                                        <TextBox Text="{Binding SelectedVideoWorkflow}" PlaceholderText="Select workflow model..."/>
-                                    </StackPanel>
-
-                                    <StackPanel Grid.Column="1" Spacing="4" Margin="8,0,0,0">
-                                        <TextBlock Text="Resolution" FontSize="12" Foreground="{StaticResource TextMutedBrush}"/>
-                                        <TextBox Text="{Binding VideoResolution}" PlaceholderText="832x480"/>
-                                    </StackPanel>
-                                </Grid>
+                                <TextBlock Text="Step 3: Geometry &amp; Texture Parameters" FontSize="14" FontWeight="Bold" Foreground="{StaticResource TextMainBrush}"/>
 
                                 <StackPanel Spacing="4">
-                                    <TextBlock Text="Prompt" FontSize="12" Foreground="{StaticResource TextMutedBrush}"/>
-                                    <TextBox Text="{Binding VideoPrompt}" AcceptsReturn="True" Height="60" TextWrapping="Wrap"/>
-                                </StackPanel>
-
-                                <StackPanel Spacing="4">
-                                    <TextBlock Text="Negative Prompt" FontSize="12" Foreground="{StaticResource TextMutedBrush}"/>
-                                    <TextBox Text="{Binding VideoNegativePrompt}" AcceptsReturn="True" Height="40" TextWrapping="Wrap"/>
+                                    <TextBlock Text="3D Prompt" FontSize="12" Foreground="{StaticResource TextMutedBrush}"/>
+                                    <TextBox Text="{Binding Prompt3D}" AcceptsReturn="True" Height="60" TextWrapping="Wrap"/>
                                 </StackPanel>
 
                                 <Grid ColumnDefinitions="*, *">
                                     <StackPanel Grid.Column="0" Spacing="4" Margin="0,0,8,0">
-                                        <TextBlock Text="Frame Count (FPS: 16)" FontSize="12" Foreground="{StaticResource TextMutedBrush}"/>
-                                        <NumericUpDown Value="{Binding VideoFrameCount}" Minimum="16" Maximum="120" Increment="8"/>
+                                        <TextBlock Text="Export Format" FontSize="12" Foreground="{StaticResource TextMutedBrush}"/>
+                                        <TextBox Text="{Binding Selected3DFormat}"/>
                                     </StackPanel>
 
                                     <StackPanel Grid.Column="1" Spacing="4" Margin="8,0,0,0">
-                                        <TextBlock Text="Seed" FontSize="12" Foreground="{StaticResource TextMutedBrush}"/>
-                                        <NumericUpDown Value="{Binding VideoSeed}" Minimum="1" Maximum="999999999"/>
+                                        <TextBlock Text="Mesh Quality / Poly Count" FontSize="12" Foreground="{StaticResource TextMutedBrush}"/>
+                                        <TextBox Text="{Binding Selected3DQuality}"/>
                                     </StackPanel>
                                 </Grid>
 
-                                <Button Content="🎬 Generate Video" Command="{Binding GenerateVideoCommand}"
-                                        IsEnabled="{Binding !IsGeneratingVideo}"
+                                <Button Content="📦 Step 4: Generate 3D Mesh / Splat" Command="{Binding Generate3DCommand}"
+                                        IsEnabled="{Binding !IsGenerating3D}"
                                         Classes="matte-primary" HorizontalAlignment="Stretch" HorizontalContentAlignment="Center" Height="38"/>
-
-                                <ProgressBar IsVisible="{Binding IsGeneratingVideo}" Value="{Binding VideoGenerationProgress}" Maximum="100" Height="6"/>
+                                <ProgressBar IsVisible="{Binding IsGenerating3D}" IsIndeterminate="True" Height="4"/>
                             </StackPanel>
 
-                            <!-- Right Panel: Interactive Video Player Preview -->
+                            <!-- Right: Step 4 3D Viewport Placeholder -->
                             <Border Grid.Column="1" Background="{StaticResource BgDarkBrush}" CornerRadius="8" Padding="12" BorderBrush="{StaticResource GlassBorderBrush}" BorderThickness="1">
-                                <Grid RowDefinitions="*, Auto, Auto">
-                                    <!-- Video Player Container & Overlay -->
-                                    <Border Grid.Row="0" MinHeight="180" Background="#050B14" CornerRadius="6" ClipToBounds="True">
-                                        <Grid>
-                                            <!-- Placeholder / Rendered URL Display -->
-                                            <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center" Spacing="8">
-                                                <TextBlock Text="🎬" FontSize="36" HorizontalAlignment="Center"/>
-                                                <TextBlock Text="Interactive Video Player" FontSize="12" Foreground="{StaticResource TextMutedBrush}" HorizontalAlignment="Center"/>
-                                                <TextBlock Text="{Binding RenderedVideoUrl}" FontSize="10" Foreground="{StaticResource AccentBrush}" TextWrapping="Wrap" TextAlignment="Center" MaxWidth="260"/>
-                                            </StackPanel>
-
-                                            <!-- Metadata Overlay Badges -->
-                                            <StackPanel VerticalAlignment="Top" HorizontalAlignment="Right" Margin="8" Orientation="Horizontal" Spacing="4">
-                                                <Border Classes="matte-pill" Padding="6,2" Background="#CC0F172A">
-                                                    <TextBlock Text="{Binding VideoDurationText}" FontSize="10" Foreground="{StaticResource PrimaryBrush}" FontWeight="Bold"/>
-                                                </Border>
-                                                <Border Classes="matte-pill" Padding="6,2" Background="#CC0F172A">
-                                                    <TextBlock Text="{Binding VideoResolutionBadge}" FontSize="10" Foreground="{StaticResource SecondaryBrush}"/>
-                                                </Border>
-                                                <Border Classes="matte-pill" Padding="6,2" Background="#CC0F172A">
-                                                    <TextBlock Text="{Binding VideoFpsBadge}" FontSize="10" Foreground="{StaticResource TextMainBrush}"/>
-                                                </Border>
-                                            </StackPanel>
-
-                                            <Border VerticalAlignment="Bottom" HorizontalAlignment="Left" Margin="8" Classes="matte-pill" Padding="6,2" Background="#CC0F172A">
-                                                <TextBlock Text="{Binding VideoSeedBadge, StringFormat='Seed: {0}'}" FontSize="10" Foreground="{StaticResource TextMutedBrush}"/>
-                                            </Border>
-                                        </Grid>
+                                <StackPanel Spacing="10" VerticalAlignment="Center" HorizontalAlignment="Center">
+                                    <Border Width="160" Height="140" Background="#0A1120" CornerRadius="6">
+                                        <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center" Spacing="8">
+                                            <TextBlock Text="🧊" FontSize="36" HorizontalAlignment="Center"/>
+                                            <TextBlock Text="Interactive 3D Viewport" FontSize="11" Foreground="{StaticResource TextMutedBrush}" HorizontalAlignment="Center"/>
+                                            <TextBlock Text="{Binding Rendered3DAssetUrl, FallbackValue='Ready to render'}" FontSize="9" Foreground="{StaticResource AccentBrush}" HorizontalAlignment="Center"/>
+                                        </StackPanel>
                                     </Border>
-
-                                    <!-- Player Controls -->
-                                    <Grid Grid.Row="1" ColumnDefinitions="Auto, *, Auto, Auto" Margin="0,10,0,0">
-                                        <Button Grid.Column="0" Content="⏯️" Command="{Binding ToggleVideoPlayCommand}" Width="32" Height="32" Padding="0"/>
-                                        <Slider Grid.Column="1" Margin="8,0" Value="50" Minimum="0" Maximum="100"/>
-                                        <Button Grid.Column="2" Content="🔄" Command="{Binding ToggleVideoLoopCommand}" Width="32" Height="32" Padding="0" Margin="0,0,4,0"/>
-                                        <Button Grid.Column="3" Content="⬇️ Export" Command="{Binding DownloadVideoCommand}" Classes="matte-primary" Padding="8,4" FontSize="11"/>
-                                    </Grid>
-                                </Grid>
+                                    <StackPanel Orientation="Horizontal" Spacing="8" HorizontalAlignment="Center">
+                                        <Button Content="⬇️ Export GLB" Classes="matte-primary" Padding="8,4" FontSize="11"/>
+                                        <Button Content="⬇️ Export OBJ" Padding="8,4" FontSize="11"/>
+                                    </StackPanel>
+                                </StackPanel>
                             </Border>
                         </Grid>
+                    </Border>
+                </StackPanel>
 
-                        <!-- Recent Renders Gallery -->
-                        <StackPanel Spacing="8" Margin="0,8,0,0">
+                <!-- ======================================================== -->
+                <!-- 5. AUDIO WORKFLOW (Stable Audio Open / Kokoro)            -->
+                <!-- ======================================================== -->
+                <StackPanel Spacing="16" IsVisible="{Binding SelectedStudioMode, Converter={x:Static ObjectConverters.Equal}, ConverterParameter=Audio}">
+                    <!-- Sequential Pathway Indicator Bar -->
+                    <Border Classes="matte-card" Padding="12,8" Background="{StaticResource BgSurfaceBrush}">
+                        <Grid ColumnDefinitions="Auto, *, Auto, *, Auto, *, Auto">
+                            <Border Grid.Column="0" Classes="matte-pill" Padding="8,4" Background="{StaticResource PrimaryBrush}">
+                                <TextBlock Text="Step 1: Verify Audio Engine" FontSize="11" FontWeight="Bold" Foreground="#FFFFFF"/>
+                            </Border>
+                            <TextBlock Grid.Column="1" Text="➔" FontSize="12" HorizontalAlignment="Center" VerticalAlignment="Center" Foreground="{StaticResource TextMutedBrush}"/>
+                            <Border Grid.Column="2" Classes="matte-pill" Padding="8,4" Background="#1E293B">
+                                <TextBlock Text="Step 2: Choose Preset" FontSize="11" FontWeight="Bold" Foreground="{StaticResource TextMainBrush}"/>
+                            </Border>
+                            <TextBlock Grid.Column="3" Text="➔" FontSize="12" HorizontalAlignment="Center" VerticalAlignment="Center" Foreground="{StaticResource TextMutedBrush}"/>
+                            <Border Grid.Column="4" Classes="matte-pill" Padding="8,4" Background="#1E293B">
+                                <TextBlock Text="Step 3: Duration &amp; Seed" FontSize="11" FontWeight="Bold" Foreground="{StaticResource TextMainBrush}"/>
+                            </Border>
+                            <TextBlock Grid.Column="5" Text="➔" FontSize="12" HorizontalAlignment="Center" VerticalAlignment="Center" Foreground="{StaticResource TextMutedBrush}"/>
+                            <Border Grid.Column="6" Classes="matte-pill" Padding="8,4" Background="#1E293B">
+                                <TextBlock Text="Step 4: Queue &amp; Play" FontSize="11" FontWeight="Bold" Foreground="{StaticResource AccentBrush}"/>
+                            </Border>
+                        </Grid>
+                    </Border>
+
+                    <!-- AUDIO STUDIO SECTION -->
+                    <Border Classes="matte-card" Padding="16">
+                        <StackPanel Spacing="12" DataContext="{Binding Audio}">
                             <Grid ColumnDefinitions="*, Auto">
-                                <TextBlock Text="🖼️ Recent Video Renders" FontSize="13" FontWeight="Bold" Foreground="{StaticResource TextMainBrush}"/>
-                                <Button Grid.Column="1" Content="🔄 Refresh Gallery" Command="{Binding LoadGeneratedVideosCommand}" Padding="8,4" FontSize="11"/>
+                                <StackPanel Spacing="2">
+                                    <TextBlock Text="Step 1: Stable Audio Open 3.0 &amp; YuE Song Generator" FontSize="15" FontWeight="Bold" Foreground="{StaticResource TextMainBrush}"/>
+                                    <TextBlock Text="Text-to-SFX, ambient soundscapes, and dual-track lyrics-to-music full song generation" FontSize="12" Foreground="{StaticResource TextMutedBrush}"/>
+                                </StackPanel>
+                                <Border Grid.Column="1" Classes="matte-pill" Padding="8,4">
+                                    <TextBlock Text="{Binding StatusMessage}" FontSize="11" Foreground="{StaticResource PrimaryBrush}" FontWeight="Bold"/>
+                                </Border>
                             </Grid>
 
-                            <ScrollViewer HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Disabled">
-                                <ItemsControl ItemsSource="{Binding GeneratedVideosList}">
-                                    <ItemsControl.ItemsPanel>
-                                        <ItemsPanelTemplate>
-                                            <StackPanel Orientation="Horizontal" Spacing="8"/>
-                                        </ItemsPanelTemplate>
-                                    </ItemsControl.ItemsPanel>
-                                    <ItemsControl.ItemTemplate>
-                                        <DataTemplate DataType="vm:VideoAssetItem">
-                                            <Button Command="{Binding $parent[UserControl].((vm:MainViewModel)DataContext).SelectVideoCommand}" CommandParameter="{Binding}" Padding="0" Background="Transparent" BorderThickness="0">
-                                                <Border Classes="matte-card" Width="140" Padding="8">
-                                                    <StackPanel Spacing="4">
-                                                        <Border Height="70" Background="#0F172A" CornerRadius="4">
-                                                            <TextBlock Text="🎬" FontSize="20" VerticalAlignment="Center" HorizontalAlignment="Center"/>
-                                                        </Border>
-                                                        <TextBlock Text="{Binding Filename}" FontSize="11" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" Foreground="{StaticResource TextMainBrush}"/>
-                                                        <Grid ColumnDefinitions="*, Auto">
-                                                            <TextBlock Text="{Binding Resolution}" FontSize="9" Foreground="{StaticResource TextMutedBrush}"/>
-                                                            <TextBlock Grid.Column="1" Text="{Binding Duration}" FontSize="9" Foreground="{StaticResource PrimaryBrush}"/>
-                                                        </Grid>
-                                                    </StackPanel>
-                                                </Border>
-                                            </Button>
-                                        </DataTemplate>
-                                    </ItemsControl.ItemTemplate>
-                                </ItemsControl>
-                            </ScrollViewer>
-                        </StackPanel>
-                    </StackPanel>
-                </Border>
+                            <Separator Background="{StaticResource GlassBorderBrush}" Margin="0,4"/>
 
-                <!-- AUDIO & SOUND EFFECTS STUDIO SECTION -->
-                <Border Classes="matte-card" Padding="16">
-                    <StackPanel Spacing="12" DataContext="{Binding Audio}">
-                        <Grid ColumnDefinitions="*, Auto">
-                            <StackPanel Spacing="2">
-                                <TextBlock Text="🎵 Stable Audio Open 3.0 &amp; YuE Song Generator" FontSize="15" FontWeight="Bold" Foreground="{StaticResource TextMainBrush}"/>
-                                <TextBlock Text="Text-to-SFX, ambient soundscapes, and dual-track lyrics-to-music full song generation" FontSize="12" Foreground="{StaticResource TextMutedBrush}"/>
-                            </StackPanel>
-                            <Border Grid.Column="1" Classes="matte-pill" Padding="8,4">
-                                <TextBlock Text="{Binding StatusMessage}" FontSize="11" Foreground="{StaticResource PrimaryBrush}" FontWeight="Bold"/>
-                            </Border>
-                        </Grid>
+                            <!-- Step 2: Audio Studio Preset Bar -->
+                            <TextBlock Text="Step 2: Audio Preset &amp; Starter Soundscape" FontSize="14" FontWeight="Bold" Foreground="{StaticResource TextMainBrush}"/>
+                            <controls:StudioPresetBarControl
+                                Presets="{Binding AudioPresets}"
+                                SelectedPreset="{Binding SelectedAudioPreset, Mode=TwoWay}"
+                                StarterPrompts="{Binding AudioStarterPrompts}"
+                                SavePresetCommand="{Binding SaveCurrentAsAudioPresetCommand}"
+                                DeletePresetCommand="{Binding DeleteCurrentAudioPresetCommand}"
+                                DuplicatePresetCommand="{Binding DuplicateCurrentAudioPresetCommand}"
+                                ApplyStarterPromptCommand="{Binding ApplyStarterChipCommand}" />
 
-                        <!-- Audio Studio Preset Bar -->
-                        <controls:StudioPresetBarControl
-                            Presets="{Binding AudioPresets}"
-                            SelectedPreset="{Binding SelectedAudioPreset, Mode=TwoWay}"
-                            StarterPrompts="{Binding AudioStarterPrompts}"
-                            SavePresetCommand="{Binding SaveCurrentAsAudioPresetCommand}"
-                            DeletePresetCommand="{Binding DeleteCurrentAudioPresetCommand}"
-                            DuplicatePresetCommand="{Binding DuplicateCurrentAudioPresetCommand}"
-                            ApplyStarterPromptCommand="{Binding ApplyStarterChipCommand}" />
+                            <!-- Active Audio Generation 4-Stage Tracker -->
+                            <controls:GenerationStageTrackerControl
+                                CurrentStage="{Binding GenerationStage}"
+                                Stage1Status="{Binding Stage1Status}"
+                                Stage2Status="{Binding Stage2Status}"
+                                Stage3Status="{Binding Stage3Status}"
+                                Stage4Status="{Binding Stage4Status}"
+                                ProgressValue="{Binding ProgressValue}"
+                                ElapsedTimerText="{Binding GenerationElapsedText}"
+                                HardwareStatusBadgeText="{Binding HardwareStatusBadgeText}"
+                                LogsText="{Binding LiveLogOutput}"
+                                IsLogsExpanded="{Binding IsLiveLogsExpanded, Mode=TwoWay}"
+                                IsActive="{Binding IsGenerating}"
+                                CancelCommand="{Binding CancelGenerationCommand}"
+                                IsVisible="{Binding IsGenerating}" />
 
-                        <!-- Active Audio Generation 4-Stage Tracker -->
-                        <controls:GenerationStageTrackerControl
-                            CurrentStage="{Binding GenerationStage}"
-                            Stage1Status="{Binding Stage1Status}"
-                            Stage2Status="{Binding Stage2Status}"
-                            Stage3Status="{Binding Stage3Status}"
-                            Stage4Status="{Binding Stage4Status}"
-                            ProgressValue="{Binding ProgressValue}"
-                            ElapsedTimerText="{Binding GenerationElapsedText}"
-                            HardwareStatusBadgeText="{Binding HardwareStatusBadgeText}"
-                            LogsText="{Binding LiveLogOutput}"
-                            IsLogsExpanded="{Binding IsLiveLogsExpanded, Mode=TwoWay}"
-                            IsActive="{Binding IsGenerating}"
-                            CancelCommand="{Binding CancelGenerationCommand}"
-                            IsVisible="{Binding IsGenerating}" />
-
-                        <Grid ColumnDefinitions="*, 120, 100" RowDefinitions="Auto">
-                            <ComboBox Grid.Column="0" ItemsSource="{Binding Workflows}" SelectedItem="{Binding SelectedWorkflow}" HorizontalAlignment="Stretch" Classes="matte-input" VerticalAlignment="Center">
-                                <ComboBox.ItemTemplate>
-                                    <DataTemplate x:DataType="vm:AudioWorkflowItem">
-                                        <TextBlock Text="{Binding Name}" ToolTip.Tip="{Binding Description}"/>
-                                    </DataTemplate>
-                                </ComboBox.ItemTemplate>
-                            </ComboBox>
-
-                            <StackPanel Grid.Column="1" Margin="8,0,0,0" VerticalAlignment="Center">
-                                <TextBlock Text="Duration (s)" FontSize="11" Foreground="{StaticResource TextMutedBrush}"/>
-                                <NumericUpDown Value="{Binding DurationSeconds}" Minimum="5" Maximum="300" Increment="5" Classes="matte-input"/>
-                            </StackPanel>
-
-                            <StackPanel Grid.Column="2" Margin="8,0,0,0" VerticalAlignment="Center">
-                                <TextBlock Text="Seed" FontSize="11" Foreground="{StaticResource TextMutedBrush}"/>
-                                <TextBox Text="{Binding Seed}" Classes="matte-input"/>
-                            </StackPanel>
-                        </Grid>
-
-                        <TextBox Text="{Binding Prompt}" PlaceholderText="Audio prompt (e.g. Cyberpunk atmospheric ambient drone...)"
-                                 Classes="matte-input" AcceptsReturn="True" TextWrapping="Wrap" Height="48"/>
-
-                        <TextBox Text="{Binding NegativePrompt}" PlaceholderText="Negative prompt (e.g. low quality, distortion...)"
-                                 Classes="matte-input"/>
-
-                        <Button Content="🎵 Queue Audio Generation Workflow" Command="{Binding $parent[UserControl].((vm:MainViewModel)DataContext).GenerateAudioCommand}"
-                                Classes="matte-primary" HorizontalAlignment="Stretch" HorizontalContentAlignment="Center"/>
-
-                        <!-- Waveform Visualizer and Audio Track Preview -->
-                        <Border Classes="matte-pill" Padding="12" Margin="0,4,0,0" Background="#1E293B">
-                            <Grid ColumnDefinitions="Auto, *, Auto" VerticalAlignment="Center">
-                                <Button Grid.Column="0" Content="{Binding PlayButtonText}" Command="{Binding TogglePlayCommand}"
-                                        Classes="matte-primary" Padding="12,6" VerticalAlignment="Center"/>
-
-                                <StackPanel Grid.Column="1" Margin="12,0" VerticalAlignment="Center" Spacing="4">
-                                    <TextBlock Text="{Binding PlayingTrackTitle}" FontWeight="Bold" FontSize="12" Foreground="{StaticResource TextMainBrush}"/>
-                                    <!-- Audio Waveform Amplitude Peaks Visualizer -->
-                                    <UniformGrid Rows="1" Height="22">
-                                        <Border Background="{StaticResource PrimaryBrush}" CornerRadius="2" Margin="1,2" Height="10" VerticalAlignment="Center"/>
-                                        <Border Background="{StaticResource PrimaryBrush}" CornerRadius="2" Margin="1,2" Height="18" VerticalAlignment="Center"/>
-                                        <Border Background="{StaticResource PrimaryBrush}" CornerRadius="2" Margin="1,2" Height="14" VerticalAlignment="Center"/>
-                                        <Border Background="{StaticResource AccentBrush}" CornerRadius="2" Margin="1,2" Height="22" VerticalAlignment="Center"/>
-                                        <Border Background="{StaticResource AccentBrush}" CornerRadius="2" Margin="1,2" Height="16" VerticalAlignment="Center"/>
-                                        <Border Background="{StaticResource PrimaryBrush}" CornerRadius="2" Margin="1,2" Height="12" VerticalAlignment="Center"/>
-                                        <Border Background="{StaticResource PrimaryBrush}" CornerRadius="2" Margin="1,2" Height="20" VerticalAlignment="Center"/>
-                                        <Border Background="{StaticResource AccentBrush}" CornerRadius="2" Margin="1,2" Height="15" VerticalAlignment="Center"/>
-                                        <Border Background="{StaticResource PrimaryBrush}" CornerRadius="2" Margin="1,2" Height="8" VerticalAlignment="Center"/>
-                                        <Border Background="{StaticResource PrimaryBrush}" CornerRadius="2" Margin="1,2" Height="18" VerticalAlignment="Center"/>
-                                    </UniformGrid>
-                                </StackPanel>
-
-                                <ComboBox Grid.Column="2" ItemsSource="{Binding GeneratedAudioFiles}" SelectedItem="{Binding SelectedAudioFile}"
-                                          Classes="matte-input" Width="180" VerticalAlignment="Center">
+                            <!-- Step 3: Parameters -->
+                            <TextBlock Text="Step 3: Workflow, Duration &amp; Audio Prompts" FontSize="14" FontWeight="Bold" Foreground="{StaticResource TextMainBrush}"/>
+                            <Grid ColumnDefinitions="*, 120, 100" RowDefinitions="Auto">
+                                <ComboBox Grid.Column="0" ItemsSource="{Binding Workflows}" SelectedItem="{Binding SelectedWorkflow}" HorizontalAlignment="Stretch" Classes="matte-input" VerticalAlignment="Center">
                                     <ComboBox.ItemTemplate>
-                                        <DataTemplate x:DataType="vm:AudioFileItem">
-                                            <TextBlock Text="{Binding Filename}"/>
+                                        <DataTemplate x:DataType="vm:AudioWorkflowItem">
+                                            <TextBlock Text="{Binding Name}" ToolTip.Tip="{Binding Description}"/>
                                         </DataTemplate>
                                     </ComboBox.ItemTemplate>
                                 </ComboBox>
+
+                                <StackPanel Grid.Column="1" Margin="8,0,0,0" VerticalAlignment="Center">
+                                    <TextBlock Text="Duration (s)" FontSize="11" Foreground="{StaticResource TextMutedBrush}"/>
+                                    <NumericUpDown Value="{Binding DurationSeconds}" Minimum="5" Maximum="300" Increment="5" Classes="matte-input"/>
+                                </StackPanel>
+
+                                <StackPanel Grid.Column="2" Margin="8,0,0,0" VerticalAlignment="Center">
+                                    <TextBlock Text="Seed" FontSize="11" Foreground="{StaticResource TextMutedBrush}"/>
+                                    <TextBox Text="{Binding Seed}" Classes="matte-input"/>
+                                </StackPanel>
                             </Grid>
-                        </Border>
-                    </StackPanel>
-                </Border>
+
+                            <TextBox Text="{Binding Prompt}" PlaceholderText="Audio prompt (e.g. Cyberpunk atmospheric ambient drone...)"
+                                     Classes="matte-input" AcceptsReturn="True" TextWrapping="Wrap" Height="48"/>
+
+                            <TextBox Text="{Binding NegativePrompt}" PlaceholderText="Negative prompt (e.g. low quality, distortion...)"
+                                     Classes="matte-input"/>
+
+                            <!-- Step 4: Action & Player -->
+                            <Button Content="🎵 Step 4: Queue Audio Generation Workflow" Command="{Binding $parent[UserControl].((vm:MainViewModel)DataContext).GenerateAudioCommand}"
+                                    Classes="matte-primary" HorizontalAlignment="Stretch" HorizontalContentAlignment="Center"/>
+
+                            <!-- Waveform Visualizer and Audio Track Preview -->
+                            <Border Classes="matte-pill" Padding="12" Margin="0,4,0,0" Background="#1E293B">
+                                <Grid ColumnDefinitions="Auto, *, Auto" VerticalAlignment="Center">
+                                    <Button Grid.Column="0" Content="{Binding PlayButtonText}" Command="{Binding TogglePlayCommand}"
+                                            Classes="matte-primary" Padding="12,6" VerticalAlignment="Center"/>
+
+                                    <StackPanel Grid.Column="1" Margin="12,0" VerticalAlignment="Center" Spacing="4">
+                                        <TextBlock Text="{Binding PlayingTrackTitle}" FontWeight="Bold" FontSize="12" Foreground="{StaticResource TextMainBrush}"/>
+                                        <!-- Audio Waveform Amplitude Peaks Visualizer -->
+                                        <UniformGrid Rows="1" Height="22">
+                                            <Border Background="{StaticResource PrimaryBrush}" CornerRadius="2" Margin="1,2" Height="10" VerticalAlignment="Center"/>
+                                            <Border Background="{StaticResource PrimaryBrush}" CornerRadius="2" Margin="1,2" Height="18" VerticalAlignment="Center"/>
+                                            <Border Background="{StaticResource PrimaryBrush}" CornerRadius="2" Margin="1,2" Height="14" VerticalAlignment="Center"/>
+                                            <Border Background="{StaticResource AccentBrush}" CornerRadius="2" Margin="1,2" Height="22" VerticalAlignment="Center"/>
+                                            <Border Background="{StaticResource AccentBrush}" CornerRadius="2" Margin="1,2" Height="16" VerticalAlignment="Center"/>
+                                            <Border Background="{StaticResource PrimaryBrush}" CornerRadius="2" Margin="1,2" Height="12" VerticalAlignment="Center"/>
+                                            <Border Background="{StaticResource PrimaryBrush}" CornerRadius="2" Margin="1,2" Height="20" VerticalAlignment="Center"/>
+                                            <Border Background="{StaticResource AccentBrush}" CornerRadius="2" Margin="1,2" Height="15" VerticalAlignment="Center"/>
+                                            <Border Background="{StaticResource PrimaryBrush}" CornerRadius="2" Margin="1,2" Height="8" VerticalAlignment="Center"/>
+                                            <Border Background="{StaticResource PrimaryBrush}" CornerRadius="2" Margin="1,2" Height="18" VerticalAlignment="Center"/>
+                                        </UniformGrid>
+                                    </StackPanel>
+
+                                    <ComboBox Grid.Column="2" ItemsSource="{Binding GeneratedAudioFiles}" SelectedItem="{Binding SelectedAudioFile}"
+                                              Classes="matte-input" Width="180" VerticalAlignment="Center">
+                                        <ComboBox.ItemTemplate>
+                                            <DataTemplate x:DataType="vm:AudioFileItem">
+                                                <TextBlock Text="{Binding Filename}"/>
+                                            </DataTemplate>
+                                        </ComboBox.ItemTemplate>
+                                    </ComboBox>
+                                </Grid>
+                            </Border>
+                        </StackPanel>
+                    </Border>
+                </StackPanel>
             </StackPanel>
         </ScrollViewer>
 
@@ -405,4 +730,3 @@
         </Border>
     </Grid>
 </UserControl>
-

@@ -1,0 +1,26 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:LocalLLMServerManager.Shared.ViewModels"
+             xmlns:controls="using:LocalLLMServerManager.Shared.Views.Controls"
+             x:Class="LocalLLMServerManager.Shared.Views.Controls.ModelsTabControl"
+             x:DataType="vm:MainViewModel">
+
+    <Grid>
+        <TabControl SelectedIndex="{Binding SelectedModelsTabIndex}" Background="Transparent">
+            <!-- SUBTAB 1: Installed Ollama Models & KV Cache -->
+            <TabItem Header="💾 Downloaded &amp; Manage">
+                <controls:OllamaModelsTabControl DataContext="{Binding Ollama}"/>
+            </TabItem>
+
+            <!-- SUBTAB 2: Hugging Face GGUF & Multimodal Hub -->
+            <TabItem Header="🤗 Hugging Face Hub">
+                <controls:HuggingFaceTabControl DataContext="{Binding HuggingFace}"/>
+            </TabItem>
+
+            <!-- SUBTAB 3: CivitAI Stable Diffusion Hub -->
+            <TabItem Header="🎨 CivitAI Hub">
+                <controls:CivitaiTabControl DataContext="{Binding Civitai}"/>
+            </TabItem>
+        </TabControl>
+    </Grid>
+</UserControl>

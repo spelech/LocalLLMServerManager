@@ -1,0 +1,135 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:LocalLLMServerManager.Shared.ViewModels"
+             x:Class="LocalLLMServerManager.Shared.Views.Controls.DocumentationTabControl"
+             x:DataType="vm:DocumentationViewModel">
+
+    <Grid ColumnDefinitions="280, *" Margin="0,12,0,0">
+        <!-- Left Sidebar: Guide Topics Navigation -->
+        <Border Grid.Column="0" Classes="matte-card" Margin="0,0,12,0" Padding="12">
+            <Grid RowDefinitions="Auto, *">
+                <StackPanel Grid.Row="0" Spacing="4" Margin="0,0,0,12">
+                    <TextBlock Text="📖 User Manual &amp; Guides" FontSize="14" FontWeight="Bold" Foreground="{StaticResource TextMainBrush}"/>
+                    <TextBlock Text="ASD-STE100 Simplified Technical English" FontSize="10" Foreground="{StaticResource TextMutedBrush}"/>
+                </StackPanel>
+
+                <ScrollViewer Grid.Row="1">
+                    <ItemsControl ItemsSource="{Binding Sections}">
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate DataType="vm:DocSection">
+                                <Button Command="{Binding $parent[UserControl].((vm:DocumentationViewModel)DataContext).SelectSectionCommand}"
+                                        CommandParameter="{Binding Id}"
+                                        Classes="matte-card"
+                                        Margin="0,0,0,6"
+                                        Padding="10,8"
+                                        HorizontalAlignment="Stretch"
+                                        HorizontalContentAlignment="Stretch">
+                                    <Grid ColumnDefinitions="Auto, *">
+                                        <TextBlock Grid.Column="0" Text="{Binding Icon}" FontSize="18" VerticalAlignment="Center" Margin="0,0,8,0"/>
+                                        <StackPanel Grid.Column="1" Spacing="2" VerticalAlignment="Center">
+                                            <TextBlock Text="{Binding Title}" FontSize="12" FontWeight="SemiBold" Foreground="{StaticResource TextMainBrush}" TextWrapping="Wrap"/>
+                                            <TextBlock Text="{Binding Steps.Count, StringFormat='{}{0} Steps'}" FontSize="10" Foreground="{StaticResource TextMutedBrush}"/>
+                                        </StackPanel>
+                                    </Grid>
+                                </Button>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                </ScrollViewer>
+            </Grid>
+        </Border>
+
+        <!-- Right Pane: Active Procedural Topic Details -->
+        <Border Grid.Column="1" Classes="matte-card" Padding="20">
+            <ScrollViewer>
+                <StackPanel Spacing="16" DataContext="{Binding SelectedSection}">
+                    <!-- Topic Header & ASD-STE100 Badge -->
+                    <Grid ColumnDefinitions="*, Auto">
+                        <StackPanel Grid.Column="0" Spacing="4">
+                            <StackPanel Orientation="Horizontal" Spacing="8">
+                                <TextBlock Text="{Binding Icon}" FontSize="24" VerticalAlignment="Center"/>
+                                <TextBlock Text="{Binding Title}" FontSize="18" FontWeight="Bold" Foreground="{StaticResource TextMainBrush}" VerticalAlignment="Center"/>
+                            </StackPanel>
+                            <TextBlock Text="{Binding Summary}" FontSize="13" Foreground="{StaticResource TextMutedBrush}" TextWrapping="Wrap" Margin="0,2,0,0"/>
+                        </StackPanel>
+                        <Border Grid.Column="1" Classes="matte-pill" Padding="8,4" VerticalAlignment="Top" Background="#1A2234" BorderBrush="{StaticResource PrimaryBrush}" BorderThickness="1">
+                            <TextBlock Text="ASD-STE100 Verified" FontSize="10" Foreground="{StaticResource PrimaryBrush}" FontWeight="Bold"/>
+                        </Border>
+                    </Grid>
+
+                    <!-- Prerequisite Callout -->
+                    <Border Background="#1E293B" CornerRadius="6" Padding="12,10" BorderBrush="{StaticResource SecondaryBrush}" BorderThickness="1,0,0,0">
+                        <Grid ColumnDefinitions="Auto, *">
+                            <TextBlock Grid.Column="0" Text="ℹ️ Prerequisite:" FontSize="12" FontWeight="Bold" Foreground="{StaticResource SecondaryBrush}" Margin="0,0,8,0"/>
+                            <TextBlock Grid.Column="1" Text="{Binding Prerequisite}" FontSize="12" Foreground="{StaticResource TextMainBrush}" TextWrapping="Wrap"/>
+                        </Grid>
+                    </Border>
+
+                    <!-- Sequential Step-by-Step Procedure Cards -->
+                    <StackPanel Spacing="10">
+                        <TextBlock Text="Procedure Steps:" FontSize="13" FontWeight="Bold" Foreground="{StaticResource TextMainBrush}"/>
+                        <ItemsControl ItemsSource="{Binding Steps}">
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate DataType="vm:DocStep">
+                                    <Border Classes="matte-card" Margin="0,0,0,8" Padding="14,12" Background="#0E1626">
+                                        <Grid ColumnDefinitions="36, *">
+                                            <!-- Step Number Circle Badge -->
+                                            <Border Grid.Column="0" Width="26" Height="26" CornerRadius="13" Background="{StaticResource PrimaryBrush}" VerticalAlignment="Top" HorizontalAlignment="Left">
+                                                <TextBlock Text="{Binding StepNumber}" FontSize="12" FontWeight="Bold" Foreground="#000000" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                            </Border>
+
+                                            <!-- Step Action & Result -->
+                                            <StackPanel Grid.Column="1" Spacing="4" Margin="4,0,0,0">
+                                                <TextBlock Text="{Binding Title}" FontSize="13" FontWeight="Bold" Foreground="{StaticResource TextMainBrush}"/>
+                                                
+                                                <StackPanel Orientation="Horizontal" Spacing="6" Margin="0,2,0,0">
+                                                    <TextBlock Text="Action:" FontSize="11" FontWeight="SemiBold" Foreground="{StaticResource AccentBrush}"/>
+                                                    <TextBlock Text="{Binding Action}" FontSize="11" Foreground="{StaticResource TextMainBrush}" TextWrapping="Wrap"/>
+                                                </StackPanel>
+
+                                                <StackPanel Orientation="Horizontal" Spacing="6" Margin="0,2,0,0">
+                                                    <TextBlock Text="Result:" FontSize="11" FontWeight="SemiBold" Foreground="#10B981"/>
+                                                    <TextBlock Text="{Binding ExpectedResult}" FontSize="11" Foreground="{StaticResource TextMutedBrush}" TextWrapping="Wrap"/>
+                                                </StackPanel>
+                                            </StackPanel>
+                                        </Grid>
+                                    </Border>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                    </StackPanel>
+
+                    <!-- Notes Callout (Optional) -->
+                    <Border Background="#0F1F2C" CornerRadius="6" Padding="12,10" BorderBrush="{StaticResource PrimaryBrush}" BorderThickness="1,0,0,0"
+                            IsVisible="{Binding Notes, Converter={x:Static ObjectConverters.IsNotNull}}">
+                        <StackPanel Spacing="6">
+                            <TextBlock Text="💡 Technical Notes:" FontSize="12" FontWeight="Bold" Foreground="{StaticResource PrimaryBrush}"/>
+                            <ItemsControl ItemsSource="{Binding Notes}">
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate>
+                                        <TextBlock Text="{Binding StringFormat='• {0}'}" FontSize="11" Foreground="{StaticResource TextMainBrush}" TextWrapping="Wrap" Margin="0,0,0,2"/>
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+                        </StackPanel>
+                    </Border>
+
+                    <!-- Warnings Callout (Optional) -->
+                    <Border Background="#2A1414" CornerRadius="6" Padding="12,10" BorderBrush="#EF4444" BorderThickness="1,0,0,0"
+                            IsVisible="{Binding Warnings, Converter={x:Static ObjectConverters.IsNotNull}}">
+                        <StackPanel Spacing="6">
+                            <TextBlock Text="⚠️ Warning:" FontSize="12" FontWeight="Bold" Foreground="#EF4444"/>
+                            <ItemsControl ItemsSource="{Binding Warnings}">
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate>
+                                        <TextBlock Text="{Binding StringFormat='• {0}'}" FontSize="11" Foreground="{StaticResource TextMainBrush}" TextWrapping="Wrap" Margin="0,0,0,2"/>
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+                        </StackPanel>
+                    </Border>
+                </StackPanel>
+            </ScrollViewer>
+        </Border>
+    </Grid>
+</UserControl>

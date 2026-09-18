@@ -4,19 +4,33 @@
              x:Class="LocalLLMServerManager.Shared.Views.Controls.HuggingFaceTabControl"
              x:DataType="vm:HuggingFaceSearchViewModel">
 
-    <Grid RowDefinitions="Auto, Auto, Auto, *" Margin="0,12,0,0">
+    <Grid RowDefinitions="Auto, Auto, Auto, Auto, *" Margin="0,12,0,0">
         <!-- Search Input Bar -->
         <Grid Grid.Row="0" ColumnDefinitions="*, Auto" Margin="0,0,0,8">
             <TextBox Grid.Column="0" Text="{Binding HfSearchQuery}" PlaceholderText="Search Hugging Face models (e.g. llama 3.3, Wan, LTX, Kokoro, Qwen2-VL)..."
                      Classes="matte-input" VerticalAlignment="Center"/>
             <Button Grid.Column="1" Command="{Binding SearchHuggingFaceCommand}" 
+                    IsEnabled="{Binding !IsLoading}"
                     Classes="matte-primary" Margin="8,0,0,0" VerticalAlignment="Center">
-                🔍 Search Hub
+                <StackPanel Orientation="Horizontal" Spacing="6">
+                    <TextBlock Text="🔍" IsVisible="{Binding !IsLoading}"/>
+                    <TextBlock Text="⏳" IsVisible="{Binding IsLoading}"/>
+                    <TextBlock Text="Search Hub" IsVisible="{Binding !IsLoading}"/>
+                    <TextBlock Text="Searching Hub..." IsVisible="{Binding IsLoading}"/>
+                </StackPanel>
             </Button>
         </Grid>
 
+        <!-- Search Loading Indicator -->
+        <Border Grid.Row="1" IsVisible="{Binding IsLoading}" Background="#1E293B" CornerRadius="6" Padding="12,8" Margin="0,0,0,8">
+            <Grid ColumnDefinitions="Auto, *">
+                <TextBlock Grid.Column="0" Text="🔄 Querying Hugging Face Hub API..." FontSize="12" Foreground="{StaticResource PrimaryBrush}" FontWeight="SemiBold" VerticalAlignment="Center"/>
+                <ProgressBar Grid.Column="1" IsIndeterminate="True" Height="4" Margin="16,0,0,0" VerticalAlignment="Center"/>
+            </Grid>
+        </Border>
+
         <!-- Quick Presets Row -->
-        <ScrollViewer Grid.Row="1" HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Disabled" Margin="0,0,0,8">
+        <ScrollViewer Grid.Row="2" HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Disabled" Margin="0,0,0,8">
             <StackPanel Orientation="Horizontal" Spacing="6">
                 <Button Content="🌟 Multimodal / VLM" Command="{Binding ApplyPresetCommand}" CommandParameter="Multimodal" Classes="matte-pill"/>
                 <Button Content="🦙 Text LLM" Command="{Binding ApplyPresetCommand}" CommandParameter="LLM" Classes="matte-pill"/>
@@ -28,7 +42,7 @@
         </ScrollViewer>
 
         <!-- Modality Matrix & Hardware Compatibility Filter -->
-        <Border Grid.Row="2" Classes="matte-card" Margin="0,0,0,10" Padding="12,10">
+        <Border Grid.Row="3" Classes="matte-card" Margin="0,0,0,10" Padding="12,10">
             <StackPanel Spacing="8">
                 <!-- Inputs & Outputs Matrix -->
                 <Grid ColumnDefinitions="Auto, *, Auto, *">
@@ -69,54 +83,65 @@
             </StackPanel>
         </Border>
 
-        <ScrollViewer Grid.Row="3">
-            <ItemsControl ItemsSource="{Binding FilteredHuggingFaceResults}">
-                <ItemsControl.ItemTemplate>
-                    <DataTemplate DataType="vm:HuggingFaceRepoItem">
-                        <Border Classes="matte-card" Margin="0,0,0,8" Padding="14,12">
-                            <Grid ColumnDefinitions="*, Auto">
-                                <StackPanel Grid.Column="0" Spacing="4">
-                                    <TextBlock Text="{Binding Id}" FontWeight="Bold" FontSize="14" Foreground="{StaticResource SecondaryBrush}"/>
-                                    <TextBlock Text="{Binding Author, StringFormat='Author: {0}'}" FontSize="12" Foreground="{StaticResource TextMutedBrush}"/>
-                                </StackPanel>
-                                <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
-                                    <!-- Ambient Compatibility Pill with Click-to-Inspect -->
-                                    <Button Command="{Binding $parent[UserControl].((vm:HuggingFaceSearchViewModel)DataContext).InspectModelCommand}"
-                                            CommandParameter="{Binding}"
-                                            Background="#1E293B"
-                                            BorderBrush="{Binding FitBadge.BadgeColorHex}"
-                                            BorderThickness="1"
-                                            CornerRadius="6"
-                                            Padding="8,4"
-                                            ToolTip.Tip="{Binding FitBadge.Tooltip}"
-                                            IsVisible="{Binding FitBadge, Converter={x:Static ObjectConverters.IsNotNull}}"
-                                            Cursor="Hand"
-                                            VerticalAlignment="Center">
-                                        <StackPanel Orientation="Horizontal" Spacing="4">
-                                            <TextBlock Text="{Binding FitBadge.BadgeText}" FontSize="11" Foreground="{Binding FitBadge.BadgeColorHex}" FontWeight="Bold"/>
-                                            <TextBlock Text="⚡ Check Fit" FontSize="10" Foreground="{StaticResource TextMutedBrush}" VerticalAlignment="Center"/>
-                                        </StackPanel>
-                                    </Button>
+        <ScrollViewer Grid.Row="4">
+            <StackPanel>
+                <!-- Empty Results State -->
+                <Border IsVisible="{Binding !FilteredHuggingFaceResults.Count}" Padding="30" HorizontalAlignment="Center">
+                    <StackPanel Spacing="8" HorizontalAlignment="Center">
+                        <TextBlock Text="🔍" FontSize="36" HorizontalAlignment="Center"/>
+                        <TextBlock Text="No models found matching your search criteria" FontSize="14" FontWeight="SemiBold" Foreground="{StaticResource TextMainBrush}" HorizontalAlignment="Center"/>
+                        <TextBlock Text="Try adjusting keywords, modality filters, or hardware fit toggles above." FontSize="12" Foreground="{StaticResource TextMutedBrush}" HorizontalAlignment="Center"/>
+                    </StackPanel>
+                </Border>
 
-                                    <Border Classes="matte-pill" Padding="8,4" IsVisible="{Binding PipelineTag, Converter={x:Static StringConverters.IsNotNullOrEmpty}}">
-                                        <TextBlock Text="{Binding PipelineTag}" FontSize="11" Foreground="{StaticResource AccentBrush}" FontWeight="SemiBold"/>
-                                    </Border>
-                                    <Border Classes="matte-pill" Padding="8,4">
-                                        <TextBlock Text="{Binding Downloads, StringFormat='⬇️ {0:N0}'}" FontSize="11" Foreground="{StaticResource TextMainBrush}" FontWeight="SemiBold"/>
-                                    </Border>
-                                    <Border Classes="matte-pill" Padding="8,4">
-                                        <TextBlock Text="{Binding Likes, StringFormat='❤️ {0:N0}'}" FontSize="11" Foreground="{StaticResource AccentBrush}" FontWeight="Bold"/>
-                                    </Border>
-                                </StackPanel>
-                            </Grid>
-                        </Border>
-                    </DataTemplate>
-                </ItemsControl.ItemTemplate>
-            </ItemsControl>
+                <ItemsControl ItemsSource="{Binding FilteredHuggingFaceResults}">
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate DataType="vm:HuggingFaceRepoItem">
+                            <Border Classes="matte-card" Margin="0,0,0,8" Padding="14,12">
+                                <Grid ColumnDefinitions="*, Auto">
+                                    <StackPanel Grid.Column="0" Spacing="4">
+                                        <TextBlock Text="{Binding Id}" FontWeight="Bold" FontSize="14" Foreground="{StaticResource SecondaryBrush}"/>
+                                        <TextBlock Text="{Binding Author, StringFormat='Author: {0}'}" FontSize="12" Foreground="{StaticResource TextMutedBrush}"/>
+                                    </StackPanel>
+                                    <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+                                        <!-- Ambient Compatibility Pill with Click-to-Inspect -->
+                                        <Button Command="{Binding $parent[UserControl].((vm:HuggingFaceSearchViewModel)DataContext).InspectModelCommand}"
+                                                CommandParameter="{Binding}"
+                                                Background="#1E293B"
+                                                BorderBrush="{Binding FitBadge.BadgeColorHex}"
+                                                BorderThickness="1"
+                                                CornerRadius="6"
+                                                Padding="8,4"
+                                                ToolTip.Tip="{Binding FitBadge.Tooltip}"
+                                                IsVisible="{Binding FitBadge, Converter={x:Static ObjectConverters.IsNotNull}}"
+                                                Cursor="Hand"
+                                                VerticalAlignment="Center">
+                                            <StackPanel Orientation="Horizontal" Spacing="4">
+                                                <TextBlock Text="{Binding FitBadge.BadgeText}" FontSize="11" Foreground="{Binding FitBadge.BadgeColorHex}" FontWeight="Bold"/>
+                                                <TextBlock Text="⚡ Check Fit" FontSize="10" Foreground="{StaticResource TextMutedBrush}" VerticalAlignment="Center"/>
+                                            </StackPanel>
+                                        </Button>
+
+                                        <Border Classes="matte-pill" Padding="8,4" IsVisible="{Binding PipelineTag, Converter={x:Static StringConverters.IsNotNullOrEmpty}}">
+                                            <TextBlock Text="{Binding PipelineTag}" FontSize="11" Foreground="{StaticResource AccentBrush}" FontWeight="SemiBold"/>
+                                        </Border>
+                                        <Border Classes="matte-pill" Padding="8,4">
+                                            <TextBlock Text="{Binding Downloads, StringFormat='⬇️ {0:N0}'}" FontSize="11" Foreground="{StaticResource TextMainBrush}" FontWeight="SemiBold"/>
+                                        </Border>
+                                        <Border Classes="matte-pill" Padding="8,4">
+                                            <TextBlock Text="{Binding Likes, StringFormat='❤️ {0:N0}'}" FontSize="11" Foreground="{StaticResource AccentBrush}" FontWeight="Bold"/>
+                                        </Border>
+                                    </StackPanel>
+                                </Grid>
+                            </Border>
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+            </StackPanel>
         </ScrollViewer>
 
         <!-- Modal overlay for fetching quant files -->
-        <Border Grid.Row="0" Grid.RowSpan="3" Background="#AA000000" IsVisible="{Binding IsHfModalOpen}" ZIndex="50">
+        <Border Grid.Row="0" Grid.RowSpan="5" Background="#AA000000" IsVisible="{Binding IsHfModalOpen}" ZIndex="50">
             <Border Classes="matte-card" Width="550" HorizontalAlignment="Center" VerticalAlignment="Center" Padding="20">
                 <StackPanel Spacing="12">
                     <Grid ColumnDefinitions="*, Auto">
@@ -127,6 +152,7 @@
                         <Button Grid.Column="1" Content="✕" Command="{Binding CloseHfModalCommand}" Classes="matte-secondary" Padding="8,4"/>
                     </Grid>
                     <TextBlock Text="Available GGUF Quantizations" FontSize="12" FontWeight="SemiBold" Foreground="{StaticResource TextMainBrush}"/>
+                    <ProgressBar IsIndeterminate="True" Height="3" IsVisible="{Binding IsModalLoading}" Margin="0,2,0,4"/>
                     <ScrollViewer MaxHeight="300">
                         <ItemsControl ItemsSource="{Binding ModalHfFiles}">
                             <ItemsControl.ItemTemplate>

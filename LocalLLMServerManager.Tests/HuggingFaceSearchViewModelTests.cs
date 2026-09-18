@@ -232,4 +232,56 @@ public class HuggingFaceSearchViewModelTests
         vm.CloseHfModal();
         Assert.False(vm.IsHfModalOpen);
     }
+
+    [Fact]
+    public async Task SearchHuggingFaceAsync_TogglesIsLoadingProperly()
+    {
+        var mockHf = new Mock<IHuggingFaceSearchService>();
+        var tcs = new TaskCompletionSource<List<HuggingFaceRepoItem>>();
+        mockHf.Setup(s => s.SearchRepositoriesAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string?>(), It.IsAny<HttpClient>()))
+            .Returns(tcs.Task);
+
+        var vm = new HuggingFaceSearchViewModel(mockHf.Object);
+        vm.SelectedPipelineTag = "text-generation";
+        Assert.False(vm.IsLoading);
+
+        using var client = new HttpClient();
+        var task = vm.SearchHuggingFaceAsync("http://localhost", client);
+        Assert.True(vm.IsLoading);
+
+        tcs.SetResult(new List<HuggingFaceRepoItem>
+        {
+            new HuggingFaceRepoItem("test-repo/model1", "test-repo", 10, "1k", "text-generation", null)
+        });
+
+        await task;
+        Assert.False(vm.IsLoading);
+        Assert.Single(vm.FilteredHuggingFaceResults);
+    }
+
+    [Fact]
+    public async Task OpenHfModalAsync_TogglesIsModalLoadingProperly()
+    {
+        var mockHf = new Mock<IHuggingFaceSearchService>();
+        var tcs = new TaskCompletionSource<List<HfFileQuantItem>>();
+        mockHf.Setup(s => s.FetchQuantizationsAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<HttpClient>()))
+            .Returns(tcs.Task);
+
+        var vm = new HuggingFaceSearchViewModel(mockHf.Object);
+        Assert.False(vm.IsModalLoading);
+
+        using var client = new HttpClient();
+        var task = vm.OpenHfModalAsync("test/repo", "http://localhost", client);
+        Assert.True(vm.IsHfModalOpen);
+        Assert.True(vm.IsModalLoading);
+
+        tcs.SetResult(new List<HfFileQuantItem>
+        {
+            new HfFileQuantItem("test.Q4.gguf", "Q4", "2 GB", 2000000L, null)
+        });
+
+        await task;
+        Assert.False(vm.IsModalLoading);
+        Assert.Single(vm.ModalHfFiles);
+    }
 }

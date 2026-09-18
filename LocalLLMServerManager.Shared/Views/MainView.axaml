@@ -27,32 +27,27 @@
 
         <!-- Main Content Area: Native Avalonia XAML Tabs -->
         <TabControl Grid.Row="1" SelectedIndex="{Binding SelectedTabIndex}" Background="Transparent" Margin="16,0,16,0">
-            <!-- TAB 1: Installed LLM Models & KV Cache Calculator -->
-            <TabItem Header="🦙 Installed Models">
-                <controls:OllamaModelsTabControl DataContext="{Binding Ollama}"/>
+            <!-- TAB 1: Models (Downloaded, Hugging Face Hub, CivitAI Hub) -->
+            <TabItem Header="📦 Models">
+                <controls:ModelsTabControl DataContext="{Binding}"/>
             </TabItem>
 
-            <!-- TAB 2: Hugging Face GGUF Hub -->
-            <TabItem Header="🤗 Hugging Face Hub">
-                <controls:HuggingFaceTabControl DataContext="{Binding HuggingFace}"/>
-            </TabItem>
-
-            <!-- TAB 3: CivitAI Stable Diffusion Hub -->
-            <TabItem Header="🎨 CivitAI Models">
-                <controls:CivitaiTabControl DataContext="{Binding Civitai}"/>
-            </TabItem>
-
-            <!-- TAB 4: Image & 3D AI Engines -->
-            <TabItem Header="📦 3D &amp; ComfyUI Studio">
+            <!-- TAB 2: Workflows (Image, Text, Video, 3D Mesh, Audio) -->
+            <TabItem Header="⚡ Workflows">
                 <controls:EngineStudioTabControl DataContext="{Binding}"/>
             </TabItem>
 
-            <!-- TAB 5: Can I Run It Hardware Fit Calculator -->
+            <!-- TAB 3: Can I Run It Hardware Fit Calculator -->
             <TabItem Header="⚡ Can I Run It">
                 <controls:CanIRunItView DataContext="{Binding HardwareFit}"/>
             </TabItem>
 
-            <!-- TAB 6: Remote Access & Settings -->
+            <!-- TAB 4: In-App ASD-STE100 Documentation -->
+            <TabItem Header="📖 Documentation">
+                <controls:DocumentationTabControl DataContext="{Binding Documentation}"/>
+            </TabItem>
+
+            <!-- TAB 5: Remote Access & Settings -->
             <TabItem Header="⚙️ Settings">
                 <controls:SettingsTabControl DataContext="{Binding Settings}"/>
             </TabItem>

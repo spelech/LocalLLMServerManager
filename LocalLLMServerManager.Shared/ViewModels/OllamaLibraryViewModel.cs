@@ -21,6 +21,7 @@ public partial class OllamaLibraryViewModel : ObservableObject
 
     public ObservableCollection<OllamaModelItem> InstalledModels { get; } = new();
     public ObservableCollection<OllamaModelItem> FilteredInstalledModels { get; } = new();
+    [ObservableProperty] private OllamaModelItem? _selectedInstalledModel;
 
     [ObservableProperty] private bool _isFullVramActive = true;
     [ObservableProperty] private bool _isPartialOffloadActive = true;
