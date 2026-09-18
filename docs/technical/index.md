@@ -24,4 +24,4 @@ Welcome to the **Technical Reference** for the **Local LLM Server Manager**. Thi
 * **Web UI & Proxy**: ASP.NET Core Minimal APIs + Kestrel reverse proxy
 * **Process Management**: Win32 Job Objects (Windows) / `kill -TERM` process groups (Linux)
 * **Testing**: xUnit, Moq, Playwright, Playwright Layout Inspector
-* **Documentation**: VitePress with ASD-STE100 writing principles
+* **Documentation**: VitePress with clear, structured writing guidelines

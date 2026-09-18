@@ -10,7 +10,7 @@
             <Grid RowDefinitions="Auto, *">
                 <StackPanel Grid.Row="0" Spacing="4" Margin="0,0,0,12">
                     <TextBlock Text="📖 User Manual &amp; Guides" FontSize="14" FontWeight="Bold" Foreground="{StaticResource TextMainBrush}"/>
-                    <TextBlock Text="ASD-STE100 Simplified Technical English" FontSize="10" Foreground="{StaticResource TextMutedBrush}"/>
+                    <TextBlock Text="Step-by-Step Instructions" FontSize="10" Foreground="{StaticResource TextMutedBrush}"/>
                 </StackPanel>
 
                 <ScrollViewer Grid.Row="1">
@@ -53,7 +53,7 @@
                             <TextBlock Text="{Binding Summary}" FontSize="13" Foreground="{StaticResource TextMutedBrush}" TextWrapping="Wrap" Margin="0,2,0,0"/>
                         </StackPanel>
                         <Border Grid.Column="1" Classes="matte-pill" Padding="8,4" VerticalAlignment="Top" Background="#1A2234" BorderBrush="{StaticResource PrimaryBrush}" BorderThickness="1">
-                            <TextBlock Text="ASD-STE100 Verified" FontSize="10" Foreground="{StaticResource PrimaryBrush}" FontWeight="Bold"/>
+                            <TextBlock Text="Verified Guide" FontSize="10" Foreground="{StaticResource PrimaryBrush}" FontWeight="Bold"/>
                         </Border>
                     </Grid>
 

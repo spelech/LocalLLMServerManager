@@ -21,7 +21,7 @@ export default defineConfig({
       { text: 'Studio', link: '/studio/' },
       { text: 'AI & MCP', link: '/ai-and-mcp/' },
       { text: 'Technical Reference', link: '/technical/' },
-      { text: 'STE-100 Rules', link: '/standards/ste-100' }
+      { text: 'Style Guide', link: '/standards/ste-100' }
     ],
 
     sidebar: {
@@ -91,7 +91,7 @@ export default defineConfig({
         {
           text: 'Writing Guidelines',
           items: [
-            { text: 'ASD-STE100 Rules', link: '/standards/ste-100' }
+            { text: 'Documentation Style Guide', link: '/standards/ste-100' }
           ]
         }
       ]

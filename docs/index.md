@@ -60,5 +60,5 @@ Explore the documentation guides to set up and operate your local AI stack:
 - [First-Time Configuration](./getting-started/configuration.md): Auto-detect engines, configure ports, and set model paths.
 - [Quickstart Tutorial](./getting-started/quickstart.md): Download your first model and send your first prompt.
 - [Troubleshooting Guide](./getting-started/troubleshooting.md): Resolve VRAM issues, port conflicts, and network errors.
-- [ASD-STE100 Writing Rules](./standards/ste-100.md): Review writing standards for this documentation site.
+- [Documentation Style Guide](./standards/ste-100.md): Review writing standards for this documentation site.
 - [Technical Reference](./technical/index.md): Read system architecture specifications and developer guides.
