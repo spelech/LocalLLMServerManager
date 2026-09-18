@@ -51,23 +51,23 @@ public class AvaloniaHeadlessInteractionTests
 
         var tabControl = view.GetVisualDescendants().OfType<TabControl>().FirstOrDefault();
         Assert.NotNull(tabControl);
-        Assert.Equal(6, tabControl.Items.Count);
+        Assert.Equal(5, tabControl.Items.Count);
 
-        // Switch to Tab 3 (CivitAI)
+        // Switch to Tab 2 (Workflows)
+        tabControl.SelectedIndex = 1;
+        Assert.Equal(1, tabControl.SelectedIndex);
+
+        // Switch to Tab 3 (Can I Run It)
         tabControl.SelectedIndex = 2;
         Assert.Equal(2, tabControl.SelectedIndex);
 
-        // Switch to Tab 4 (Studio)
+        // Switch to Tab 4 (Documentation)
         tabControl.SelectedIndex = 3;
         Assert.Equal(3, tabControl.SelectedIndex);
 
-        // Switch to Tab 5 (Can I Run It)
+        // Switch to Tab 5 (Settings)
         tabControl.SelectedIndex = 4;
         Assert.Equal(4, tabControl.SelectedIndex);
-
-        // Switch to Tab 6 (Settings)
-        tabControl.SelectedIndex = 5;
-        Assert.Equal(5, tabControl.SelectedIndex);
 
         window.Close();
     }
@@ -154,13 +154,13 @@ public class AvaloniaHeadlessInteractionTests
         // Perform navigation
         vm.NavigateToCanIRunIt("DeepSeek R1 70B", "LLM");
 
-        Assert.Equal(4, vm.SelectedTabIndex);
+        Assert.Equal(2, vm.SelectedTabIndex);
         Assert.Equal("DeepSeek R1 70B", vm.HardwareFit.SelectedPreset);
         Assert.Equal(70.0, vm.HardwareFit.ParametersBillions);
 
         var tabControl = view.GetVisualDescendants().OfType<TabControl>().FirstOrDefault();
         Assert.NotNull(tabControl);
-        Assert.Equal(4, tabControl.SelectedIndex);
+        Assert.Equal(2, tabControl.SelectedIndex);
 
         // Verify CanIRunItView rendered
         var canIRunItView = view.GetVisualDescendants().OfType<CanIRunItView>().FirstOrDefault();
@@ -290,7 +290,7 @@ public class AvaloniaHeadlessInteractionTests
 
         checkFitBtn.Command?.Execute(checkFitBtn.CommandParameter);
 
-        Assert.Equal(4, vm.SelectedTabIndex);
+        Assert.Equal(2, vm.SelectedTabIndex);
         Assert.Equal("Video", vm.HardwareFit.SelectedModality);
 
         window.Close();
@@ -313,7 +313,7 @@ public class AvaloniaHeadlessInteractionTests
 
         checkFitBtn.Command?.Execute(checkFitBtn.CommandParameter);
 
-        Assert.Equal(4, vm.SelectedTabIndex);
+        Assert.Equal(2, vm.SelectedTabIndex);
         Assert.Equal("Image", vm.HardwareFit.SelectedModality);
 
         window.Close();
@@ -336,7 +336,7 @@ public class AvaloniaHeadlessInteractionTests
 
         checkFitBtn.Command?.Execute(checkFitBtn.CommandParameter);
 
-        Assert.Equal(4, vm.SelectedTabIndex);
+        Assert.Equal(2, vm.SelectedTabIndex);
         Assert.Equal("LLM", vm.HardwareFit.SelectedModality);
 
         window.Close();
@@ -382,7 +382,7 @@ public class AvaloniaHeadlessInteractionTests
         // Switch to Settings Tab
         var tabControl = view.GetVisualDescendants().OfType<TabControl>().FirstOrDefault();
         Assert.NotNull(tabControl);
-        tabControl.SelectedIndex = 5;
+        tabControl.SelectedIndex = 4;
         Avalonia.Threading.Dispatcher.UIThread.RunJobs();
 
         var settingsControl = view.GetVisualDescendants().OfType<SettingsTabControl>().FirstOrDefault();
@@ -433,7 +433,7 @@ public class AvaloniaHeadlessInteractionTests
 
         var tabControl = view.GetVisualDescendants().OfType<TabControl>().FirstOrDefault();
         Assert.NotNull(tabControl);
-        tabControl.SelectedIndex = 5;
+        tabControl.SelectedIndex = 4;
         Avalonia.Threading.Dispatcher.UIThread.RunJobs();
 
         var settingsControl = view.GetVisualDescendants().OfType<SettingsTabControl>().FirstOrDefault();

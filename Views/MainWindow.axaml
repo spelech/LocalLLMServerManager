@@ -15,6 +15,68 @@
         ExtendClientAreaToDecorationsHint="True"
         ExtendClientAreaTitleBarHeightHint="-1">
 
-    <sharedViews:MainView />
+    <Window.Styles>
+        <Style Selector="Button.window-control-btn">
+            <Setter Property="Width" Value="42"/>
+            <Setter Property="Height" Value="34"/>
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="CornerRadius" Value="0"/>
+            <Setter Property="Padding" Value="0"/>
+            <Setter Property="HorizontalContentAlignment" Value="Center"/>
+            <Setter Property="VerticalContentAlignment" Value="Center"/>
+        </Style>
+        <Style Selector="Button.window-control-btn:pointerover">
+            <Setter Property="Background" Value="#33FFFFFF"/>
+        </Style>
+        <Style Selector="Button.window-close-btn:pointerover">
+            <Setter Property="Background" Value="#E81123"/>
+        </Style>
+        <Style Selector="Button.window-close-btn:pointerover TextBlock">
+            <Setter Property="Foreground" Value="White"/>
+        </Style>
+    </Window.Styles>
+
+    <Grid RowDefinitions="Auto, *">
+        <!-- Draggable Window Titlebar / Taskbar -->
+        <Border Grid.Row="0"
+                x:Name="TitleBar"
+                Height="34"
+                Background="{StaticResource BgSurfaceBrush}"
+                BorderBrush="{StaticResource GlassBorderBrush}"
+                BorderThickness="0,0,0,1"
+                PointerPressed="OnTitleBarPointerPressed"
+                DoubleTapped="OnTitleBarDoubleTapped">
+            <Grid ColumnDefinitions="Auto, *, Auto">
+                <!-- App Icon and Title -->
+                <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="8" Margin="14,0,0,0" VerticalAlignment="Center" IsHitTestVisible="False">
+                    <Image Source="avares://LocalLLMServerManager/Assets/app-icon.png" Width="16" Height="16" VerticalAlignment="Center"/>
+                    <TextBlock Text="Local LLM Server Manager" FontWeight="Bold" FontSize="12" Foreground="{StaticResource TextMainBrush}" VerticalAlignment="Center"/>
+                    <Border Classes="matte-pill" Padding="6,2" Margin="4,0,0,0" VerticalAlignment="Center">
+                        <TextBlock Text="v3.13.1" FontSize="10" Foreground="{StaticResource TextMutedBrush}" FontWeight="SemiBold"/>
+                    </Border>
+                </StackPanel>
+
+                <!-- Center Drag Region -->
+                <Panel Grid.Column="1" Background="Transparent" HorizontalAlignment="Stretch" VerticalAlignment="Stretch"/>
+
+                <!-- Window Control Buttons (Minimize, Maximize/Restore, Close) -->
+                <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="0" VerticalAlignment="Center">
+                    <Button x:Name="MinimizeBtn" Click="OnMinimizeClicked" Classes="window-control-btn" ToolTip.Tip="Minimize">
+                        <TextBlock Text="—" FontSize="11" Foreground="{StaticResource TextMutedBrush}"/>
+                    </Button>
+                    <Button x:Name="MaximizeBtn" Click="OnMaximizeClicked" Classes="window-control-btn" ToolTip.Tip="Maximize / Restore">
+                        <TextBlock x:Name="MaximizeIcon" Text="🗖" FontSize="11" Foreground="{StaticResource TextMutedBrush}"/>
+                    </Button>
+                    <Button x:Name="CloseBtn" Click="OnCloseClicked" Classes="window-control-btn window-close-btn" ToolTip.Tip="Close to Tray">
+                        <TextBlock Text="✕" FontSize="11" Foreground="{StaticResource TextMutedBrush}"/>
+                    </Button>
+                </StackPanel>
+            </Grid>
+        </Border>
+
+        <!-- Main Content Area -->
+        <sharedViews:MainView Grid.Row="1" />
+    </Grid>
 </Window>
 

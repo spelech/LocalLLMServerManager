@@ -18,8 +18,20 @@ public partial class CivitaiSearchViewModel : ObservableObject
 
     [ObservableProperty] private string _civitaiSearchQuery = "";
     [ObservableProperty] private string _selectedCivitaiType = "Checkpoint";
+    [ObservableProperty] private bool _isLoading = false;
     public ObservableCollection<CivitaiModelItem> CivitaiResults { get; } = new();
     public ObservableCollection<CivitaiModelItem> FilteredCivitaiResults { get; } = new();
+    public ObservableCollection<CivitaiModelItem> StarterModels { get; } = new();
+
+    public static readonly List<CivitaiModelItem> DefaultStarterModels = new()
+    {
+        new CivitaiModelItem(133005, "Juggernaut XL", "Checkpoint", "avares://LocalLLMServerManager/Assets/app-icon.png", "https://civitai.com/api/download/models/456789", "juggernautXL_v9Rundiffusion.safetensors", 4.9, 850000, null, 6950000000L),
+        new CivitaiModelItem(4384, "DreamShaper XL", "Checkpoint", "avares://LocalLLMServerManager/Assets/app-icon.png", "https://civitai.com/api/download/models/354678", "dreamshaperXL_v21TurboDPMSDE.safetensors", 4.8, 720000, null, 6800000000L),
+        new CivitaiModelItem(4201, "Realistic Vision V6.0 B1", "Checkpoint", "avares://LocalLLMServerManager/Assets/app-icon.png", "https://civitai.com/api/download/models/245678", "realisticVisionV60B1_v60B1VAE.safetensors", 4.9, 1250000, null, 4200000000L),
+        new CivitaiModelItem(260267, "Animagine XL V3.1", "Checkpoint", "avares://LocalLLMServerManager/Assets/app-icon.png", "https://civitai.com/api/download/models/567890", "animagineXLV31_v31.safetensors", 4.7, 340000, null, 6940000000L),
+        new CivitaiModelItem(139562, "Detail Tweaker LoRA", "LORA", "avares://LocalLLMServerManager/Assets/app-icon.png", "https://civitai.com/api/download/models/123456", "add_detail.safetensors", 4.9, 980000, null, 144000000L),
+        new CivitaiModelItem(618692, "Flux.1 Dev - FP8", "Checkpoint", "avares://LocalLLMServerManager/Assets/app-icon.png", "https://civitai.com/api/download/models/789012", "flux1-dev-fp8.safetensors", 4.9, 420000, null, 12000000000L)
+    };
 
     // Hardware Compatibility Filter Flags
     [ObservableProperty] private bool _isFullVramActive = true;
@@ -48,6 +60,17 @@ public partial class CivitaiSearchViewModel : ObservableObject
         _canIRunItService = canIRunItService ?? new CanIRunItService();
         _telemetryService = telemetryService;
         CivitaiResults.CollectionChanged += (s, e) => ApplyFilter();
+        InitStarterModels();
+    }
+
+    private void InitStarterModels()
+    {
+        StarterModels.Clear();
+        foreach (var s in DefaultStarterModels)
+        {
+            var badge = _canIRunItService.EvaluateQuickFit(s.Name, s.SizeBytes > 0 ? s.SizeBytes : null, "Image", (long)TotalVramMb, (long)TotalRamMb);
+            StarterModels.Add(s with { FitBadge = badge });
+        }
     }
 
     public void UpdateHardwareTelemetry(double totalVramMb, double totalRamMb)
@@ -65,6 +88,12 @@ public partial class CivitaiSearchViewModel : ObservableObject
             var r = CivitaiResults[i];
             var badge = _canIRunItService.EvaluateQuickFit(r.Name, r.SizeBytes > 0 ? r.SizeBytes : null, "Image", (long)TotalVramMb, (long)TotalRamMb);
             CivitaiResults[i] = r with { FitBadge = badge };
+        }
+        for (int i = 0; i < StarterModels.Count; i++)
+        {
+            var s = StarterModels[i];
+            var badge = _canIRunItService.EvaluateQuickFit(s.Name, s.SizeBytes > 0 ? s.SizeBytes : null, "Image", (long)TotalVramMb, (long)TotalRamMb);
+            StarterModels[i] = s with { FitBadge = badge };
         }
         ApplyFilter();
     }
@@ -125,6 +154,23 @@ public partial class CivitaiSearchViewModel : ObservableObject
     partial void OnIsOomActiveChanged(bool value) => ApplyFilter();
 
     [RelayCommand]
+    public void ApplyStarterChip(string? chip)
+    {
+        var clean = (chip ?? "").Replace("🌟", "").Replace("📸", "").Replace("🎨", "").Replace("🎭", "").Replace("⚡", "").Replace("🔮", "").Trim();
+        if (clean.Contains("LoRA", StringComparison.OrdinalIgnoreCase))
+        {
+            SelectedCivitaiType = "LORA";
+            CivitaiSearchQuery = clean.Replace("LoRA", "", StringComparison.OrdinalIgnoreCase).Trim();
+        }
+        else
+        {
+            SelectedCivitaiType = "Checkpoint";
+            CivitaiSearchQuery = clean;
+        }
+        _ = SearchCivitaiAsync();
+    }
+
+    [RelayCommand]
     public void NavigateToCanIRunIt(string? modelName)
     {
         if (!string.IsNullOrWhiteSpace(modelName))
@@ -150,6 +196,7 @@ public partial class CivitaiSearchViewModel : ObservableObject
 
     public async Task SearchCivitaiAsync(string apiBase, HttpClient http)
     {
+        IsLoading = true;
         try
         {
             var results = await _civitaiSearchService.SearchModelsAsync(apiBase, CivitaiSearchQuery, SelectedCivitaiType, "Most Downloaded", http);
@@ -164,6 +211,10 @@ public partial class CivitaiSearchViewModel : ObservableObject
         catch
         {
             ToastService.Instance.Show("Failed to search CivitAI models.", ToastType.Error);
+        }
+        finally
+        {
+            IsLoading = false;
         }
     }
 

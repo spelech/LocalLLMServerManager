@@ -260,7 +260,7 @@ public class CardFitBadgeTests
         var hfItem = new HuggingFaceRepoItem("Wan-AI/Wan2.1-T2V-14B", "Wan-AI", 100, "10K", "text-to-video");
         mainVm.HuggingFace.InspectModelCommand.Execute(hfItem);
 
-        Assert.Equal(4, mainVm.SelectedTabIndex);
+        Assert.Equal(2, mainVm.SelectedTabIndex);
         Assert.Equal("Video", mainVm.HardwareFit.SelectedModality);
         Assert.Equal("Wan 2.2 14B", mainVm.HardwareFit.SelectedVideoPreset);
 
@@ -268,15 +268,15 @@ public class CardFitBadgeTests
         var civItem = new CivitaiModelItem(1, "Flux.1 Dev", "Checkpoint", "", "", "flux.safetensors", 4.9, 100);
         mainVm.Civitai.InspectModelCommand.Execute(civItem);
 
-        Assert.Equal(4, mainVm.SelectedTabIndex);
+        Assert.Equal(2, mainVm.SelectedTabIndex);
         Assert.Equal("Image", mainVm.HardwareFit.SelectedModality);
         Assert.Equal("Flux.1 Dev", mainVm.HardwareFit.SelectedImagePreset);
 
         // 3. Check Ollama sub-viewmodel navigation
-        var ollamaItem = new OllamaModelItem("llama3.3:70b", "42 GB", "ð» Coding & General", "#38BDF8", false);
+        var ollamaItem = new OllamaModelItem("llama3.3:70b", "42 GB", "ðŸ’» Coding & General", "#38BDF8", false);
         mainVm.Ollama.InspectModelCommand.Execute(ollamaItem);
 
-        Assert.Equal(4, mainVm.SelectedTabIndex);
+        Assert.Equal(2, mainVm.SelectedTabIndex);
         Assert.Equal("LLM", mainVm.HardwareFit.SelectedModality);
         Assert.Equal("Llama 3.3 70B", mainVm.HardwareFit.SelectedPreset);
     }

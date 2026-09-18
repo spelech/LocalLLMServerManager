@@ -124,4 +124,55 @@ public class CivitaiSearchViewModelTests
 
         await vm.DownloadCivitaiModelAsync(item, "http://localhost:5246", client);
     }
+
+    [Fact]
+    public void StarterModels_ArePopulatedOnInitialization_WithQuickFitBadges()
+    {
+        var mockCivitai = new Mock<ICivitaiSearchService>();
+        var vm = new CivitaiSearchViewModel(mockCivitai.Object);
+
+        Assert.NotEmpty(vm.StarterModels);
+        Assert.True(vm.StarterModels.Count >= 5);
+        Assert.All(vm.StarterModels, s => Assert.NotNull(s.FitBadge));
+    }
+
+    [Fact]
+    public void ApplyStarterChip_SetsQueryAndSelectedType()
+    {
+        var mockCivitai = new Mock<ICivitaiSearchService>();
+        var vm = new CivitaiSearchViewModel(mockCivitai.Object);
+
+        vm.ApplyStarterChip("🎭 Detail LoRA");
+        Assert.Equal("LORA", vm.SelectedCivitaiType);
+        Assert.Equal("Detail", vm.CivitaiSearchQuery);
+
+        vm.ApplyStarterChip("🌟 SDXL");
+        Assert.Equal("Checkpoint", vm.SelectedCivitaiType);
+        Assert.Equal("SDXL", vm.CivitaiSearchQuery);
+    }
+
+    [Fact]
+    public async Task SearchCivitaiAsync_TogglesIsLoadingProperly()
+    {
+        var mockCivitai = new Mock<ICivitaiSearchService>();
+        var tcs = new TaskCompletionSource<List<CivitaiModelItem>>();
+        mockCivitai.Setup(s => s.SearchModelsAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<HttpClient>()))
+            .Returns(tcs.Task);
+
+        var vm = new CivitaiSearchViewModel(mockCivitai.Object);
+        Assert.False(vm.IsLoading);
+
+        using var client = new HttpClient();
+        var task = vm.SearchCivitaiAsync("http://localhost:5246", client);
+        Assert.True(vm.IsLoading);
+
+        tcs.SetResult(new List<CivitaiModelItem>
+        {
+            new CivitaiModelItem(1, "Test Checkpoint", "Checkpoint", "http://img", "http://dl", "test.safetensors", 4.5, 100)
+        });
+
+        await task;
+        Assert.False(vm.IsLoading);
+        Assert.Single(vm.CivitaiResults);
+    }
 }

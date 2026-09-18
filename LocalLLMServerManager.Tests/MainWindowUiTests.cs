@@ -21,4 +21,19 @@ public class MainWindowUiTests
         Assert.Equal(16384, vm.TargetContextTokens);
         Assert.Equal("~1.0 GB", vm.EstimatedKvCacheText);
     }
+
+    [AvaloniaFact]
+    public void MainWindow_HasTitleBar_AndControlsExist()
+    {
+        var window = new MainWindow();
+        var titleBar = window.FindControl<Border>("TitleBar");
+        var minBtn = window.FindControl<Button>("MinimizeBtn");
+        var maxBtn = window.FindControl<Button>("MaximizeBtn");
+        var closeBtn = window.FindControl<Button>("CloseBtn");
+
+        Assert.NotNull(titleBar);
+        Assert.NotNull(minBtn);
+        Assert.NotNull(maxBtn);
+        Assert.NotNull(closeBtn);
+    }
 }
