@@ -9,6 +9,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using LocalLLMServerManager.Endpoints;
 using LocalLLMServerManager.Services;
+using LocalLLMServerManager.Shared.Interfaces;
 using LocalLLMServerManager.Shared.Models;
 using LocalLLMServerManager.Shared.Services;
 using LocalLLMServerManager.Shared.ViewModels;

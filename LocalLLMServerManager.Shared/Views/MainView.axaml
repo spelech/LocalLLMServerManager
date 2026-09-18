@@ -42,7 +42,12 @@
                 <controls:CanIRunItView DataContext="{Binding HardwareFit}"/>
             </TabItem>
 
-            <!-- TAB 4: In-App ASD-STE100 Documentation -->
+            <!-- TAB 4: In-App AI Assistant & Copilot -->
+            <TabItem Header="🤖 Copilot">
+                <controls:AiAssistantTabControl DataContext="{Binding Assistant}"/>
+            </TabItem>
+
+            <!-- TAB 5: In-App ASD-STE100 Documentation -->
             <TabItem Header="📖 Documentation">
                 <controls:DocumentationTabControl DataContext="{Binding Documentation}"/>
             </TabItem>

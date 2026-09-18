@@ -51,7 +51,7 @@ public class AvaloniaHeadlessInteractionTests
 
         var tabControl = view.GetVisualDescendants().OfType<TabControl>().FirstOrDefault();
         Assert.NotNull(tabControl);
-        Assert.Equal(5, tabControl.Items.Count);
+        Assert.Equal(6, tabControl.Items.Count);
 
         // Switch to Tab 2 (Workflows)
         tabControl.SelectedIndex = 1;
@@ -61,13 +61,17 @@ public class AvaloniaHeadlessInteractionTests
         tabControl.SelectedIndex = 2;
         Assert.Equal(2, tabControl.SelectedIndex);
 
-        // Switch to Tab 4 (Documentation)
+        // Switch to Tab 4 (Copilot)
         tabControl.SelectedIndex = 3;
         Assert.Equal(3, tabControl.SelectedIndex);
 
-        // Switch to Tab 5 (Settings)
+        // Switch to Tab 5 (Documentation)
         tabControl.SelectedIndex = 4;
         Assert.Equal(4, tabControl.SelectedIndex);
+
+        // Switch to Tab 6 (Settings)
+        tabControl.SelectedIndex = 5;
+        Assert.Equal(5, tabControl.SelectedIndex);
 
         window.Close();
     }
@@ -382,7 +386,7 @@ public class AvaloniaHeadlessInteractionTests
         // Switch to Settings Tab
         var tabControl = view.GetVisualDescendants().OfType<TabControl>().FirstOrDefault();
         Assert.NotNull(tabControl);
-        tabControl.SelectedIndex = 4;
+        tabControl.SelectedIndex = 5;
         Avalonia.Threading.Dispatcher.UIThread.RunJobs();
 
         var settingsControl = view.GetVisualDescendants().OfType<SettingsTabControl>().FirstOrDefault();
@@ -433,7 +437,7 @@ public class AvaloniaHeadlessInteractionTests
 
         var tabControl = view.GetVisualDescendants().OfType<TabControl>().FirstOrDefault();
         Assert.NotNull(tabControl);
-        tabControl.SelectedIndex = 4;
+        tabControl.SelectedIndex = 5;
         Avalonia.Threading.Dispatcher.UIThread.RunJobs();
 
         var settingsControl = view.GetVisualDescendants().OfType<SettingsTabControl>().FirstOrDefault();
@@ -677,6 +681,48 @@ public class AvaloniaHeadlessInteractionTests
         {
             vBtn.Command.Execute(vBtn.CommandParameter);
         }
+
+        window.Close();
+    }
+
+    [AvaloniaFact]
+    public void AiAssistantTabControl_VisualTreeRenders_AndBindsViewModel()
+    {
+        var vm = new AiAssistantViewModel();
+        var control = new AiAssistantTabControl { DataContext = vm };
+        var window = new Window { Content = control, Width = 1024, Height = 768 };
+        window.Show();
+        Avalonia.Threading.Dispatcher.UIThread.RunJobs();
+
+        Assert.NotNull(control);
+        Assert.NotNull(control.DataContext);
+
+        // Find header title
+        var textBlocks = control.GetVisualDescendants().OfType<TextBlock>().ToList();
+        var titleBlock = textBlocks.FirstOrDefault(t => t.Text != null && t.Text.Contains("AI Assistant & App Copilot"));
+        Assert.NotNull(titleBlock);
+
+        // Find model badge
+        var modelBlock = textBlocks.FirstOrDefault(t => t.Text != null && t.Text == vm.SelectedModel);
+        Assert.NotNull(modelBlock);
+
+        // Find buttons (Setup, Reload, Clear, Send)
+        var buttons = control.GetVisualDescendants().OfType<Button>().ToList();
+        var setupBtn = buttons.FirstOrDefault(b => b.Content?.ToString()?.Contains("Setup") == true);
+        Assert.NotNull(setupBtn);
+
+        // Toggle setup card
+        setupBtn.Command?.Execute(null);
+        Avalonia.Threading.Dispatcher.UIThread.RunJobs();
+        Assert.True(vm.IsSetupCardVisible);
+
+        // Find prompt input box
+        var textBoxes = control.GetVisualDescendants().OfType<TextBox>().ToList();
+        var inputBox = textBoxes.FirstOrDefault(tb => tb.Watermark != null && tb.Watermark.Contains("Ask anything"));
+        Assert.NotNull(inputBox);
+
+        inputBox.Text = "Hello copilot!";
+        Assert.Equal("Hello copilot!", vm.InputText);
 
         window.Close();
     }

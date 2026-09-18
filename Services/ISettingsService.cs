@@ -1,8 +1,1 @@
-namespace LocalLLMServerManager.Services;
-
-public interface ISettingsService
-{
-    string SettingsFilePath();
-    AppSettings LoadSettings();
-    void SaveSettings(AppSettings settings);
-}
+global using ISettingsService = LocalLLMServerManager.Shared.Interfaces.ISettingsService;
