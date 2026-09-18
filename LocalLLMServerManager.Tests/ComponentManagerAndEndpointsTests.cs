@@ -27,7 +27,7 @@ public class ComponentManagerAndEndpointsTests : IClassFixture<AppTestServerFixt
 
         var components = await response.Content.ReadFromJsonAsync<List<ComponentPackInfo>>();
         Assert.NotNull(components);
-        Assert.Equal(3, components.Count);
+        Assert.Equal(4, components.Count);
 
         var videoPack = components.FirstOrDefault(c => c.Id == "video-generation");
         Assert.NotNull(videoPack);
@@ -43,6 +43,11 @@ public class ComponentManagerAndEndpointsTests : IClassFixture<AppTestServerFixt
         Assert.NotNull(musicPack);
         Assert.Equal("MusicGen & Stable Audio Studio", musicPack.Name);
         Assert.Equal("6.8 GB", musicPack.DiskSizeEstimate);
+
+        var aiPack = components.FirstOrDefault(c => c.Id == "ai-assistant");
+        Assert.NotNull(aiPack);
+        Assert.Equal("In-App AI Assistant & Copilot", aiPack.Name);
+        Assert.Equal("5 MB", aiPack.DiskSizeEstimate);
     }
 
     [Fact]
@@ -59,6 +64,15 @@ public class ComponentManagerAndEndpointsTests : IClassFixture<AppTestServerFixt
         var uninstallReq = new ComponentInstallRequest { ComponentId = "audio-tts" };
         var uninstallResponse = await client.PostAsJsonAsync("/api/components/uninstall", uninstallReq);
         Assert.Equal(HttpStatusCode.OK, uninstallResponse.StatusCode);
+
+        // Install and Uninstall ai-assistant
+        var aiInstallReq = new ComponentInstallRequest { ComponentId = "ai-assistant" };
+        var aiInstallResponse = await client.PostAsJsonAsync("/api/components/install", aiInstallReq);
+        Assert.Equal(HttpStatusCode.OK, aiInstallResponse.StatusCode);
+
+        var aiUninstallReq = new ComponentInstallRequest { ComponentId = "ai-assistant" };
+        var aiUninstallResponse = await client.PostAsJsonAsync("/api/components/uninstall", aiUninstallReq);
+        Assert.Equal(HttpStatusCode.OK, aiUninstallResponse.StatusCode);
     }
 
     [Fact]

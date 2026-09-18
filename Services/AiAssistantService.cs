@@ -1,0 +1,765 @@
+using System;
+using System.ClientModel;
+using System.Collections.Generic;
+using System.Diagnostics;
+using System.IO;
+using System.Linq;
+using System.Net.Http;
+using System.Net.Http.Headers;
+using System.Runtime.CompilerServices;
+using System.Text;
+using System.Text.Json;
+using System.Text.Json.Nodes;
+using System.Threading;
+using System.Threading.Tasks;
+using LocalLLMServerManager.Shared.Interfaces;
+using LocalLLMServerManager.Shared.Models;
+using Microsoft.Extensions.AI;
+using OpenAI;
+using OpenAI.Chat;
+
+namespace LocalLLMServerManager.Services;
+
+public class AiAssistantService : IAiAssistantService
+{
+    private readonly ISettingsService _settingsService;
+    private readonly IPromptManagementService _promptService;
+    private readonly IAiAppTools _appTools;
+    private readonly IHttpClientFactory _httpClientFactory;
+
+    public AiAssistantService(
+        ISettingsService settingsService,
+        IPromptManagementService promptService,
+        IAiAppTools appTools,
+        IHttpClientFactory httpClientFactory)
+    {
+        _settingsService = settingsService;
+        _promptService = promptService;
+        _appTools = appTools;
+        _httpClientFactory = httpClientFactory;
+    }
+
+    public async Task<AiValidationResult> ValidateConnectionAsync(
+        string? endpoint = null,
+        string? apiKey = null,
+        string? model = null,
+        CancellationToken cancellationToken = default)
+    {
+        var settings = _settingsService.LoadSettings();
+        var targetEndpoint = endpoint != null ? endpoint.Trim() : settings.AiAssistantEndpoint;
+        var targetKey = apiKey != null ? apiKey.Trim() : settings.AiAssistantApiKey;
+        var targetModel = model != null ? model.Trim() : settings.AiAssistantModel;
+
+        if (string.IsNullOrWhiteSpace(targetEndpoint))
+        {
+            return new AiValidationResult(false, "API Endpoint URL is required.", new List<string>());
+        }
+
+        var sw = Stopwatch.StartNew();
+        var availableModels = new List<string>();
+
+        try
+        {
+            var uri = new Uri(targetEndpoint.TrimEnd('/'));
+            using var client = _httpClientFactory.CreateClient();
+            client.Timeout = TimeSpan.FromSeconds(10);
+
+            if (!string.IsNullOrWhiteSpace(targetKey))
+            {
+                client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", targetKey);
+            }
+
+            // 1. Fetch available models from /models endpoint
+            var modelsUrl = targetEndpoint.EndsWith("/v1", StringComparison.OrdinalIgnoreCase)
+                ? $"{targetEndpoint}/models"
+                : (targetEndpoint.Contains("/v1/") ? $"{targetEndpoint.Substring(0, targetEndpoint.IndexOf("/v1/") + 3)}/models" : $"{targetEndpoint.TrimEnd('/')}/models");
+
+            HttpResponseMessage? modelsResp = null;
+            string? modelsError = null;
+            try
+            {
+                modelsResp = await client.GetAsync(modelsUrl, cancellationToken);
+                if (modelsResp.IsSuccessStatusCode)
+                {
+                    var json = await modelsResp.Content.ReadAsStringAsync(cancellationToken);
+                    using var doc = JsonDocument.Parse(json);
+                    if (doc.RootElement.TryGetProperty("data", out var dataProp) && dataProp.ValueKind == JsonValueKind.Array)
+                    {
+                        foreach (var el in dataProp.EnumerateArray())
+                        {
+                            if (el.TryGetProperty("id", out var idProp) && !string.IsNullOrWhiteSpace(idProp.GetString()))
+                            {
+                                availableModels.Add(idProp.GetString()!);
+                            }
+                        }
+                    }
+                }
+                else
+                {
+                    var errBody = await modelsResp.Content.ReadAsStringAsync(cancellationToken);
+                    modelsError = $"Endpoint responded with status {(int)modelsResp.StatusCode} ({modelsResp.ReasonPhrase}): {ExtractErrorMessage(errBody)}";
+                }
+            }
+            catch (Exception ex)
+            {
+                modelsError = ex.Message;
+            }
+
+            // 2. Test ping completion with configured or selected model
+            if (!string.IsNullOrWhiteSpace(targetModel))
+            {
+                var completionsUrl = targetEndpoint.EndsWith("/v1", StringComparison.OrdinalIgnoreCase)
+                    ? $"{targetEndpoint}/chat/completions"
+                    : $"{targetEndpoint.TrimEnd('/')}/chat/completions";
+
+                var pingPayload = new
+                {
+                    model = targetModel,
+                    messages = new[] { new { role = "user", content = "ping" } },
+                    max_tokens = 5
+                };
+
+                var postContent = new StringContent(JsonSerializer.Serialize(pingPayload), Encoding.UTF8, "application/json");
+                var pingResp = await client.PostAsync(completionsUrl, postContent, cancellationToken);
+                sw.Stop();
+
+                if (!pingResp.IsSuccessStatusCode)
+                {
+                    var errBody = await pingResp.Content.ReadAsStringAsync(cancellationToken);
+                    return new AiValidationResult(
+                        false,
+                        $"Endpoint responded with status {(int)pingResp.StatusCode} ({pingResp.ReasonPhrase}): {ExtractErrorMessage(errBody)}",
+                        availableModels,
+                        sw.ElapsedMilliseconds);
+                }
+            }
+            else
+            {
+                sw.Stop();
+                if (modelsError != null)
+                {
+                    return new AiValidationResult(
+                        false,
+                        $"Failed to query models from endpoint: {modelsError}",
+                        availableModels,
+                        sw.ElapsedMilliseconds);
+                }
+            }
+
+            return new AiValidationResult(
+                true,
+                $"Connected successfully to {uri.Host} (Latency: {sw.ElapsedMilliseconds} ms, {availableModels.Count} models found)",
+                availableModels,
+                sw.ElapsedMilliseconds);
+        }
+        catch (Exception ex)
+        {
+            sw.Stop();
+            return new AiValidationResult(false, $"Connection failed: {ex.Message}", availableModels, sw.ElapsedMilliseconds);
+        }
+    }
+
+    public async Task<List<string>> GetAvailableModelsAsync(
+        string? endpoint = null,
+        string? apiKey = null,
+        CancellationToken cancellationToken = default)
+    {
+        var capabilities = await GetModelCapabilitiesAsync(endpoint, apiKey, includeLocal: false, cancellationToken);
+        return capabilities.Select(m => m.Id).ToList();
+    }
+
+    public async Task<List<AiModelCapabilityInfo>> GetModelCapabilitiesAsync(
+        string? endpoint = null,
+        string? apiKey = null,
+        bool includeLocal = false,
+        CancellationToken cancellationToken = default)
+    {
+        var settings = _settingsService.LoadSettings();
+        var targetEndpoint = endpoint != null ? endpoint.Trim() : settings.AiAssistantEndpoint;
+        var targetKey = apiKey != null ? apiKey.Trim() : settings.AiAssistantApiKey;
+
+        if (string.IsNullOrWhiteSpace(targetEndpoint))
+        {
+            throw new InvalidOperationException("API Endpoint URL is required.");
+        }
+
+        using var client = _httpClientFactory.CreateClient();
+        client.Timeout = TimeSpan.FromSeconds(10);
+
+        if (!string.IsNullOrWhiteSpace(targetKey))
+        {
+            client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", targetKey);
+        }
+
+        var trimmedEndpoint = targetEndpoint.TrimEnd('/');
+        var baseUrl = trimmedEndpoint;
+        if (trimmedEndpoint.EndsWith("/v1", StringComparison.OrdinalIgnoreCase))
+        {
+            baseUrl = trimmedEndpoint[..^3].TrimEnd('/');
+        }
+        else if (trimmedEndpoint.Contains("/v1/", StringComparison.OrdinalIgnoreCase))
+        {
+            baseUrl = trimmedEndpoint[..trimmedEndpoint.IndexOf("/v1/", StringComparison.OrdinalIgnoreCase)].TrimEnd('/');
+        }
+
+        // 1. Primary discovery: GET /model/info (LiteLLM) or /v1/model_info
+        foreach (var infoUrl in new[] { $"{baseUrl}/model/info", $"{baseUrl}/v1/model_info" })
+        {
+            try
+            {
+                var modelInfoResp = await client.GetAsync(infoUrl, cancellationToken);
+                if (modelInfoResp.IsSuccessStatusCode)
+                {
+                    var json = await modelInfoResp.Content.ReadAsStringAsync(cancellationToken);
+                    var capabilities = ParseModelCapabilitiesFromJson(json, includeLocal);
+                    return capabilities;
+                }
+            }
+            catch (OperationCanceledException)
+            {
+                throw;
+            }
+            catch
+            {
+                // Fall back to next endpoint or /v1/models
+            }
+        }
+
+        // 2. Fallback discovery: GET /v1/models (OpenAI standard)
+        var modelsUrl = trimmedEndpoint.EndsWith("/v1", StringComparison.OrdinalIgnoreCase)
+            ? $"{trimmedEndpoint}/models"
+            : (trimmedEndpoint.Contains("/v1/")
+                ? $"{trimmedEndpoint[..(trimmedEndpoint.IndexOf("/v1/", StringComparison.OrdinalIgnoreCase) + 3)]}/models"
+                : $"{baseUrl}/v1/models");
+
+        try
+        {
+            var modelsResp = await client.GetAsync(modelsUrl, cancellationToken);
+            if (modelsResp.IsSuccessStatusCode)
+            {
+                var json = await modelsResp.Content.ReadAsStringAsync(cancellationToken);
+                return ParseModelCapabilitiesFromJson(json, includeLocal);
+            }
+
+            if (!modelsUrl.Equals($"{baseUrl}/models", StringComparison.OrdinalIgnoreCase))
+            {
+                var altResp = await client.GetAsync($"{baseUrl}/models", cancellationToken);
+                if (altResp.IsSuccessStatusCode)
+                {
+                    var json = await altResp.Content.ReadAsStringAsync(cancellationToken);
+                    return ParseModelCapabilitiesFromJson(json, includeLocal);
+                }
+            }
+
+            var errBody = await modelsResp.Content.ReadAsStringAsync(cancellationToken);
+            throw new InvalidOperationException($"Endpoint responded with status {(int)modelsResp.StatusCode} ({modelsResp.ReasonPhrase}): {ExtractErrorMessage(errBody)}");
+        }
+        catch (OperationCanceledException)
+        {
+            throw;
+        }
+        catch (InvalidOperationException)
+        {
+            throw;
+        }
+        catch (Exception ex)
+        {
+            throw new InvalidOperationException($"Connection failed: {ex.Message}", ex);
+        }
+    }
+
+    public static bool IsLocalModel(string id, string? provider)
+    {
+        if (!string.IsNullOrWhiteSpace(provider))
+        {
+            var p = provider.Trim();
+            if (string.Equals(p, "ollama", StringComparison.OrdinalIgnoreCase) ||
+                string.Equals(p, "local", StringComparison.OrdinalIgnoreCase) ||
+                string.Equals(p, "llama.cpp", StringComparison.OrdinalIgnoreCase) ||
+                string.Equals(p, "vllm_local", StringComparison.OrdinalIgnoreCase))
+            {
+                return true;
+            }
+        }
+
+        if (!string.IsNullOrWhiteSpace(id))
+        {
+            var trimmedId = id.Trim();
+            if (trimmedId.StartsWith("ollama/", StringComparison.OrdinalIgnoreCase) ||
+                trimmedId.StartsWith("local/", StringComparison.OrdinalIgnoreCase) ||
+                trimmedId.StartsWith("llama/", StringComparison.OrdinalIgnoreCase) ||
+                trimmedId.StartsWith("ollama_chat/", StringComparison.OrdinalIgnoreCase))
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    public static List<AiModelCapabilityInfo> ParseModelCapabilitiesFromJson(string json, bool includeLocal = false)
+    {
+        var list = new List<AiModelCapabilityInfo>();
+        if (string.IsNullOrWhiteSpace(json))
+        {
+            return list;
+        }
+
+        try
+        {
+            using var doc = JsonDocument.Parse(json);
+            var root = doc.RootElement;
+
+            IEnumerable<JsonElement> elements;
+            if (root.ValueKind == JsonValueKind.Array)
+            {
+                elements = root.EnumerateArray();
+            }
+            else if (root.ValueKind == JsonValueKind.Object && root.TryGetProperty("data", out var dataProp))
+            {
+                if (dataProp.ValueKind == JsonValueKind.Array)
+                {
+                    elements = dataProp.EnumerateArray();
+                }
+                else if (dataProp.ValueKind == JsonValueKind.Object)
+                {
+                    elements = dataProp.EnumerateObject().Select(p => p.Value);
+                }
+                else
+                {
+                    return list;
+                }
+            }
+            else
+            {
+                return list;
+            }
+
+            foreach (var el in elements)
+            {
+                if (el.ValueKind != JsonValueKind.Object)
+                {
+                    continue;
+                }
+
+                string? id = null;
+                if (el.TryGetProperty("id", out var idProp) && idProp.ValueKind == JsonValueKind.String)
+                {
+                    id = idProp.GetString();
+                }
+                else if (el.TryGetProperty("model_name", out var mnProp) && mnProp.ValueKind == JsonValueKind.String)
+                {
+                    id = mnProp.GetString();
+                }
+                else if (el.TryGetProperty("model", out var mProp) && mProp.ValueKind == JsonValueKind.String)
+                {
+                    id = mProp.GetString();
+                }
+
+                if (string.IsNullOrWhiteSpace(id))
+                {
+                    continue;
+                }
+
+                JsonElement? modelInfo = null;
+                if (el.TryGetProperty("model_info", out var miProp) && miProp.ValueKind == JsonValueKind.Object)
+                {
+                    modelInfo = miProp;
+                }
+
+                string? GetStringValue(string propName)
+                {
+                    if (modelInfo.HasValue && modelInfo.Value.TryGetProperty(propName, out var p1) && p1.ValueKind == JsonValueKind.String)
+                        return p1.GetString();
+                    if (el.TryGetProperty(propName, out var p2) && p2.ValueKind == JsonValueKind.String)
+                        return p2.GetString();
+                    return null;
+                }
+
+                bool? GetBoolValue(string propName)
+                {
+                    if (modelInfo.HasValue && modelInfo.Value.TryGetProperty(propName, out var p1))
+                    {
+                        if (p1.ValueKind == JsonValueKind.True || p1.ValueKind == JsonValueKind.False)
+                            return p1.GetBoolean();
+                        if (p1.ValueKind == JsonValueKind.String && bool.TryParse(p1.GetString(), out var b1))
+                            return b1;
+                    }
+                    if (el.TryGetProperty(propName, out var p2))
+                    {
+                        if (p2.ValueKind == JsonValueKind.True || p2.ValueKind == JsonValueKind.False)
+                            return p2.GetBoolean();
+                        if (p2.ValueKind == JsonValueKind.String && bool.TryParse(p2.GetString(), out var b2))
+                            return b2;
+                    }
+                    return null;
+                }
+
+                int? ExtractInt(JsonElement jsonEl)
+                {
+                    if (jsonEl.ValueKind == JsonValueKind.Number)
+                    {
+                        if (jsonEl.TryGetInt32(out var i))
+                            return i;
+                        if (jsonEl.TryGetInt64(out var l))
+                            return (int)l;
+                        if (jsonEl.TryGetDouble(out var d))
+                            return (int)Math.Round(d);
+                    }
+                    if (jsonEl.ValueKind == JsonValueKind.String)
+                    {
+                        var s = jsonEl.GetString();
+                        if (int.TryParse(s, out var si))
+                            return si;
+                        if (double.TryParse(s, System.Globalization.NumberStyles.Any, System.Globalization.CultureInfo.InvariantCulture, out var sd))
+                            return (int)Math.Round(sd);
+                    }
+                    return null;
+                }
+
+                int? GetIntValue(params string[] propNames)
+                {
+                    foreach (var name in propNames)
+                    {
+                        if (modelInfo.HasValue && modelInfo.Value.TryGetProperty(name, out var p1))
+                        {
+                            var val = ExtractInt(p1);
+                            if (val.HasValue)
+                                return val.Value;
+                        }
+                        if (el.TryGetProperty(name, out var p2))
+                        {
+                            var val = ExtractInt(p2);
+                            if (val.HasValue)
+                                return val.Value;
+                        }
+                    }
+                    return null;
+                }
+
+                var provider = GetStringValue("litellm_provider") ?? GetStringValue("provider");
+                if (string.IsNullOrWhiteSpace(provider))
+                {
+                    if (id.Contains('/'))
+                    {
+                        provider = id.Substring(0, id.IndexOf('/'));
+                    }
+                    else
+                    {
+                        var lower = id.ToLowerInvariant();
+                        if (lower.Contains("gemini")) provider = "google";
+                        else if (lower.Contains("gpt")) provider = "openai";
+                        else if (lower.Contains("claude")) provider = "anthropic";
+                        else provider = "openai";
+                    }
+                }
+
+                var isLocal = IsLocalModel(id, provider);
+                if (!includeLocal && isLocal)
+                {
+                    continue;
+                }
+
+                var mode = GetStringValue("mode") ?? "chat";
+
+                var displayName = GetStringValue("display_name") ?? GetStringValue("name");
+                if (string.IsNullOrWhiteSpace(displayName))
+                {
+                    displayName = id.Contains('/') ? id.Substring(id.IndexOf('/') + 1) : id;
+                }
+
+                var lowerId = id.ToLowerInvariant();
+                var supportsVision = GetBoolValue("supports_vision") ?? (
+                    lowerId.Contains("gemini") ||
+                    lowerId.Contains("gpt-4o") ||
+                    lowerId.Contains("gpt-4-turbo") ||
+                    lowerId.Contains("claude-3") ||
+                    lowerId.Contains("vision") ||
+                    lowerId.Contains("llava") ||
+                    lowerId.Contains("pixtral") ||
+                    lowerId.Contains("qwen-vl") ||
+                    lowerId.Contains("qwen2-vl")
+                );
+
+                var supportsFunctionCalling = GetBoolValue("supports_function_calling") ?? true;
+
+                var supportsAudio = GetBoolValue("supports_audio") ?? (
+                    lowerId.Contains("audio") ||
+                    lowerId.Contains("realtime")
+                );
+
+                var maxInputTokens = GetIntValue("max_input_tokens", "max_tokens");
+                var maxOutputTokens = GetIntValue("max_output_tokens");
+
+                list.Add(new AiModelCapabilityInfo(
+                    Id: id,
+                    DisplayName: displayName,
+                    Provider: provider,
+                    Mode: mode,
+                    SupportsVision: supportsVision,
+                    SupportsFunctionCalling: supportsFunctionCalling,
+                    SupportsAudio: supportsAudio,
+                    MaxInputTokens: maxInputTokens,
+                    MaxOutputTokens: maxOutputTokens,
+                    IsLocal: isLocal
+                ));
+            }
+        }
+        catch
+        {
+            // On parse error, return whatever valid models were extracted
+        }
+
+        return list;
+    }
+
+    public async Task<AiChatResponse> SendChatAsync(
+        AiChatRequest request,
+        CancellationToken cancellationToken = default)
+    {
+        var settings = _settingsService.LoadSettings();
+        var targetEndpoint = string.IsNullOrWhiteSpace(settings.AiAssistantEndpoint) ? "http://127.0.0.1:4000/v1" : settings.AiAssistantEndpoint;
+        var targetKey = settings.AiAssistantApiKey ?? "";
+        var targetModel = !string.IsNullOrWhiteSpace(request.Model) ? request.Model : (string.IsNullOrWhiteSpace(settings.AiAssistantModel) ? "google/gemini-2.5-flash" : settings.AiAssistantModel);
+
+        try
+        {
+            // Build tool set
+            var tools = BuildAiFunctions();
+
+            // Build chat client
+            var credential = new ApiKeyCredential(string.IsNullOrWhiteSpace(targetKey) ? "placeholder-key" : targetKey);
+            var clientOptions = new OpenAIClientOptions { Endpoint = new Uri(targetEndpoint.TrimEnd('/')) };
+            var openAiChat = new OpenAI.Chat.ChatClient(targetModel, credential, clientOptions);
+
+            var innerChatClient = openAiChat.AsIChatClient();
+            using var invokingClient = new FunctionInvokingChatClient(innerChatClient);
+
+            // Assemble system prompt
+            var systemPrompt = await _promptService.BuildFullSystemPromptAsync(settings.AiAssistantPromptsDirectory, cancellationToken);
+            if (!string.IsNullOrWhiteSpace(settings.AiAssistantCustomSystemPrompt))
+            {
+                systemPrompt = $"{settings.AiAssistantCustomSystemPrompt.Trim()}\n\n{systemPrompt}";
+            }
+
+            var messages = new List<Microsoft.Extensions.AI.ChatMessage>
+            {
+                new(Microsoft.Extensions.AI.ChatRole.System, systemPrompt)
+            };
+
+            foreach (var msg in request.Messages.Where(m => !string.IsNullOrWhiteSpace(m.Content) || m.HasAttachments))
+            {
+                messages.Add(ToExtensionsAiChatMessage(msg));
+            }
+
+            var chatOptions = new Microsoft.Extensions.AI.ChatOptions
+            {
+                ModelId = targetModel,
+                Temperature = (float)(request.Temperature ?? 0.7),
+                Tools = tools
+            };
+
+            var executedTools = new List<AiToolExecutionItem>();
+
+            var completion = await invokingClient.GetResponseAsync(messages, chatOptions, cancellationToken);
+
+            var assistantItem = new AiChatMessageItem
+            {
+                Role = "assistant",
+                Content = completion.Text ?? "",
+                Timestamp = DateTime.UtcNow,
+                ToolCalls = executedTools
+            };
+
+            return new AiChatResponse(true, assistantItem, TotalTokens: (int?)completion.Usage?.TotalTokenCount);
+        }
+        catch (Exception ex)
+        {
+            return new AiChatResponse(false, Error: $"AI Assistant error: {ex.Message}");
+        }
+    }
+
+    public async IAsyncEnumerable<AiChatChunk> StreamChatAsync(
+        AiChatRequest request,
+        [EnumeratorCancellation] CancellationToken cancellationToken = default)
+    {
+        var settings = _settingsService.LoadSettings();
+        var targetEndpoint = string.IsNullOrWhiteSpace(settings.AiAssistantEndpoint) ? "http://127.0.0.1:4000/v1" : settings.AiAssistantEndpoint;
+        var targetKey = settings.AiAssistantApiKey ?? "";
+        var targetModel = !string.IsNullOrWhiteSpace(request.Model) ? request.Model : (string.IsNullOrWhiteSpace(settings.AiAssistantModel) ? "google/gemini-2.5-flash" : settings.AiAssistantModel);
+
+        var credential = new ApiKeyCredential(string.IsNullOrWhiteSpace(targetKey) ? "placeholder-key" : targetKey);
+        var clientOptions = new OpenAIClientOptions { Endpoint = new Uri(targetEndpoint.TrimEnd('/')) };
+        var openAiChat = new OpenAI.Chat.ChatClient(targetModel, credential, clientOptions);
+
+        var innerChatClient = openAiChat.AsIChatClient();
+        using var invokingClient = new FunctionInvokingChatClient(innerChatClient);
+
+        var systemPrompt = await _promptService.BuildFullSystemPromptAsync(settings.AiAssistantPromptsDirectory, cancellationToken);
+        if (!string.IsNullOrWhiteSpace(settings.AiAssistantCustomSystemPrompt))
+        {
+            systemPrompt = $"{settings.AiAssistantCustomSystemPrompt.Trim()}\n\n{systemPrompt}";
+        }
+
+        var messages = new List<Microsoft.Extensions.AI.ChatMessage>
+        {
+            new(Microsoft.Extensions.AI.ChatRole.System, systemPrompt)
+        };
+
+        foreach (var msg in request.Messages.Where(m => !string.IsNullOrWhiteSpace(m.Content) || m.HasAttachments))
+        {
+            messages.Add(ToExtensionsAiChatMessage(msg));
+        }
+
+        var chatOptions = new Microsoft.Extensions.AI.ChatOptions
+        {
+            ModelId = targetModel,
+            Temperature = (float)(request.Temperature ?? 0.7),
+            Tools = BuildAiFunctions()
+        };
+
+        await foreach (var update in invokingClient.GetStreamingResponseAsync(messages, chatOptions, cancellationToken))
+        {
+            if (!string.IsNullOrEmpty(update.Text))
+            {
+                yield return new AiChatChunk(DeltaText: update.Text);
+            }
+        }
+        yield return new AiChatChunk(IsDone: true);
+    }
+
+    public IList<AITool> BuildAiFunctions()
+    {
+        var list = new List<AITool>
+        {
+            AIFunctionFactory.Create(
+                (Func<CancellationToken, Task<string>>)_appTools.GetGpuVramTelemetryAsync,
+                "get_gpu_vram_telemetry",
+                "Get real-time GPU VRAM allocation, total memory, used memory, and GPU hardware name."),
+
+            AIFunctionFactory.Create(
+                (Func<CancellationToken, Task<string>>)_appTools.CheckServicesHealthAsync,
+                "check_services_health",
+                "Check real-time health and connectivity of Ollama, Stable Diffusion Forge, ComfyUI, and Kokoro TTS backend ports."),
+
+            AIFunctionFactory.Create(
+                (Func<CancellationToken, Task<string>>)_appTools.ListInstalledModelsAsync,
+                "list_installed_models",
+                "List all installed Ollama LLM models, quantization formats, and memory footprint."),
+
+            AIFunctionFactory.Create(
+                (Func<string, CancellationToken, Task<string>>)_appTools.StartAiEngineAsync,
+                "start_ai_engine",
+                "Start an AI backend engine process ('forge', 'comfyui', or 'ollama')."),
+
+            AIFunctionFactory.Create(
+                (Func<string, CancellationToken, Task<string>>)_appTools.StopAiEngineAsync,
+                "stop_ai_engine",
+                "Gracefully terminate an AI backend engine process ('forge' or 'comfyui')."),
+
+            AIFunctionFactory.Create(
+                (Func<CancellationToken, Task<string>>)_appTools.UnloadVramAsync,
+                "unload_vram",
+                "Unload all LLM models currently residing in GPU VRAM to free memory for diffusion or heavy workflows."),
+
+            AIFunctionFactory.Create(
+                (Func<CancellationToken, Task<string>>)_appTools.GetAppSettingsAsync,
+                "get_app_settings",
+                "Get current application configuration settings."),
+
+            AIFunctionFactory.Create(
+                (Func<string, string, CancellationToken, Task<string>>)_appTools.UpdateAppSettingAsync,
+                "update_app_setting",
+                "Update a specific application setting key (e.g. 'PreferredImageEngine', 'ComfyUiUrl', 'SelectedThemeStyle', 'AiAssistantModel') and persist changes to disk."),
+
+            AIFunctionFactory.Create(
+                (Func<string, double?, string?, string?, CancellationToken, Task<string>>)_appTools.CalculateHardwareFitAsync,
+                "calculate_hardware_fit",
+                "Calculate hardware compatibility and VRAM fit for an LLM, diffusion, or video model."),
+
+            AIFunctionFactory.Create(
+                (Func<string, string?, string?, int, int, CancellationToken, Task<string>>)_appTools.GenerateImageAsync,
+                "generate_image",
+                "Generate an image using Stable Diffusion Forge or ComfyUI."),
+
+            AIFunctionFactory.Create(
+                (Func<string, string, string, CancellationToken, Task<string>>)_appTools.SynthesizeSpeechAsync,
+                "synthesize_speech",
+                "Synthesize spoken audio from text using local Kokoro TTS."),
+
+            AIFunctionFactory.Create(
+                (Func<string, CancellationToken, Task<string>>)_appTools.QueryAppDocumentationAsync,
+                "query_app_documentation",
+                "Search in-app technical documentation procedures, steps, prerequisites, and warnings.")
+        };
+
+        return list;
+    }
+
+    private static string ExtractErrorMessage(string jsonOrRaw)
+    {
+        if (string.IsNullOrWhiteSpace(jsonOrRaw)) return "Unknown error";
+        try
+        {
+            using var doc = JsonDocument.Parse(jsonOrRaw);
+            if (doc.RootElement.TryGetProperty("error", out var errProp))
+            {
+                if (errProp.ValueKind == JsonValueKind.Object && errProp.TryGetProperty("message", out var msgProp))
+                {
+                    return msgProp.GetString() ?? jsonOrRaw;
+                }
+                if (errProp.ValueKind == JsonValueKind.String)
+                {
+                    return errProp.GetString() ?? jsonOrRaw;
+                }
+            }
+            if (doc.RootElement.TryGetProperty("message", out var topMsg))
+            {
+                return topMsg.GetString() ?? jsonOrRaw;
+            }
+        }
+        catch { }
+
+        return jsonOrRaw.Length > 200 ? jsonOrRaw[..200] + "..." : jsonOrRaw;
+    }
+
+    public static Microsoft.Extensions.AI.ChatMessage ToExtensionsAiChatMessage(AiChatMessageItem msg)
+    {
+        ArgumentNullException.ThrowIfNull(msg);
+
+        var role = (msg.Role ?? "").ToLowerInvariant() switch
+        {
+            "assistant" => Microsoft.Extensions.AI.ChatRole.Assistant,
+            "system" => Microsoft.Extensions.AI.ChatRole.System,
+            _ => Microsoft.Extensions.AI.ChatRole.User
+        };
+
+        if (msg.Attachments == null || msg.Attachments.Count == 0)
+        {
+            return new Microsoft.Extensions.AI.ChatMessage(role, msg.Content ?? "");
+        }
+
+        var contents = new List<Microsoft.Extensions.AI.AIContent>();
+        if (!string.IsNullOrWhiteSpace(msg.Content))
+        {
+            contents.Add(new Microsoft.Extensions.AI.TextContent(msg.Content));
+        }
+
+        foreach (var att in msg.Attachments)
+        {
+            if (att.RawBytes != null && att.RawBytes.Length > 0)
+            {
+                contents.Add(new Microsoft.Extensions.AI.ImageContent(att.RawBytes, att.ContentType));
+            }
+            else if (!string.IsNullOrWhiteSpace(att.Base64Data))
+            {
+                var uri = att.Base64Data.StartsWith("data:", StringComparison.OrdinalIgnoreCase)
+                    ? new Uri(att.Base64Data)
+                    : new Uri($"data:{att.ContentType};base64,{att.Base64Data}");
+                contents.Add(new Microsoft.Extensions.AI.ImageContent(uri, att.ContentType));
+            }
+        }
+
+        return new Microsoft.Extensions.AI.ChatMessage(role, contents);
+    }
+}

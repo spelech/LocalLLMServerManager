@@ -90,6 +90,7 @@ public partial class MainViewModel : ObservableObject
     public AudioStudioViewModel Audio { get; }
     public CanIRunItViewModel HardwareFit { get; }
     public DocumentationViewModel Documentation { get; } = new();
+    public AiAssistantViewModel Assistant { get; }
 
     [ObservableProperty]
     private int _selectedTabIndex = 0;
@@ -116,7 +117,10 @@ public partial class MainViewModel : ObservableObject
         IHuggingFaceSearchService hfSearchService,
         ICivitaiSearchService civitaiSearchService,
         IStudioPresetService? studioPresetService = null,
-        ICanIRunItService? canIRunItService = null)
+        ICanIRunItService? canIRunItService = null,
+        IAiAssistantService? assistantService = null,
+        ISettingsService? settingsService = null,
+        IPromptManagementService? promptService = null)
     {
         if (httpClient != null) _customHttp = httpClient;
 
@@ -154,6 +158,7 @@ public partial class MainViewModel : ObservableObject
         };
         Settings = new SettingsViewModel(PresetService) { ApiBase = ApiBase };
         Audio = new AudioStudioViewModel(PresetService, _canIRunItService) { ApiBase = ApiBase };
+        Assistant = new AiAssistantViewModel(assistantService, settingsService, promptService, httpClient ?? Http);
 
         LoadStudioPresets();
         RecalculateVideoHardwareFit();
@@ -861,6 +866,12 @@ public partial class MainViewModel : ObservableObject
     public void NavigateToModelsTab()
     {
         SelectedTabIndex = 0;
+    }
+
+    [RelayCommand]
+    public void NavigateToAssistantTab()
+    {
+        SelectedTabIndex = 3;
     }
 
     [RelayCommand]

@@ -1,5 +1,6 @@
 using LocalLLMServerManager.Shared.Interfaces;
 using LocalLLMServerManager.Shared.Models;
+using LocalLLMServerManager.Shared.Services;
 
 namespace LocalLLMServerManager.Services;
 
@@ -13,6 +14,16 @@ public class ComponentManagerService : IComponentManagerService
     }
 
     private static string GetAppDir() => AppContext.BaseDirectory;
+
+    public bool IsAiAssistantInstalled
+    {
+        get
+        {
+            var settings = _settingsService.LoadSettings();
+            var promptDir = PromptManagementService.ResolvePromptDirectory(settings.AiAssistantPromptsDirectory);
+            return settings.AiAssistantEnabled || promptDir != null;
+        }
+    }
 
     public bool IsVideoPackInstalled
     {
@@ -115,6 +126,15 @@ public class ComponentManagerService : IComponentManagerService
                 Installed = IsMusicPackInstalled,
                 DiskSizeEstimate = "6.8 GB",
                 MinVramRequired = "6 GB"
+            },
+            new ComponentPackInfo
+            {
+                Id = "ai-assistant",
+                Name = "In-App AI Assistant & Copilot",
+                Description = "External LLM hookup (LiteLLM / Vertex Flash) with natural language app control, tool calling, and living prompts.",
+                Installed = IsAiAssistantInstalled,
+                DiskSizeEstimate = "5 MB",
+                MinVramRequired = "0 MB (Cloud/API)"
             }
         };
 
@@ -216,6 +236,20 @@ public class ComponentManagerService : IComponentManagerService
             return true;
         }
 
+        if (string.Equals(componentId, "ai-assistant", StringComparison.OrdinalIgnoreCase))
+        {
+            var settings = _settingsService.LoadSettings();
+            _settingsService.SaveSettings(settings with { AiAssistantEnabled = true });
+
+            for (int i = 1; i <= 10; i++)
+            {
+                cancellationToken.ThrowIfCancellationRequested();
+                await Task.Delay(50, cancellationToken);
+                progress?.Report(i * 10.0);
+            }
+            return true;
+        }
+
         return false;
     }
 
@@ -311,6 +345,13 @@ public class ComponentManagerService : IComponentManagerService
                     }
                 }
             }
+            return Task.FromResult(true);
+        }
+
+        if (string.Equals(componentId, "ai-assistant", StringComparison.OrdinalIgnoreCase))
+        {
+            var settings = _settingsService.LoadSettings();
+            _settingsService.SaveSettings(settings with { AiAssistantEnabled = false });
             return Task.FromResult(true);
         }
 

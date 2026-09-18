@@ -26,7 +26,13 @@ public record AppSettings(
     string PreferredAudioVoice = "af_heart",
     string VideoModelsPath = "",
     string VideoOutputPath = "",
-    List<StudioPreset>? CustomPresets = null
+    List<StudioPreset>? CustomPresets = null,
+    bool AiAssistantEnabled = false,
+    string AiAssistantEndpoint = "http://127.0.0.1:4000/v1",
+    string AiAssistantApiKey = "",
+    string AiAssistantModel = "google/gemini-2.5-flash",
+    string AiAssistantCustomSystemPrompt = "",
+    string AiAssistantPromptsDirectory = ""
 );
 
 

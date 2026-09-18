@@ -1,0 +1,309 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:LocalLLMServerManager.Shared.ViewModels"
+             xmlns:models="using:LocalLLMServerManager.Shared.Models"
+             xmlns:controls="using:LocalLLMServerManager.Shared.Views.Controls"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             mc:Ignorable="d" d:DesignWidth="1100" d:DesignHeight="800"
+             x:Class="LocalLLMServerManager.Shared.Views.Controls.AiAssistantTabControl"
+             x:DataType="vm:AiAssistantViewModel">
+
+    <UserControl.Resources>
+    </UserControl.Resources>
+
+    <Grid RowDefinitions="Auto, Auto, *, Auto, Auto" Margin="0,12,0,8">
+        <!-- 1. Header Toolbar -->
+        <Border Grid.Row="0" Classes="matte-card" Padding="14,10" Margin="0,0,0,10">
+            <Grid ColumnDefinitions="Auto, *, Auto">
+                <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="10" VerticalAlignment="Center">
+                    <TextBlock Text="🤖" FontSize="22" VerticalAlignment="Center"/>
+                    <StackPanel Spacing="2">
+                        <TextBlock Text="AI Assistant &amp; App Copilot" FontSize="15" FontWeight="Bold" Foreground="{StaticResource TextMainBrush}"/>
+                        <TextBlock Text="Natural language app control, tool calling &amp; living prompt orchestration" FontSize="11" Foreground="{StaticResource TextMutedBrush}"/>
+                    </StackPanel>
+                </StackPanel>
+
+                <!-- Model Indicator / Status -->
+                <StackPanel Grid.Column="1" Orientation="Horizontal" HorizontalAlignment="Center" VerticalAlignment="Center" Spacing="6">
+                    <Border Classes="matte-pill" Padding="8,3">
+                        <StackPanel Orientation="Horizontal" Spacing="5">
+                            <TextBlock Text="Model:" FontSize="11" Foreground="{StaticResource TextMutedBrush}"/>
+                            <TextBlock Text="{Binding SelectedModel}" FontSize="11" FontWeight="SemiBold" Foreground="{StaticResource PrimaryBrush}"/>
+                        </StackPanel>
+                    </Border>
+                    <Border Classes="matte-pill" Padding="8,3" IsVisible="{Binding IsGenerating}">
+                        <StackPanel Orientation="Horizontal" Spacing="5">
+                            <TextBlock Text="⚡" FontSize="10"/>
+                            <TextBlock Text="{Binding CurrentStatus}" FontSize="11" Foreground="{StaticResource OnlineBrush}"/>
+                        </StackPanel>
+                    </Border>
+                </StackPanel>
+
+                <!-- Action Controls -->
+                <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+                    <Button Content="⚙️ Setup &amp; Endpoint" Command="{Binding ToggleSetupCardCommand}" Classes="matte-secondary" FontSize="11" Padding="10,6"/>
+                    <Button Content="🔄 Reload Prompts" Command="{Binding ReloadPromptsCommand}" Classes="matte-secondary" FontSize="11" Padding="10,6"/>
+                    <Button Content="🧹 Clear Chat" Command="{Binding ClearChatCommand}" Classes="matte-secondary" FontSize="11" Padding="10,6"/>
+                </StackPanel>
+            </Grid>
+        </Border>
+
+        <!-- 2. Collapsible Setup Wizard Card -->
+        <Border Grid.Row="1" Classes="matte-card" Padding="16,14" Margin="0,0,0,10" IsVisible="{Binding IsSetupCardVisible}">
+            <StackPanel Spacing="12">
+                <Grid ColumnDefinitions="*, Auto">
+                    <StackPanel Spacing="2">
+                        <TextBlock Text="🛠️ AI Assistant Configuration &amp; Endpoint Setup" FontSize="13" FontWeight="Bold" Foreground="{StaticResource TextMainBrush}"/>
+                        <TextBlock Text="Connect to your LiteLLM proxy, OpenAI compatible server, or Vertex AI Gemini Flash gateway" FontSize="11" Foreground="{StaticResource TextMutedBrush}"/>
+                    </StackPanel>
+                    <Button Grid.Column="1" Content="✕" Command="{Binding ToggleSetupCardCommand}" Classes="matte-secondary" Padding="8,4" FontSize="11"/>
+                </Grid>
+
+                <Grid ColumnDefinitions="*, *, *">
+                    <!-- Endpoint URL -->
+                    <StackPanel Grid.Column="0" Spacing="4" Margin="0,0,8,0">
+                        <TextBlock Text="OpenAI-Compatible Endpoint URL" FontSize="11" Foreground="{StaticResource TextMutedBrush}" FontWeight="SemiBold"/>
+                        <TextBox Text="{Binding Endpoint}" Watermark="http://127.0.0.1:4000/v1" FontSize="12"/>
+                    </StackPanel>
+
+                    <!-- API Key -->
+                    <StackPanel Grid.Column="1" Spacing="4" Margin="4,0">
+                        <TextBlock Text="API Key (Optional for local LiteLLM)" FontSize="11" Foreground="{StaticResource TextMutedBrush}" FontWeight="SemiBold"/>
+                        <TextBox Text="{Binding ApiKey}" PasswordChar="*" Watermark="sk-..." FontSize="12"/>
+                    </StackPanel>
+
+                    <!-- Model Name / Selection -->
+                    <StackPanel Grid.Column="2" Spacing="4" Margin="8,0,0,0">
+                        <TextBlock Text="Model Identifier" FontSize="11" Foreground="{StaticResource TextMutedBrush}" FontWeight="SemiBold"/>
+                        <TextBox Text="{Binding SelectedModel}" Watermark="vertex_ai/gemini-2.5-flash or gpt-4o" FontSize="12"/>
+                    </StackPanel>
+                </Grid>
+
+                <Grid ColumnDefinitions="*, Auto">
+                    <StackPanel Grid.Column="0" Spacing="4" VerticalAlignment="Center">
+                        <TextBlock Text="{Binding ConnectionStatusMessage}" FontSize="11" Foreground="{StaticResource TextMutedBrush}" TextWrapping="Wrap" IsVisible="{Binding ConnectionStatusMessage, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>
+                        <TextBlock Text="{Binding PromptDirectory, StringFormat='Living Prompts Directory: {0}'}" FontSize="10" Foreground="{StaticResource TextMutedBrush}" IsVisible="{Binding PromptDirectory, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>
+                    </StackPanel>
+
+                    <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8">
+                        <Button Content="⚡ Test Connection" Command="{Binding TestConnectionCommand}" IsEnabled="{Binding !IsTestingConnection}" Classes="matte-secondary" FontSize="11" Padding="12,6"/>
+                        <Button Content="💾 Save Settings" Command="{Binding SaveConfigurationCommand}" Classes="matte-primary" FontSize="11" Padding="12,6"/>
+                    </StackPanel>
+                </Grid>
+            </StackPanel>
+        </Border>
+
+        <!-- 3. Scrollable Chat Message History -->
+        <Border Grid.Row="2" Background="{StaticResource BgSurfaceBrush}" CornerRadius="8" BorderBrush="{StaticResource GlassBorderBrush}" BorderThickness="1" Padding="12">
+            <ScrollViewer VerticalScrollBarVisibility="Auto">
+                <ItemsControl ItemsSource="{Binding Messages}">
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate DataType="models:AiChatMessageItem">
+                            <Grid Margin="0,4,0,8">
+                                <!-- User Message Bubble -->
+                                <Border IsVisible="{Binding IsUser}" HorizontalAlignment="Right" MaxWidth="700"
+                                        Background="#1c3d5a" BorderBrush="{StaticResource PrimaryBrush}" BorderThickness="1"
+                                        CornerRadius="10,10,2,10" Padding="12,8">
+                                    <StackPanel Spacing="6">
+                                        <Grid ColumnDefinitions="*, Auto">
+                                            <TextBlock Text="You" FontSize="10" FontWeight="Bold" Foreground="{StaticResource SecondaryBrush}"/>
+                                            <TextBlock Grid.Column="1" Text="{Binding Timestamp, StringFormat='{}{0:HH:mm}'}" FontSize="9" Foreground="{StaticResource TextMutedBrush}"/>
+                                        </Grid>
+
+                                        <!-- Attached Images / Files -->
+                                        <ItemsControl ItemsSource="{Binding Attachments}" IsVisible="{Binding HasAttachments}">
+                                            <ItemsControl.ItemsPanel>
+                                                <ItemsPanelTemplate>
+                                                    <WrapPanel Orientation="Horizontal"/>
+                                                </ItemsPanelTemplate>
+                                            </ItemsControl.ItemsPanel>
+                                            <ItemsControl.ItemTemplate>
+                                                <DataTemplate DataType="models:AiChatMessageAttachment">
+                                                    <Border Background="#122438" BorderBrush="#2e4d6e" BorderThickness="1" CornerRadius="6" Padding="4" Margin="0,2,6,4" MaxWidth="240">
+                                                        <StackPanel Spacing="4">
+                                                            <Border CornerRadius="4" ClipToBounds="True" Background="#09131d">
+                                                                <Image Source="{Binding Converter={x:Static controls:AttachmentToImageConverter.Instance}}" MaxHeight="160" MaxWidth="230" Stretch="Uniform"/>
+                                                            </Border>
+                                                            <TextBlock Text="{Binding FileName}" FontSize="10" Foreground="{StaticResource TextMutedBrush}" TextTrimming="CharacterEllipsis" Margin="2,0"/>
+                                                        </StackPanel>
+                                                    </Border>
+                                                </DataTemplate>
+                                            </ItemsControl.ItemTemplate>
+                                        </ItemsControl>
+
+                                        <SelectableTextBlock Text="{Binding Content}" FontSize="13" Foreground="{StaticResource TextMainBrush}" TextWrapping="Wrap" IsVisible="{Binding Content, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>
+                                    </StackPanel>
+                                </Border>
+
+                                <!-- Assistant Message Bubble -->
+                                <Border IsVisible="{Binding IsAssistant}" HorizontalAlignment="Left" MaxWidth="850"
+                                        Background="{StaticResource BgCardBrush}" BorderBrush="{StaticResource GlassBorderBrush}" BorderThickness="1"
+                                        CornerRadius="10,10,10,2" Padding="14,10">
+                                    <StackPanel Spacing="8">
+                                        <!-- Header -->
+                                        <Grid ColumnDefinitions="*, Auto">
+                                            <StackPanel Orientation="Horizontal" Spacing="6">
+                                                <TextBlock Text="🤖 Copilot" FontSize="11" FontWeight="Bold" Foreground="{StaticResource PrimaryBrush}"/>
+                                                <TextBlock Text="{Binding StatusText}" FontSize="10" Foreground="{StaticResource WarningBrush}" IsVisible="{Binding StatusText, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>
+                                            </StackPanel>
+                                            <TextBlock Grid.Column="1" Text="{Binding Timestamp, StringFormat='{}{0:HH:mm}'}" FontSize="9" Foreground="{StaticResource TextMutedBrush}"/>
+                                        </Grid>
+
+                                        <!-- Tool Execution Cards (if any) -->
+                                        <ItemsControl ItemsSource="{Binding ToolCalls}" IsVisible="{Binding HasToolCalls}">
+                                            <ItemsControl.ItemTemplate>
+                                                <DataTemplate DataType="models:AiToolExecutionItem">
+                                                    <Border Background="#161b22" BorderBrush="#30363d" BorderThickness="1" CornerRadius="6" Padding="8,6" Margin="0,2,0,4">
+                                                        <StackPanel Spacing="3">
+                                                            <Grid ColumnDefinitions="Auto, *, Auto">
+                                                                <TextBlock Grid.Column="0" Text="⚡ Tool:" FontSize="10" FontWeight="Bold" Foreground="{StaticResource SecondaryBrush}" Margin="0,0,6,0"/>
+                                                                <TextBlock Grid.Column="1" Text="{Binding ToolName}" FontSize="10" FontWeight="SemiBold" Foreground="{StaticResource TextMainBrush}"/>
+                                                                <TextBlock Grid.Column="2" Text="{Binding ExecutionTimeMs, StringFormat='{}{0} ms'}" FontSize="9" Foreground="{StaticResource TextMutedBrush}"/>
+                                                            </Grid>
+                                                            <TextBlock Text="{Binding Arguments, StringFormat='Args: {0}'}" FontSize="9" Foreground="{StaticResource TextMutedBrush}" TextWrapping="Wrap" IsVisible="{Binding Arguments, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>
+                                                            <TextBlock Text="{Binding Result, StringFormat='Result: {0}'}" FontSize="9" Foreground="{StaticResource OnlineBrush}" TextWrapping="Wrap" MaxHeight="60" TextTrimming="CharacterEllipsis"/>
+                                                        </StackPanel>
+                                                    </Border>
+                                                </DataTemplate>
+                                            </ItemsControl.ItemTemplate>
+                                        </ItemsControl>
+
+                                        <!-- Message Content -->
+                                        <SelectableTextBlock Text="{Binding Content}" FontSize="13" Foreground="{StaticResource TextMainBrush}" TextWrapping="Wrap" IsVisible="{Binding Content, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>
+
+                                        <!-- Loading Indicator -->
+                                        <StackPanel Orientation="Horizontal" Spacing="6" IsVisible="{Binding IsLoading}">
+                                            <ProgressBar IsIndeterminate="True" Width="100" Height="4" VerticalAlignment="Center"/>
+                                            <TextBlock Text="Generating response..." FontSize="10" Foreground="{StaticResource TextMutedBrush}" VerticalAlignment="Center"/>
+                                        </StackPanel>
+
+                                        <!-- Error Badge -->
+                                        <Border Background="#3d1e1e" BorderBrush="{StaticResource OfflineBrush}" BorderThickness="1" CornerRadius="4" Padding="6,3" IsVisible="{Binding IsError}">
+                                            <TextBlock Text="An error occurred during communication with the model." FontSize="10" Foreground="{StaticResource OfflineBrush}"/>
+                                        </Border>
+                                    </StackPanel>
+                                </Border>
+                            </Grid>
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+            </ScrollViewer>
+        </Border>
+
+        <!-- 4. Suggestion Chips Bar -->
+        <ScrollViewer Grid.Row="3" HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Disabled" Margin="0,8,0,8">
+            <ItemsControl ItemsSource="{Binding SuggestionChips}">
+                <ItemsControl.ItemsPanel>
+                    <ItemsPanelTemplate>
+                        <StackPanel Orientation="Horizontal" Spacing="6"/>
+                    </ItemsPanelTemplate>
+                </ItemsControl.ItemsPanel>
+                <ItemsControl.ItemTemplate>
+                    <DataTemplate DataType="x:String">
+                        <Button Content="{Binding}"
+                                Command="{Binding $parent[UserControl].((vm:AiAssistantViewModel)DataContext).SelectSuggestionCommand}"
+                                CommandParameter="{Binding}"
+                                Classes="matte-secondary"
+                                FontSize="11"
+                                Padding="10,5"/>
+                    </DataTemplate>
+                </ItemsControl.ItemTemplate>
+            </ItemsControl>
+        </ScrollViewer>
+
+        <!-- 5. Prompt Input & Send Bar -->
+        <Border Grid.Row="4" Classes="matte-card" Padding="8">
+            <StackPanel Spacing="6">
+                <!-- Staged Attachments Preview Tray -->
+                <Border IsVisible="{Binding HasStagedAttachments}"
+                        Margin="0,0,0,4"
+                        Padding="6"
+                        Background="#161b22"
+                        BorderBrush="#30363d"
+                        BorderThickness="1"
+                        CornerRadius="6">
+                    <ScrollViewer HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Disabled">
+                        <ItemsControl ItemsSource="{Binding StagedAttachments}">
+                            <ItemsControl.ItemsPanel>
+                                <ItemsPanelTemplate>
+                                    <StackPanel Orientation="Horizontal" Spacing="6"/>
+                                </ItemsPanelTemplate>
+                            </ItemsControl.ItemsPanel>
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate DataType="models:AiChatMessageAttachment">
+                                    <Border Classes="matte-pill" Padding="6,4" Background="#1c2533" BorderBrush="{StaticResource PrimaryBrush}" BorderThickness="1">
+                                        <StackPanel Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
+                                            <Border Width="24" Height="24" CornerRadius="3" ClipToBounds="True" Background="#0d1117">
+                                                <Panel>
+                                                    <TextBlock Text="🖼️" FontSize="11" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                                    <Image Source="{Binding Converter={x:Static controls:AttachmentToImageConverter.Instance}}" Stretch="UniformToFill"/>
+                                                </Panel>
+                                            </Border>
+                                            <TextBlock Text="{Binding FileName}" FontSize="11" Foreground="{StaticResource TextMainBrush}" VerticalAlignment="Center" MaxWidth="150" TextTrimming="CharacterEllipsis"/>
+                                            <Button Content="✕"
+                                                    Command="{Binding $parent[UserControl].((vm:AiAssistantViewModel)DataContext).RemoveStagedAttachmentCommand}"
+                                                    CommandParameter="{Binding Id}"
+                                                    Classes="matte-secondary"
+                                                    Padding="4,2"
+                                                    FontSize="10"
+                                                    VerticalAlignment="Center"/>
+                                        </StackPanel>
+                                    </Border>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                    </ScrollViewer>
+                </Border>
+
+                <!-- Composer Input & Controls Row -->
+                <Grid ColumnDefinitions="Auto, *, Auto">
+                    <Button x:Name="AttachFileButton"
+                            Grid.Column="0"
+                            Click="OnAttachFileButtonClick"
+                            Content="📎"
+                            ToolTip.Tip="Attach image (PNG, JPG, WEBP)"
+                            Classes="matte-secondary"
+                            Padding="10,8"
+                            FontSize="12"
+                            Margin="0,0,6,0"
+                            VerticalAlignment="Center"/>
+
+                    <TextBox x:Name="PromptTextBox"
+                             Grid.Column="1"
+                             KeyDown="OnPromptTextBoxKeyDown"
+                             Text="{Binding InputText}"
+                             Watermark="Ask anything or command the application (e.g., 'What is my current VRAM usage?' or 'Generate an image with Flux')..."
+                             AcceptsReturn="True"
+                             MaxHeight="100"
+                             FontSize="12"
+                             VerticalAlignment="Center"
+                             Margin="0,0,8,0"/>
+
+                    <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
+                        <ComboBox ItemsSource="{Binding AvailableModelCapabilities}"
+                                  SelectedItem="{Binding SelectedModelCapability}"
+                                  MinWidth="200"
+                                  MaxWidth="300"
+                                  VerticalAlignment="Center"
+                                  Margin="0,0,6,0">
+                            <ComboBox.ItemTemplate>
+                                <DataTemplate DataType="models:AiModelCapabilityInfo">
+                                    <StackPanel Orientation="Horizontal" Spacing="6">
+                                        <TextBlock Text="{Binding SummaryBadge}" FontSize="10" Foreground="{StaticResource PrimaryBrush}" VerticalAlignment="Center"/>
+                                        <TextBlock Text="{Binding Id}" FontSize="11" Foreground="{StaticResource TextMainBrush}" VerticalAlignment="Center" TextTrimming="CharacterEllipsis"/>
+                                    </StackPanel>
+                                </DataTemplate>
+                            </ComboBox.ItemTemplate>
+                        </ComboBox>
+
+                        <Button Content="⏹️ Stop" Command="{Binding StopGenerationCommand}" Classes="matte-secondary"
+                                IsVisible="{Binding IsGenerating}" Padding="14,8" FontSize="12"/>
+                        <Button Content="🚀 Send" Command="{Binding SendMessageCommand}" Classes="matte-primary"
+                                IsVisible="{Binding !IsGenerating}" Padding="16,8" FontSize="12"/>
+                    </StackPanel>
+                </Grid>
+            </StackPanel>
+        </Border>
+    </Grid>
+</UserControl>
