@@ -1,124 +1,212 @@
-# AI Assistant Prompts & Native Tools Reference
+---
+title: AI Assistant Prompts, Capabilities & Tools Reference
+description: Specification for living prompts, rich model capabilities schema, native tools, and multimodal attachments.
+outline: deep
+---
 
-The In-App AI Assistant relies on a combination of **Living Prompts** (markdown guidelines on disk) and **Native C# Tools** (executable functions exposed via `Microsoft.Extensions.AI`).
+# AI Assistant Prompts, Capabilities & Tools Reference
+
+The In-App AI Assistant combines living markdown prompts, a rich model capability catalog, and executable C# tools.
 
 ---
 
 ## Part 1: Living Prompts System
 
-Prompts are stored as modular Markdown files in the `Prompts/` directory:
+The assistant reads system instructions from modular markdown documents in the `Prompts/` directory.
 
-| File | Primary Role | Contents |
+| File | Primary Purpose | Document Contents |
 |---|---|---|
-| **[`system-prompt.md`](file:///C:/Users/Alias/repos/LocalLLMServerManager/Prompts/system-prompt.md)** | Core Persona & Identity | Defines the assistant persona, ASD-STE100 technical communication tone, and operational boundaries. |
-| **[`capabilities.md`](file:///C:/Users/Alias/repos/LocalLLMServerManager/Prompts/capabilities.md)** | System Capabilities Manual | Hardware requirements, model sizing rules, engine endpoints, and multimodal support matrices. |
-| **[`workflows.md`](file:///C:/Users/Alias/repos/LocalLLMServerManager/Prompts/workflows.md)** | Workflow Execution Guides | Procedural steps for text LLM generation, image creation, video DiT rendering, Kokoro TTS, and 3D mesh modeling. |
-| **[`app-control.md`](file:///C:/Users/Alias/repos/LocalLLMServerManager/Prompts/app-control.md)** | Natural Language Control Spec | Rules for invoking app tools, inspecting/modifying settings, handling VRAM allocations, and safety confirmation. |
+| `system-prompt.md` | Persona & Identity | Defines assistant tone, ASD-STE100 guidelines, and operational boundaries. |
+| `capabilities.md` | Capabilities Manual | Defines hardware limits, model sizing rules, and engine API endpoints. |
+| `workflows.md` | Workflow Guides | Defines procedural steps for text, image, video, and audio pipelines. |
+| `app-control.md` | Tool Control Spec | Defines rules for invoking tools, editing settings, and memory safety. |
 
-### Prompt Resolution & Reloading
-The `IPromptManagementService` resolves the prompts directory according to the following order:
-1. `AppSettings.AiAssistantPromptsDirectory` (if configured and valid).
-2. `<AppBaseDir>/Prompts/` (built-in application directory).
-3. `<CurrentWorkingDir>/Prompts/` (working directory).
-4. Development project directory candidates.
+### Directory Resolution Order
 
-#### Hot-Reloading Prompts
-Prompts are cached in memory for high-throughput responses. When modifying markdown files:
-- Click the **"🔄 Reload Prompts"** button in the AI Assistant toolbar.
-- Or call the endpoint: `POST /api/ai/prompts/reload`.
-- Memory caches are cleared immediately and new files take effect on the very next chat request without needing to rebuild or restart the application.
+The `PromptManagementService` searches for the prompts directory in this sequence:
+1. Directory path configured in `AppSettings.AiAssistantPromptsDirectory`.
+2. Built-in application folder at `<AppBaseDir>/Prompts/`.
+3. Current working directory folder at `<CurrentWorkingDir>/Prompts/`.
+4. Development repository candidate folders.
+
+### Prompt Caching and Invalidation
+
+The service caches prompt files in memory for fast response times.
+
+::: tip Hot-Reloading Prompts
+Update markdown prompt files on disk at any time.
+Click **Reload Prompts** in the AI Assistant toolbar, or send a request to `POST /api/ai/prompts/reload`.
+The service clears the cache immediately. The next request uses the new prompt content without an application restart.
+:::
 
 ---
 
-## Part 2: Native C# Tool Catalog
+## Part 2: Rich Model Capabilities Schema
 
-The `AiAppTools` class defines 12 native functions callable by the external LLM via `Microsoft.Extensions.AI.FunctionInvokingChatClient`.
+The assistant queries remote gateways for model capability metadata. The system stores metadata in the `AiModelCapabilityInfo` record.
 
-### 1. `GetVramTelemetry`
-- **Description**: Retrieves real-time GPU VRAM allocation, total memory, used memory, free memory, and GPU hardware device name.
+### Schema Fields
+
+| Field Name | Type | Description |
+|---|---|---|
+| `Id` | `string` | Unique model identifier string (e.g. `vertex_ai/gemini-2.5-flash`). |
+| `DisplayName` | `string` | Clean human-readable label for user interfaces. |
+| `Provider` | `string` | Hosting provider name (e.g. `vertex_ai`, `openai`, `anthropic`). |
+| `Mode` | `string` | Operation mode (defaults to `"chat"`). |
+| `SupportsVision` | `bool` | True when the model accepts image inputs. |
+| `SupportsFunctionCalling` | `bool` | True when the model executes tool calls. |
+| `SupportsAudio` | `bool` | True when the model accepts audio inputs. |
+| `MaxInputTokens` | `int?` | Maximum supported input context window tokens. |
+| `MaxOutputTokens` | `int?` | Maximum completion output tokens. |
+| `IsLocal` | `bool` | True when the model runs on local engines (e.g. Ollama). |
+| `SummaryBadge` | `string` | Computed badge string displaying capability icons and provider. |
+
+### Summary Badge Formatting Rules
+
+The `SummaryBadge` property formats capability indicators into a compact label:
+- **Vision Support**: Prepends `👁️` if `SupportsVision` is true.
+- **Tool Calling**: Prepends `⚡` if `SupportsFunctionCalling` is true.
+- **Context Size**: Formats token counts as `1M` (≥1,000,000 tokens) or `128k` (≥1,000 tokens).
+- **Provider Tag**: Appends the provider name in square brackets (e.g. `[vertex_ai]`).
+
+::: info Badge Examples
+- `👁️ ⚡ 1M [vertex_ai]` (Gemini 2.5 Flash: vision, function calling, 1,000,000 tokens).
+- `👁️ ⚡ 128k [openai]` (GPT-4o: vision, function calling, 128,000 tokens).
+- `⚡ 128k [anthropic]` (Claude 3.5 Haiku: text function calling, 128,000 tokens).
+:::
+
+---
+
+## Part 3: Native C# Tool Catalog
+
+The assistant exposes 12 native C# tools. The language model invokes these tools autonomously through `FunctionInvokingChatClient`.
+
+### 1. `GetGpuVramTelemetryAsync`
+- **Purpose**: Reads live GPU memory usage, total memory, used memory, and GPU name.
 - **Parameters**: None.
-- **Returns**: `GpuTelemetryResult` (`GpuName`, `TotalVramMb`, `UsedVramMb`, `FreeVramMb`).
-- **Example User Request**: *"How much VRAM do I have free right now?"*
+- **Returns**: Formatted JSON string containing memory metrics.
+- **Example User Request**: *"How much VRAM is currently free?"*
 
-### 2. `GetSystemHealth`
-- **Description**: Retrieves overall system health and the online/offline status of all AI backends (ComfyUI, SD-WebUI Forge, Ollama, Kokoro TTS).
+### 2. `CheckServicesHealthAsync`
+- **Purpose**: Checks the online status of Ollama, Forge, ComfyUI, and Kokoro TTS.
 - **Parameters**: None.
-- **Returns**: Dictionary of engine names to health status strings.
-- **Example User Request**: *"Are my image generation and TTS engines online?"*
+- **Returns**: Status map showing engine connection state and port numbers.
+- **Example User Request**: *"Are my image generation and TTS services running?"*
 
-### 3. `ListInstalledModels`
-- **Description**: Enumerates all installed models currently downloaded in Ollama with their parameter sizes, quantization tags, and file sizes.
+### 3. `ListInstalledModelsAsync`
+- **Purpose**: Lists all installed Ollama language models and their quantization details.
 - **Parameters**: None.
-- **Returns**: List of `OllamaModelItem`.
-- **Example User Request**: *"What LLMs do I currently have installed on this machine?"*
+- **Returns**: Array of model records with size and parameter counts.
+- **Example User Request**: *"List my downloaded local language models."*
 
-### 4. `StartAiEngine`
-- **Description**: Starts a local AI backend engine process (`comfy`, `forge`, or `audio`).
+### 4. `StartAiEngineAsync`
+- **Purpose**: Starts a local engine process (`"forge"`, `"comfyui"`, or `"ollama"`).
 - **Parameters**:
-  - `engine` (string, required): One of `"comfy"`, `"forge"`, or `"audio"`.
-- **Returns**: Status message with process start confirmation.
-- **Example User Request**: *"Start the ComfyUI engine for me."*
+  - `engine` (`string`, required): Name of target engine.
+- **Returns**: Status confirmation message.
+- **Example User Request**: *"Start the ComfyUI engine."*
 
-### 5. `StopAiEngine`
-- **Description**: Shuts down a running local AI backend engine process.
+### 5. `StopAiEngineAsync`
+- **Purpose**: Shuts down a running backend engine process.
 - **Parameters**:
-  - `engine` (string, required): One of `"comfy"`, `"forge"`, or `"audio"`.
-- **Returns**: Status message confirming termination.
+  - `engine` (`string`, required): Name of engine to stop.
+- **Returns**: Process termination status.
 - **Example User Request**: *"Stop Forge to free up GPU memory."*
 
-### 6. `UnloadAllVram`
-- **Description**: Ejects and unloads all models currently occupying GPU VRAM across Ollama and other backends.
+### 6. `UnloadVramAsync`
+- **Purpose**: Ejects all active models from GPU video memory across engines.
 - **Parameters**: None.
-- **Returns**: Confirmation message.
+- **Returns**: Memory unload confirmation.
 - **Example User Request**: *"Unload all models from VRAM."*
 
-### 7. `GetAppSettings`
-- **Description**: Returns current application configuration settings (model paths, engine URLs, ports, default voices).
+### 7. `GetAppSettingsAsync`
+- **Purpose**: Reads current configuration values from `settings.json`.
 - **Parameters**: None.
-- **Returns**: `AppSettings` object.
-- **Example User Request**: *"What are my current ComfyUI and audio URLs?"*
+- **Returns**: Current application settings JSON.
+- **Example User Request**: *"Show my current engine URLs."*
 
-### 8. `UpdateAppSetting`
-- **Description**: Updates an existing application setting property and persists it to disk.
+### 8. `UpdateAppSettingAsync`
+- **Purpose**: Updates and persists a configuration setting.
 - **Parameters**:
-  - `propertyName` (string, required): Setting key (e.g. `"ComfyUiUrl"`, `"PreferredAudioVoice"`).
-  - `newValue` (string, required): New setting value.
-- **Returns**: Confirmation of setting update.
-- **Example User Request**: *"Change my preferred audio voice to am_adam."*
+  - `key` (`string`, required): Setting property name.
+  - `value` (`string`, required): New setting value.
+- **Returns**: Update confirmation.
+- **Example User Request**: *"Set PreferredAudioVoice to am_adam."*
 
-### 9. `EvaluateModelHardwareFit`
-- **Description**: Calculates whether a specific model (LLM, diffusion, video, audio, or 3D) will fit within available VRAM/RAM, estimating offload layers and speed.
+### 9. `CalculateHardwareFitAsync`
+- **Purpose**: Evaluates whether a model fits into available GPU VRAM and system RAM.
 - **Parameters**:
-  - `modelName` (string, required): Name of model (e.g. `"Llama 3.3 70B"`, `"Flux.1 Dev"`, `"Wan 2.2 14B"`).
-  - `modality` (string, optional, default `"llm"`): `"llm"`, `"diffusion"`, `"video"`, `"audio"`, or `"3d"`.
-  - `parametersBillions` (double?, optional): Parameter size in billions (e.g. 70.0).
-  - `quantization` (string?, optional): Quantization string (e.g. `"Q4_K_M"`, `"FP8"`).
-  - `contextLength` (int?, optional): Context window size (e.g. 8192).
-- **Returns**: `LlmFitResult`, `DiffusionFitResult`, `VideoFitResult`, etc.
-- **Example User Request**: *"Can my computer run DeepSeek R1 70B with 8k context?"*
+  - `modelName` (`string`, required): Model name or architecture.
+  - `parametersBillions` (`double?`, optional): Model parameter count in billions.
+  - `quantization` (`string?`, optional): Quantization format (e.g. `"Q4_K_M"`, `"FP8"`).
+  - `modality` (`string?`, optional): Modality type (`"llm"`, `"diffusion"`, `"video"`).
+- **Returns**: Offload layer estimation and fit verdict.
+- **Example User Request**: *"Can my system run DeepSeek R1 70B?"*
 
-### 10. `GenerateImage`
-- **Description**: Submits an image generation job with prompt and dimensions to ComfyUI or Forge.
+### 10. `GenerateImageAsync`
+- **Purpose**: Submits an image generation job to Forge or ComfyUI.
 - **Parameters**:
-  - `prompt` (string, required): Positive descriptive prompt.
-  - `negativePrompt` (string, optional): Negative prompt.
-  - `width` (int, optional, default 1024): Width in pixels.
-  - `height` (int, optional, default 1024): Height in pixels.
-  - `steps` (int, optional, default 20): Sampling steps.
-- **Returns**: Status and generated image asset URL or task tracking ID.
-- **Example User Request**: *"Generate a futuristic cyberpunk skyline at sunset."*
+  - `prompt` (`string`, required): Image description prompt.
+  - `negativePrompt` (`string?`, optional): Negative prompt text.
+  - `engine` (`string?`, optional): Engine target (`"forge"` or `"comfyui"`).
+  - `width` (`int`, optional, default `1024`): Image width in pixels.
+  - `height` (`int`, optional, default `1024`): Image height in pixels.
+- **Returns**: Status message with asset URL or tracking ID.
+- **Example User Request**: *"Generate an image of a red sports car in the rain."*
 
-### 11. `SpeakText`
-- **Description**: Synthesizes speech using the local Kokoro text-to-speech engine.
+### 11. `SynthesizeSpeechAsync`
+- **Purpose**: Synthesizes spoken audio from text using local Kokoro TTS.
 - **Parameters**:
-  - `text` (string, required): Text to vocalize.
-  - `voice` (string, optional): Target voice ID (e.g. `"af_heart"`, `"am_adam"`).
-- **Returns**: Confirmation and audio URL.
-- **Example User Request**: *"Speak 'System initialization complete' with voice af_heart."*
+  - `text` (`string`, required): Text content to speak.
+  - `voice` (`string`, optional, default `"af_heart"`): Target voice identifier.
+  - `format` (`string`, optional, default `"mp3"`): Output audio format.
+- **Returns**: Confirmation message and audio playback URI.
+- **Example User Request**: *"Speak 'System initialization complete' using voice af_heart."*
 
-### 12. `SearchDocumentation`
-- **Description**: Searches the in-app ASD-STE100 user guides and documentation topics.
+### 12. `QueryAppDocumentationAsync`
+- **Purpose**: Performs keyword searches across in-app documentation guides.
 - **Parameters**:
-  - `query` (string, required): Search keyword or question.
-- **Returns**: Matching document titles and excerpt snippets.
-- **Example User Request**: *"How do I configure reverse proxy remote access?"*
+  - `query` (`string`, required): Search keywords or topic.
+- **Returns**: Matching guide titles and relevant excerpt text.
+- **Example User Request**: *"How do I configure remote access?"*
+
+---
+
+## Part 4: Multimodal Message Attachments
+
+The assistant supports image inputs alongside text prompts.
+
+### Data Structures
+
+#### `AiChatMessageAttachment`
+```csharp
+public class AiChatMessageAttachment
+{
+    public string Id { get; set; } = Guid.NewGuid().ToString("N");
+    public string FileName { get; set; } = "";
+    public string ContentType { get; set; } = "image/png";
+    public string Base64Data { get; set; } = "";
+    public byte[]? RawBytes { get; set; }
+}
+```
+
+#### `AiChatMessageItem`
+Each chat message contains an attachment list:
+```csharp
+public class AiChatMessageItem
+{
+    public string Id { get; set; } = Guid.NewGuid().ToString("N");
+    public string Role { get; set; } = "user";
+    public string Content { get; set; } = "";
+    public List<AiChatMessageAttachment> Attachments { get; set; } = new();
+    public bool HasAttachments => Attachments.Count > 0;
+}
+```
+
+### Pipeline Serialization
+
+The orchestration layer maps attachments into `Microsoft.Extensions.AI.ImageContent`:
+1. If `RawBytes` exists, the service creates `new ImageContent(RawBytes, ContentType)`.
+2. If `Base64Data` exists, the service constructs a data URI (`data:image/png;base64,...`).
+3. The service packages the text content and all images into a unified `ChatMessage`.
+4. LiteLLM forwards the multimodal request to the external vision model.

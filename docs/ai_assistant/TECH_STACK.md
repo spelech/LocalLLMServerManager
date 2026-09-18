@@ -1,56 +1,86 @@
+---
+title: AI Assistant Technology Stack & Decision Rationale
+description: Libraries, frameworks, protocols, and architectural decision records for the AI Assistant.
+outline: deep
+---
+
 # AI Assistant Technology Stack & Decision Rationale
 
-This document details the software libraries, frameworks, architectural decisions, and provider targets selected for the In-App AI Assistant in [LocalLLMServerManager](file:///C:/Users/Alias/repos/LocalLLMServerManager).
+This document details the software libraries, frameworks, architectural decisions, and provider targets for the In-App AI Assistant.
 
 ---
 
 ## Technology Stack Summary
 
-| Layer | Technology | Version | Purpose & Rationale |
+| Layer | Technology | Version | Purpose and Rationale |
 |---|---|---|---|
-| **AI Abstractions** | `Microsoft.Extensions.AI` | `10.10.0` | Official Microsoft unified AI interface (`IChatClient`, middleware, function invocation) |
-| **OpenAI Protocol** | `Microsoft.Extensions.AI.OpenAI` / `OpenAI` | `10.10.0` / `2.1.0` | High-performance OpenAI v1/v2 protocol implementation, SSE streaming, Bearer auth |
-| **Target Gateway** | **LiteLLM** | Latest | Lightweight OpenAI-compatible proxy gateway with load balancing and routing |
-| **Recommended Model** | **Vertex AI Gemini 2.5 Flash** | `vertex_ai/gemini-2.5-flash` | Ultra-low latency (~200ms TTFT), 1M context, cheap token pricing, native tool calling |
-| **Living Prompts** | Markdown Documents | Filesystem | Dynamic, version-controlled system prompt guidelines editable without recompilation |
-| **UI Framework** | Avalonia UI | `11.2.5` | Cross-platform desktop (Windows/Linux/macOS) and WebAssembly (browser) UI |
-| **MVVM Architecture** | `CommunityToolkit.Mvvm` | `8.4.0` | High-performance source-generated observable properties and relay commands |
-| **Testing** | `xUnit.v3`, `Moq`, `Avalonia.Headless.XUnit` | `3.2.2` / `4.20.72` / `12.1.2` | Headless visual tree tests, mock unit tests, live LLM integration tests |
+| **AI Abstractions** | `Microsoft.Extensions.AI` | `10.10.0` | Official Microsoft AI interfaces (`IChatClient`, `ImageContent`, function calling). |
+| **OpenAI Protocol** | `Microsoft.Extensions.AI.OpenAI` / `OpenAI` | `10.10.0` / `2.1.0` | OpenAI REST client, SSE streaming, and Bearer token authentication. |
+| **Target Gateway** | **LiteLLM** | Latest | Proxy gateway providing model routing and `/model/info` capability discovery. |
+| **Recommended Model** | **Vertex AI Gemini 2.5 Flash** | `vertex_ai/gemini-2.5-flash` | Low latency (~200ms), 1M token context, multimodal vision, native tools. |
+| **Living Prompts** | Markdown Documents | Filesystem | Modular, version-controlled system prompts with runtime hot-reloading. |
+| **Model Metadata** | `AiModelCapabilityInfo` | Internal Record | Rich capability schema with token limits, vision flags, and badge formatting. |
+| **UI Framework** | Avalonia UI | `11.2.5` | Cross-platform desktop and WebAssembly chat interface with image attachment. |
+| **MVVM Architecture** | `CommunityToolkit.Mvvm` | `8.4.0` | Observable collections, property generation, and async relay commands. |
+| **Testing** | `xUnit.v3`, `Moq`, `Avalonia.Headless.XUnit` | `3.2.2` / `4.20.72` / `12.1.2` | Headless visual tree tests, mock unit tests, live LLM integration tests. |
 
 ---
 
 ## Architectural Decision Records (ADRs)
 
-### ADR 1: Why Microsoft.Extensions.AI instead of LangChain.NET or Raw HttpClient?
-- **Standardization**: `Microsoft.Extensions.AI` is the official Microsoft standard released with .NET 9 and .NET 10. It establishes standard abstractions across OpenAI, Azure OpenAI, Ollama, Anthropic, and custom models.
-- **Pipeline Middleware Architecture**: Provides composable wrappers like `FunctionInvokingChatClient`, `LoggingChatClient`, and `OpenTelemetryChatClient` that chain seamlessly.
-- **Automatic Function Calling**: Generates JSON Schema tool declarations directly from standard C# method signatures, parameter types, and `[Description]` attributes using reflection—eliminating fragile manual schema writing.
-- **Lightweight & Native**: Zero Python runtime dependencies, no sidecar processes, and near-zero memory footprint.
+### ADR 1: Unified AI Abstraction and Multimodal Serialization
 
-### ADR 2: Why Target LiteLLM + Google Cloud Vertex AI Gemini Flash?
-- **VRAM Conservation**: Local models loaded in Ollama, ComfyUI, or Forge consume precious GPU VRAM (4GB–24GB). Running an external LLM for assistant tasks guarantees the assistant is **always available**, even when local engines are busy, crashing, or allocating 100% of VRAM for 4K video/image generation.
-- **Gemini 2.5 Flash (`vertex_ai/gemini-2.5-flash`)**:
-  - Extremely fast time-to-first-token (~200–400ms).
-  - High accuracy on multi-turn tool calling and schema compliance.
-  - Very large context window (1,000,000+ tokens) allowing full inclusion of app documentation, capabilities, and system logs without truncation.
-  - Minimal cost (~$0.075 per 1M tokens), making continuous copilot assistance cost-effective.
-- **LiteLLM Proxy**:
-  - Exposes standard OpenAI `/v1/chat/completions` and `/v1/models` endpoints.
-  - Handles Google Cloud IAM / Service Account authentication transparently, eliminating the need for complex GCP SDK dependencies in this application.
-  - Allows seamless switching between Gemini Flash, Claude 3.5 Sonnet, GPT-4o, or local Ollama endpoints simply by changing the model string.
+- **Context**: The assistant requires tool calling, streaming responses, and image input support.
+- **Decision**: Use `Microsoft.Extensions.AI` as the core abstraction.
+- **Rationale**:
+  - `Microsoft.Extensions.AI` is the official Microsoft standard for modern .NET applications.
+  - Middleware wrappers like `FunctionInvokingChatClient` automate tool execution loops.
+  - The framework generates JSON Schemas directly from C# method signatures and `[Description]` attributes.
+  - Unified `ChatMessage` objects accept both text and `ImageContent` seamlessly.
+  - Zero Python runtime dependencies exist in the host application.
 
-### ADR 3: Why Living Prompts in Markdown?
-- Prompts stored directly in source code strings become rigid, difficult to read, and impossible to adjust without re-building and re-deploying the binary.
-- Storing prompts as clean Markdown files in `Prompts/` (`system-prompt.md`, `capabilities.md`, `workflows.md`, `app-control.md`):
-  - Enables version control via Git alongside code.
-  - Enables users and developers to edit prompts in any markdown editor.
-  - Supports runtime hot-reloading (`POST /api/ai/prompts/reload` or UI button) with immediate cache invalidation.
-  - Allows directory overriding via `AppSettings.AiAssistantPromptsDirectory`.
+### ADR 2: LiteLLM Gateway and Capability Discovery Protocol
 
-### ADR 4: Why Dual Desktop & WASM UI Support?
-- `LocalLLMServerManager` runs in two primary modes:
-  1. **Native Desktop Application**: Standalone GUI with direct in-process access to OS APIs, GPUs, and services.
-  2. **Browser Client / LAN Access**: Hosted WebAssembly client connecting over the network to the server.
-- `AiAssistantViewModel` supports both modes:
-  - If direct `IAiAssistantService` is injected (Desktop mode), it streams directly in-process via C# async streams.
-  - If only `HttpClient` is available (WASM / Remote Browser mode), it communicates with `/api/ai/chat` via SSE streaming (`text/event-stream`).
+- **Context**: Standard OpenAI `/v1/models` endpoints return only model identifiers. They omit context limits, vision support, and tool calling metadata.
+- **Decision**: Implement a two-tiered discovery protocol using LiteLLM `/model/info` with `/v1/models` fallback.
+- **Rationale**:
+  - LiteLLM `/model/info` exposes rich metadata: `max_input_tokens`, `supports_vision`, and `supports_function_calling`.
+  - The discovery engine converts this metadata into `AiModelCapabilityInfo` records.
+  - The fallback to standard `/v1/models` maintains compatibility with non-LiteLLM OpenAI endpoints.
+  - Discovered capabilities populate composer badges (`👁️`, `⚡`, `1M`), giving immediate user feedback.
+
+::: info Discovery Fallback Flow
+1. Query `GET {baseUrl}/model/info`.
+2. If successful, parse model properties and capability flags.
+3. If `/model/info` returns 404 or fails, query `GET {baseUrl}/v1/models`.
+4. Fallback parsing infers capabilities from model name patterns.
+:::
+
+### ADR 3: Local Model Exclusion Rules
+
+- **Context**: LiteLLM can register local Ollama instances alongside cloud models. Running assistant queries against local models exhausts GPU video memory needed for generative tasks.
+- **Decision**: Filter out local models by runtime provider and model identifier prefix. Do not filter by IP address.
+- **Rationale**:
+  - LiteLLM itself frequently runs on `127.0.0.1` or LAN IP addresses (`192.168.x.x`). Filtering by IP address would block valid cloud proxies.
+  - Filtering by provider (`ollama`, `local`, `llama.cpp`) reliably identifies local instances.
+  - Filtering by ID prefix (`ollama/`, `local/`) catches unbadged local model entries.
+  - Cloud models routed through LiteLLM consume zero local GPU memory.
+
+### ADR 4: Living Prompts in Modular Markdown
+
+- **Context**: System prompts hardcoded into C# source code require compilation and deployment for minor adjustments.
+- **Decision**: Store system prompts as clean Markdown files in `Prompts/` on disk.
+- **Rationale**:
+  - Markdown files reside in version control alongside source code.
+  - Developers and users can edit prompts in any text editor.
+  - `PromptManagementService` provides runtime cache invalidation via `POST /api/ai/prompts/reload` and UI actions.
+  - Custom prompt folders can be specified via `AppSettings.AiAssistantPromptsDirectory`.
+
+### ADR 5: Dual Desktop & WebAssembly UI Support
+
+- **Context**: LocalLLMServerManager runs both as a native desktop application and as a WebAssembly browser app.
+- **Decision**: Provide dual execution paths in `AiAssistantViewModel`.
+- **Rationale**:
+  - When running in desktop mode, the ViewModel calls `IAiAssistantService` directly in-process.
+  - When running in WebAssembly mode, the ViewModel connects to `/api/ai/chat` via Server-Sent Events (SSE).
+  - The composer bar supports dynamic model selection and image attachments across both execution modes.

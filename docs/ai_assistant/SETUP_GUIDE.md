@@ -1,38 +1,46 @@
+---
+title: AI Assistant Setup & Configuration Guide
+description: Step-by-step setup guide for LiteLLM proxy, model discovery, multimodal chat, and copilot controls.
+outline: deep
+---
+
 # AI Assistant Setup & Configuration Guide
 
-This guide walks through connecting the In-App AI Assistant to an external OpenAI-compatible API endpoint, specifically focusing on **LiteLLM proxying to Google Cloud Vertex AI Gemini 2.5 Flash**.
+This guide describes how to connect the In-App AI Assistant to an external OpenAI-compatible API endpoint. The recommended configuration uses **LiteLLM** proxying to **Google Cloud Vertex AI Gemini 2.5 Flash**.
 
 ---
 
 ## Architecture Context
 
-LocalLLMServerManager operates locally on your machine to manage Ollama, ComfyUI, Kokoro TTS, and SD-WebUI Forge. However, running a large copilot LLM locally would consume GPU VRAM needed by your image and text models.
+LocalLLMServerManager runs image, video, audio, and text models on your local graphics card. Running a large assistant model locally consumes video memory needed by your generative workflows.
 
-Connecting the AI Assistant to an external **LiteLLM proxy** provides:
-1. **Always-available Copilot**: Functions even if all local engines are offline or crashed.
-2. **0 MB Local VRAM Usage**: Leaves 100% of your GPU VRAM free for your local generative workflows.
-3. **Massive Context & Speed**: Vertex AI Gemini 2.5 Flash offers 1M+ context window with sub-second token latency.
+Connecting the assistant to an external LiteLLM gateway provides three major advantages:
+1. **Always Available**: The assistant responds even if local engines crash or stop.
+2. **Zero VRAM Footprint**: Generative workflows retain 100% of local GPU memory.
+3. **Large Context and Vision**: Gemini 2.5 Flash offers a 1,000,000 token context window with native image understanding.
 
 ---
 
-## Step 1: Set Up LiteLLM with Google Cloud Vertex AI
+## Step 1: Set Up the LiteLLM Proxy
 
-### 1.1 Install LiteLLM Proxy
-In your Python environment or terminal:
+### 1.1 Install the LiteLLM Proxy
+Install the LiteLLM proxy package using Python:
 ```bash
 pip install 'litellm[proxy]'
 ```
 
 ### 1.2 Authenticate with Google Cloud
-Ensure your machine is authenticated to your Google Cloud project:
+Authenticate your system to Google Cloud:
 ```bash
 gcloud auth application-default login
-# or set the service account key environment variable:
-# export GOOGLE_APPLICATION_CREDENTIALS="/path/to/key.json"
+```
+Alternatively, set the service account environment variable:
+```bash
+export GOOGLE_APPLICATION_CREDENTIALS="/path/to/key.json"
 ```
 
-### 1.3 Create `config.yaml`
-Create a `config.yaml` configuration file for LiteLLM:
+### 1.3 Create the Configuration File
+Create a file named `config.yaml`:
 ```yaml
 model_list:
   - model_name: vertex_ai/gemini-2.5-flash
@@ -45,31 +53,43 @@ litellm_settings:
   drop_params: true
 ```
 
-### 1.4 Start LiteLLM
-Run the proxy server on port 4000:
+### 1.4 Start the LiteLLM Proxy
+Start the proxy on port 4000:
 ```bash
 litellm --config config.yaml --port 4000
 ```
-LiteLLM is now listening at `http://127.0.0.1:4000/v1` with OpenAI protocol compatibility.
+LiteLLM now listens at `http://127.0.0.1:4000/v1` with OpenAI API compatibility.
 
 ---
 
 ## Step 2: Configure LocalLLMServerManager
 
-### Method A: Using the In-App Setup Wizard (Recommended)
-1. Launch **LocalLLMServerManager** (Desktop GUI or Web UI).
-2. Select the **`[🤖 Copilot]`** tab in the main tab navigation.
-3. In the toolbar, click **`⚙️ Setup & Endpoint`** to expand the configuration panel.
-4. Fill in the connection settings:
+### Method A: Use the In-App Setup Wizard (Recommended)
+1. Open **LocalLLMServerManager**.
+2. Select the **Copilot** tab.
+3. Click **Setup & Endpoint** in the toolbar to expand settings.
+4. Enter the connection settings:
    - **OpenAI-Compatible Endpoint URL**: `http://127.0.0.1:4000/v1`
-   - **API Key**: Optional for local LiteLLM (or enter your master key if configured).
+   - **API Key**: Optional for local LiteLLM proxies.
    - **Model Identifier**: `vertex_ai/gemini-2.5-flash`
-5. Click **`⚡ Test Connection`**.
-   - You should see: `🟢 Connected successfully to 127.0.0.1 (Latency: ~25 ms, 1 models found)`.
-6. Click **`💾 Save Settings`**.
+5. Click **Test Connection**.
+   - The app verifies connectivity and runs capability discovery.
+   - The status bar displays discovered models and connection latency.
+6. Click **Save Settings**.
 
-### Method B: Via `settings.json`
-Alternatively, edit `settings.json` in your application root:
+::: info Automated Capability Discovery
+Testing the connection calls `GET /model/info`. If `/model/info` is not supported, the app queries `GET /v1/models`.
+The discovery process populates model token limits, vision flags, and tool capabilities.
+:::
+
+::: warning Local Model Exclusion Filter
+LiteLLM proxies may list local Ollama models.
+The assistant automatically filters out local models (`ollama`, `local`, `llama.cpp`) to prevent local GPU memory use.
+Hosting LiteLLM on local addresses (`127.0.0.1`) or LAN IP addresses remains fully supported.
+:::
+
+### Method B: Configure via `settings.json`
+Edit `settings.json` in the application root folder:
 ```json
 {
   "AiAssistantEnabled": true,
@@ -82,48 +102,89 @@ Alternatively, edit `settings.json` in your application root:
 
 ---
 
-## Step 3: Verifying Copilot Natural Language Control
+## Step 3: Interactive Composer Bar & Multimodal Chat
 
-Once configured, verify app control by entering test queries in the copilot chat box:
+The chat interface includes an interactive composer bar with real-time capability controls.
 
-1. **Hardware Telemetry**:
+### Dynamic Model Switching
+1. Open the model dropdown in the composer bar.
+2. Review the capability badges next to each model name:
+   - `👁️`: Supports multimodal image inputs.
+   - `⚡`: Supports autonomous tool and function execution.
+   - `1M` / `128k`: Displays input context window capacity.
+   - `[provider]`: Shows the hosting backend provider.
+3. Select any model to switch targets for the next chat message.
+
+### Attaching Images (Multimodal Chat)
+You can attach images using two convenient methods:
+
+1. **File Picker Button (📎)**:
+   - Click the attachment button (`📎`) next to the text input.
+   - Select one or more images (`.png`, `.jpg`, `.jpeg`, `.webp`, `.gif`).
+2. **Clipboard Paste (`Ctrl+V` / `Cmd+V`)**:
+   - Copy an image from a browser, paint tool, or file manager.
+   - Focus the chat prompt input box.
+   - Press `Ctrl+V` (or `Cmd+V` on macOS) to paste the image directly.
+
+Staged images appear in the preview tray above the prompt box.
+Click the remove button (`✕`) on any image thumbnail to remove it before sending.
+
+::: tip Multimodal Query Examples
+- Attach a desktop screenshot: *"Explain this error message and suggest a solution."*
+- Attach a generated image: *"Critique the lighting and composition of this image."*
+:::
+
+---
+
+## Step 4: Verify Copilot Control Tools
+
+Submit test queries to verify native C# tool execution:
+
+1. **Hardware Memory Telemetry**:
    > *"What is my current VRAM allocation and free memory?"*
-   - *Expected*: Assistant executes the `GetVramTelemetry` tool, displays the execution card, and reports your GPU model and free memory.
+   - The assistant calls `GetGpuVramTelemetryAsync` and reports your GPU memory status.
 
-2. **Hardware Fit Calculator**:
-   > *"Can my system run Llama 3.3 70B with 8k context?"*
-   - *Expected*: Assistant executes `EvaluateModelHardwareFit` and explains layer offloading and VRAM fit.
+2. **Model Hardware Fit Evaluation**:
+   > *"Can my system run DeepSeek R1 70B with 8k context?"*
+   - The assistant calls `CalculateHardwareFitAsync` and evaluates offload layers.
 
-3. **Engine Health Check**:
+3. **Backend Service Health**:
    > *"Are ComfyUI and Kokoro running?"*
-   - *Expected*: Assistant calls `GetSystemHealth` and summarizes engine status.
+   - The assistant calls `CheckServicesHealthAsync` and summarizes engine status.
 
 4. **Speech Synthesis**:
-   > *"Speak 'Local LLM Server Manager is ready' using Kokoro."*
-   - *Expected*: Assistant calls `SpeakText` and presents the synthesized audio output.
+   > *"Speak 'Local server manager is ready' using voice af_heart."*
+   - The assistant calls `SynthesizeSpeechAsync` and returns audio playback controls.
 
 ---
 
 ## Alternative Providers
 
-| Provider | Endpoint URL | Model Identifier | Notes |
+| Provider | Endpoint URL | Example Model | Notes |
 |---|---|---|---|
-| **Local Ollama** | `http://127.0.0.1:11434/v1` | `llama3.1:8b` or `qwen2.5:7b` | Uses local GPU VRAM. Requires Ollama running. |
-| **OpenAI Direct** | `https://api.openai.com/v1` | `gpt-4o-mini` or `gpt-4o` | Requires standard OpenAI API key (`sk-...`). |
-| **Groq Cloud** | `https://api.groq.com/openai/v1` | `llama-3.3-70b-versatile` | Ultra-fast token generation (~500 tok/s). |
-| **vLLM / Local AI** | `http://127.0.0.1:8000/v1` | `<custom-model-id>` | Self-hosted OpenAI-compatible inference. |
+| **LiteLLM Gateway** | `http://127.0.0.1:4000/v1` | `vertex_ai/gemini-2.5-flash` | Recommended. 0 MB VRAM, 1M context, vision, tools. |
+| **OpenAI Direct** | `https://api.openai.com/v1` | `gpt-4o` | Requires standard OpenAI API key (`sk-...`). |
+| **Groq Cloud** | `https://api.groq.com/openai/v1` | `llama-3.3-70b-versatile` | Ultra-fast token generation with tool support. |
+| **Anthropic via LiteLLM** | `http://127.0.0.1:4000/v1` | `claude-3-5-sonnet-20241022` | Advanced coding and vision capabilities. |
 
 ---
 
 ## Troubleshooting
 
-### Error: `Connection refused on port 4000`
-- Ensure LiteLLM is actively running: `curl http://127.0.0.1:4000/health`.
-- If running LocalLLMServerManager in WSL or a container, use `http://host.docker.internal:4000/v1` or your LAN IP instead of `127.0.0.1`.
+::: warning Connection Refused
+If connection fails on port 4000:
+1. Verify LiteLLM is running: `curl http://127.0.0.1:4000/health`.
+2. When running in containers or virtual machines, use the host IP instead of `127.0.0.1`.
+:::
 
-### Error: `Endpoint responded with status 401 Unauthorized`
-- Your LiteLLM proxy requires an API key. Set `litellm_settings: master_key: ...` or provide the matching key in the Copilot Setup Wizard.
+::: warning HTTP 401 Unauthorized
+If LiteLLM responds with status 401:
+1. Check if LiteLLM requires a master key in `config.yaml`.
+2. Enter the configured master key into the **API Key** field in the setup wizard.
+:::
 
-### Error: `Function calling failed / tool arguments invalid`
-- Ensure your target model supports OpenAI-compatible function calling (Gemini 2.5 Flash, GPT-4o, and Claude 3.5 Sonnet support this natively).
-- Check the console logs for detailed JSON schema inspection.
+::: tip Vision Model Selection
+If image attachment fails or returns an error:
+Make sure your selected model displays the `👁️` vision badge in the composer bar.
+Models without vision capability cannot process image attachments.
+:::
