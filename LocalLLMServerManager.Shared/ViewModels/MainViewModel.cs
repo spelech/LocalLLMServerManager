@@ -159,6 +159,7 @@ public partial class MainViewModel : ObservableObject
         Settings = new SettingsViewModel(PresetService) { ApiBase = ApiBase };
         Audio = new AudioStudioViewModel(PresetService, _canIRunItService) { ApiBase = ApiBase };
         Assistant = new AiAssistantViewModel(assistantService, settingsService, promptService, httpClient ?? Http);
+        Documentation.OnNavigateToTabRequested = tab => SelectedTabIndex = tab;
 
         LoadStudioPresets();
         RecalculateVideoHardwareFit();
