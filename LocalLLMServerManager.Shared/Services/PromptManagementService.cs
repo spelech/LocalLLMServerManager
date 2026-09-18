@@ -65,12 +65,21 @@ public class PromptManagementService : IPromptManagementService
 
     public async Task<IReadOnlyDictionary<string, string>> GetAllPromptsAsync(string? customPromptDir = null, CancellationToken cancellationToken = default)
     {
-        var dict = new Dictionary<string, string>
+        var sys = await GetSystemPromptAsync(customPromptDir, cancellationToken);
+        var cap = await GetCapabilitiesPromptAsync(customPromptDir, cancellationToken);
+        var work = await GetWorkflowsPromptAsync(customPromptDir, cancellationToken);
+        var ctrl = await GetAppControlPromptAsync(customPromptDir, cancellationToken);
+
+        var dict = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
         {
-            [SystemPromptFileName] = await GetSystemPromptAsync(customPromptDir, cancellationToken),
-            [CapabilitiesFileName] = await GetCapabilitiesPromptAsync(customPromptDir, cancellationToken),
-            [WorkflowsFileName] = await GetWorkflowsPromptAsync(customPromptDir, cancellationToken),
-            [AppControlFileName] = await GetAppControlPromptAsync(customPromptDir, cancellationToken)
+            [SystemPromptFileName] = sys,
+            [CapabilitiesFileName] = cap,
+            [WorkflowsFileName] = work,
+            [AppControlFileName] = ctrl,
+            ["system-prompt"] = sys,
+            ["capabilities"] = cap,
+            ["workflows"] = work,
+            ["app-control"] = ctrl
         };
         return dict;
     }

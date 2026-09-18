@@ -156,6 +156,9 @@ public class Program
         builder.Services.AddSingleton<IOllamaModelService, OllamaModelService>();
         builder.Services.AddSingleton<IComponentManagerService, ComponentManagerService>();
         builder.Services.AddSingleton<ICanIRunItService, CanIRunItService>();
+        builder.Services.AddSingleton<IPromptManagementService, PromptManagementService>();
+        builder.Services.AddSingleton<IAiAppTools, AiAppTools>();
+        builder.Services.AddSingleton<IAiAssistantService, AiAssistantService>();
 
         // Register MCP Server
         builder.Services.AddMcpServer()
@@ -277,6 +280,7 @@ public class Program
         app.MapDiscoveryEndpoints();
         app.MapComponentEndpoints();
         app.MapHardwareEndpoints();
+        app.MapAiAssistantEndpoints();
 
         // Service Update Route
         app.MapPost("/api/service/update", async (HttpContext httpContext, IGitUpdateService gitService) =>

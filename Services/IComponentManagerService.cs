@@ -4,6 +4,7 @@ namespace LocalLLMServerManager.Services;
 
 public interface IComponentManagerService
 {
+    bool IsAiAssistantInstalled { get; }
     bool IsVideoPackInstalled { get; }
     bool IsAudioPackInstalled { get; }
     bool IsMusicPackInstalled { get; }
@@ -11,3 +12,4 @@ public interface IComponentManagerService
     Task<bool> InstallComponentAsync(string componentId, IProgress<double>? progress = null, CancellationToken cancellationToken = default);
     Task<bool> UninstallComponentAsync(string componentId);
 }
+

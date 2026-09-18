@@ -75,6 +75,7 @@ public class AiAssistantService : IAiAssistantService
                 : (targetEndpoint.Contains("/v1/") ? $"{targetEndpoint.Substring(0, targetEndpoint.IndexOf("/v1/") + 3)}/models" : $"{targetEndpoint.TrimEnd('/')}/models");
 
             HttpResponseMessage? modelsResp = null;
+            string? modelsError = null;
             try
             {
                 modelsResp = await client.GetAsync(modelsUrl, cancellationToken);
@@ -93,8 +94,16 @@ public class AiAssistantService : IAiAssistantService
                         }
                     }
                 }
+                else
+                {
+                    var errBody = await modelsResp.Content.ReadAsStringAsync(cancellationToken);
+                    modelsError = $"Endpoint responded with status {(int)modelsResp.StatusCode} ({modelsResp.ReasonPhrase}): {ExtractErrorMessage(errBody)}";
+                }
             }
-            catch { }
+            catch (Exception ex)
+            {
+                modelsError = ex.Message;
+            }
 
             // 2. Test ping completion with configured or selected model
             if (!string.IsNullOrWhiteSpace(targetModel))
@@ -127,6 +136,14 @@ public class AiAssistantService : IAiAssistantService
             else
             {
                 sw.Stop();
+                if (modelsError != null)
+                {
+                    return new AiValidationResult(
+                        false,
+                        $"Failed to query models from endpoint: {modelsError}",
+                        availableModels,
+                        sw.ElapsedMilliseconds);
+                }
             }
 
             return new AiValidationResult(
@@ -148,6 +165,10 @@ public class AiAssistantService : IAiAssistantService
         CancellationToken cancellationToken = default)
     {
         var result = await ValidateConnectionAsync(endpoint, apiKey, model: null, cancellationToken);
+        if (!result.Success)
+        {
+            throw new InvalidOperationException(result.Message);
+        }
         return result.AvailableModels;
     }
 
