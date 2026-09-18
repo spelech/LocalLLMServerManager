@@ -47,7 +47,7 @@
                 <controls:AiAssistantTabControl DataContext="{Binding Assistant}"/>
             </TabItem>
 
-            <!-- TAB 5: In-App ASD-STE100 Documentation -->
+            <!-- TAB 5: In-App Documentation -->
             <TabItem Header="📖 Documentation">
                 <controls:DocumentationTabControl DataContext="{Binding Documentation}"/>
             </TabItem>

@@ -37,7 +37,7 @@ You have access to tools that allow you to directly inspect and manage LocalLLMS
 - **Trigger**: User asks "read this aloud", "generate audio for...".
 
 ### 9. `query_app_documentation(query)`
-- **Purpose**: Search the in-app ASD-STE100 technical documentation for specific questions.
+- **Purpose**: Search the in-app technical documentation guides for specific questions.
 - **Trigger**: User asks specific questions about how features work or how to configure complex settings.
 
 ## Execution Rules
