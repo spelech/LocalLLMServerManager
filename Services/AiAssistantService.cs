@@ -164,12 +164,331 @@ public class AiAssistantService : IAiAssistantService
         string? apiKey = null,
         CancellationToken cancellationToken = default)
     {
-        var result = await ValidateConnectionAsync(endpoint, apiKey, model: null, cancellationToken);
-        if (!result.Success)
+        var capabilities = await GetModelCapabilitiesAsync(endpoint, apiKey, includeLocal: false, cancellationToken);
+        return capabilities.Select(m => m.Id).ToList();
+    }
+
+    public async Task<List<AiModelCapabilityInfo>> GetModelCapabilitiesAsync(
+        string? endpoint = null,
+        string? apiKey = null,
+        bool includeLocal = false,
+        CancellationToken cancellationToken = default)
+    {
+        var settings = _settingsService.LoadSettings();
+        var targetEndpoint = endpoint != null ? endpoint.Trim() : settings.AiAssistantEndpoint;
+        var targetKey = apiKey != null ? apiKey.Trim() : settings.AiAssistantApiKey;
+
+        if (string.IsNullOrWhiteSpace(targetEndpoint))
         {
-            throw new InvalidOperationException(result.Message);
+            throw new InvalidOperationException("API Endpoint URL is required.");
         }
-        return result.AvailableModels;
+
+        using var client = _httpClientFactory.CreateClient();
+        client.Timeout = TimeSpan.FromSeconds(10);
+
+        if (!string.IsNullOrWhiteSpace(targetKey))
+        {
+            client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", targetKey);
+        }
+
+        var trimmedEndpoint = targetEndpoint.TrimEnd('/');
+        var baseUrl = trimmedEndpoint;
+        if (trimmedEndpoint.EndsWith("/v1", StringComparison.OrdinalIgnoreCase))
+        {
+            baseUrl = trimmedEndpoint[..^3].TrimEnd('/');
+        }
+        else if (trimmedEndpoint.Contains("/v1/", StringComparison.OrdinalIgnoreCase))
+        {
+            baseUrl = trimmedEndpoint[..trimmedEndpoint.IndexOf("/v1/", StringComparison.OrdinalIgnoreCase)].TrimEnd('/');
+        }
+
+        // 1. Primary discovery: GET /model/info (LiteLLM)
+        var modelInfoUrl = $"{baseUrl}/model/info";
+        try
+        {
+            var modelInfoResp = await client.GetAsync(modelInfoUrl, cancellationToken);
+            if (modelInfoResp.IsSuccessStatusCode)
+            {
+                var json = await modelInfoResp.Content.ReadAsStringAsync(cancellationToken);
+                var capabilities = ParseModelCapabilitiesFromJson(json, includeLocal);
+                return capabilities;
+            }
+        }
+        catch (OperationCanceledException)
+        {
+            throw;
+        }
+        catch
+        {
+            // Fallback to /v1/models
+        }
+
+        // 2. Fallback discovery: GET /v1/models (OpenAI standard)
+        var modelsUrl = trimmedEndpoint.EndsWith("/v1", StringComparison.OrdinalIgnoreCase)
+            ? $"{trimmedEndpoint}/models"
+            : (trimmedEndpoint.Contains("/v1/")
+                ? $"{trimmedEndpoint[..(trimmedEndpoint.IndexOf("/v1/", StringComparison.OrdinalIgnoreCase) + 3)]}/models"
+                : $"{baseUrl}/v1/models");
+
+        try
+        {
+            var modelsResp = await client.GetAsync(modelsUrl, cancellationToken);
+            if (modelsResp.IsSuccessStatusCode)
+            {
+                var json = await modelsResp.Content.ReadAsStringAsync(cancellationToken);
+                return ParseModelCapabilitiesFromJson(json, includeLocal);
+            }
+
+            if (!modelsUrl.Equals($"{baseUrl}/models", StringComparison.OrdinalIgnoreCase))
+            {
+                var altResp = await client.GetAsync($"{baseUrl}/models", cancellationToken);
+                if (altResp.IsSuccessStatusCode)
+                {
+                    var json = await altResp.Content.ReadAsStringAsync(cancellationToken);
+                    return ParseModelCapabilitiesFromJson(json, includeLocal);
+                }
+            }
+
+            var errBody = await modelsResp.Content.ReadAsStringAsync(cancellationToken);
+            throw new InvalidOperationException($"Endpoint responded with status {(int)modelsResp.StatusCode} ({modelsResp.ReasonPhrase}): {ExtractErrorMessage(errBody)}");
+        }
+        catch (OperationCanceledException)
+        {
+            throw;
+        }
+        catch (InvalidOperationException)
+        {
+            throw;
+        }
+        catch (Exception ex)
+        {
+            throw new InvalidOperationException($"Connection failed: {ex.Message}", ex);
+        }
+    }
+
+    public static bool IsLocalModel(string id, string? provider)
+    {
+        if (!string.IsNullOrWhiteSpace(provider))
+        {
+            var p = provider.Trim();
+            if (string.Equals(p, "ollama", StringComparison.OrdinalIgnoreCase) ||
+                string.Equals(p, "local", StringComparison.OrdinalIgnoreCase) ||
+                string.Equals(p, "llama.cpp", StringComparison.OrdinalIgnoreCase) ||
+                string.Equals(p, "vllm_local", StringComparison.OrdinalIgnoreCase))
+            {
+                return true;
+            }
+        }
+
+        if (!string.IsNullOrWhiteSpace(id))
+        {
+            var trimmedId = id.Trim();
+            if (trimmedId.StartsWith("ollama/", StringComparison.OrdinalIgnoreCase) ||
+                trimmedId.StartsWith("local/", StringComparison.OrdinalIgnoreCase) ||
+                trimmedId.StartsWith("llama/", StringComparison.OrdinalIgnoreCase) ||
+                trimmedId.StartsWith("ollama_chat/", StringComparison.OrdinalIgnoreCase))
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    public static List<AiModelCapabilityInfo> ParseModelCapabilitiesFromJson(string json, bool includeLocal = false)
+    {
+        var list = new List<AiModelCapabilityInfo>();
+        if (string.IsNullOrWhiteSpace(json))
+        {
+            return list;
+        }
+
+        try
+        {
+            using var doc = JsonDocument.Parse(json);
+            var root = doc.RootElement;
+
+            IEnumerable<JsonElement> elements;
+            if (root.ValueKind == JsonValueKind.Array)
+            {
+                elements = root.EnumerateArray();
+            }
+            else if (root.ValueKind == JsonValueKind.Object && root.TryGetProperty("data", out var dataProp))
+            {
+                if (dataProp.ValueKind == JsonValueKind.Array)
+                {
+                    elements = dataProp.EnumerateArray();
+                }
+                else if (dataProp.ValueKind == JsonValueKind.Object)
+                {
+                    elements = dataProp.EnumerateObject().Select(p => p.Value);
+                }
+                else
+                {
+                    return list;
+                }
+            }
+            else
+            {
+                return list;
+            }
+
+            foreach (var el in elements)
+            {
+                if (el.ValueKind != JsonValueKind.Object)
+                {
+                    continue;
+                }
+
+                string? id = null;
+                if (el.TryGetProperty("id", out var idProp) && idProp.ValueKind == JsonValueKind.String)
+                {
+                    id = idProp.GetString();
+                }
+                else if (el.TryGetProperty("model_name", out var mnProp) && mnProp.ValueKind == JsonValueKind.String)
+                {
+                    id = mnProp.GetString();
+                }
+                else if (el.TryGetProperty("model", out var mProp) && mProp.ValueKind == JsonValueKind.String)
+                {
+                    id = mProp.GetString();
+                }
+
+                if (string.IsNullOrWhiteSpace(id))
+                {
+                    continue;
+                }
+
+                JsonElement? modelInfo = null;
+                if (el.TryGetProperty("model_info", out var miProp) && miProp.ValueKind == JsonValueKind.Object)
+                {
+                    modelInfo = miProp;
+                }
+
+                string? GetStringValue(string propName)
+                {
+                    if (modelInfo.HasValue && modelInfo.Value.TryGetProperty(propName, out var p1) && p1.ValueKind == JsonValueKind.String)
+                        return p1.GetString();
+                    if (el.TryGetProperty(propName, out var p2) && p2.ValueKind == JsonValueKind.String)
+                        return p2.GetString();
+                    return null;
+                }
+
+                bool? GetBoolValue(string propName)
+                {
+                    if (modelInfo.HasValue && modelInfo.Value.TryGetProperty(propName, out var p1))
+                    {
+                        if (p1.ValueKind == JsonValueKind.True || p1.ValueKind == JsonValueKind.False)
+                            return p1.GetBoolean();
+                        if (p1.ValueKind == JsonValueKind.String && bool.TryParse(p1.GetString(), out var b1))
+                            return b1;
+                    }
+                    if (el.TryGetProperty(propName, out var p2))
+                    {
+                        if (p2.ValueKind == JsonValueKind.True || p2.ValueKind == JsonValueKind.False)
+                            return p2.GetBoolean();
+                        if (p2.ValueKind == JsonValueKind.String && bool.TryParse(p2.GetString(), out var b2))
+                            return b2;
+                    }
+                    return null;
+                }
+
+                int? GetIntValue(params string[] propNames)
+                {
+                    foreach (var name in propNames)
+                    {
+                        if (modelInfo.HasValue && modelInfo.Value.TryGetProperty(name, out var p1))
+                        {
+                            if (p1.ValueKind == JsonValueKind.Number && p1.TryGetInt32(out var i1))
+                                return i1;
+                            if (p1.ValueKind == JsonValueKind.String && int.TryParse(p1.GetString(), out var s1))
+                                return s1;
+                        }
+                        if (el.TryGetProperty(name, out var p2))
+                        {
+                            if (p2.ValueKind == JsonValueKind.Number && p2.TryGetInt32(out var i2))
+                                return i2;
+                            if (p2.ValueKind == JsonValueKind.String && int.TryParse(p2.GetString(), out var s2))
+                                return s2;
+                        }
+                    }
+                    return null;
+                }
+
+                var provider = GetStringValue("litellm_provider") ?? GetStringValue("provider");
+                if (string.IsNullOrWhiteSpace(provider))
+                {
+                    if (id.Contains('/'))
+                    {
+                        provider = id.Substring(0, id.IndexOf('/'));
+                    }
+                    else
+                    {
+                        var lower = id.ToLowerInvariant();
+                        if (lower.Contains("gemini")) provider = "google";
+                        else if (lower.Contains("gpt")) provider = "openai";
+                        else if (lower.Contains("claude")) provider = "anthropic";
+                        else provider = "openai";
+                    }
+                }
+
+                var isLocal = IsLocalModel(id, provider);
+                if (!includeLocal && isLocal)
+                {
+                    continue;
+                }
+
+                var mode = GetStringValue("mode") ?? "chat";
+
+                var displayName = GetStringValue("display_name") ?? GetStringValue("name");
+                if (string.IsNullOrWhiteSpace(displayName))
+                {
+                    displayName = id.Contains('/') ? id.Substring(id.IndexOf('/') + 1) : id;
+                }
+
+                var lowerId = id.ToLowerInvariant();
+                var supportsVision = GetBoolValue("supports_vision") ?? (
+                    lowerId.Contains("gemini") ||
+                    lowerId.Contains("gpt-4o") ||
+                    lowerId.Contains("gpt-4-turbo") ||
+                    lowerId.Contains("claude-3") ||
+                    lowerId.Contains("vision") ||
+                    lowerId.Contains("llava") ||
+                    lowerId.Contains("pixtral") ||
+                    lowerId.Contains("qwen-vl") ||
+                    lowerId.Contains("qwen2-vl")
+                );
+
+                var supportsFunctionCalling = GetBoolValue("supports_function_calling") ?? true;
+
+                var supportsAudio = GetBoolValue("supports_audio") ?? (
+                    lowerId.Contains("audio") ||
+                    lowerId.Contains("realtime")
+                );
+
+                var maxInputTokens = GetIntValue("max_input_tokens", "max_tokens");
+                var maxOutputTokens = GetIntValue("max_output_tokens");
+
+                list.Add(new AiModelCapabilityInfo(
+                    Id: id,
+                    DisplayName: displayName,
+                    Provider: provider,
+                    Mode: mode,
+                    SupportsVision: supportsVision,
+                    SupportsFunctionCalling: supportsFunctionCalling,
+                    SupportsAudio: supportsAudio,
+                    MaxInputTokens: maxInputTokens,
+                    MaxOutputTokens: maxOutputTokens,
+                    IsLocal: isLocal
+                ));
+            }
+        }
+        catch
+        {
+            // On parse error, return whatever valid models were extracted
+        }
+
+        return list;
     }
 
     public async Task<AiChatResponse> SendChatAsync(

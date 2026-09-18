@@ -29,6 +29,15 @@ public interface IAiAssistantService
         CancellationToken cancellationToken = default);
 
     /// <summary>
+    /// Enumerate available model capabilities from the remote LiteLLM or OpenAI-compatible endpoint.
+    /// </summary>
+    Task<List<AiModelCapabilityInfo>> GetModelCapabilitiesAsync(
+        string? endpoint = null,
+        string? apiKey = null,
+        bool includeLocal = false,
+        CancellationToken cancellationToken = default);
+
+    /// <summary>
     /// Executes a full non-streaming multi-turn chat completion including automated tool calling.
     /// </summary>
     Task<AiChatResponse> SendChatAsync(

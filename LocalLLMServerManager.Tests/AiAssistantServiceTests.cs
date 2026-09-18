@@ -199,5 +199,180 @@ public class AiAssistantServiceTests
         Assert.Equal("test.png", msg.Attachments[0].FileName);
         Assert.False(string.IsNullOrWhiteSpace(msg.Attachments[0].Id));
     }
+
+    [Fact]
+    public void ParseModelCapabilities_ExcludesLocalModels_WhenIncludeLocalIsFalse()
+    {
+        var sampleLiteLlmJson = """
+        {
+          "data": [
+            {
+              "id": "vertex_ai/gemini-2.5-flash",
+              "model_info": {
+                "mode": "chat",
+                "litellm_provider": "vertex_ai",
+                "supports_vision": true,
+                "supports_function_calling": true,
+                "max_input_tokens": 1048576,
+                "max_output_tokens": 8192
+              }
+            },
+            {
+              "id": "openai/gpt-4o",
+              "model_info": {
+                "mode": "chat",
+                "litellm_provider": "openai",
+                "supports_vision": true,
+                "supports_function_calling": true,
+                "max_tokens": 128000
+              }
+            },
+            {
+              "id": "ollama/llama3.2:latest",
+              "model_info": {
+                "mode": "chat",
+                "litellm_provider": "ollama",
+                "supports_vision": false,
+                "supports_function_calling": true
+              }
+            },
+            {
+              "id": "local/mistral-7b",
+              "model_info": {
+                "mode": "chat",
+                "litellm_provider": "local"
+              }
+            }
+          ]
+        }
+        """;
+
+        var models = AiAssistantService.ParseModelCapabilitiesFromJson(sampleLiteLlmJson, includeLocal: false);
+
+        Assert.Equal(2, models.Count);
+        Assert.Contains(models, m => m.Id == "vertex_ai/gemini-2.5-flash" && m.SupportsVision && m.MaxInputTokens == 1048576);
+        Assert.Contains(models, m => m.Id == "openai/gpt-4o" && m.SupportsVision && m.MaxInputTokens == 128000);
+        Assert.DoesNotContain(models, m => m.Id.StartsWith("ollama/"));
+        Assert.DoesNotContain(models, m => m.Id.StartsWith("local/"));
+    }
+
+    [Fact]
+    public void ParseModelCapabilities_IncludesLocalModels_WhenIncludeLocalIsTrue()
+    {
+        var sampleLiteLlmJson = """
+        {
+          "data": [
+            {
+              "id": "vertex_ai/gemini-2.5-flash",
+              "model_info": { "litellm_provider": "vertex_ai" }
+            },
+            {
+              "id": "ollama/llama3.2",
+              "model_info": { "litellm_provider": "ollama" }
+            }
+          ]
+        }
+        """;
+
+        var models = AiAssistantService.ParseModelCapabilitiesFromJson(sampleLiteLlmJson, includeLocal: true);
+
+        Assert.Equal(2, models.Count);
+        Assert.Contains(models, m => m.Id == "ollama/llama3.2" && m.IsLocal);
+    }
+
+    [Theory]
+    [InlineData("custom-model", "ollama", true)]
+    [InlineData("custom-model", "local", true)]
+    [InlineData("custom-model", "llama.cpp", true)]
+    [InlineData("custom-model", "vllm_local", true)]
+    [InlineData("ollama/llama3.2", null, true)]
+    [InlineData("local/mistral", null, true)]
+    [InlineData("llama/model-7b", null, true)]
+    [InlineData("ollama_chat/qwen", null, true)]
+    [InlineData("vertex_ai/gemini-2.5-flash", "vertex_ai", false)]
+    [InlineData("openai/gpt-4o", "openai", false)]
+    [InlineData("anthropic/claude-3-5-sonnet", "anthropic", false)]
+    public void IsLocalModel_DetectsExpectedLocalPatterns(string id, string? provider, bool expectedLocal)
+    {
+        var isLocal = AiAssistantService.IsLocalModel(id, provider);
+        Assert.Equal(expectedLocal, isLocal);
+    }
+
+    [Fact]
+    public void ParseModelCapabilities_SparseJson_AppliesHeuristics()
+    {
+        var sparseJson = """
+        {
+          "data": [
+            { "id": "google/gemini-2.5-flash" },
+            { "id": "openai/gpt-4o" },
+            { "id": "anthropic/claude-3-opus" }
+          ]
+        }
+        """;
+
+        var models = AiAssistantService.ParseModelCapabilitiesFromJson(sparseJson, includeLocal: false);
+        Assert.Equal(3, models.Count);
+        Assert.All(models, m => Assert.True(m.SupportsVision));
+        Assert.All(models, m => Assert.True(m.SupportsFunctionCalling));
+    }
+
+    [Fact]
+    public async Task GetModelCapabilitiesAsync_WhenModelInfoReturns404_FallsBackToModelsEndpoint()
+    {
+        var handler = new RoutingHttpMessageHandler(req =>
+        {
+            if (req.RequestUri != null && req.RequestUri.AbsolutePath.EndsWith("/model/info"))
+            {
+                return new HttpResponseMessage(HttpStatusCode.NotFound);
+            }
+            return new HttpResponseMessage(HttpStatusCode.OK)
+            {
+                Content = new StringContent("{\"data\":[{\"id\":\"openai/gpt-4o\"}]}", System.Text.Encoding.UTF8, "application/json")
+            };
+        });
+
+        var service = CreateService(handler);
+        var capabilities = await service.GetModelCapabilitiesAsync("http://127.0.0.1:4000/v1");
+
+        Assert.Single(capabilities);
+        Assert.Equal("openai/gpt-4o", capabilities[0].Id);
+        Assert.True(capabilities[0].SupportsVision);
+    }
+
+    [Fact]
+    public async Task GetAvailableModelsAsync_ReturnsExtractedModelIds()
+    {
+        var handler = new MockHttpMessageHandler(HttpStatusCode.OK, "{\"data\":[{\"id\":\"vertex_ai/gemini-2.5-flash\"},{\"id\":\"ollama/llama3.2\"}]}");
+        var service = CreateService(handler);
+
+        var models = await service.GetAvailableModelsAsync();
+
+        Assert.Single(models);
+        Assert.Equal("vertex_ai/gemini-2.5-flash", models[0]);
+    }
+
+    [Fact]
+    public async Task GetModelCapabilitiesAsync_EmptyEndpoint_ThrowsInvalidOperationException()
+    {
+        var service = CreateService(customSettings: new AppSettings(AiAssistantEndpoint: ""));
+        await Assert.ThrowsAsync<InvalidOperationException>(() => service.GetModelCapabilitiesAsync(endpoint: ""));
+    }
+
+    private class RoutingHttpMessageHandler : HttpMessageHandler
+    {
+        private readonly Func<HttpRequestMessage, HttpResponseMessage> _handler;
+
+        public RoutingHttpMessageHandler(Func<HttpRequestMessage, HttpResponseMessage> handler)
+        {
+            _handler = handler;
+        }
+
+        protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
+        {
+            return Task.FromResult(_handler(request));
+        }
+    }
 }
+
 
