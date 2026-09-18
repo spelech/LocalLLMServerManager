@@ -66,11 +66,15 @@ public class PromptManagementServiceTests
         var all = await service.GetAllPromptsAsync();
 
         Assert.NotNull(all);
-        Assert.Equal(4, all.Count);
+        Assert.Equal(8, all.Count);
         Assert.True(all.ContainsKey(PromptManagementService.SystemPromptFileName));
         Assert.True(all.ContainsKey(PromptManagementService.CapabilitiesFileName));
         Assert.True(all.ContainsKey(PromptManagementService.WorkflowsFileName));
         Assert.True(all.ContainsKey(PromptManagementService.AppControlFileName));
+        Assert.True(all.ContainsKey("system-prompt"));
+        Assert.True(all.ContainsKey("capabilities"));
+        Assert.True(all.ContainsKey("workflows"));
+        Assert.True(all.ContainsKey("app-control"));
     }
 
     [Fact]
