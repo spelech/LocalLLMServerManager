@@ -6,6 +6,10 @@ export default defineConfig({
   description: 'User Guide and Documentation for Local AI Engines, Multimodal Studio, and MCP Tools',
   base: '/LocalLLMServerManager/',
   cleanUrls: true,
+  srcExclude: [
+    'superpowers/**',
+    'legacy-web-dash/**'
+  ],
 
   themeConfig: {
     logo: '/images/logo.png',

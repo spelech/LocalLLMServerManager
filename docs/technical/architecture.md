@@ -216,7 +216,7 @@ sequenceDiagram
 
 ## 🎯 Architecture-to-Requirements Mapping
 
-Each architectural subsystem maps directly to standardized requirement specifications defined in **[Software Requirements Specification & RTM](REQUIREMENTS.md)** and verified in **[Test Coverage Specification](TEST_COVERAGE.md)**:
+Each architectural subsystem maps directly to standardized requirement specifications defined in **[Software Requirements Specification & RTM](./requirements.md)** and verified in **[Test Coverage Specification](./test-coverage.md)**:
 
 | Architecture Layer | Subsystem / Component | Requirement Domain | Key Requirement IDs |
 |---|---|---|---|
