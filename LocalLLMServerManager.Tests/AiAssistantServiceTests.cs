@@ -133,4 +133,71 @@ public class AiAssistantServiceTests
         Assert.False(response.Success);
         Assert.False(string.IsNullOrWhiteSpace(response.Error));
     }
+
+    [Fact]
+    public void AiModelCapabilityInfo_FormattingAndProperties_AreValid()
+    {
+        var model = new AiModelCapabilityInfo(
+            Id: "vertex_ai/gemini-2.5-flash",
+            DisplayName: "Gemini 2.5 Flash",
+            Provider: "vertex_ai",
+            Mode: "chat",
+            SupportsVision: true,
+            SupportsFunctionCalling: true,
+            MaxInputTokens: 1000000,
+            MaxOutputTokens: 8192,
+            IsLocal: false
+        );
+
+        Assert.Equal("vertex_ai/gemini-2.5-flash", model.Id);
+        Assert.True(model.SupportsVision);
+        Assert.True(model.SupportsFunctionCalling);
+        Assert.False(model.IsLocal);
+        Assert.Contains("👁️", model.SummaryBadge);
+        Assert.Contains("⚡", model.SummaryBadge);
+        Assert.Contains("1M", model.SummaryBadge);
+        Assert.Contains("[vertex_ai]", model.SummaryBadge);
+    }
+
+    [Fact]
+    public void AiModelCapabilityInfo_SummaryBadge_FormatsDifferentTokenCountsAndCapabilities()
+    {
+        var modelKilo = new AiModelCapabilityInfo("ollama/llama3", "Llama 3", "ollama", MaxInputTokens: 8192, SupportsVision: false, SupportsFunctionCalling: false);
+        Assert.DoesNotContain("👁️", modelKilo.SummaryBadge);
+        Assert.DoesNotContain("⚡", modelKilo.SummaryBadge);
+        Assert.Contains("8k", modelKilo.SummaryBadge);
+        Assert.Contains("[ollama]", modelKilo.SummaryBadge);
+
+        var modelSmall = new AiModelCapabilityInfo("local/tiny", "Tiny", "local", MaxInputTokens: 500, SupportsVision: false, SupportsFunctionCalling: false);
+        Assert.Contains("500", modelSmall.SummaryBadge);
+
+        var modelNone = new AiModelCapabilityInfo("unknown/model", "Model", "unknown", MaxInputTokens: null, SupportsVision: false, SupportsFunctionCalling: false);
+        Assert.Equal("[unknown]", modelNone.SummaryBadge);
+    }
+
+    [Fact]
+    public void AiChatMessageItem_WithAttachments_ReportsHasAttachmentsTrue()
+    {
+        var defaultItem = new AiChatMessageItem();
+        Assert.NotNull(defaultItem.Attachments);
+        Assert.Empty(defaultItem.Attachments);
+        Assert.False(defaultItem.HasAttachments);
+
+        var msg = new AiChatMessageItem
+        {
+            Role = "user",
+            Content = "Inspect this image",
+            Attachments = new List<AiChatMessageAttachment>
+            {
+                new() { FileName = "test.png", ContentType = "image/png", Base64Data = "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII=" }
+            }
+        };
+
+        Assert.True(msg.HasAttachments);
+        Assert.Single(msg.Attachments);
+        Assert.Equal("image/png", msg.Attachments[0].ContentType);
+        Assert.Equal("test.png", msg.Attachments[0].FileName);
+        Assert.False(string.IsNullOrWhiteSpace(msg.Attachments[0].Id));
+    }
 }
+
