@@ -2,11 +2,16 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:vm="using:LocalLLMServerManager.Shared.ViewModels"
              xmlns:models="using:LocalLLMServerManager.Shared.Models"
+             xmlns:controls="using:LocalLLMServerManager.Shared.Views.Controls"
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              mc:Ignorable="d" d:DesignWidth="1100" d:DesignHeight="800"
              x:Class="LocalLLMServerManager.Shared.Views.Controls.AiAssistantTabControl"
              x:DataType="vm:AiAssistantViewModel">
+
+    <UserControl.Resources>
+        <controls:AttachmentToImageConverter x:Key="AttachmentToImageConverter"/>
+    </UserControl.Resources>
 
     <Grid RowDefinitions="Auto, Auto, *, Auto, Auto" Margin="0,12,0,8">
         <!-- 1. Header Toolbar -->
@@ -101,12 +106,34 @@
                                 <Border IsVisible="{Binding IsUser}" HorizontalAlignment="Right" MaxWidth="700"
                                         Background="#1c3d5a" BorderBrush="{StaticResource PrimaryBrush}" BorderThickness="1"
                                         CornerRadius="10,10,2,10" Padding="12,8">
-                                    <StackPanel Spacing="4">
+                                    <StackPanel Spacing="6">
                                         <Grid ColumnDefinitions="*, Auto">
                                             <TextBlock Text="You" FontSize="10" FontWeight="Bold" Foreground="{StaticResource SecondaryBrush}"/>
                                             <TextBlock Grid.Column="1" Text="{Binding Timestamp, StringFormat='{}{0:HH:mm}'}" FontSize="9" Foreground="{StaticResource TextMutedBrush}"/>
                                         </Grid>
-                                        <SelectableTextBlock Text="{Binding Content}" FontSize="13" Foreground="{StaticResource TextMainBrush}" TextWrapping="Wrap"/>
+
+                                        <!-- Attached Images / Files -->
+                                        <ItemsControl ItemsSource="{Binding Attachments}" IsVisible="{Binding HasAttachments}">
+                                            <ItemsControl.ItemsPanel>
+                                                <ItemsPanelTemplate>
+                                                    <WrapPanel Orientation="Horizontal"/>
+                                                </ItemsPanelTemplate>
+                                            </ItemsControl.ItemsPanel>
+                                            <ItemsControl.ItemTemplate>
+                                                <DataTemplate DataType="models:AiChatMessageAttachment">
+                                                    <Border Background="#122438" BorderBrush="#2e4d6e" BorderThickness="1" CornerRadius="6" Padding="4" Margin="0,2,6,4" MaxWidth="240">
+                                                        <StackPanel Spacing="4">
+                                                            <Border CornerRadius="4" ClipToBounds="True" Background="#09131d">
+                                                                <Image Source="{Binding Converter={x:Static controls:AttachmentToImageConverter.Instance}}" MaxHeight="160" MaxWidth="230" Stretch="Uniform"/>
+                                                            </Border>
+                                                            <TextBlock Text="{Binding FileName}" FontSize="10" Foreground="{StaticResource TextMutedBrush}" TextTrimming="CharacterEllipsis" Margin="2,0"/>
+                                                        </StackPanel>
+                                                    </Border>
+                                                </DataTemplate>
+                                            </ItemsControl.ItemTemplate>
+                                        </ItemsControl>
+
+                                        <SelectableTextBlock Text="{Binding Content}" FontSize="13" Foreground="{StaticResource TextMainBrush}" TextWrapping="Wrap" IsVisible="{Binding Content, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>
                                     </StackPanel>
                                 </Border>
 
@@ -188,23 +215,96 @@
 
         <!-- 5. Prompt Input & Send Bar -->
         <Border Grid.Row="4" Classes="matte-card" Padding="8">
-            <Grid ColumnDefinitions="*, Auto">
-                <TextBox Grid.Column="0"
-                         Text="{Binding InputText}"
-                         Watermark="Ask anything or command the application (e.g., 'What is my current VRAM usage?' or 'Generate an image with Flux')..."
-                         AcceptsReturn="True"
-                         MaxHeight="100"
-                         FontSize="12"
-                         VerticalAlignment="Center"
-                         Margin="0,0,8,0"/>
+            <StackPanel Spacing="6">
+                <!-- Staged Attachments Preview Tray -->
+                <Border IsVisible="{Binding HasStagedAttachments}"
+                        Margin="0,0,0,4"
+                        Padding="6"
+                        Background="#161b22"
+                        BorderBrush="#30363d"
+                        BorderThickness="1"
+                        CornerRadius="6">
+                    <ScrollViewer HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Disabled">
+                        <ItemsControl ItemsSource="{Binding StagedAttachments}">
+                            <ItemsControl.ItemsPanel>
+                                <ItemsPanelTemplate>
+                                    <StackPanel Orientation="Horizontal" Spacing="6"/>
+                                </ItemsPanelTemplate>
+                            </ItemsControl.ItemsPanel>
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate DataType="models:AiChatMessageAttachment">
+                                    <Border Classes="matte-pill" Padding="6,4" Background="#1c2533" BorderBrush="{StaticResource PrimaryBrush}" BorderThickness="1">
+                                        <StackPanel Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
+                                            <Border Width="24" Height="24" CornerRadius="3" ClipToBounds="True" Background="#0d1117">
+                                                <Panel>
+                                                    <TextBlock Text="🖼️" FontSize="11" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                                    <Image Source="{Binding Converter={x:Static controls:AttachmentToImageConverter.Instance}}" Stretch="UniformToFill"/>
+                                                </Panel>
+                                            </Border>
+                                            <TextBlock Text="{Binding FileName}" FontSize="11" Foreground="{StaticResource TextMainBrush}" VerticalAlignment="Center" MaxWidth="150" TextTrimming="CharacterEllipsis"/>
+                                            <Button Content="✕"
+                                                    Command="{Binding $parent[UserControl].((vm:AiAssistantViewModel)DataContext).RemoveStagedAttachmentCommand}"
+                                                    CommandParameter="{Binding Id}"
+                                                    Classes="matte-secondary"
+                                                    Padding="4,2"
+                                                    FontSize="10"
+                                                    VerticalAlignment="Center"/>
+                                        </StackPanel>
+                                    </Border>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                    </ScrollViewer>
+                </Border>
 
-                <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
-                    <Button Content="⏹️ Stop" Command="{Binding StopGenerationCommand}" Classes="matte-secondary"
-                            IsVisible="{Binding IsGenerating}" Padding="14,8" FontSize="12"/>
-                    <Button Content="🚀 Send" Command="{Binding SendMessageCommand}" Classes="matte-primary"
-                            IsVisible="{Binding !IsGenerating}" Padding="16,8" FontSize="12"/>
-                </StackPanel>
-            </Grid>
+                <!-- Composer Input & Controls Row -->
+                <Grid ColumnDefinitions="Auto, *, Auto">
+                    <Button x:Name="AttachFileButton"
+                            Grid.Column="0"
+                            Click="OnAttachFileButtonClick"
+                            Content="📎"
+                            ToolTip.Tip="Attach image (PNG, JPG, WEBP)"
+                            Classes="matte-secondary"
+                            Padding="10,8"
+                            FontSize="12"
+                            Margin="0,0,6,0"
+                            VerticalAlignment="Center"/>
+
+                    <TextBox x:Name="PromptTextBox"
+                             Grid.Column="1"
+                             KeyDown="OnPromptTextBoxKeyDown"
+                             Text="{Binding InputText}"
+                             Watermark="Ask anything or command the application (e.g., 'What is my current VRAM usage?' or 'Generate an image with Flux')..."
+                             AcceptsReturn="True"
+                             MaxHeight="100"
+                             FontSize="12"
+                             VerticalAlignment="Center"
+                             Margin="0,0,8,0"/>
+
+                    <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
+                        <ComboBox ItemsSource="{Binding AvailableModelCapabilities}"
+                                  SelectedItem="{Binding SelectedModelCapability}"
+                                  MinWidth="200"
+                                  MaxWidth="300"
+                                  VerticalAlignment="Center"
+                                  Margin="0,0,6,0">
+                            <ComboBox.ItemTemplate>
+                                <DataTemplate DataType="models:AiModelCapabilityInfo">
+                                    <StackPanel Orientation="Horizontal" Spacing="6">
+                                        <TextBlock Text="{Binding SummaryBadge}" FontSize="10" Foreground="{StaticResource PrimaryBrush}" VerticalAlignment="Center"/>
+                                        <TextBlock Text="{Binding Id}" FontSize="11" Foreground="{StaticResource TextMainBrush}" VerticalAlignment="Center" TextTrimming="CharacterEllipsis"/>
+                                    </StackPanel>
+                                </DataTemplate>
+                            </ComboBox.ItemTemplate>
+                        </ComboBox>
+
+                        <Button Content="⏹️ Stop" Command="{Binding StopGenerationCommand}" Classes="matte-secondary"
+                                IsVisible="{Binding IsGenerating}" Padding="14,8" FontSize="12"/>
+                        <Button Content="🚀 Send" Command="{Binding SendMessageCommand}" Classes="matte-primary"
+                                IsVisible="{Binding !IsGenerating}" Padding="16,8" FontSize="12"/>
+                    </StackPanel>
+                </Grid>
+            </StackPanel>
         </Border>
     </Grid>
 </UserControl>
