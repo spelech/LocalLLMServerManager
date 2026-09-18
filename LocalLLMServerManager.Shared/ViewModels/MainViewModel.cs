@@ -159,6 +159,7 @@ public partial class MainViewModel : ObservableObject
         Settings = new SettingsViewModel(PresetService) { ApiBase = ApiBase };
         Audio = new AudioStudioViewModel(PresetService, _canIRunItService) { ApiBase = ApiBase };
         Assistant = new AiAssistantViewModel(assistantService, settingsService, promptService, httpClient ?? Http);
+        Documentation.OnNavigateToTabRequested = tab => SelectedTabIndex = tab;
 
         LoadStudioPresets();
         RecalculateVideoHardwareFit();
@@ -166,6 +167,8 @@ public partial class MainViewModel : ObservableObject
 
         _ = RefreshStatusAsync();
         _ = Ollama.LoadInstalledModelsAsync(ApiBase, Http);
+        _ = HuggingFace.LoadDefaultModelsAsync(ApiBase, Http);
+        _ = Civitai.LoadDefaultModelsAsync(ApiBase, Http);
         _ = Audio.LoadAudioWorkflowsAsync(ApiBase, Http);
         _ = Audio.LoadAudioFilesAsync(ApiBase, Http);
         _ = LoadSettingsAsync();

@@ -4,6 +4,30 @@
              x:Class="LocalLLMServerManager.Shared.Views.Controls.OllamaModelsTabControl"
              x:DataType="vm:OllamaLibraryViewModel">
 
+    <UserControl.Styles>
+        <!-- Hardware Filter Buttons -->
+        <Style Selector="Button.hw-filter-btn">
+            <Setter Property="Background" Value="#1E293B"/>
+            <Setter Property="BorderThickness" Value="1.5"/>
+            <Setter Property="CornerRadius" Value="14"/>
+            <Setter Property="Padding" Value="8,3"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="Opacity" Value="1.0"/>
+        </Style>
+        <Style Selector="Button.hw-filter-btn:pointerover">
+            <Setter Property="Background" Value="#334155"/>
+        </Style>
+        <Style Selector="Button.hw-filter-btn.inactive">
+            <Setter Property="Opacity" Value="0.4"/>
+            <Setter Property="Background" Value="#0F172A"/>
+            <Setter Property="BorderBrush" Value="#334155"/>
+        </Style>
+        <Style Selector="Button.hw-filter-btn.inactive:pointerover">
+            <Setter Property="Opacity" Value="0.6"/>
+            <Setter Property="Background" Value="#1E293B"/>
+        </Style>
+    </UserControl.Styles>
+
     <Grid RowDefinitions="Auto, Auto, *, Auto" Margin="0,12,0,0">
         <Grid Grid.Row="0" ColumnDefinitions="*, Auto" Margin="0,0,0,8">
             <StackPanel Grid.Column="0" Spacing="2">
@@ -20,17 +44,33 @@
         <ScrollViewer Grid.Row="1" HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Disabled" Margin="0,0,0,10">
             <StackPanel Orientation="Horizontal" Spacing="6">
                 <TextBlock Text="Hardware Filter:" FontSize="12" Foreground="{StaticResource TextMutedBrush}" VerticalAlignment="Center" Margin="0,0,4,0"/>
-                <Button Command="{Binding ToggleFitVerdictCommand}" CommandParameter="FullVram" Classes="matte-pill">
-                    <TextBlock Text="🟢 Full VRAM" FontSize="11" FontWeight="Bold" Foreground="#10B981"/>
+                <Button Command="{Binding ToggleFitVerdictCommand}" CommandParameter="FullVram" Classes="hw-filter-btn" Classes.inactive="{Binding !IsFullVramActive}" BorderBrush="#10B981">
+                    <StackPanel Orientation="Horizontal" Spacing="5">
+                        <TextBlock Text="✓" IsVisible="{Binding IsFullVramActive}" Foreground="#10B981" FontWeight="Bold"/>
+                        <TextBlock Text="✕" IsVisible="{Binding !IsFullVramActive}" Foreground="#64748B"/>
+                        <TextBlock Text="🟢 Full VRAM" FontSize="11" FontWeight="Bold" Foreground="#10B981"/>
+                    </StackPanel>
                 </Button>
-                <Button Command="{Binding ToggleFitVerdictCommand}" CommandParameter="PartialOffload" Classes="matte-pill">
-                    <TextBlock Text="🟡 Partial Offload" FontSize="11" FontWeight="Bold" Foreground="#F59E0B"/>
+                <Button Command="{Binding ToggleFitVerdictCommand}" CommandParameter="PartialOffload" Classes="hw-filter-btn" Classes.inactive="{Binding !IsPartialOffloadActive}" BorderBrush="#F59E0B">
+                    <StackPanel Orientation="Horizontal" Spacing="5">
+                        <TextBlock Text="✓" IsVisible="{Binding IsPartialOffloadActive}" Foreground="#F59E0B" FontWeight="Bold"/>
+                        <TextBlock Text="✕" IsVisible="{Binding !IsPartialOffloadActive}" Foreground="#64748B"/>
+                        <TextBlock Text="🟡 Partial Offload" FontSize="11" FontWeight="Bold" Foreground="#F59E0B"/>
+                    </StackPanel>
                 </Button>
-                <Button Command="{Binding ToggleFitVerdictCommand}" CommandParameter="CpuOnly" Classes="matte-pill">
-                    <TextBlock Text="🟠 CPU Only" FontSize="11" FontWeight="Bold" Foreground="#F97316"/>
+                <Button Command="{Binding ToggleFitVerdictCommand}" CommandParameter="CpuOnly" Classes="hw-filter-btn" Classes.inactive="{Binding !IsCpuOnlyActive}" BorderBrush="#F97316">
+                    <StackPanel Orientation="Horizontal" Spacing="5">
+                        <TextBlock Text="✓" IsVisible="{Binding IsCpuOnlyActive}" Foreground="#F97316" FontWeight="Bold"/>
+                        <TextBlock Text="✕" IsVisible="{Binding !IsCpuOnlyActive}" Foreground="#64748B"/>
+                        <TextBlock Text="🟠 CPU Only" FontSize="11" FontWeight="Bold" Foreground="#F97316"/>
+                    </StackPanel>
                 </Button>
-                <Button Command="{Binding ToggleFitVerdictCommand}" CommandParameter="OutOfMemory" Classes="matte-pill">
-                    <TextBlock Text="🔴 Won't Fit" FontSize="11" FontWeight="Bold" Foreground="#EF4444"/>
+                <Button Command="{Binding ToggleFitVerdictCommand}" CommandParameter="OutOfMemory" Classes="hw-filter-btn" Classes.inactive="{Binding !IsOomActive}" BorderBrush="#EF4444">
+                    <StackPanel Orientation="Horizontal" Spacing="5">
+                        <TextBlock Text="✓" IsVisible="{Binding IsOomActive}" Foreground="#EF4444" FontWeight="Bold"/>
+                        <TextBlock Text="✕" IsVisible="{Binding !IsOomActive}" Foreground="#64748B"/>
+                        <TextBlock Text="🔴 Won't Fit" FontSize="11" FontWeight="Bold" Foreground="#EF4444"/>
+                    </StackPanel>
                 </Button>
             </StackPanel>
         </ScrollViewer>

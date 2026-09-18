@@ -23,7 +23,18 @@ public partial class SettingsViewModel : ObservableObject
     public ObservableCollection<StudioPreset> AllPresets { get; } = new();
     public ObservableCollection<StudioPreset> FilteredPresets { get; } = new();
 
-    [ObservableProperty] private string _selectedPresetModalityFilter = "All";
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(IsFilterAllActive))]
+    [NotifyPropertyChangedFor(nameof(IsFilterVideoActive))]
+    [NotifyPropertyChangedFor(nameof(IsFilterImageActive))]
+    [NotifyPropertyChangedFor(nameof(IsFilterAudioActive))]
+    private string _selectedPresetModalityFilter = "All";
+
+    public bool IsFilterAllActive => string.IsNullOrWhiteSpace(SelectedPresetModalityFilter) || SelectedPresetModalityFilter.Equals("All", StringComparison.OrdinalIgnoreCase);
+    public bool IsFilterVideoActive => SelectedPresetModalityFilter.Equals("Video", StringComparison.OrdinalIgnoreCase);
+    public bool IsFilterImageActive => SelectedPresetModalityFilter.Equals("Image", StringComparison.OrdinalIgnoreCase);
+    public bool IsFilterAudioActive => SelectedPresetModalityFilter.Equals("Audio", StringComparison.OrdinalIgnoreCase);
+
     [ObservableProperty] private string _presetsJson = "";
 
     [ObservableProperty] private string _forgeModelsPath = "";

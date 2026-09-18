@@ -233,6 +233,7 @@ public class SearchServicesTests
     public void HuggingFaceSearchViewModel_FilterByFitVerdict_FiltersResultsCorrectly()
     {
         var vm = new LocalLLMServerManager.Shared.ViewModels.HuggingFaceSearchViewModel(new Mock<LocalLLMServerManager.Shared.Interfaces.IHuggingFaceSearchService>().Object);
+        vm.HuggingFaceResults.Clear();
         vm.HuggingFaceResults.Add(new LocalLLMServerManager.Shared.ViewModels.HuggingFaceRepoItem("repo1", "author", 10, "100 downloads", "text-generation",
             new LocalLLMServerManager.Shared.Models.QuickFitBadge("🟢 Full VRAM", "#10B981", "", LocalLLMServerManager.Shared.Models.FitVerdict.FullVram)));
         vm.HuggingFaceResults.Add(new LocalLLMServerManager.Shared.ViewModels.HuggingFaceRepoItem("repo2", "author", 20, "200 downloads", "text-generation",

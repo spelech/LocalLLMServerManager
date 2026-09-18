@@ -1,0 +1,38 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:controls="using:LocalLLMServerManager.Shared.Views.Controls"
+        xmlns:vm="using:LocalLLMServerManager.Shared.ViewModels"
+        x:Class="LocalLLMServerManager.Views.DocumentationWindow"
+        x:DataType="vm:DocumentationViewModel"
+        Icon="avares://LocalLLMServerManager/Assets/app-icon.ico"
+        Title="📖 User Guides &amp; Step-by-Step Procedures"
+        Width="880" Height="680"
+        MinWidth="600" MinHeight="450"
+        WindowStartupLocation="CenterOwner"
+        Background="{StaticResource BgDarkBrush}"
+        TransparencyLevelHint="Mica, AcrylicBlur, Transparent">
+
+    <Grid RowDefinitions="Auto, *">
+        <!-- Window Sub-Header / Tool Bar -->
+        <Border Grid.Row="0" Background="{StaticResource BgSurfaceBrush}" BorderBrush="{StaticResource GlassBorderBrush}" BorderThickness="0,0,0,1" Padding="14,8">
+            <Grid ColumnDefinitions="*, Auto">
+                <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+                    <TextBlock Text="📖" FontSize="16" VerticalAlignment="Center"/>
+                    <TextBlock Text="User Guides &amp; Step-by-Step Procedures" FontWeight="Bold" FontSize="13" Foreground="{StaticResource TextMainBrush}" VerticalAlignment="Center"/>
+                    <Border Classes="matte-pill" Padding="6,2" VerticalAlignment="Center">
+                        <TextBlock Text="Pop-Out Window" FontSize="10" Foreground="{StaticResource TextMutedBrush}"/>
+                    </Border>
+                </StackPanel>
+
+                <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+                    <Button x:Name="PinButton" Click="OnPinClicked" Classes="matte-pill" Padding="8,4" ToolTip.Tip="Toggle Always-on-Top">
+                        <TextBlock x:Name="PinText" Text="📌 Pin to Top" FontSize="11" Foreground="{StaticResource TextMutedBrush}"/>
+                    </Button>
+                </StackPanel>
+            </Grid>
+        </Border>
+
+        <!-- In-App Documentation Content -->
+        <controls:DocumentationTabControl Grid.Row="1" Margin="12,0,12,12"/>
+    </Grid>
+</Window>
