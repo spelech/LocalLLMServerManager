@@ -346,7 +346,7 @@ public class AiAssistantServiceTests
     {
         var handler = new RoutingHttpMessageHandler(req =>
         {
-            if (req.RequestUri != null && req.RequestUri.AbsolutePath.EndsWith("/model/info"))
+            if (req.RequestUri != null && (req.RequestUri.AbsolutePath.EndsWith("/model/info") || req.RequestUri.AbsolutePath.EndsWith("/v1/model_info")))
             {
                 return new HttpResponseMessage(HttpStatusCode.NotFound);
             }
@@ -362,6 +362,61 @@ public class AiAssistantServiceTests
         Assert.Single(capabilities);
         Assert.Equal("openai/gpt-4o", capabilities[0].Id);
         Assert.True(capabilities[0].SupportsVision);
+    }
+
+    [Fact]
+    public async Task GetModelCapabilitiesAsync_WhenPrimaryModelInfoReturns404_FallsBackToV1ModelInfo()
+    {
+        var handler = new RoutingHttpMessageHandler(req =>
+        {
+            if (req.RequestUri != null && req.RequestUri.AbsolutePath.EndsWith("/model/info"))
+            {
+                return new HttpResponseMessage(HttpStatusCode.NotFound);
+            }
+            if (req.RequestUri != null && req.RequestUri.AbsolutePath.EndsWith("/v1/model_info"))
+            {
+                return new HttpResponseMessage(HttpStatusCode.OK)
+                {
+                    Content = new StringContent("{\"data\":[{\"id\":\"from-v1-model-info\",\"model_info\":{\"max_tokens\":128000.0}}]}", System.Text.Encoding.UTF8, "application/json")
+                };
+            }
+            return new HttpResponseMessage(HttpStatusCode.NotFound);
+        });
+
+        var service = CreateService(handler);
+        var capabilities = await service.GetModelCapabilitiesAsync("http://127.0.0.1:4000/v1");
+
+        Assert.Single(capabilities);
+        Assert.Equal("from-v1-model-info", capabilities[0].Id);
+        Assert.Equal(128000, capabilities[0].MaxInputTokens);
+    }
+
+    [Fact]
+    public void ParseModelCapabilities_FloatingPointTokenValues_ParsesSuccessfully()
+    {
+        var json = """
+        {
+          "data": [
+            {
+              "id": "openai/gpt-4o",
+              "model_info": {
+                "max_input_tokens": 128000.0,
+                "max_output_tokens": 4096.0
+              }
+            },
+            {
+              "id": "google/gemini-2.5-pro",
+              "max_tokens": 2000000.0
+            }
+          ]
+        }
+        """;
+
+        var models = AiAssistantService.ParseModelCapabilitiesFromJson(json);
+        Assert.Equal(2, models.Count);
+        Assert.Equal(128000, models[0].MaxInputTokens);
+        Assert.Equal(4096, models[0].MaxOutputTokens);
+        Assert.Equal(2000000, models[1].MaxInputTokens);
     }
 
     [Fact]

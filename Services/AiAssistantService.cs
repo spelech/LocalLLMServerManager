@@ -18,8 +18,8 @@ using Microsoft.Extensions.AI;
 using OpenAI;
 using OpenAI.Chat;
 
-namespace LocalLLMServerManager.Services
-{
+namespace LocalLLMServerManager.Services;
+
 public class AiAssistantService : IAiAssistantService
 {
     private readonly ISettingsService _settingsService;
@@ -202,25 +202,27 @@ public class AiAssistantService : IAiAssistantService
             baseUrl = trimmedEndpoint[..trimmedEndpoint.IndexOf("/v1/", StringComparison.OrdinalIgnoreCase)].TrimEnd('/');
         }
 
-        // 1. Primary discovery: GET /model/info (LiteLLM)
-        var modelInfoUrl = $"{baseUrl}/model/info";
-        try
+        // 1. Primary discovery: GET /model/info (LiteLLM) or /v1/model_info
+        foreach (var infoUrl in new[] { $"{baseUrl}/model/info", $"{baseUrl}/v1/model_info" })
         {
-            var modelInfoResp = await client.GetAsync(modelInfoUrl, cancellationToken);
-            if (modelInfoResp.IsSuccessStatusCode)
+            try
             {
-                var json = await modelInfoResp.Content.ReadAsStringAsync(cancellationToken);
-                var capabilities = ParseModelCapabilitiesFromJson(json, includeLocal);
-                return capabilities;
+                var modelInfoResp = await client.GetAsync(infoUrl, cancellationToken);
+                if (modelInfoResp.IsSuccessStatusCode)
+                {
+                    var json = await modelInfoResp.Content.ReadAsStringAsync(cancellationToken);
+                    var capabilities = ParseModelCapabilitiesFromJson(json, includeLocal);
+                    return capabilities;
+                }
             }
-        }
-        catch (OperationCanceledException)
-        {
-            throw;
-        }
-        catch
-        {
-            // Fallback to /v1/models
+            catch (OperationCanceledException)
+            {
+                throw;
+            }
+            catch
+            {
+                // Fall back to next endpoint or /v1/models
+            }
         }
 
         // 2. Fallback discovery: GET /v1/models (OpenAI standard)
@@ -393,23 +395,43 @@ public class AiAssistantService : IAiAssistantService
                     return null;
                 }
 
+                int? ExtractInt(JsonElement jsonEl)
+                {
+                    if (jsonEl.ValueKind == JsonValueKind.Number)
+                    {
+                        if (jsonEl.TryGetInt32(out var i))
+                            return i;
+                        if (jsonEl.TryGetInt64(out var l))
+                            return (int)l;
+                        if (jsonEl.TryGetDouble(out var d))
+                            return (int)Math.Round(d);
+                    }
+                    if (jsonEl.ValueKind == JsonValueKind.String)
+                    {
+                        var s = jsonEl.GetString();
+                        if (int.TryParse(s, out var si))
+                            return si;
+                        if (double.TryParse(s, System.Globalization.NumberStyles.Any, System.Globalization.CultureInfo.InvariantCulture, out var sd))
+                            return (int)Math.Round(sd);
+                    }
+                    return null;
+                }
+
                 int? GetIntValue(params string[] propNames)
                 {
                     foreach (var name in propNames)
                     {
                         if (modelInfo.HasValue && modelInfo.Value.TryGetProperty(name, out var p1))
                         {
-                            if (p1.ValueKind == JsonValueKind.Number && p1.TryGetInt32(out var i1))
-                                return i1;
-                            if (p1.ValueKind == JsonValueKind.String && int.TryParse(p1.GetString(), out var s1))
-                                return s1;
+                            var val = ExtractInt(p1);
+                            if (val.HasValue)
+                                return val.Value;
                         }
                         if (el.TryGetProperty(name, out var p2))
                         {
-                            if (p2.ValueKind == JsonValueKind.Number && p2.TryGetInt32(out var i2))
-                                return i2;
-                            if (p2.ValueKind == JsonValueKind.String && int.TryParse(p2.GetString(), out var s2))
-                                return s2;
+                            var val = ExtractInt(p2);
+                            if (val.HasValue)
+                                return val.Value;
                         }
                     }
                     return null;
@@ -739,17 +761,5 @@ public class AiAssistantService : IAiAssistantService
         }
 
         return new Microsoft.Extensions.AI.ChatMessage(role, contents);
-    }
-}
-}
-
-namespace Microsoft.Extensions.AI
-{
-    public class ImageContent : DataContent
-    {
-        public ImageContent(ReadOnlyMemory<byte> data, string mediaType = "image/png") : base(data, mediaType) { }
-        public ImageContent(byte[] data, string mediaType = "image/png") : base(data, mediaType) { }
-        public ImageContent(Uri uri, string mediaType = "image/png") : base(uri, mediaType) { }
-        public ImageContent(string uri, string mediaType = "image/png") : base(uri, mediaType) { }
     }
 }

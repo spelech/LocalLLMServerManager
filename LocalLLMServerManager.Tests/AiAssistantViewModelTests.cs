@@ -261,6 +261,41 @@ public class AiAssistantViewModelTests
     }
 
     [Fact]
+    public void ChangingSelectedModel_ResetsSelectedModelCapabilityToNull_WhenNotFound()
+    {
+        var vm = new AiAssistantViewModel();
+        var cap = new AiModelCapabilityInfo("openai/gpt-4o", "GPT-4o", "openai", SupportsVision: true);
+        vm.AvailableModelCapabilities.Add(cap);
+        vm.SelectedModel = "openai/gpt-4o";
+        Assert.Same(cap, vm.SelectedModelCapability);
+
+        vm.SelectedModel = "unknown-model-xyz";
+        Assert.Null(vm.SelectedModelCapability);
+        Assert.Equal("unknown-model-xyz", vm.SelectedModel);
+    }
+
+    [Fact]
+    public void PasteImageBytes_UsesMillisecondPrecisionTimestamp()
+    {
+        var vm = new AiAssistantViewModel();
+        var bytes = new byte[] { 1, 2, 3 };
+
+        vm.PasteImageBytes(bytes, "image/png");
+
+        Assert.Single(vm.StagedAttachments);
+        var fileName = vm.StagedAttachments[0].FileName;
+        Assert.StartsWith("pasted_image_", fileName);
+        Assert.EndsWith(".png", fileName);
+
+        // pasted_image_yyyyMMdd_HHmmss_fff.png -> 13 + 8 + 1 + 6 + 1 + 3 + 4 = 36 chars
+        Assert.Equal(36, fileName.Length);
+        var parts = fileName.Split('_');
+        Assert.True(parts.Length >= 4);
+        var fffPart = parts[^1].Replace(".png", "");
+        Assert.Equal(3, fffPart.Length);
+    }
+
+    [Fact]
     public async Task SendMessageAsync_TransfersStagedAttachmentsToUserMessage_AndClearsStaged()
     {
         var mockAssistant = new Mock<IAiAssistantService>();

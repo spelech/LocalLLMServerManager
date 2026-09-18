@@ -10,7 +10,6 @@
              x:DataType="vm:AiAssistantViewModel">
 
     <UserControl.Resources>
-        <controls:AttachmentToImageConverter x:Key="AttachmentToImageConverter"/>
     </UserControl.Resources>
 
     <Grid RowDefinitions="Auto, Auto, *, Auto, Auto" Margin="0,12,0,8">

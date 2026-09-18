@@ -67,7 +67,7 @@ public partial class AiAssistantViewModel : ObservableObject
     partial void OnSelectedModelCapabilityChanged(AiModelCapabilityInfo? value)
     {
         var newId = value?.Id ?? "";
-        if (SelectedModel != newId)
+        if (!string.IsNullOrEmpty(newId) && SelectedModel != newId)
         {
             SelectedModel = newId;
         }
@@ -78,10 +78,7 @@ public partial class AiAssistantViewModel : ObservableObject
         if (SelectedModelCapability?.Id != value)
         {
             var match = AvailableModelCapabilities.FirstOrDefault(c => string.Equals(c.Id, value, StringComparison.OrdinalIgnoreCase));
-            if (match != null)
-            {
-                SelectedModelCapability = match;
-            }
+            SelectedModelCapability = match;
         }
     }
 
@@ -211,7 +208,7 @@ public partial class AiAssistantViewModel : ObservableObject
 
         var att = new AiChatMessageAttachment
         {
-            FileName = $"pasted_image_{DateTime.UtcNow:yyyyMMdd_HHmmss}{ext}",
+            FileName = $"pasted_image_{DateTime.UtcNow:yyyyMMdd_HHmmss_fff}{ext}",
             ContentType = string.IsNullOrWhiteSpace(mimeType) ? "image/png" : mimeType,
             Base64Data = Convert.ToBase64String(bytes),
             RawBytes = bytes
