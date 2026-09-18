@@ -6,7 +6,7 @@
         mc:Ignorable="d" d:DesignWidth="1280" d:DesignHeight="840"
         x:Class="LocalLLMServerManager.Views.MainWindow"
         Icon="avares://LocalLLMServerManager/Assets/app-icon.ico"
-        Title="Local LLM Server Manager v3.13.1"
+        Title="Local LLM Server Manager v3.14.0"
         Width="1280" Height="840"
         MinWidth="1024" MinHeight="700"
         WindowStartupLocation="CenterScreen"
@@ -53,7 +53,7 @@
                     <Image Source="avares://LocalLLMServerManager/Assets/app-icon.png" Width="16" Height="16" VerticalAlignment="Center"/>
                     <TextBlock Text="Local LLM Server Manager" FontWeight="Bold" FontSize="12" Foreground="{StaticResource TextMainBrush}" VerticalAlignment="Center"/>
                     <Border Classes="matte-pill" Padding="6,2" Margin="4,0,0,0" VerticalAlignment="Center">
-                        <TextBlock Text="v3.13.1" FontSize="10" Foreground="{StaticResource TextMutedBrush}" FontWeight="SemiBold"/>
+                        <TextBlock Text="v3.14.0" FontSize="10" Foreground="{StaticResource TextMutedBrush}" FontWeight="SemiBold"/>
                     </Border>
                 </StackPanel>
 
