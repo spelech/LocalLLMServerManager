@@ -44,6 +44,8 @@ public partial class AiAssistantViewModel : ObservableObject
     [ObservableProperty] private string _apiKey = "";
     [ObservableProperty] private string _selectedModel = "vertex_ai/gemini-2.5-flash";
     [ObservableProperty] private ObservableCollection<string> _availableModels = new();
+    [ObservableProperty] private ObservableCollection<AiModelCapabilityInfo> _availableModelCapabilities = new();
+    [ObservableProperty] private AiModelCapabilityInfo? _selectedModelCapability;
     [ObservableProperty] private bool _isEnabled = true;
     [ObservableProperty] private bool _isSetupCardVisible = false;
     [ObservableProperty] private bool _isTestingConnection = false;
@@ -56,6 +58,50 @@ public partial class AiAssistantViewModel : ObservableObject
     [ObservableProperty] private bool _isGenerating = false;
     [ObservableProperty] private string _currentStatus = "";
     [ObservableProperty] private bool _autoScrollEnabled = true;
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(HasStagedAttachments))]
+    private ObservableCollection<AiChatMessageAttachment> _stagedAttachments = new();
+
+    public bool HasStagedAttachments => StagedAttachments.Count > 0;
+
+    partial void OnSelectedModelCapabilityChanged(AiModelCapabilityInfo? value)
+    {
+        var newId = value?.Id ?? "";
+        if (SelectedModel != newId)
+        {
+            SelectedModel = newId;
+        }
+    }
+
+    partial void OnSelectedModelChanged(string value)
+    {
+        if (SelectedModelCapability?.Id != value)
+        {
+            var match = AvailableModelCapabilities.FirstOrDefault(c => string.Equals(c.Id, value, StringComparison.OrdinalIgnoreCase));
+            if (match != null)
+            {
+                SelectedModelCapability = match;
+            }
+        }
+    }
+
+    partial void OnStagedAttachmentsChanged(ObservableCollection<AiChatMessageAttachment>? oldValue, ObservableCollection<AiChatMessageAttachment> newValue)
+    {
+        if (oldValue != null)
+        {
+            oldValue.CollectionChanged -= StagedAttachments_CollectionChanged;
+        }
+        if (newValue != null)
+        {
+            newValue.CollectionChanged += StagedAttachments_CollectionChanged;
+        }
+        OnPropertyChanged(nameof(HasStagedAttachments));
+    }
+
+    private void StagedAttachments_CollectionChanged(object? sender, System.Collections.Specialized.NotifyCollectionChangedEventArgs e)
+    {
+        OnPropertyChanged(nameof(HasStagedAttachments));
+    }
 
     // Quick Suggestion Chips
     public IReadOnlyList<string> SuggestionChips { get; } = new[]
@@ -84,6 +130,8 @@ public partial class AiAssistantViewModel : ObservableObject
         _promptService = promptService;
         _httpClient = httpClient;
 
+        _stagedAttachments.CollectionChanged += StagedAttachments_CollectionChanged;
+
         if (_settingsService != null)
         {
             var s = _settingsService.LoadSettings();
@@ -102,6 +150,9 @@ public partial class AiAssistantViewModel : ObservableObject
         if (!string.IsNullOrWhiteSpace(_selectedModel))
         {
             _availableModels.Add(_selectedModel);
+            var initialCap = new AiModelCapabilityInfo(_selectedModel, _selectedModel, "default");
+            _availableModelCapabilities.Add(initialCap);
+            _selectedModelCapability = initialCap;
         }
 
         // Add welcome message
@@ -113,11 +164,67 @@ public partial class AiAssistantViewModel : ObservableObject
         });
     }
 
+    public void AddStagedAttachment(AiChatMessageAttachment attachment)
+    {
+        if (attachment == null) return;
+        StagedAttachments.Add(attachment);
+        OnPropertyChanged(nameof(HasStagedAttachments));
+    }
+
+    [RelayCommand]
+    public void RemoveStagedAttachment(string? attachmentId)
+    {
+        if (string.IsNullOrWhiteSpace(attachmentId)) return;
+        var existing = StagedAttachments.FirstOrDefault(a => a.Id == attachmentId);
+        if (existing != null)
+        {
+            StagedAttachments.Remove(existing);
+            OnPropertyChanged(nameof(HasStagedAttachments));
+        }
+    }
+
+    [RelayCommand]
+    public void RemoveAttachment(string? attachmentId) => RemoveStagedAttachment(attachmentId);
+
+    [RelayCommand]
+    public void ClearStagedAttachments()
+    {
+        StagedAttachments.Clear();
+        OnPropertyChanged(nameof(HasStagedAttachments));
+    }
+
+    [RelayCommand]
+    public void AttachImage(AiChatMessageAttachment attachment) => AddStagedAttachment(attachment);
+
+    public void PasteImageBytes(byte[] bytes, string mimeType)
+    {
+        if (bytes == null || bytes.Length == 0) return;
+
+        var ext = mimeType switch
+        {
+            "image/jpeg" => ".jpg",
+            "image/jpg" => ".jpg",
+            "image/webp" => ".webp",
+            "image/gif" => ".gif",
+            _ => ".png"
+        };
+
+        var att = new AiChatMessageAttachment
+        {
+            FileName = $"pasted_image_{DateTime.UtcNow:yyyyMMdd_HHmmss}{ext}",
+            ContentType = string.IsNullOrWhiteSpace(mimeType) ? "image/png" : mimeType,
+            Base64Data = Convert.ToBase64String(bytes),
+            RawBytes = bytes
+        };
+
+        AddStagedAttachment(att);
+    }
+
     [RelayCommand]
     public async Task SendMessageAsync()
     {
-        var text = InputText?.Trim();
-        if (string.IsNullOrWhiteSpace(text) || IsGenerating)
+        var text = InputText?.Trim() ?? "";
+        if ((string.IsNullOrWhiteSpace(text) && StagedAttachments.Count == 0) || IsGenerating)
         {
             return;
         }
@@ -129,6 +236,13 @@ public partial class AiAssistantViewModel : ObservableObject
             Content = text,
             Timestamp = DateTime.UtcNow
         };
+
+        if (StagedAttachments.Count > 0)
+        {
+            userMsg.Attachments.AddRange(StagedAttachments);
+            ClearStagedAttachments();
+        }
+
         Messages.Add(userMsg);
         InputText = "";
 
@@ -151,7 +265,7 @@ public partial class AiAssistantViewModel : ObservableObject
         try
         {
             var chatMessages = Messages
-                .Where(m => !m.IsError && !m.IsLoading && !string.IsNullOrWhiteSpace(m.Content))
+                .Where(m => !m.IsError && !m.IsLoading && (!string.IsNullOrWhiteSpace(m.Content) || m.HasAttachments))
                 .ToList();
 
             var request = new AiChatRequest(
@@ -315,14 +429,22 @@ public partial class AiAssistantViewModel : ObservableObject
                 if (result.AvailableModels != null && result.AvailableModels.Count > 0)
                 {
                     AvailableModels.Clear();
+                    AvailableModelCapabilities.Clear();
                     foreach (var m in result.AvailableModels)
                     {
                         AvailableModels.Add(m);
+                        AvailableModelCapabilities.Add(new AiModelCapabilityInfo(m, m, "unknown"));
                     }
                     if (!AvailableModels.Contains(SelectedModel) && AvailableModels.Count > 0)
                     {
                         SelectedModel = AvailableModels[0];
                     }
+                    SelectedModelCapability = AvailableModelCapabilities.FirstOrDefault(c => c.Id == SelectedModel);
+                }
+
+                if (result.Success)
+                {
+                    await LoadAvailableModelsAsync(refresh: true);
                 }
             }
             else
@@ -339,6 +461,57 @@ public partial class AiAssistantViewModel : ObservableObject
         finally
         {
             IsTestingConnection = false;
+        }
+    }
+
+    [RelayCommand]
+    public async Task LoadAvailableModelsAsync(bool refresh = false)
+    {
+        if (!refresh && AvailableModelCapabilities.Count > 1)
+        {
+            return;
+        }
+
+        try
+        {
+            List<AiModelCapabilityInfo>? caps = null;
+            if (_assistantService != null)
+            {
+                caps = await _assistantService.GetModelCapabilitiesAsync(Endpoint, ApiKey, includeLocal: false);
+            }
+            else if (_httpClient != null)
+            {
+                var ep = Uri.EscapeDataString(Endpoint ?? "");
+                var key = Uri.EscapeDataString(ApiKey ?? "");
+                var url = $"/api/ai/models?endpoint={ep}&apiKey={key}&includeLocal=false";
+                caps = await _httpClient.GetFromJsonAsync<List<AiModelCapabilityInfo>>(url, JsonOptions);
+            }
+
+            if (caps != null && caps.Count > 0)
+            {
+                AvailableModelCapabilities.Clear();
+                AvailableModels.Clear();
+                foreach (var cap in caps)
+                {
+                    AvailableModelCapabilities.Add(cap);
+                    AvailableModels.Add(cap.Id);
+                }
+
+                var matching = AvailableModelCapabilities.FirstOrDefault(c => string.Equals(c.Id, SelectedModel, StringComparison.OrdinalIgnoreCase));
+                if (matching != null)
+                {
+                    SelectedModelCapability = matching;
+                }
+                else if (AvailableModelCapabilities.Count > 0)
+                {
+                    SelectedModelCapability = AvailableModelCapabilities[0];
+                    SelectedModel = SelectedModelCapability.Id;
+                }
+            }
+        }
+        catch
+        {
+            // Suppress error; avoid crashing caller
         }
     }
 

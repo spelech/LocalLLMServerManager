@@ -188,4 +188,162 @@ public class AiAssistantViewModelTests
         Assert.Equal("⚡ Check live VRAM and GPU telemetry", vm.Messages[1].Content);
         Assert.Equal("Telemetry OK", vm.Messages[2].Content);
     }
+
+    [Fact]
+    public void StagedAttachments_CanAddAndRemove()
+    {
+        var vm = new AiAssistantViewModel();
+        Assert.False(vm.HasStagedAttachments);
+
+        var att = new AiChatMessageAttachment
+        {
+            FileName = "screen.png",
+            ContentType = "image/png",
+            Base64Data = "abc"
+        };
+
+        vm.AddStagedAttachment(att);
+        Assert.True(vm.HasStagedAttachments);
+        Assert.Single(vm.StagedAttachments);
+
+        vm.RemoveStagedAttachment(att.Id);
+        Assert.False(vm.HasStagedAttachments);
+        Assert.Empty(vm.StagedAttachments);
+    }
+
+    [Fact]
+    public void ChangingSelectedModelCapability_UpdatesSelectedModelString()
+    {
+        var vm = new AiAssistantViewModel();
+        var cap = new AiModelCapabilityInfo("openai/gpt-4o", "GPT-4o", "openai", SupportsVision: true);
+
+        vm.SelectedModelCapability = cap;
+        Assert.Equal("openai/gpt-4o", vm.SelectedModel);
+    }
+
+    [Fact]
+    public void PasteImageBytes_AddsStagedAttachmentWithBase64()
+    {
+        var vm = new AiAssistantViewModel();
+        var bytes = new byte[] { 0x89, 0x50, 0x4E, 0x47 }; // PNG header bytes
+        vm.PasteImageBytes(bytes, "image/png");
+
+        Assert.True(vm.HasStagedAttachments);
+        var item = Assert.Single(vm.StagedAttachments);
+        Assert.Equal("image/png", item.ContentType);
+        Assert.Equal(Convert.ToBase64String(bytes), item.Base64Data);
+        Assert.Equal(bytes, item.RawBytes);
+    }
+
+    [Fact]
+    public void ClearStagedAttachments_RemovesAllAttachmentsAndUpdatesHasStagedAttachments()
+    {
+        var vm = new AiAssistantViewModel();
+        vm.AddStagedAttachment(new AiChatMessageAttachment { FileName = "a.png", Base64Data = "123" });
+        vm.AddStagedAttachment(new AiChatMessageAttachment { FileName = "b.png", Base64Data = "456" });
+        Assert.Equal(2, vm.StagedAttachments.Count);
+        Assert.True(vm.HasStagedAttachments);
+
+        vm.ClearStagedAttachments();
+        Assert.Empty(vm.StagedAttachments);
+        Assert.False(vm.HasStagedAttachments);
+    }
+
+    [Fact]
+    public void ChangingSelectedModel_UpdatesSelectedModelCapability_WhenPresent()
+    {
+        var vm = new AiAssistantViewModel();
+        var cap = new AiModelCapabilityInfo("openai/gpt-4o", "GPT-4o", "openai", SupportsVision: true);
+        vm.AvailableModelCapabilities.Add(cap);
+
+        vm.SelectedModel = "openai/gpt-4o";
+        Assert.Same(cap, vm.SelectedModelCapability);
+    }
+
+    [Fact]
+    public async Task SendMessageAsync_TransfersStagedAttachmentsToUserMessage_AndClearsStaged()
+    {
+        var mockAssistant = new Mock<IAiAssistantService>();
+        async IAsyncEnumerable<AiChatChunk> MockStream(AiChatRequest req)
+        {
+            await Task.Yield();
+            yield return new AiChatChunk(DeltaText: "Image received");
+        }
+        mockAssistant.Setup(a => a.StreamChatAsync(It.IsAny<AiChatRequest>(), It.IsAny<CancellationToken>()))
+            .Returns((AiChatRequest req, CancellationToken ct) => MockStream(req));
+
+        var vm = new AiAssistantViewModel(mockAssistant.Object);
+        var att = new AiChatMessageAttachment
+        {
+            FileName = "photo.jpg",
+            ContentType = "image/jpeg",
+            Base64Data = "dGVzdA=="
+        };
+        vm.AddStagedAttachment(att);
+        vm.InputText = "What is this image?";
+
+        await vm.SendMessageAsync();
+
+        Assert.False(vm.HasStagedAttachments);
+        Assert.Empty(vm.StagedAttachments);
+
+        var userMsg = vm.Messages[1];
+        Assert.True(userMsg.IsUser);
+        Assert.True(userMsg.HasAttachments);
+        Assert.Single(userMsg.Attachments);
+        Assert.Equal("photo.jpg", userMsg.Attachments[0].FileName);
+    }
+
+    [Fact]
+    public async Task LoadAvailableModelsAsync_PopulatesCapabilitiesAndSyncsSelectedModel()
+    {
+        var mockAssistant = new Mock<IAiAssistantService>();
+        var caps = new List<AiModelCapabilityInfo>
+        {
+            new("vertex_ai/gemini-2.5-flash", "Gemini 2.5 Flash", "vertex_ai", SupportsVision: true),
+            new("openai/gpt-4o", "GPT-4o", "openai", SupportsVision: true)
+        };
+        mockAssistant.Setup(a => a.GetModelCapabilitiesAsync(It.IsAny<string?>(), It.IsAny<string?>(), false, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(caps);
+
+        var vm = new AiAssistantViewModel(mockAssistant.Object);
+        vm.SelectedModel = "openai/gpt-4o";
+
+        await vm.LoadAvailableModelsAsync(refresh: true);
+
+        Assert.Equal(2, vm.AvailableModelCapabilities.Count);
+        Assert.Equal(2, vm.AvailableModels.Count);
+        Assert.NotNull(vm.SelectedModelCapability);
+        Assert.Equal("openai/gpt-4o", vm.SelectedModelCapability!.Id);
+    }
+
+    [Fact]
+    public async Task TestConnectionAsync_WhenSuccessful_LoadsCapabilities()
+    {
+        var mockAssistant = new Mock<IAiAssistantService>();
+        mockAssistant.Setup(a => a.ValidateConnectionAsync(
+            It.IsAny<string?>(),
+            It.IsAny<string?>(),
+            It.IsAny<string?>(),
+            It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new AiValidationResult(
+                Success: true,
+                Message: "Connected successfully",
+                AvailableModels: new List<string> { "model-1", "model-2" }));
+
+        var caps = new List<AiModelCapabilityInfo>
+        {
+            new("model-1", "Model 1", "test", SupportsVision: false),
+            new("model-2", "Model 2", "test", SupportsVision: true)
+        };
+        mockAssistant.Setup(a => a.GetModelCapabilitiesAsync(It.IsAny<string?>(), It.IsAny<string?>(), false, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(caps);
+
+        var vm = new AiAssistantViewModel(mockAssistant.Object);
+        await vm.TestConnectionAsync();
+
+        Assert.True(vm.IsConnectionSuccess);
+        Assert.Equal(2, vm.AvailableModelCapabilities.Count);
+        Assert.Equal("model-1", vm.AvailableModelCapabilities[0].Id);
+    }
 }
