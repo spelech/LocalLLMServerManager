@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Net.Http;
 using System.Threading;
 using System.Threading.Tasks;
@@ -56,6 +57,35 @@ public class AiAssistantLiveLlmTests
         }
     }
 
+    private static AiAssistantService CreateLiveAssistantService(string? endpoint, string? apiKey, string? model)
+    {
+        var mockHttpFactory = new Mock<IHttpClientFactory>();
+        mockHttpFactory.Setup(f => f.CreateClient(It.IsAny<string>())).Returns(new HttpClient());
+
+        var mockSettings = new Mock<ISettingsService>();
+        mockSettings.Setup(s => s.LoadSettings()).Returns(new AppSettings(
+            AiAssistantEnabled: true,
+            AiAssistantEndpoint: endpoint,
+            AiAssistantApiKey: apiKey,
+            AiAssistantModel: model
+        ));
+
+        var promptService = new PromptManagementService();
+        var telemetryProvider = new Mock<IGpuTelemetryProvider>();
+        telemetryProvider.Setup(t => t.GetGpuInfo()).Returns(("NVIDIA GeForce RTX 4070 Ti SUPER", 16384L * 1024 * 1024, 4096L * 1024 * 1024));
+
+        var tools = new AiAppTools(
+            telemetryProvider.Object,
+            new Mock<IAiEngineManager>().Object,
+            new Mock<IOllamaModelService>().Object,
+            mockSettings.Object,
+            new Mock<ICanIRunItService>().Object,
+            mockHttpFactory.Object
+        );
+
+        return new AiAssistantService(mockSettings.Object, promptService, tools, mockHttpFactory.Object);
+    }
+
     [Fact]
     public void EnvironmentConfiguration_HasReasonableDefaults()
     {
@@ -83,31 +113,7 @@ public class AiAssistantLiveLlmTests
         var apiKey = GetLiveApiKey();
         var model = GetLiveModel();
 
-        var mockHttpFactory = new Mock<IHttpClientFactory>();
-        mockHttpFactory.Setup(f => f.CreateClient(It.IsAny<string>())).Returns(new HttpClient());
-
-        var mockSettings = new Mock<ISettingsService>();
-        mockSettings.Setup(s => s.LoadSettings()).Returns(new AppSettings(
-            AiAssistantEnabled: true,
-            AiAssistantEndpoint: endpoint,
-            AiAssistantApiKey: apiKey,
-            AiAssistantModel: model
-        ));
-
-        var promptService = new PromptManagementService();
-        var telemetryProvider = new Mock<IGpuTelemetryProvider>();
-        telemetryProvider.Setup(t => t.GetGpuInfo()).Returns(("NVIDIA GeForce RTX 4070 Ti SUPER", 16384L * 1024 * 1024, 4096L * 1024 * 1024));
-
-        var tools = new AiAppTools(
-            telemetryProvider.Object,
-            new Mock<IAiEngineManager>().Object,
-            new Mock<IOllamaModelService>().Object,
-            mockSettings.Object,
-            new Mock<ICanIRunItService>().Object,
-            mockHttpFactory.Object
-        );
-
-        var service = new AiAssistantService(mockSettings.Object, promptService, tools, mockHttpFactory.Object);
+        var service = CreateLiveAssistantService(endpoint, apiKey, model);
         var result = await service.ValidateConnectionAsync(endpoint, apiKey, model);
 
         Assert.True(result.Success, $"Expected connection success but got: {result.Message}");
@@ -134,31 +140,7 @@ public class AiAssistantLiveLlmTests
         var apiKey = GetLiveApiKey();
         var model = GetLiveModel();
 
-        var mockHttpFactory = new Mock<IHttpClientFactory>();
-        mockHttpFactory.Setup(f => f.CreateClient(It.IsAny<string>())).Returns(new HttpClient());
-
-        var mockSettings = new Mock<ISettingsService>();
-        mockSettings.Setup(s => s.LoadSettings()).Returns(new AppSettings(
-            AiAssistantEnabled: true,
-            AiAssistantEndpoint: endpoint,
-            AiAssistantApiKey: apiKey,
-            AiAssistantModel: model
-        ));
-
-        var promptService = new PromptManagementService();
-        var telemetryProvider = new Mock<IGpuTelemetryProvider>();
-        telemetryProvider.Setup(t => t.GetGpuInfo()).Returns(("NVIDIA GeForce RTX 4070 Ti SUPER", 16384L * 1024 * 1024, 4096L * 1024 * 1024));
-
-        var tools = new AiAppTools(
-            telemetryProvider.Object,
-            new Mock<IAiEngineManager>().Object,
-            new Mock<IOllamaModelService>().Object,
-            mockSettings.Object,
-            new Mock<ICanIRunItService>().Object,
-            mockHttpFactory.Object
-        );
-
-        var service = new AiAssistantService(mockSettings.Object, promptService, tools, mockHttpFactory.Object);
+        var service = CreateLiveAssistantService(endpoint, apiKey, model);
 
         var request = new AiChatRequest(new List<AiChatMessageItem>
         {
@@ -193,31 +175,7 @@ public class AiAssistantLiveLlmTests
         var apiKey = GetLiveApiKey();
         var model = GetLiveModel();
 
-        var mockHttpFactory = new Mock<IHttpClientFactory>();
-        mockHttpFactory.Setup(f => f.CreateClient(It.IsAny<string>())).Returns(new HttpClient());
-
-        var mockSettings = new Mock<ISettingsService>();
-        mockSettings.Setup(s => s.LoadSettings()).Returns(new AppSettings(
-            AiAssistantEnabled: true,
-            AiAssistantEndpoint: endpoint,
-            AiAssistantApiKey: apiKey,
-            AiAssistantModel: model
-        ));
-
-        var promptService = new PromptManagementService();
-        var telemetryProvider = new Mock<IGpuTelemetryProvider>();
-        telemetryProvider.Setup(t => t.GetGpuInfo()).Returns(("NVIDIA GeForce RTX 4070 Ti SUPER", 16384L * 1024 * 1024, 4096L * 1024 * 1024));
-
-        var tools = new AiAppTools(
-            telemetryProvider.Object,
-            new Mock<IAiEngineManager>().Object,
-            new Mock<IOllamaModelService>().Object,
-            mockSettings.Object,
-            new Mock<ICanIRunItService>().Object,
-            mockHttpFactory.Object
-        );
-
-        var service = new AiAssistantService(mockSettings.Object, promptService, tools, mockHttpFactory.Object);
+        var service = CreateLiveAssistantService(endpoint, apiKey, model);
 
         var request = new AiChatRequest(new List<AiChatMessageItem>
         {
@@ -231,5 +189,128 @@ public class AiAssistantLiveLlmTests
         }
 
         Assert.NotEmpty(chunks);
+    }
+
+    [Fact]
+    public async Task LiveEndpoint_DiscoverModelCapabilities_ExcludesLocal_WhenReachable()
+    {
+        var endpoint = GetLiveEndpoint();
+        if (string.IsNullOrWhiteSpace(endpoint))
+        {
+            Assert.Skip("Live LLM endpoint not configured.");
+            return;
+        }
+
+        if (!await IsEndpointReachableAsync(endpoint))
+        {
+            Assert.Skip($"Configured endpoint '{endpoint}' is currently unreachable.");
+            return;
+        }
+
+        var service = CreateLiveAssistantService(endpoint, GetLiveApiKey(), GetLiveModel());
+        var models = await service.GetModelCapabilitiesAsync(endpoint, GetLiveApiKey(), includeLocal: false);
+
+        Assert.NotEmpty(models);
+        Assert.DoesNotContain(models, m => m.Id.StartsWith("ollama/", StringComparison.OrdinalIgnoreCase));
+        Assert.DoesNotContain(models, m => m.IsLocal);
+    }
+
+    [Fact]
+    public async Task LiveEndpoint_MultimodalChat_SendsImageAndReceivesResponse_WhenReachable()
+    {
+        var endpoint = GetLiveEndpoint();
+        if (string.IsNullOrWhiteSpace(endpoint))
+        {
+            Assert.Skip("Live LLM endpoint not configured.");
+            return;
+        }
+
+        if (!await IsEndpointReachableAsync(endpoint))
+        {
+            Assert.Skip($"Configured endpoint '{endpoint}' is currently unreachable.");
+            return;
+        }
+
+        var service = CreateLiveAssistantService(endpoint, GetLiveApiKey(), GetLiveModel());
+        var models = await service.GetModelCapabilitiesAsync(endpoint, GetLiveApiKey(), includeLocal: false);
+        var visionModel = models.FirstOrDefault(m => m.SupportsVision)?.Id ?? GetLiveModel();
+
+        // 1x1 red PNG base64
+        var samplePngBase64 = "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==";
+
+        var request = new AiChatRequest(
+            Messages: new List<AiChatMessageItem>
+            {
+                new()
+                {
+                    Role = "user",
+                    Content = "What color is this single pixel image? Respond in one word.",
+                    Attachments = new List<AiChatMessageAttachment>
+                    {
+                        new()
+                        {
+                            FileName = "pixel.png",
+                            ContentType = "image/png",
+                            Base64Data = samplePngBase64
+                        }
+                    }
+                }
+            },
+            Model: visionModel
+        );
+
+        var response = await service.SendChatAsync(request);
+        Assert.True(response.Success);
+        Assert.NotNull(response.Message);
+        Assert.False(string.IsNullOrWhiteSpace(response.Message.Content));
+    }
+
+    [Fact]
+    public async Task LiveEndpoint_MultimodalToolCall_ExecutesSuccessfully_WhenReachable()
+    {
+        var endpoint = GetLiveEndpoint();
+        if (string.IsNullOrWhiteSpace(endpoint))
+        {
+            Assert.Skip("Live LLM endpoint not configured.");
+            return;
+        }
+
+        if (!await IsEndpointReachableAsync(endpoint))
+        {
+            Assert.Skip($"Configured endpoint '{endpoint}' is currently unreachable.");
+            return;
+        }
+
+        var service = CreateLiveAssistantService(endpoint, GetLiveApiKey(), GetLiveModel());
+        var models = await service.GetModelCapabilitiesAsync(endpoint, GetLiveApiKey(), includeLocal: false);
+        var visionModel = models.FirstOrDefault(m => m.SupportsVision && m.SupportsFunctionCalling)?.Id ?? GetLiveModel();
+
+        var samplePngBase64 = "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==";
+
+        var request = new AiChatRequest(
+            Messages: new List<AiChatMessageItem>
+            {
+                new()
+                {
+                    Role = "user",
+                    Content = "Here is an image. Query live VRAM telemetry and tell me how much VRAM is free.",
+                    Attachments = new List<AiChatMessageAttachment>
+                    {
+                        new()
+                        {
+                            FileName = "status.png",
+                            ContentType = "image/png",
+                            Base64Data = samplePngBase64
+                        }
+                    }
+                }
+            },
+            Model: visionModel
+        );
+
+        var response = await service.SendChatAsync(request);
+        Assert.True(response.Success);
+        Assert.NotNull(response.Message);
+        Assert.True(response.Message.HasToolCalls);
     }
 }
