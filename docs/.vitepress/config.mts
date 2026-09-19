@@ -73,6 +73,21 @@ export default defineConfig({
           ]
         }
       ],
+      '/guide/': [
+        {
+          text: 'Technical Reference (Developers & Agents)',
+          items: [
+            { text: 'Technical Overview', link: '/technical/' },
+            { text: 'System Architecture', link: '/technical/architecture' },
+            { text: 'Development & Build Guide', link: '/technical/development' },
+            { text: 'Collaborative UI Debugging', link: '/guide/collaborative-debugging' },
+            { text: 'Requirements Specification', link: '/technical/requirements' },
+            { text: 'Windows Process Validation', link: '/technical/validation' },
+            { text: 'Test Coverage Benchmarks', link: '/technical/test-coverage' },
+            { text: 'AI Assistant Internals', link: '/technical/ai-assistant-internals' }
+          ]
+        }
+      ],
       '/technical/': [
         {
           text: 'Technical Reference (Developers & Agents)',
@@ -80,6 +95,7 @@ export default defineConfig({
             { text: 'Technical Overview', link: '/technical/' },
             { text: 'System Architecture', link: '/technical/architecture' },
             { text: 'Development & Build Guide', link: '/technical/development' },
+            { text: 'Collaborative UI Debugging', link: '/guide/collaborative-debugging' },
             { text: 'Requirements Specification', link: '/technical/requirements' },
             { text: 'Windows Process Validation', link: '/technical/validation' },
             { text: 'Test Coverage Benchmarks', link: '/technical/test-coverage' },

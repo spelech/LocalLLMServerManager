@@ -175,4 +175,58 @@ public class CivitaiSearchViewModelTests
         Assert.False(vm.IsLoading);
         Assert.Single(vm.CivitaiResults);
     }
+
+    [Fact]
+    public void ApplyFilter_FiltersStarterModels_ByVerdictAndType()
+    {
+        var mockCivitai = new Mock<ICivitaiSearchService>();
+        var vm = new CivitaiSearchViewModel(mockCivitai.Object);
+
+        // Initial state: default starter models loaded (DefaultStarterModels has Checkpoints and LORA)
+        Assert.NotEmpty(vm.FilteredStarterModels);
+        // Default selected type is Checkpoint
+        Assert.All(vm.FilteredStarterModels, s => Assert.Equal("Checkpoint", s.Type));
+
+        // When switching to LORA type
+        vm.SelectCivitaiType("LORA");
+        Assert.NotEmpty(vm.FilteredStarterModels);
+        Assert.All(vm.FilteredStarterModels, s => Assert.Equal("LORA", s.Type));
+
+        // When switching to All
+        vm.SelectCivitaiType("All");
+        Assert.Equal(vm.StarterModels.Count, vm.FilteredStarterModels.Count);
+
+        // When toggling off all verdicts
+        vm.IsFullVramActive = false;
+        vm.IsPartialOffloadActive = false;
+        vm.IsCpuOnlyActive = false;
+        vm.IsOomActive = false;
+        Assert.Empty(vm.FilteredStarterModels);
+    }
+
+    [Fact]
+    public void SelectCivitaiType_UpdatesActiveBooleansAndFilter()
+    {
+        var mockCivitai = new Mock<ICivitaiSearchService>();
+        var vm = new CivitaiSearchViewModel(mockCivitai.Object);
+
+        vm.SelectCivitaiType("LORA");
+        Assert.True(vm.IsTypeLoraActive);
+        Assert.False(vm.IsTypeCheckpointActive);
+        Assert.False(vm.IsTypeAllActive);
+
+        vm.SelectCivitaiType("Checkpoint");
+        Assert.False(vm.IsTypeLoraActive);
+        Assert.True(vm.IsTypeCheckpointActive);
+        Assert.False(vm.IsTypeAllActive);
+
+        vm.SelectCivitaiType("All");
+        Assert.False(vm.IsTypeLoraActive);
+        Assert.False(vm.IsTypeCheckpointActive);
+        Assert.True(vm.IsTypeAllActive);
+
+        vm.SelectCivitaiType(null);
+        Assert.True(vm.IsTypeAllActive);
+    }
 }
+

@@ -5,6 +5,33 @@
              x:Class="LocalLLMServerManager.Shared.Views.Controls.SettingsTabControl"
              x:DataType="vm:SettingsViewModel">
 
+    <UserControl.Styles>
+        <Style Selector="Button.preset-filter-btn">
+            <Setter Property="Background" Value="#1E293B"/>
+            <Setter Property="Foreground" Value="#94A3B8"/>
+            <Setter Property="BorderBrush" Value="#334155"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="CornerRadius" Value="14"/>
+            <Setter Property="Padding" Value="12,6"/>
+            <Setter Property="FontSize" Value="12"/>
+            <Setter Property="FontWeight" Value="Medium"/>
+            <Setter Property="Cursor" Value="Hand"/>
+        </Style>
+        <Style Selector="Button.preset-filter-btn:pointerover">
+            <Setter Property="Background" Value="#334155"/>
+        </Style>
+        <Style Selector="Button.preset-filter-btn.active">
+            <Setter Property="Background" Value="#1D4ED8"/>
+            <Setter Property="Foreground" Value="#FFFFFF"/>
+            <Setter Property="BorderBrush" Value="#60A5FA"/>
+            <Setter Property="BorderThickness" Value="1.5"/>
+            <Setter Property="FontWeight" Value="Bold"/>
+        </Style>
+        <Style Selector="Button.preset-filter-btn.active:pointerover">
+            <Setter Property="Background" Value="#2563EB"/>
+        </Style>
+    </UserControl.Styles>
+
     <ScrollViewer Margin="0,12,0,0">
         <StackPanel Spacing="16" Margin="0,0,0,16">
             <!-- Auto-Discovery Quick Action -->
@@ -116,10 +143,30 @@
 
                     <!-- Modality Filter Bar -->
                     <StackPanel Orientation="Horizontal" Spacing="8" Margin="0,4,0,4">
-                        <Button Content="All Presets" Command="{Binding FilterPresetsCommand}" CommandParameter="All" Classes="matte-secondary" Padding="12,6"/>
-                        <Button Content="🎬 Video" Command="{Binding FilterPresetsCommand}" CommandParameter="Video" Classes="matte-secondary" Padding="12,6"/>
-                        <Button Content="🎨 Image" Command="{Binding FilterPresetsCommand}" CommandParameter="Image" Classes="matte-secondary" Padding="12,6"/>
-                        <Button Content="🎵 Audio/TTS" Command="{Binding FilterPresetsCommand}" CommandParameter="Audio" Classes="matte-secondary" Padding="12,6"/>
+                        <Button Command="{Binding FilterPresetsCommand}" CommandParameter="All" Classes="preset-filter-btn" Classes.active="{Binding IsFilterAllActive}">
+                            <StackPanel Orientation="Horizontal" Spacing="4">
+                                <TextBlock Text="✓" IsVisible="{Binding IsFilterAllActive}" FontWeight="Bold"/>
+                                <TextBlock Text="All Presets"/>
+                            </StackPanel>
+                        </Button>
+                        <Button Command="{Binding FilterPresetsCommand}" CommandParameter="Video" Classes="preset-filter-btn" Classes.active="{Binding IsFilterVideoActive}">
+                            <StackPanel Orientation="Horizontal" Spacing="4">
+                                <TextBlock Text="✓" IsVisible="{Binding IsFilterVideoActive}" FontWeight="Bold"/>
+                                <TextBlock Text="🎬 Video"/>
+                            </StackPanel>
+                        </Button>
+                        <Button Command="{Binding FilterPresetsCommand}" CommandParameter="Image" Classes="preset-filter-btn" Classes.active="{Binding IsFilterImageActive}">
+                            <StackPanel Orientation="Horizontal" Spacing="4">
+                                <TextBlock Text="✓" IsVisible="{Binding IsFilterImageActive}" FontWeight="Bold"/>
+                                <TextBlock Text="🎨 Image"/>
+                            </StackPanel>
+                        </Button>
+                        <Button Command="{Binding FilterPresetsCommand}" CommandParameter="Audio" Classes="preset-filter-btn" Classes.active="{Binding IsFilterAudioActive}">
+                            <StackPanel Orientation="Horizontal" Spacing="4">
+                                <TextBlock Text="✓" IsVisible="{Binding IsFilterAudioActive}" FontWeight="Bold"/>
+                                <TextBlock Text="🎵 Audio/TTS"/>
+                            </StackPanel>
+                        </Button>
                     </StackPanel>
 
                     <!-- Presets Items List -->

@@ -58,6 +58,14 @@
             </TabItem>
         </TabControl>
 
+        <!-- Movable Floating Documentation Overlay -->
+        <Canvas Grid.Row="1" Margin="16,0,16,0" IsHitTestVisible="True" ZIndex="90">
+            <controls:DocumentationFloatingOverlay
+                DataContext="{Binding Documentation}"
+                Canvas.Left="{Binding OverlayX}"
+                Canvas.Top="{Binding OverlayY}"/>
+        </Canvas>
+
         <!-- Floating Toast Notifications Overlay -->
         <ItemsControl Grid.Row="1" ItemsSource="{Binding Toasts}" VerticalAlignment="Top" HorizontalAlignment="Right" Margin="0,20,24,0" IsHitTestVisible="False">
             <ItemsControl.ItemTemplate>

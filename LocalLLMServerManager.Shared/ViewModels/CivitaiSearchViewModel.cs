@@ -17,11 +17,23 @@ public partial class CivitaiSearchViewModel : ObservableObject
     private readonly ITelemetryService? _telemetryService;
 
     [ObservableProperty] private string _civitaiSearchQuery = "";
-    [ObservableProperty] private string _selectedCivitaiType = "Checkpoint";
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(IsTypeAllActive))]
+    [NotifyPropertyChangedFor(nameof(IsTypeCheckpointActive))]
+    [NotifyPropertyChangedFor(nameof(IsTypeLoraActive))]
+    private string _selectedCivitaiType = "Checkpoint";
+
+    public bool IsTypeAllActive => string.IsNullOrWhiteSpace(SelectedCivitaiType) || SelectedCivitaiType.Equals("All", StringComparison.OrdinalIgnoreCase);
+    public bool IsTypeCheckpointActive => SelectedCivitaiType.Equals("Checkpoint", StringComparison.OrdinalIgnoreCase);
+    public bool IsTypeLoraActive => SelectedCivitaiType.Equals("LORA", StringComparison.OrdinalIgnoreCase);
+
+    [ObservableProperty] private string? _activeStarterChip = null;
+
     [ObservableProperty] private bool _isLoading = false;
     public ObservableCollection<CivitaiModelItem> CivitaiResults { get; } = new();
     public ObservableCollection<CivitaiModelItem> FilteredCivitaiResults { get; } = new();
     public ObservableCollection<CivitaiModelItem> StarterModels { get; } = new();
+    public ObservableCollection<CivitaiModelItem> FilteredStarterModels { get; } = new();
 
     public static readonly List<CivitaiModelItem> DefaultStarterModels = new()
     {
@@ -71,6 +83,7 @@ public partial class CivitaiSearchViewModel : ObservableObject
             var badge = _canIRunItService.EvaluateQuickFit(s.Name, s.SizeBytes > 0 ? s.SizeBytes : null, "Image", (long)TotalVramMb, (long)TotalRamMb);
             StarterModels.Add(s with { FitBadge = badge });
         }
+        ApplyFilter();
     }
 
     public void UpdateHardwareTelemetry(double totalVramMb, double totalRamMb)
@@ -103,26 +116,37 @@ public partial class CivitaiSearchViewModel : ObservableObject
         FilteredCivitaiResults.Clear();
         foreach (var r in CivitaiResults)
         {
-            if (r.FitBadge == null)
-            {
-                FilteredCivitaiResults.Add(r);
-                continue;
-            }
-
-            bool matches = r.FitBadge.FitVerdict switch
-            {
-                FitVerdict.FullVram => IsFullVramActive,
-                FitVerdict.PartialOffload => IsPartialOffloadActive,
-                FitVerdict.CpuOnly => IsCpuOnlyActive,
-                FitVerdict.OutOfMemory => IsOomActive,
-                _ => true
-            };
-
-            if (matches)
+            if (MatchesVerdictFilter(r.FitBadge))
             {
                 FilteredCivitaiResults.Add(r);
             }
         }
+
+        FilteredStarterModels.Clear();
+        foreach (var s in StarterModels)
+        {
+            bool typeMatches = string.IsNullOrWhiteSpace(SelectedCivitaiType) ||
+                               SelectedCivitaiType.Equals("All", StringComparison.OrdinalIgnoreCase) ||
+                               s.Type.Equals(SelectedCivitaiType, StringComparison.OrdinalIgnoreCase);
+
+            if (typeMatches && MatchesVerdictFilter(s.FitBadge))
+            {
+                FilteredStarterModels.Add(s);
+            }
+        }
+    }
+
+    private bool MatchesVerdictFilter(QuickFitBadge? fitBadge)
+    {
+        if (fitBadge == null) return true;
+        return fitBadge.FitVerdict switch
+        {
+            FitVerdict.FullVram => IsFullVramActive,
+            FitVerdict.PartialOffload => IsPartialOffloadActive,
+            FitVerdict.CpuOnly => IsCpuOnlyActive,
+            FitVerdict.OutOfMemory => IsOomActive,
+            _ => true
+        };
     }
 
     [RelayCommand]
@@ -154,8 +178,18 @@ public partial class CivitaiSearchViewModel : ObservableObject
     partial void OnIsOomActiveChanged(bool value) => ApplyFilter();
 
     [RelayCommand]
+    public void SelectCivitaiType(string? type)
+    {
+        SelectedCivitaiType = string.IsNullOrWhiteSpace(type) ? "All" : type;
+        ActiveStarterChip = null;
+        ApplyFilter();
+        _ = SearchCivitaiAsync();
+    }
+
+    [RelayCommand]
     public void ApplyStarterChip(string? chip)
     {
+        ActiveStarterChip = chip;
         var clean = (chip ?? "").Replace("🌟", "").Replace("📸", "").Replace("🎨", "").Replace("🎭", "").Replace("⚡", "").Replace("🔮", "").Trim();
         if (clean.Contains("LoRA", StringComparison.OrdinalIgnoreCase))
         {
@@ -188,6 +222,19 @@ public partial class CivitaiSearchViewModel : ObservableObject
         }
     }
 
+    public async Task LoadDefaultModelsAsync(string apiBase, HttpClient http)
+    {
+        if (CivitaiResults.Count > 0) return;
+        try
+        {
+            await SearchCivitaiAsync(apiBase, http);
+        }
+        catch
+        {
+            // Starter models are retained
+        }
+    }
+
     [RelayCommand]
     public async Task SearchCivitaiAsync()
     {
@@ -199,7 +246,8 @@ public partial class CivitaiSearchViewModel : ObservableObject
         IsLoading = true;
         try
         {
-            var results = await _civitaiSearchService.SearchModelsAsync(apiBase, CivitaiSearchQuery, SelectedCivitaiType, "Most Downloaded", http);
+            string typeParam = SelectedCivitaiType.Equals("All", StringComparison.OrdinalIgnoreCase) ? "" : SelectedCivitaiType;
+            var results = await _civitaiSearchService.SearchModelsAsync(apiBase, CivitaiSearchQuery, typeParam, "Most Downloaded", http);
             CivitaiResults.Clear();
             foreach (var r in results)
             {

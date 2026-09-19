@@ -9,10 +9,30 @@ namespace LocalLLMServerManager.Views;
 
 public partial class MainWindow : Window
 {
+    private DocumentationWindow? _docWindow;
+
     public MainWindow()
     {
         InitializeComponent();
-        DataContext = new MainViewModel();
+#if DEBUG
+        this.AttachDevTools();
+#endif
+        var mainVm = new MainViewModel();
+        DataContext = mainVm;
+
+        mainVm.Documentation.OnPopOutNativeWindowRequested = () =>
+        {
+            if (_docWindow == null || !_docWindow.IsVisible)
+            {
+                _docWindow = new DocumentationWindow(mainVm.Documentation);
+                _docWindow.Closed += (s, e) => _docWindow = null;
+                _docWindow.Show();
+            }
+            else
+            {
+                _docWindow.Activate();
+            }
+        };
 
         PropertyChanged += (sender, e) =>
         {

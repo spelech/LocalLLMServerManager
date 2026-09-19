@@ -58,4 +58,48 @@ public class DocumentationViewModelTests
         // Should retain previous selection if target not found
         Assert.Equal("can-i-run-it", vm.SelectedSection.Id);
     }
+
+    [Fact]
+    public void FloatingOverlay_TogglesAndNavigatesSteps()
+    {
+        var vm = new DocumentationViewModel();
+        Assert.False(vm.IsFloatingOverlayOpen);
+
+        vm.ToggleFloatingOverlay();
+        Assert.True(vm.IsFloatingOverlayOpen);
+        Assert.False(vm.IsMinimizedToPill);
+        Assert.Equal(0, vm.CurrentStepIndex);
+        Assert.NotNull(vm.CurrentStep);
+
+        vm.NextStep();
+        Assert.Equal(1, vm.CurrentStepIndex);
+
+        vm.PreviousStep();
+        Assert.Equal(0, vm.CurrentStepIndex);
+
+        vm.ToggleMinimizeToPill();
+        Assert.True(vm.IsMinimizedToPill);
+
+        vm.ToggleMinimizeToPill();
+        Assert.False(vm.IsMinimizedToPill);
+
+        vm.ToggleFloatingOverlay();
+        Assert.False(vm.IsFloatingOverlayOpen);
+    }
+
+    [Fact]
+    public void JumpToStepTab_InvokesCallbackWithCorrectTargetTab()
+    {
+        var vm = new DocumentationViewModel();
+        vm.SelectSection("image-generation");
+
+        int receivedTab = -1;
+        vm.OnNavigateToTabRequested = tab => receivedTab = tab;
+
+        Assert.NotNull(vm.CurrentStep);
+        Assert.Equal(1, vm.CurrentStep.TargetTab);
+
+        vm.JumpToStepTab(null);
+        Assert.Equal(1, receivedTab);
+    }
 }
