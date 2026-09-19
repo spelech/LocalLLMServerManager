@@ -81,6 +81,10 @@ public class Program
             .LogToTrace();
 #if DEBUG
         builder = builder.UseMcpDiagnostics();
+        if (!System.Diagnostics.Trace.Listeners.OfType<UiDiagnosticTraceListener>().Any())
+        {
+            System.Diagnostics.Trace.Listeners.Add(new UiDiagnosticTraceListener(UiDiagnosticLogger.Instance));
+        }
 #endif
         return builder;
     }
@@ -168,6 +172,7 @@ public class Program
         builder.Services.AddSingleton<IPromptManagementService, PromptManagementService>();
         builder.Services.AddSingleton<IAiAppTools, AiAppTools>();
         builder.Services.AddSingleton<IAiAssistantService, AiAssistantService>();
+        builder.Services.AddSingleton<IUiDiagnosticLogger>(UiDiagnosticLogger.Instance);
 
         // Register MCP Server
         builder.Services.AddMcpServer()

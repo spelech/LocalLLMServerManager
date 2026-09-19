@@ -278,7 +278,7 @@ In XAML-based frameworks, data binding errors fail silently by default to preven
 To capture these issues, `LocalLLMServerManager` includes a dedicated `UiDiagnosticLogger` service:
 
 * **Trace Interception**: Hooks into Avalonia's internal `Trace.Listeners` and `Logger` system, filtering for `LogEventLevel.Warning` and `LogEventLevel.Error` on the `Binding` log category.
-* **Ring Buffer Storage**: Stores recent entries in a bounded circular buffer (capped at 250 entries) to prevent unbounded memory growth during long debugging sessions.
+* **Ring Buffer Storage**: Stores recent entries in a bounded circular buffer (capped at 500 entries) to prevent unbounded memory growth during long debugging sessions.
 * **Structured Records**: Each diagnostic entry captures:
   * Timestamp (UTC)
   * Target control type and name

@@ -41,6 +41,7 @@
 
   <ItemGroup Condition="'$(Configuration)' == 'Debug'">
     <PackageReference Include="AvaloniaMcp.Diagnostics" Version="0.4.0" />
+    <!-- Pinned to latest published Avalonia.Diagnostics (11.3.22) pending official Avalonia 12.x diagnostics release -->
     <PackageReference Include="Avalonia.Diagnostics" Version="11.3.22" />
   </ItemGroup>
 

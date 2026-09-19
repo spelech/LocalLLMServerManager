@@ -155,4 +155,38 @@ public class UiDiagnosticLoggerTests
         Assert.Equal(capacity, entries.Count);
         Assert.True(entries.All(e => !string.IsNullOrEmpty(e.Message)));
     }
+
+    [Fact]
+    public void UiDiagnosticTraceListener_InterceptsBindingMessages_AndRecordsToLogger()
+    {
+        var logger = new UiDiagnosticLogger();
+        var listener = new UiDiagnosticTraceListener(logger);
+
+        listener.WriteLine("[Binding] Error in binding to 'MissingProperty': Path not found on ViewModel");
+        listener.Write("Error in binding to 'Command': Null reference");
+        listener.WriteLine("[Warning][Binding] Cannot convert 'abc' to integer");
+
+        var errors = logger.GetRecentErrors();
+        Assert.Equal(3, errors.Count);
+        Assert.Contains("MissingProperty", errors[0].Message);
+        Assert.Equal("Avalonia.Binding", errors[0].Source);
+        Assert.Contains("Command", errors[1].Message);
+        Assert.Contains("Cannot convert", errors[2].Message);
+    }
+
+    [Fact]
+    public void UiDiagnosticTraceListener_IgnoresUnrelatedTraceMessages()
+    {
+        var logger = new UiDiagnosticLogger();
+        var listener = new UiDiagnosticTraceListener(logger);
+
+        listener.WriteLine("[Http] GET /api/health 200 OK");
+        listener.WriteLine("Application started successfully on port 5246");
+        listener.Write(null);
+        listener.WriteLine("   ");
+
+        var errors = logger.GetRecentErrors();
+        Assert.Empty(errors);
+    }
 }
+
