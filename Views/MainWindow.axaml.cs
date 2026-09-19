@@ -12,6 +12,9 @@ public partial class MainWindow : Window
     public MainWindow()
     {
         InitializeComponent();
+#if DEBUG
+        this.AttachDevTools();
+#endif
         DataContext = new MainViewModel();
 
         PropertyChanged += (sender, e) =>

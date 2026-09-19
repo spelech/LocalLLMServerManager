@@ -8,6 +8,9 @@ using LocalLLMServerManager.Endpoints;
 using LocalLLMServerManager.Services;
 using LocalLLMServerManager.Shared.Interfaces;
 using LocalLLMServerManager.Shared.Services;
+#if DEBUG
+using AvaloniaMcp.Diagnostics;
+#endif
 
 namespace LocalLLMServerManager;
 
@@ -71,10 +74,16 @@ public class Program
     }
 
     public static AppBuilder BuildAvaloniaApp()
-        => AppBuilder.Configure<App>()
+    {
+        var builder = AppBuilder.Configure<App>()
             .UsePlatformDetect()
             .WithInterFont()
             .LogToTrace();
+#if DEBUG
+        builder = builder.UseMcpDiagnostics();
+#endif
+        return builder;
+    }
 
     public static string SettingsFilePath() => new SettingsService().SettingsFilePath();
 
