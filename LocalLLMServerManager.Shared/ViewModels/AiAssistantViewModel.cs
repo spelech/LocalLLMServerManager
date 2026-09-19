@@ -52,6 +52,13 @@ public partial class AiAssistantViewModel : ObservableObject
     [ObservableProperty] private string _connectionStatusMessage = "";
     [ObservableProperty] private bool? _isConnectionSuccess = null;
     [ObservableProperty] private string _promptDirectory = "";
+    [ObservableProperty] private string _apiBase = "";
+
+    public string BuildUrl(string relativePath)
+    {
+        if (string.IsNullOrWhiteSpace(ApiBase)) return relativePath;
+        return $"{ApiBase.TrimEnd('/')}/{relativePath.TrimStart('/')}";
+    }
 
     // Chat UI States
     [ObservableProperty] private string _inputText = "";
@@ -298,7 +305,8 @@ public partial class AiAssistantViewModel : ObservableObject
             else if (_httpClient != null)
             {
                 // Remote / WASM client streaming via SSE or POST
-                var response = await _httpClient.PostAsJsonAsync("/api/ai/chat", request with { Stream = false }, ct);
+                var url = BuildUrl("/api/ai/chat");
+                var response = await _httpClient.PostAsJsonAsync(url, request with { Stream = false }, ct);
                 if (response.IsSuccessStatusCode)
                 {
                     var chatResp = await response.Content.ReadFromJsonAsync<AiChatResponse>(JsonOptions, ct);
@@ -411,7 +419,8 @@ public partial class AiAssistantViewModel : ObservableObject
             else if (_httpClient != null)
             {
                 var payload = new { endpoint = Endpoint, apiKey = ApiKey, model = SelectedModel };
-                var resp = await _httpClient.PostAsJsonAsync("/api/ai/validate", payload);
+                var url = BuildUrl("/api/ai/validate");
+                var resp = await _httpClient.PostAsJsonAsync(url, payload);
                 if (resp.IsSuccessStatusCode)
                 {
                     result = await resp.Content.ReadFromJsonAsync<AiValidationResult>(JsonOptions);
@@ -480,7 +489,7 @@ public partial class AiAssistantViewModel : ObservableObject
             {
                 var ep = Uri.EscapeDataString(Endpoint ?? "");
                 var key = Uri.EscapeDataString(ApiKey ?? "");
-                var url = $"/api/ai/models?endpoint={ep}&apiKey={key}&includeLocal=false";
+                var url = BuildUrl($"/api/ai/models?endpoint={ep}&apiKey={key}&includeLocal=false");
                 caps = await _httpClient.GetFromJsonAsync<List<AiModelCapabilityInfo>>(url, JsonOptions);
             }
 
@@ -513,7 +522,7 @@ public partial class AiAssistantViewModel : ObservableObject
     }
 
     [RelayCommand]
-    public void SaveConfiguration()
+    public async Task SaveConfiguration()
     {
         if (_settingsService != null)
         {
@@ -526,6 +535,29 @@ public partial class AiAssistantViewModel : ObservableObject
                 AiAssistantModel = SelectedModel
             };
             _settingsService.SaveSettings(updated);
+        }
+        else if (_httpClient != null)
+        {
+            try
+            {
+                var settingsUrl = BuildUrl("/api/settings");
+                var currentSettings = await _httpClient.GetFromJsonAsync<AppSettings>(settingsUrl, JsonOptions);
+                if (currentSettings != null)
+                {
+                    var updated = currentSettings with
+                    {
+                        AiAssistantEnabled = IsEnabled,
+                        AiAssistantEndpoint = Endpoint,
+                        AiAssistantApiKey = ApiKey,
+                        AiAssistantModel = SelectedModel
+                    };
+                    await _httpClient.PostAsJsonAsync(settingsUrl, updated, JsonOptions);
+                }
+            }
+            catch
+            {
+                // Suppress remote save error
+            }
         }
 
         IsSetupCardVisible = false;
@@ -543,7 +575,8 @@ public partial class AiAssistantViewModel : ObservableObject
         }
         else if (_httpClient != null)
         {
-            await _httpClient.PostAsync("/api/ai/prompts/reload", null);
+            var url = BuildUrl("/api/ai/prompts/reload");
+            await _httpClient.PostAsync(url, null);
             ConnectionStatusMessage = "Prompts reloaded via API.";
         }
     }

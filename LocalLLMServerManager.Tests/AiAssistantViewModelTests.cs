@@ -381,4 +381,88 @@ public class AiAssistantViewModelTests
         Assert.Equal(2, vm.AvailableModelCapabilities.Count);
         Assert.Equal("model-1", vm.AvailableModelCapabilities[0].Id);
     }
+
+    [Fact]
+    public async Task SendMessageAsync_WithHttpFallbackAndApiBase_CallsCorrectChatUrl()
+    {
+        string? requestedUrl = null;
+        var handler = new MockRoutingHandler(req =>
+        {
+            requestedUrl = req.RequestUri?.ToString();
+            return new HttpResponseMessage(System.Net.HttpStatusCode.OK)
+            {
+                Content = new StringContent("{\"success\":true,\"message\":{\"role\":\"assistant\",\"content\":\"Hello from API!\"}}", System.Text.Encoding.UTF8, "application/json")
+            };
+        });
+
+        var httpClient = new HttpClient(handler);
+        var vm = new AiAssistantViewModel(null, null, null, httpClient)
+        {
+            ApiBase = "http://127.0.0.1:5246"
+        };
+        vm.InputText = "Hi there";
+
+        await vm.SendMessageAsync();
+
+        Assert.Equal("http://127.0.0.1:5246/api/ai/chat", requestedUrl);
+        Assert.Equal(3, vm.Messages.Count);
+        Assert.Equal("Hello from API!", vm.Messages[2].Content);
+        Assert.False(vm.Messages[2].IsError);
+    }
+
+    [Fact]
+    public async Task SendMessageAsync_WhenHttpThrows_SetsErrorCleanlyWithoutCrashing()
+    {
+        var httpClient = new HttpClient();
+        var vm = new AiAssistantViewModel(null, null, null, httpClient);
+        vm.InputText = "Hi there";
+
+        await vm.SendMessageAsync();
+
+        Assert.Equal(3, vm.Messages.Count);
+        Assert.True(vm.Messages[2].IsError);
+        Assert.Contains("Error", vm.Messages[2].Content);
+        Assert.False(vm.IsGenerating);
+    }
+
+    [Fact]
+    public async Task TestConnectionAsync_WithHttpFallbackAndApiBase_CallsValidateUrl()
+    {
+        var requestedUrls = new List<string>();
+        var handler = new MockRoutingHandler(req =>
+        {
+            var url = req.RequestUri?.ToString() ?? "";
+            requestedUrls.Add(url);
+            if (url.Contains("/api/ai/models"))
+            {
+                return new HttpResponseMessage(System.Net.HttpStatusCode.OK)
+                {
+                    Content = new StringContent("[{\"id\":\"m1\",\"displayName\":\"Model 1\"}]", System.Text.Encoding.UTF8, "application/json")
+                };
+            }
+            return new HttpResponseMessage(System.Net.HttpStatusCode.OK)
+            {
+                Content = new StringContent("{\"success\":true,\"message\":\"Connected\",\"availableModels\":[\"m1\"]}", System.Text.Encoding.UTF8, "application/json")
+            };
+        });
+
+        var httpClient = new HttpClient(handler);
+        var vm = new AiAssistantViewModel(null, null, null, httpClient)
+        {
+            ApiBase = "http://127.0.0.1:5246"
+        };
+
+        await vm.TestConnectionAsync();
+
+        Assert.Contains("http://127.0.0.1:5246/api/ai/validate", requestedUrls);
+        Assert.True(vm.IsConnectionSuccess);
+    }
+}
+
+internal class MockRoutingHandler : HttpMessageHandler
+{
+    private readonly Func<HttpRequestMessage, HttpResponseMessage> _handler;
+    public MockRoutingHandler(Func<HttpRequestMessage, HttpResponseMessage> handler) => _handler = handler;
+    protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken) =>
+        Task.FromResult(_handler(request));
 }

@@ -62,7 +62,7 @@ public class AiAssistantService : IAiAssistantService
         {
             var uri = new Uri(targetEndpoint.TrimEnd('/'));
             using var client = _httpClientFactory.CreateClient();
-            client.Timeout = TimeSpan.FromSeconds(10);
+            client.Timeout = TimeSpan.FromSeconds(30);
 
             if (!string.IsNullOrWhiteSpace(targetKey))
             {

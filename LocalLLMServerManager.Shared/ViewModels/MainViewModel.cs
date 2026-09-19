@@ -158,7 +158,14 @@ public partial class MainViewModel : ObservableObject
         };
         Settings = new SettingsViewModel(PresetService) { ApiBase = ApiBase };
         Audio = new AudioStudioViewModel(PresetService, _canIRunItService) { ApiBase = ApiBase };
-        Assistant = new AiAssistantViewModel(assistantService, settingsService, promptService, httpClient ?? Http);
+        Assistant = new AiAssistantViewModel(
+            assistantService,
+            settingsService,
+            promptService ?? new PromptManagementService(),
+            httpClient ?? Http)
+        {
+            ApiBase = ApiBase
+        };
         Documentation.OnNavigateToTabRequested = tab => SelectedTabIndex = tab;
 
         LoadStudioPresets();
@@ -188,7 +195,23 @@ public partial class MainViewModel : ObservableObject
         return "http://127.0.0.1:5246";
     }
 
-    public string ApiBase { get; set; } = GetDefaultApiBase();
+    private string _apiBase = GetDefaultApiBase();
+    public string ApiBase
+    {
+        get => _apiBase;
+        set
+        {
+            _apiBase = value;
+            if (Telemetry != null) Telemetry.ApiBase = value;
+            if (HardwareFit != null) HardwareFit.ApiBase = value;
+            if (Ollama != null) Ollama.ApiBase = value;
+            if (HuggingFace != null) HuggingFace.ApiBase = value;
+            if (Civitai != null) Civitai.ApiBase = value;
+            if (Settings != null) Settings.ApiBase = value;
+            if (Audio != null) Audio.ApiBase = value;
+            if (Assistant != null) Assistant.ApiBase = value;
+        }
+    }
 
     // Backward-compatible properties forwarding to sub-ViewModels
     public string GpuName { get => Telemetry.GpuName; set => Telemetry.GpuName = value; }

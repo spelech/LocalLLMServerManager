@@ -28,32 +28,68 @@
         <!-- Main Content Area: Native Avalonia XAML Tabs -->
         <TabControl Grid.Row="1" SelectedIndex="{Binding SelectedTabIndex}" Background="Transparent" Margin="16,0,16,0">
             <!-- TAB 1: Models (Downloaded, Hugging Face Hub, CivitAI Hub) -->
-            <TabItem Header="📦 Models">
+            <TabItem>
+                <TabItem.Header>
+                    <StackPanel Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
+                        <PathIcon Data="{StaticResource IconModels}" Width="14" Height="14" Foreground="{Binding $parent[TabItem].Foreground}"/>
+                        <TextBlock Text="Models" VerticalAlignment="Center"/>
+                    </StackPanel>
+                </TabItem.Header>
                 <controls:ModelsTabControl DataContext="{Binding}"/>
             </TabItem>
 
             <!-- TAB 2: Workflows (Image, Text, Video, 3D Mesh, Audio) -->
-            <TabItem Header="⚡ Workflows">
+            <TabItem>
+                <TabItem.Header>
+                    <StackPanel Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
+                        <PathIcon Data="{StaticResource IconWorkflows}" Width="14" Height="14" Foreground="{Binding $parent[TabItem].Foreground}"/>
+                        <TextBlock Text="Workflows" VerticalAlignment="Center"/>
+                    </StackPanel>
+                </TabItem.Header>
                 <controls:EngineStudioTabControl DataContext="{Binding}"/>
             </TabItem>
 
             <!-- TAB 3: Can I Run It Hardware Fit Calculator -->
-            <TabItem Header="⚡ Can I Run It">
+            <TabItem>
+                <TabItem.Header>
+                    <StackPanel Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
+                        <PathIcon Data="{StaticResource IconCanIRunIt}" Width="14" Height="14" Foreground="{Binding $parent[TabItem].Foreground}"/>
+                        <TextBlock Text="Can I Run It" VerticalAlignment="Center"/>
+                    </StackPanel>
+                </TabItem.Header>
                 <controls:CanIRunItView DataContext="{Binding HardwareFit}"/>
             </TabItem>
 
             <!-- TAB 4: In-App AI Assistant & Copilot -->
-            <TabItem Header="🤖 Copilot">
+            <TabItem>
+                <TabItem.Header>
+                    <StackPanel Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
+                        <PathIcon Data="{StaticResource IconCopilot}" Width="14" Height="14" Foreground="{Binding $parent[TabItem].Foreground}"/>
+                        <TextBlock Text="Copilot" VerticalAlignment="Center"/>
+                    </StackPanel>
+                </TabItem.Header>
                 <controls:AiAssistantTabControl DataContext="{Binding Assistant}"/>
             </TabItem>
 
             <!-- TAB 5: In-App Documentation -->
-            <TabItem Header="📖 Documentation">
+            <TabItem>
+                <TabItem.Header>
+                    <StackPanel Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
+                        <PathIcon Data="{StaticResource IconDocumentation}" Width="14" Height="14" Foreground="{Binding $parent[TabItem].Foreground}"/>
+                        <TextBlock Text="Documentation" VerticalAlignment="Center"/>
+                    </StackPanel>
+                </TabItem.Header>
                 <controls:DocumentationTabControl DataContext="{Binding Documentation}"/>
             </TabItem>
 
-            <!-- TAB 5: Remote Access & Settings -->
-            <TabItem Header="⚙️ Settings">
+            <!-- TAB 6: Remote Access & Settings -->
+            <TabItem>
+                <TabItem.Header>
+                    <StackPanel Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
+                        <PathIcon Data="{StaticResource IconSettings}" Width="14" Height="14" Foreground="{Binding $parent[TabItem].Foreground}"/>
+                        <TextBlock Text="Settings" VerticalAlignment="Center"/>
+                    </StackPanel>
+                </TabItem.Header>
                 <controls:SettingsTabControl DataContext="{Binding Settings}"/>
             </TabItem>
         </TabControl>

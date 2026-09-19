@@ -5,6 +5,9 @@ using Avalonia.Input;
 using Avalonia.Interactivity;
 using LocalLLMServerManager.Shared.ViewModels;
 
+using LocalLLMServerManager.Services;
+using LocalLLMServerManager.Shared.Services;
+
 namespace LocalLLMServerManager.Views;
 
 public partial class MainWindow : Window
@@ -17,7 +20,17 @@ public partial class MainWindow : Window
 #if DEBUG
         this.AttachDevTools();
 #endif
-        var mainVm = new MainViewModel();
+        var mainVm = new MainViewModel(
+            httpClient: null,
+            new TelemetryService(),
+            new OllamaModelService(),
+            new HuggingFaceSearchService(),
+            new CivitaiSearchService(),
+            new StudioPresetService(),
+            new CanIRunItService(),
+            assistantService: null,
+            settingsService: new SettingsService(),
+            promptService: new PromptManagementService());
         DataContext = mainVm;
 
         mainVm.Documentation.OnPopOutNativeWindowRequested = () =>

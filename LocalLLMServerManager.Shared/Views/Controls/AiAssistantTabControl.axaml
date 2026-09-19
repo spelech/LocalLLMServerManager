@@ -299,7 +299,7 @@
 
                         <Button Content="⏹️ Stop" Command="{Binding StopGenerationCommand}" Classes="matte-secondary"
                                 IsVisible="{Binding IsGenerating}" Padding="14,8" FontSize="12"/>
-                        <Button Content="🚀 Send" Command="{Binding SendMessageCommand}" Classes="matte-primary"
+                        <Button x:Name="SendButton" Content="🚀 Send" Command="{Binding SendMessageCommand}" Classes="matte-primary"
                                 IsVisible="{Binding !IsGenerating}" Padding="16,8" FontSize="12"/>
                     </StackPanel>
                 </Grid>
