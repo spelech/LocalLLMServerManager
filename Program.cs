@@ -8,6 +8,9 @@ using LocalLLMServerManager.Endpoints;
 using LocalLLMServerManager.Services;
 using LocalLLMServerManager.Shared.Interfaces;
 using LocalLLMServerManager.Shared.Services;
+#if DEBUG
+using AvaloniaMcp.Diagnostics;
+#endif
 
 namespace LocalLLMServerManager;
 
@@ -71,10 +74,20 @@ public class Program
     }
 
     public static AppBuilder BuildAvaloniaApp()
-        => AppBuilder.Configure<App>()
+    {
+        var builder = AppBuilder.Configure<App>()
             .UsePlatformDetect()
             .WithInterFont()
             .LogToTrace();
+#if DEBUG
+        builder = builder.UseMcpDiagnostics();
+        if (!System.Diagnostics.Trace.Listeners.OfType<UiDiagnosticTraceListener>().Any())
+        {
+            System.Diagnostics.Trace.Listeners.Add(new UiDiagnosticTraceListener(UiDiagnosticLogger.Instance));
+        }
+#endif
+        return builder;
+    }
 
     public static string SettingsFilePath() => new SettingsService().SettingsFilePath();
 
@@ -159,6 +172,7 @@ public class Program
         builder.Services.AddSingleton<IPromptManagementService, PromptManagementService>();
         builder.Services.AddSingleton<IAiAppTools, AiAppTools>();
         builder.Services.AddSingleton<IAiAssistantService, AiAssistantService>();
+        builder.Services.AddSingleton<IUiDiagnosticLogger>(UiDiagnosticLogger.Instance);
 
         // Register MCP Server
         builder.Services.AddMcpServer()
