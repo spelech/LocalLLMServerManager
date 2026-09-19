@@ -39,6 +39,11 @@
     <PackageReference Include="Microsoft.Extensions.AI.OpenAI" Version="10.10.0" />
   </ItemGroup>
 
+  <ItemGroup Condition="'$(Configuration)' == 'Debug'">
+    <PackageReference Include="AvaloniaMcp.Diagnostics" Version="0.4.0" />
+    <PackageReference Include="Avalonia.Diagnostics" Version="11.3.22" />
+  </ItemGroup>
+
   <ItemGroup>
     <AvaloniaResource Include="Assets/**" />
   </ItemGroup>
