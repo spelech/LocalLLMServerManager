@@ -43,7 +43,7 @@ public partial class TelemetryViewModel : ObservableObject
 
     [ObservableProperty] private string _serviceModeText = "Connecting...";
     [ObservableProperty] private bool _isServiceRunning = false;
-    [ObservableProperty] private string _apiBase = OperatingSystem.IsBrowser() ? "" : "http://127.0.0.1:5246";
+    [ObservableProperty] private string _apiBase = OperatingSystem.IsBrowser() ? "" : $"http://{SettingsViewModel.GetLocalIPv4Address()}:5246";
 
     public TelemetryViewModel(ITelemetryService telemetryService)
     {
