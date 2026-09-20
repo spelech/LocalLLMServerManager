@@ -60,15 +60,29 @@ public class WindowSnapManager
         // Deduplicate event subscriptions on MainWindow
         if (_hookedMainWindows.TryAdd(mainWindow, 0))
         {
-            mainWindow.PositionChanged += (s, e) => SynchronizeAllForMain(mainWindow);
-            mainWindow.PropertyChanged += (s, e) =>
+            EventHandler<PixelPointEventArgs>? onPosChanged = null;
+            EventHandler<AvaloniaPropertyChangedEventArgs>? onPropChanged = null;
+            EventHandler? onClosed = null;
+
+            onPosChanged = (s, e) => SynchronizeAllForMain(mainWindow);
+            onPropChanged = (s, e) =>
             {
                 if (e.Property == Visual.BoundsProperty || e.Property == Window.WindowStateProperty)
                 {
                     SynchronizeAllForMain(mainWindow);
                 }
             };
-            mainWindow.Closed += (s, e) => _hookedMainWindows.TryRemove(mainWindow, out _);
+            onClosed = (s, e) =>
+            {
+                mainWindow.PositionChanged -= onPosChanged;
+                mainWindow.PropertyChanged -= onPropChanged;
+                mainWindow.Closed -= onClosed;
+                _hookedMainWindows.TryRemove(mainWindow, out _);
+            };
+
+            mainWindow.PositionChanged += onPosChanged;
+            mainWindow.PropertyChanged += onPropChanged;
+            mainWindow.Closed += onClosed;
         }
 
         companion.Closed += (s, e) => _states.TryRemove(companion, out _);

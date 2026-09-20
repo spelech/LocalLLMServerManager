@@ -992,7 +992,13 @@ public partial class MainViewModel : ObservableObject
     [RelayCommand]
     public void NavigateToAssistantTab()
     {
-        SelectedTabIndex = 3;
+        Assistant.RequestPopOut();
+    }
+
+    [RelayCommand]
+    public void NavigateToDocumentationTab()
+    {
+        Documentation.PopOutNativeWindow();
     }
 
     [RelayCommand]

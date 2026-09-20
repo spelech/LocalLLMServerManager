@@ -25,8 +25,34 @@
         <!-- Top Telemetry Header -->
         <controls:TelemetryHeaderControl Grid.Row="0" DataContext="{Binding Telemetry}"/>
 
-        <!-- Main Content Area: Native Avalonia XAML Tabs -->
+        <!-- Main Content Area: Native Avalonia XAML Tabs with Standalone Companion Actions -->
         <TabControl Grid.Row="1" SelectedIndex="{Binding SelectedTabIndex}" Background="Transparent" Margin="16,0,16,0">
+            <TabControl.Tag>
+                <StackPanel Orientation="Horizontal" Spacing="4" VerticalAlignment="Center" Margin="4,0,0,0">
+                    <Rectangle Width="1" Height="20" Fill="{StaticResource GlassBorderBrush}" Margin="2,0,4,0" VerticalAlignment="Center"/>
+                    <Button x:Name="NavDocumentationBtn"
+                            Command="{Binding Documentation.PopOutNativeWindowCommand}"
+                            Classes="nav-tab-btn"
+                            ToolTip.Tip="Open Documentation in a standalone companion window (Left Flank)">
+                        <StackPanel Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
+                            <PathIcon Data="{StaticResource IconDocumentation}" Width="14" Height="14" Foreground="{Binding $parent[Button].Foreground}"/>
+                            <TextBlock Text="Documentation" VerticalAlignment="Center"/>
+                            <TextBlock Text="📖" FontSize="11" VerticalAlignment="Center" Margin="2,0,0,0"/>
+                        </StackPanel>
+                    </Button>
+                    <Button x:Name="NavAiAssistBtn"
+                            Command="{Binding Assistant.RequestPopOutCommand}"
+                            Classes="nav-tab-btn"
+                            ToolTip.Tip="Open AI Assist in a standalone companion window (Right Flank)">
+                        <StackPanel Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
+                            <PathIcon Data="{StaticResource IconAiAssist}" Width="14" Height="14" Foreground="{Binding $parent[Button].Foreground}"/>
+                            <TextBlock Text="AI Assist" VerticalAlignment="Center"/>
+                            <TextBlock Text="🤖" FontSize="11" VerticalAlignment="Center" Margin="2,0,0,0"/>
+                        </StackPanel>
+                    </Button>
+                </StackPanel>
+            </TabControl.Tag>
+
             <!-- TAB 1: Models (Downloaded, Hugging Face Hub, CivitAI Hub) -->
             <TabItem>
                 <TabItem.Header>
@@ -60,32 +86,7 @@
                 <controls:CanIRunItView DataContext="{Binding HardwareFit}"/>
             </TabItem>
 
-            <!-- TAB 4: In-AI Assist -->
-            <TabItem>
-                <TabItem.Header>
-                    <StackPanel Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
-                        <PathIcon Data="{StaticResource IconAiAssist}" Width="14" Height="14" Foreground="{Binding $parent[TabItem].Foreground}"/>
-                        <TextBlock Text="AI Assist" VerticalAlignment="Center"/>
-                    </StackPanel>
-                </TabItem.Header>
-                <controls:AiAssistantTabControl DataContext="{Binding Assistant}"/>
-            </TabItem>
-
-            <!-- TAB 5: In-App Documentation -->
-            <TabItem>
-                <TabItem.Header>
-                    <StackPanel Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
-                        <PathIcon Data="{StaticResource IconDocumentation}" Width="14" Height="14" Foreground="{Binding $parent[TabItem].Foreground}"/>
-                        <TextBlock Text="Documentation" VerticalAlignment="Center"/>
-                        <Button x:Name="DocsPopOutButton" Command="{Binding Documentation.PopOutNativeWindowCommand}" Classes="matte-pill" Padding="4,2" Margin="4,0,0,0" ToolTip.Tip="Pop out Documentation to a new window">
-                            <TextBlock Text="🗗 Pop-out" FontSize="10" Foreground="{StaticResource TextMutedBrush}"/>
-                        </Button>
-                    </StackPanel>
-                </TabItem.Header>
-                <controls:DocumentationTabControl DataContext="{Binding Documentation}"/>
-            </TabItem>
-
-            <!-- TAB 6: Remote Access & Settings -->
+            <!-- TAB 4: Remote Access & Settings -->
             <TabItem>
                 <TabItem.Header>
                     <StackPanel Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
