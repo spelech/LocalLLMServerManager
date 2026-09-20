@@ -187,24 +187,24 @@ public static class ModelProxyEndpoints
                 var tag = !string.IsNullOrWhiteSpace(pipeline_tag) ? pipeline_tag : pipeline_tags;
                 
                 string requestUrl;
+                var searchParam = !string.IsNullOrWhiteSpace(query) ? $"search={Uri.EscapeDataString(query)}&" : "";
                 if (!string.IsNullOrWhiteSpace(tag))
                 {
                     if (tag.Equals("gguf", StringComparison.OrdinalIgnoreCase))
                     {
-                        var qParam = string.IsNullOrWhiteSpace(query) ? "llama" : query;
-                        requestUrl = $"https://huggingface.co/api/models?search={Uri.EscapeDataString(qParam)}&filter=gguf&sort=downloads&direction=-1&limit=25";
+                        var qFallback = string.IsNullOrWhiteSpace(query) ? "search=llama&" : searchParam;
+                        requestUrl = $"https://huggingface.co/api/models?{qFallback}filter=gguf&sort=downloads&direction=-1&limit=25";
                     }
                     else
                     {
-                        var qParam = Uri.EscapeDataString(query);
                         var tagParam = Uri.EscapeDataString(tag);
-                        requestUrl = $"https://huggingface.co/api/models?search={qParam}&pipeline_tag={tagParam}&sort=downloads&direction=-1&limit=25";
+                        requestUrl = $"https://huggingface.co/api/models?{searchParam}pipeline_tag={tagParam}&sort=downloads&direction=-1&limit=25";
                     }
                 }
                 else
                 {
-                    var qParam = string.IsNullOrWhiteSpace(query) ? "llama" : query;
-                    requestUrl = $"https://huggingface.co/api/models?search={Uri.EscapeDataString(qParam)}&filter=gguf&sort=downloads&direction=-1&limit=25";
+                    var qFallback = string.IsNullOrWhiteSpace(query) ? "search=llama&" : searchParam;
+                    requestUrl = $"https://huggingface.co/api/models?{qFallback}filter=gguf&sort=downloads&direction=-1&limit=25";
                 }
 
                 using var req = new HttpRequestMessage(HttpMethod.Get, requestUrl);

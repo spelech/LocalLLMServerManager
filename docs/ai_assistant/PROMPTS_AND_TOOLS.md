@@ -6,7 +6,7 @@ outline: deep
 
 # AI Assistant Prompts, Capabilities & Tools Reference
 
-The In-App AI Assistant combines living markdown prompts, a rich model capability catalog, and executable C# tools.
+The In-AI Assistant combines living markdown prompts, a rich model capability catalog, and executable C# tools.
 
 ---
 

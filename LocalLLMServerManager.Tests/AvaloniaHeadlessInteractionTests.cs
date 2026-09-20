@@ -6,11 +6,13 @@ using Avalonia.Controls;
 using Avalonia.Headless.XUnit;
 using Avalonia.Interactivity;
 using Avalonia.VisualTree;
+using LocalLLMServerManager.Services;
 using LocalLLMServerManager.Shared.Models;
 using LocalLLMServerManager.Shared.Services;
 using LocalLLMServerManager.Shared.ViewModels;
 using LocalLLMServerManager.Shared.Views;
 using LocalLLMServerManager.Shared.Views.Controls;
+using LocalLLMServerManager.Views;
 using Xunit;
 
 namespace LocalLLMServerManager.Tests;
@@ -51,7 +53,7 @@ public class AvaloniaHeadlessInteractionTests
 
         var tabControl = view.GetVisualDescendants().OfType<TabControl>().FirstOrDefault();
         Assert.NotNull(tabControl);
-        Assert.Equal(6, tabControl.Items.Count);
+        Assert.Equal(4, tabControl.Items.Count);
 
         // Switch to Tab 2 (Workflows)
         tabControl.SelectedIndex = 1;
@@ -61,17 +63,17 @@ public class AvaloniaHeadlessInteractionTests
         tabControl.SelectedIndex = 2;
         Assert.Equal(2, tabControl.SelectedIndex);
 
-        // Switch to Tab 4 (Copilot)
+        // Switch to Tab 4 (Settings)
         tabControl.SelectedIndex = 3;
         Assert.Equal(3, tabControl.SelectedIndex);
 
-        // Switch to Tab 5 (Documentation)
-        tabControl.SelectedIndex = 4;
-        Assert.Equal(4, tabControl.SelectedIndex);
+        // Verify standalone pop-out buttons exist in the navigation bar
+        var buttons = view.GetVisualDescendants().OfType<Button>().ToList();
+        var aiAssistPopBtn = buttons.FirstOrDefault(b => b.Name == "NavAiAssistBtn");
+        Assert.NotNull(aiAssistPopBtn);
 
-        // Switch to Tab 6 (Settings)
-        tabControl.SelectedIndex = 5;
-        Assert.Equal(5, tabControl.SelectedIndex);
+        var docPopBtn = buttons.FirstOrDefault(b => b.Name == "NavDocumentationBtn");
+        Assert.NotNull(docPopBtn);
 
         window.Close();
     }
@@ -182,35 +184,17 @@ public class AvaloniaHeadlessInteractionTests
         var window = new Window { Content = control, Width = 1024, Height = 768 };
         window.Show();
 
-        // Find Studio Mode radio buttons
-        var radioButtons = control.GetVisualDescendants().OfType<RadioButton>().ToList();
-        Assert.True(radioButtons.Count >= 4);
+        // Find Studio Mode ComboBox
+        var comboBoxes = control.GetVisualDescendants().OfType<ComboBox>().ToList();
+        var modeComboBox = comboBoxes.FirstOrDefault(c => c.Items.Cast<object>().Any(i => i.ToString() == "Images"));
+        Assert.NotNull(modeComboBox);
 
-        var audioRadio = radioButtons.FirstOrDefault(r => r.Content?.ToString()?.Contains("Audio") == true);
-        Assert.NotNull(audioRadio);
-
-        // Simulate user clicking Audio mode
-        if (audioRadio.Command != null && audioRadio.Command.CanExecute(audioRadio.CommandParameter))
-        {
-            audioRadio.Command.Execute(audioRadio.CommandParameter);
-        }
-        else
-        {
-            vm.SelectStudioMode("Audio");
-        }
+        // Simulate user selecting Audio mode
+        modeComboBox.SelectedItem = "Audio";
         Assert.Equal("Audio", vm.SelectedStudioMode);
 
-        var videoRadio = radioButtons.FirstOrDefault(r => r.Content?.ToString()?.Contains("Video") == true);
-        Assert.NotNull(videoRadio);
-
-        if (videoRadio.Command != null && videoRadio.Command.CanExecute(videoRadio.CommandParameter))
-        {
-            videoRadio.Command.Execute(videoRadio.CommandParameter);
-        }
-        else
-        {
-            vm.SelectStudioMode("Video");
-        }
+        // Simulate user selecting Video mode
+        modeComboBox.SelectedItem = "Video";
         Assert.Equal("Video", vm.SelectedStudioMode);
 
         window.Close();
@@ -386,7 +370,7 @@ public class AvaloniaHeadlessInteractionTests
         // Switch to Settings Tab
         var tabControl = view.GetVisualDescendants().OfType<TabControl>().FirstOrDefault();
         Assert.NotNull(tabControl);
-        tabControl.SelectedIndex = 5;
+        tabControl.SelectedIndex = 3;
         Avalonia.Threading.Dispatcher.UIThread.RunJobs();
 
         var settingsControl = view.GetVisualDescendants().OfType<SettingsTabControl>().FirstOrDefault();
@@ -437,7 +421,7 @@ public class AvaloniaHeadlessInteractionTests
 
         var tabControl = view.GetVisualDescendants().OfType<TabControl>().FirstOrDefault();
         Assert.NotNull(tabControl);
-        tabControl.SelectedIndex = 5;
+        tabControl.SelectedIndex = 3;
         Avalonia.Threading.Dispatcher.UIThread.RunJobs();
 
         var settingsControl = view.GetVisualDescendants().OfType<SettingsTabControl>().FirstOrDefault();
@@ -699,7 +683,7 @@ public class AvaloniaHeadlessInteractionTests
 
         // Find header title
         var textBlocks = control.GetVisualDescendants().OfType<TextBlock>().ToList();
-        var titleBlock = textBlocks.FirstOrDefault(t => t.Text != null && t.Text.Contains("AI Assistant & App Copilot"));
+        var titleBlock = textBlocks.FirstOrDefault(t => t.Text != null && t.Text.Contains("AI Assist"));
         Assert.NotNull(titleBlock);
 
         // Find model badge
@@ -721,10 +705,39 @@ public class AvaloniaHeadlessInteractionTests
         var inputBox = textBoxes.FirstOrDefault(tb => tb.Watermark != null && tb.Watermark.Contains("Ask anything"));
         Assert.NotNull(inputBox);
 
-        inputBox.Text = "Hello copilot!";
-        Assert.Equal("Hello copilot!", vm.InputText);
+        inputBox.Text = "Hello AI Assist!";
+        Assert.Equal("Hello AI Assist!", vm.InputText);
 
         window.Close();
     }
+
+    [AvaloniaFact]
+    public void MainWindow_OpeningCompanionWindows_RegistersWithWindowSnapManager()
+    {
+        var mainWindow = new MainWindow();
+        mainWindow.Position = new PixelPoint(500, 200);
+        mainWindow.Show();
+
+        var vm = (MainViewModel)mainWindow.DataContext!;
+
+        // Open Docs
+        vm.Documentation.PopOutNativeWindow();
+        // Open AI Assist
+        vm.Assistant.RequestPopOut();
+
+        // Verify TabControl remained on its current tab (SelectedTabIndex == 0)
+        Assert.Equal(0, vm.SelectedTabIndex);
+
+        // Verify registered and snapped with WindowSnapManager
+        Assert.NotNull(mainWindow.DocWindow);
+        Assert.NotNull(mainWindow.AiAssistWindow);
+        Assert.True(WindowSnapManager.Instance.IsSnapped(mainWindow.DocWindow!));
+        Assert.True(WindowSnapManager.Instance.IsSnapped(mainWindow.AiAssistWindow!));
+
+        mainWindow.DocWindow?.Close();
+        mainWindow.AiAssistWindow?.Close();
+        mainWindow.Close();
+    }
 }
+
 

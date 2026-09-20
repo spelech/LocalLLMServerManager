@@ -9,7 +9,9 @@ public enum StudioModality
 {
     Image,
     Video,
-    Audio
+    Audio,
+    Text,
+    Mesh
 }
 
 /// <summary>

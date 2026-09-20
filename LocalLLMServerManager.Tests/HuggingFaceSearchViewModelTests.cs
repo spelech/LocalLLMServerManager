@@ -284,4 +284,102 @@ public class HuggingFaceSearchViewModelTests
         Assert.False(vm.IsModalLoading);
         Assert.Single(vm.ModalHfFiles);
     }
+
+    [Fact]
+    public void Constructor_LoadsCuratedStarterModels_ByDefault()
+    {
+        var mockHf = new Mock<IHuggingFaceSearchService>();
+        var vm = new HuggingFaceSearchViewModel(mockHf.Object);
+
+        Assert.NotEmpty(vm.HuggingFaceResults);
+        Assert.NotEmpty(vm.FilteredHuggingFaceResults);
+        Assert.True(vm.HuggingFaceResults.Count >= 5);
+        foreach (var item in vm.HuggingFaceResults)
+        {
+            Assert.NotNull(item.FitBadge);
+        }
+    }
+
+    [Fact]
+    public void ApplyPreset_SetsActivePreset_AndTogglesClearSelectedPipelineTag()
+    {
+        var mockHf = new Mock<IHuggingFaceSearchService>();
+        var vm = new HuggingFaceSearchViewModel(mockHf.Object);
+
+        vm.SelectedPipelineTag = "custom-tag";
+        vm.ApplyPreset("LLM");
+
+        Assert.Null(vm.SelectedPipelineTag);
+        Assert.Equal("LLM", vm.ActivePreset);
+        Assert.True(vm.IsPresetLlm);
+        Assert.False(vm.IsPresetMultimodal);
+
+        vm.ApplyPreset("Multimodal");
+        Assert.Equal("Multimodal", vm.ActivePreset);
+        Assert.True(vm.IsPresetMultimodal);
+        Assert.False(vm.IsPresetLlm);
+
+        vm.ApplyPreset("Image");
+        Assert.Equal("Image", vm.ActivePreset);
+        Assert.True(vm.IsPresetImage);
+
+        vm.ApplyPreset("Video");
+        Assert.Equal("Video", vm.ActivePreset);
+        Assert.True(vm.IsPresetVideo);
+
+        vm.ApplyPreset("Audio");
+        Assert.Equal("Audio", vm.ActivePreset);
+        Assert.True(vm.IsPresetAudio);
+
+        vm.ApplyPreset("3D");
+        Assert.Equal("3D", vm.ActivePreset);
+        Assert.True(vm.IsPreset3D);
+
+        // Manually toggling an input or output clears ActivePreset
+        vm.ToggleInputModality("Image");
+        Assert.Null(vm.ActivePreset);
+        Assert.False(vm.IsPreset3D);
+    }
+
+    [Fact]
+    public void ResolvePipelineTags_ForAudio_DoesNotIncludeTextGeneration()
+    {
+        var tags = HuggingFaceSearchViewModel.ResolvePipelineTags(
+            new[] { "Text", "Audio" },
+            new[] { "Text", "Audio" });
+
+        Assert.DoesNotContain("text-generation", tags);
+        Assert.Contains("text-to-speech", tags);
+        Assert.Contains("text-to-audio", tags);
+        Assert.Contains("automatic-speech-recognition", tags);
+        Assert.Contains("audio-to-audio", tags);
+    }
+
+    [Theory]
+    [InlineData("Qwen/Qwen2-VL-7B-Instruct", "image-text-to-text", "LLM")]
+    [InlineData("meta-llama/Llama-3.2-11B-Vision-Instruct", "image-to-text", "LLM")]
+    [InlineData("google/docvqa-donut", "visual-question-answering", "LLM")]
+    public void DetermineModality_VlmModels_ClassifiedAsLlmNotImage(string name, string tag, string expected)
+    {
+        var result = HuggingFaceSearchViewModel.DetermineModality(name, tag);
+        Assert.Equal(expected, result);
+    }
+
+    [Fact]
+    public async Task LoadDefaultModelsAsync_LoadsFromService_OrRetainsCuratedStarterModels()
+    {
+        var mockHf = new Mock<IHuggingFaceSearchService>();
+        mockHf.Setup(s => s.SearchRepositoriesAsync("http://localhost", "", "text-generation", It.IsAny<HttpClient>()))
+            .ReturnsAsync(new List<HuggingFaceRepoItem>
+            {
+                new HuggingFaceRepoItem("custom/top-model", "custom", 1000, "50k", "text-generation", null)
+            });
+
+        var vm = new HuggingFaceSearchViewModel(mockHf.Object);
+        using var client = new HttpClient();
+        await vm.LoadDefaultModelsAsync("http://localhost", client);
+
+        Assert.Single(vm.HuggingFaceResults);
+        Assert.Equal("custom/top-model", vm.HuggingFaceResults[0].Id);
+    }
 }

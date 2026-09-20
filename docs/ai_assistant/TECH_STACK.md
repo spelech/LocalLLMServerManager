@@ -6,7 +6,7 @@ outline: deep
 
 # AI Assistant Technology Stack & Decision Rationale
 
-This document details the software libraries, frameworks, architectural decisions, and provider targets for the In-App AI Assistant.
+This document details the software libraries, frameworks, architectural decisions, and provider targets for the In-AI Assistant.
 
 ---
 

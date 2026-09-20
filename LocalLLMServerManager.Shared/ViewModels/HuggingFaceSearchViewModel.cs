@@ -35,6 +35,25 @@ public partial class HuggingFaceSearchViewModel : ObservableObject
     public ObservableCollection<string> SelectedInputModalities { get; } = new() { "Text" };
     public ObservableCollection<string> SelectedOutputModalities { get; } = new() { "Text" };
 
+    [ObservableProperty] private string? _activePreset = "LLM";
+
+    public bool IsPresetMultimodal => string.Equals(ActivePreset, "Multimodal", StringComparison.OrdinalIgnoreCase);
+    public bool IsPresetLlm => string.Equals(ActivePreset, "LLM", StringComparison.OrdinalIgnoreCase);
+    public bool IsPresetImage => string.Equals(ActivePreset, "Image", StringComparison.OrdinalIgnoreCase);
+    public bool IsPresetVideo => string.Equals(ActivePreset, "Video", StringComparison.OrdinalIgnoreCase);
+    public bool IsPresetAudio => string.Equals(ActivePreset, "Audio", StringComparison.OrdinalIgnoreCase);
+    public bool IsPreset3D => string.Equals(ActivePreset, "3D", StringComparison.OrdinalIgnoreCase);
+
+    partial void OnActivePresetChanged(string? value)
+    {
+        OnPropertyChanged(nameof(IsPresetMultimodal));
+        OnPropertyChanged(nameof(IsPresetLlm));
+        OnPropertyChanged(nameof(IsPresetImage));
+        OnPropertyChanged(nameof(IsPresetVideo));
+        OnPropertyChanged(nameof(IsPresetAudio));
+        OnPropertyChanged(nameof(IsPreset3D));
+    }
+
     [ObservableProperty] private bool _isInputTextActive = true;
     [ObservableProperty] private bool _isInputImageActive = false;
     [ObservableProperty] private bool _isInputAudioActive = false;
@@ -71,6 +90,7 @@ public partial class HuggingFaceSearchViewModel : ObservableObject
         _canIRunItService = canIRunItService ?? new CanIRunItService();
         _telemetryService = telemetryService;
         HuggingFaceResults.CollectionChanged += (s, e) => ApplyFilter();
+        LoadCuratedStarterModels();
     }
 
     public void UpdateHardwareTelemetry(double totalVramMb, double totalRamMb)
@@ -169,6 +189,8 @@ public partial class HuggingFaceSearchViewModel : ObservableObject
         else if (m.Equals("Video", StringComparison.OrdinalIgnoreCase))
             IsInputVideoActive = !IsInputVideoActive;
 
+        ActivePreset = null;
+        SelectedPipelineTag = null;
         SyncInputModalitiesList();
         _ = SearchHuggingFaceAsync();
     }
@@ -188,6 +210,8 @@ public partial class HuggingFaceSearchViewModel : ObservableObject
         else if (m.Equals("3D", StringComparison.OrdinalIgnoreCase) || m.Equals("ThreeD", StringComparison.OrdinalIgnoreCase))
             IsOutputThreeDActive = !IsOutputThreeDActive;
 
+        ActivePreset = null;
+        SelectedPipelineTag = null;
         SyncOutputModalitiesList();
         _ = SearchHuggingFaceAsync();
     }
@@ -214,9 +238,11 @@ public partial class HuggingFaceSearchViewModel : ObservableObject
     [RelayCommand]
     public void ApplyPreset(string preset)
     {
+        SelectedPipelineTag = null;
         var p = (preset ?? "").Trim().ToLowerInvariant();
         if (p.Contains("multimodal") || p.Contains("vlm") || p.Contains("vision"))
         {
+            ActivePreset = "Multimodal";
             IsInputTextActive = true;
             IsInputImageActive = true;
             IsInputAudioActive = false;
@@ -230,6 +256,7 @@ public partial class HuggingFaceSearchViewModel : ObservableObject
         }
         else if (p.Contains("llm") || p.Contains("text"))
         {
+            ActivePreset = "LLM";
             IsInputTextActive = true;
             IsInputImageActive = false;
             IsInputAudioActive = false;
@@ -243,6 +270,7 @@ public partial class HuggingFaceSearchViewModel : ObservableObject
         }
         else if (p.Contains("image") || p.Contains("diffusion"))
         {
+            ActivePreset = "Image";
             IsInputTextActive = true;
             IsInputImageActive = false;
             IsInputAudioActive = false;
@@ -256,6 +284,7 @@ public partial class HuggingFaceSearchViewModel : ObservableObject
         }
         else if (p.Contains("video"))
         {
+            ActivePreset = "Video";
             IsInputTextActive = true;
             IsInputImageActive = true;
             IsInputAudioActive = false;
@@ -269,6 +298,7 @@ public partial class HuggingFaceSearchViewModel : ObservableObject
         }
         else if (p.Contains("audio") || p.Contains("speech") || p.Contains("tts"))
         {
+            ActivePreset = "Audio";
             IsInputTextActive = true;
             IsInputImageActive = false;
             IsInputAudioActive = true;
@@ -282,6 +312,7 @@ public partial class HuggingFaceSearchViewModel : ObservableObject
         }
         else if (p.Contains("3d"))
         {
+            ActivePreset = "3D";
             IsInputTextActive = true;
             IsInputImageActive = true;
             IsInputAudioActive = false;
@@ -316,7 +347,11 @@ public partial class HuggingFaceSearchViewModel : ObservableObject
         {
             tags.Add("image-to-text");
         }
-        else if (inSet.Contains("Text") && outSet.Contains("Text"))
+        else if (inSet.Contains("Video") && outSet.Contains("Text"))
+        {
+            tags.Add("video-text-to-text");
+        }
+        else if (inSet.Contains("Text") && outSet.Contains("Text") && !inSet.Contains("Audio") && !outSet.Contains("Audio") && !outSet.Contains("Image") && !outSet.Contains("Video") && !outSet.Contains("3D"))
         {
             tags.Add("text-generation");
         }
@@ -334,6 +369,7 @@ public partial class HuggingFaceSearchViewModel : ObservableObject
         if (outSet.Contains("Video"))
         {
             if (inSet.Contains("Image")) tags.Add("image-to-video");
+            if (inSet.Contains("Video")) tags.Add("video-to-video");
             tags.Add("text-to-video");
         }
 
@@ -341,6 +377,7 @@ public partial class HuggingFaceSearchViewModel : ObservableObject
         {
             tags.Add("text-to-speech");
             tags.Add("text-to-audio");
+            if (inSet.Contains("Audio")) tags.Add("audio-to-audio");
         }
 
         if (inSet.Contains("Audio") && outSet.Contains("Text"))
@@ -362,7 +399,11 @@ public partial class HuggingFaceSearchViewModel : ObservableObject
         string tag = (pipelineTag ?? "").ToLowerInvariant();
         string name = (modelName ?? "").ToLowerInvariant();
 
-        if (tag.Contains("video") || name.Contains("wan") || name.Contains("ltx") || name.Contains("hunyuanvideo"))
+        // Check multimodal VLM first so image-to-text / image-text-to-text isn't misclassified as image diffusion
+        if (tag.Contains("image-text-to-text") || tag.Contains("image-to-text") || tag.Contains("visual-question-answering") || tag.Contains("vlm") || name.Contains("vl-") || name.Contains("-vl"))
+            return "LLM";
+
+        if (tag.Contains("video") || name.Contains("wan") || name.Contains("ltx") || name.Contains("hunyuanvideo") || name.Contains("cogvideox"))
             return "Video";
         if (tag.Contains("audio") || tag.Contains("speech") || tag.Contains("tts") || name.Contains("kokoro") || name.Contains("whisper") || name.Contains("xtts"))
             return "Audio";
@@ -372,6 +413,55 @@ public partial class HuggingFaceSearchViewModel : ObservableObject
             return "Image";
 
         return "LLM";
+    }
+
+    public static List<HuggingFaceRepoItem> GetCuratedStarterModels()
+    {
+        return new List<HuggingFaceRepoItem>
+        {
+            new HuggingFaceRepoItem("Qwen/Qwen2.5-Coder-7B-Instruct-GGUF", "Qwen", 4820, "1,250,000 downloads", "text-generation"),
+            new HuggingFaceRepoItem("meta-llama/Llama-3.2-3B-Instruct-GGUF", "meta-llama", 3100, "980,000 downloads", "text-generation"),
+            new HuggingFaceRepoItem("deepseek-ai/DeepSeek-R1-Distill-Qwen-7B-GGUF", "deepseek-ai", 5200, "1,450,000 downloads", "text-generation"),
+            new HuggingFaceRepoItem("Wan-AI/Wan2.1-T2V-14B", "Wan-AI", 2800, "420,000 downloads", "text-to-video"),
+            new HuggingFaceRepoItem("hexgrad/Kokoro-82M", "hexgrad", 3900, "680,000 downloads", "text-to-audio"),
+            new HuggingFaceRepoItem("black-forest-labs/FLUX.1-schnell", "black-forest-labs", 6200, "1,850,000 downloads", "text-to-image")
+        };
+    }
+
+    public void LoadCuratedStarterModels()
+    {
+        if (HuggingFaceResults.Count > 0) return;
+
+        foreach (var r in GetCuratedStarterModels())
+        {
+            string modality = DetermineModality(r.Id, r.PipelineTag);
+            var badge = _canIRunItService.EvaluateQuickFit(r.Id, null, modality, (long)TotalVramMb, (long)TotalRamMb);
+            HuggingFaceResults.Add(r with { FitBadge = badge });
+        }
+        ApplyFilter();
+    }
+
+    public async Task LoadDefaultModelsAsync(string apiBase, HttpClient http)
+    {
+        try
+        {
+            var results = await _hfSearchService.SearchRepositoriesAsync(apiBase, "", "text-generation", http);
+            if (results != null && results.Count > 0)
+            {
+                HuggingFaceResults.Clear();
+                foreach (var r in results)
+                {
+                    string modality = DetermineModality(r.Id, r.PipelineTag);
+                    var badge = _canIRunItService.EvaluateQuickFit(r.Id, null, modality, (long)TotalVramMb, (long)TotalRamMb);
+                    HuggingFaceResults.Add(r with { FitBadge = badge });
+                }
+                ApplyFilter();
+            }
+        }
+        catch
+        {
+            // Curated starter models are already loaded, retain them
+        }
     }
 
     [RelayCommand]
@@ -446,10 +536,20 @@ public partial class HuggingFaceSearchViewModel : ObservableObject
                 var badge = _canIRunItService.EvaluateQuickFit(r.Id, null, modality, (long)TotalVramMb, (long)TotalRamMb);
                 HuggingFaceResults.Add(r with { FitBadge = badge });
             }
+
+            if (results.Count == 0 && string.IsNullOrWhiteSpace(HfSearchQuery))
+            {
+                LoadCuratedStarterModels();
+            }
+
             ApplyFilter();
         }
         catch
         {
+            if (HuggingFaceResults.Count == 0 && string.IsNullOrWhiteSpace(HfSearchQuery))
+            {
+                LoadCuratedStarterModels();
+            }
             ToastService.Instance.Show("Failed to query Hugging Face Hub.", ToastType.Error);
         }
         finally

@@ -11,6 +11,30 @@ namespace LocalLLMServerManager.Tests;
 
 public class StudioIntegrationTests
 {
+    private class MockHttpMessageHandler : System.Net.Http.HttpMessageHandler
+    {
+        public List<System.Net.Http.HttpRequestMessage> Requests { get; } = new();
+        public bool SimulateFailure { get; set; }
+
+        protected override Task<System.Net.Http.HttpResponseMessage> SendAsync(System.Net.Http.HttpRequestMessage request, System.Threading.CancellationToken cancellationToken)
+        {
+            Requests.Add(request);
+
+            if (SimulateFailure)
+            {
+                return Task.FromResult(new System.Net.Http.HttpResponseMessage(System.Net.HttpStatusCode.InternalServerError)
+                {
+                    Content = new System.Net.Http.StringContent("{\"error\":\"Simulated GPU OOM\"}")
+                });
+            }
+
+            return Task.FromResult(new System.Net.Http.HttpResponseMessage(System.Net.HttpStatusCode.OK)
+            {
+                Content = new System.Net.Http.StringContent("{\"status\":\"ok\"}")
+            });
+        }
+    }
+
     private MainViewModel CreateMainViewModel()
     {
         MainViewModel.EnableAutomaticPolling = false;
@@ -127,17 +151,15 @@ public class StudioIntegrationTests
     }
 
     [Fact]
-    public async Task TestFlightModal_ExecutionFlow_Succeeds()
+    public async Task TestFlightModal_ExecutionFlow_Succeeds_AndSendsCorrectPayload()
     {
-        var vm = CreateMainViewModel();
+        var mockHandler = new MockHttpMessageHandler();
+        var client = new System.Net.Http.HttpClient(mockHandler);
+        var vm = new MainViewModel(client);
+        vm.ApiBase = "http://test";
 
-        Assert.False(vm.IsTestFlightOpen);
         vm.OpenTestFlightCommand.Execute(null);
-        Assert.True(vm.IsTestFlightOpen);
-
         vm.SelectTestFlightModalityCommand.Execute(StudioModality.Video);
-        Assert.Equal(StudioModality.Video, vm.TestFlightModality);
-        Assert.NotEmpty(vm.TestFlightStarterPrompts);
 
         await vm.LaunchTestFlightCommand.ExecuteAsync(null);
 
@@ -145,8 +167,29 @@ public class StudioIntegrationTests
         Assert.False(vm.TestFlightHasError);
         Assert.Contains("Succeeded", vm.TestFlightResultBannerText);
 
-        vm.CloseTestFlightCommand.Execute(null);
-        Assert.False(vm.IsTestFlightOpen);
+        var req = mockHandler.Requests.FirstOrDefault(r => r.Method == System.Net.Http.HttpMethod.Post && r.RequestUri.ToString().EndsWith("/prompt"));
+        Assert.NotNull(req);
+        Assert.Equal(System.Net.Http.HttpMethod.Post, req.Method);
+        Assert.EndsWith("/prompt", req.RequestUri.ToString());
+        
+        var body = await req.Content.ReadAsStringAsync();
+        Assert.Contains("prompt", body);
+    }
+
+    [Fact]
+    public async Task TestFlightModal_ExecutionFlow_HandlesErrors()
+    {
+        var mockHandler = new MockHttpMessageHandler { SimulateFailure = true };
+        var client = new System.Net.Http.HttpClient(mockHandler);
+        var vm = new MainViewModel(client);
+
+        vm.OpenTestFlightCommand.Execute(null);
+        await vm.LaunchTestFlightCommand.ExecuteAsync(null);
+
+        Assert.False(vm.IsTestFlightSuccess);
+        Assert.True(vm.TestFlightHasError);
+        Assert.Contains("500", vm.TestFlightErrorMessage);
+        Assert.Contains("Simulated GPU OOM", vm.TestFlightErrorMessage);
     }
 
     [Fact]

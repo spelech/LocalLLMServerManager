@@ -6,7 +6,7 @@ outline: deep
 
 # AI Chat Assistant
 
-The AI Chat Assistant provides an interactive copilot directly inside Local LLM Server Manager. You can control local engines, inspect hardware metrics, and troubleshoot generation errors through plain-language dialogue.
+The AI Chat Assistant provides an interactive AI Assist directly inside Local LLM Server Manager. You can control local engines, inspect hardware metrics, and troubleshoot generation errors through plain-language dialogue.
 
 ---
 
@@ -20,7 +20,7 @@ Follow these steps to access the assistant interface:
 
 ```
 +-----------------------------------------------------------------------+
-|  🤖 AI Assistant & App Copilot       Model: gemini-2.5-flash   [Setup]|
+|  🤖 AI Assist       Model: gemini-2.5-flash   [Setup]|
 +-----------------------------------------------------------------------+
 |                                                                       |
 |  [Chat Message History Area]                                          |
@@ -135,7 +135,7 @@ During tool calling, the assistant displays an execution card inside the chat re
 
 ```
 +-------------------------------------------------------------------+
-| 🤖 Copilot                                               14:32    |
+| 🤖 AI Assist                                               14:32    |
 |                                                                   |
 | +---------------------------------------------------------------+ |
 | | ⚡ Tool: calculate_hardware_fit                       12 ms   | |

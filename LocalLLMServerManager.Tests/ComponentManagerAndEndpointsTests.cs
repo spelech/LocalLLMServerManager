@@ -46,7 +46,7 @@ public class ComponentManagerAndEndpointsTests : IClassFixture<AppTestServerFixt
 
         var aiPack = components.FirstOrDefault(c => c.Id == "ai-assistant");
         Assert.NotNull(aiPack);
-        Assert.Equal("In-App AI Assistant & Copilot", aiPack.Name);
+        Assert.Equal("In-AI Assist", aiPack.Name);
         Assert.Equal("5 MB", aiPack.DiskSizeEstimate);
     }
 

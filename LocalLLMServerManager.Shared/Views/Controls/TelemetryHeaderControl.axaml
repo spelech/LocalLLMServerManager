@@ -17,33 +17,47 @@
                 <UniformGrid Columns="3">
                     <StackPanel HorizontalAlignment="Center" Spacing="3">
                         <TextBlock Text="Ollama" FontSize="11" Foreground="{StaticResource TextMutedBrush}" HorizontalAlignment="Center"/>
-                        <Border Classes="matte-pill" Padding="8,3">
+                        <Button x:Name="OllamaStatusBtn" Classes="matte-pill" Padding="8,3" Command="{Binding ManageServiceCommand}" CommandParameter="Ollama" Background="Transparent" BorderThickness="0">
                             <StackPanel Orientation="Horizontal" Spacing="4" HorizontalAlignment="Center">
                                 <Ellipse Width="6" Height="6" Fill="{Binding OllamaStatusColor}" VerticalAlignment="Center"/>
                                 <TextBlock Text="{Binding OllamaStatus}" FontSize="11" Foreground="{StaticResource TextMainBrush}" FontWeight="Bold"/>
                             </StackPanel>
-                        </Border>
+                        </Button>
                     </StackPanel>
                     <StackPanel HorizontalAlignment="Center" Spacing="3">
                         <TextBlock Text="Forge SD" FontSize="11" Foreground="{StaticResource TextMutedBrush}" HorizontalAlignment="Center"/>
-                        <Border Classes="matte-pill" Padding="8,3">
+                        <Button x:Name="ForgeStatusBtn" Classes="matte-pill" Padding="8,3" Command="{Binding ManageServiceCommand}" CommandParameter="Forge SD" Background="Transparent" BorderThickness="0">
                             <StackPanel Orientation="Horizontal" Spacing="4" HorizontalAlignment="Center">
                                 <Ellipse Width="6" Height="6" Fill="{Binding ForgeStatusColor}" VerticalAlignment="Center"/>
                                 <TextBlock Text="{Binding ForgeStatus}" FontSize="11" Foreground="{StaticResource TextMainBrush}" FontWeight="Bold"/>
                             </StackPanel>
-                        </Border>
+                        </Button>
                     </StackPanel>
                     <StackPanel HorizontalAlignment="Center" Spacing="3">
                         <TextBlock Text="ComfyUI" FontSize="11" Foreground="{StaticResource TextMutedBrush}" HorizontalAlignment="Center"/>
-                        <Border Classes="matte-pill" Padding="8,3">
+                        <Button x:Name="ComfyStatusBtn" Classes="matte-pill" Padding="8,3" Command="{Binding ManageServiceCommand}" CommandParameter="ComfyUI" Background="Transparent" BorderThickness="0">
                             <StackPanel Orientation="Horizontal" Spacing="4" HorizontalAlignment="Center">
                                 <Ellipse Width="6" Height="6" Fill="{Binding ComfyStatusColor}" VerticalAlignment="Center"/>
                                 <TextBlock Text="{Binding ComfyStatus}" FontSize="11" Foreground="{StaticResource TextMainBrush}" FontWeight="Bold"/>
                             </StackPanel>
-                        </Border>
+                        </Button>
                     </StackPanel>
                 </UniformGrid>
             </StackPanel>
+        </Border>
+
+        <!-- Manage Service Modal -->
+        <Border Background="#CC000000" IsVisible="{Binding IsManageServiceModalOpen}" Grid.ColumnSpan="3" ZIndex="100">
+            <Border Background="{StaticResource SurfaceBrush}" CornerRadius="12" Padding="24" Width="400" HorizontalAlignment="Center" VerticalAlignment="Center">
+                <StackPanel Spacing="16">
+                    <TextBlock Text="Manage Service" FontSize="18" FontWeight="Bold"/>
+                    <TextBlock Text="{Binding ManageServicePrompt}" TextWrapping="Wrap"/>
+                    <StackPanel Orientation="Horizontal" Spacing="12" HorizontalAlignment="Right" Margin="0,12,0,0">
+                        <Button Content="Cancel" Command="{Binding CancelManageServiceCommand}" Classes="matte-secondary" Padding="16,8"/>
+                        <Button Content="Confirm" Command="{Binding ConfirmManageServiceCommand}" Classes="matte-primary" Padding="16,8"/>
+                    </StackPanel>
+                </StackPanel>
+            </Border>
         </Border>
 
         <!-- CARD 2: GPU VRAM Memory Telemetry Chip -->

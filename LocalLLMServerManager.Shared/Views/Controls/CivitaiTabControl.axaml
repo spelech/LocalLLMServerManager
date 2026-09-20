@@ -4,7 +4,73 @@
              x:Class="LocalLLMServerManager.Shared.Views.Controls.CivitaiTabControl"
              x:DataType="vm:CivitaiSearchViewModel">
 
-    <Grid RowDefinitions="Auto, Auto, Auto, Auto, *" Margin="0,12,0,0">
+    <UserControl.Styles>
+        <!-- Type Filter Buttons -->
+        <Style Selector="Button.type-filter-btn">
+            <Setter Property="Background" Value="#1E293B"/>
+            <Setter Property="Foreground" Value="#94A3B8"/>
+            <Setter Property="BorderBrush" Value="#334155"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="CornerRadius" Value="14"/>
+            <Setter Property="Padding" Value="8,3"/>
+            <Setter Property="FontSize" Value="11"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+            <Setter Property="Cursor" Value="Hand"/>
+        </Style>
+        <Style Selector="Button.type-filter-btn:pointerover">
+            <Setter Property="Background" Value="#334155"/>
+        </Style>
+        <Style Selector="Button.type-filter-btn.active">
+            <Setter Property="Background" Value="#1D4ED8"/>
+            <Setter Property="Foreground" Value="#FFFFFF"/>
+            <Setter Property="BorderBrush" Value="#60A5FA"/>
+            <Setter Property="BorderThickness" Value="1.5"/>
+            <Setter Property="FontWeight" Value="Bold"/>
+        </Style>
+        <Style Selector="Button.type-filter-btn.active:pointerover">
+            <Setter Property="Background" Value="#2563EB"/>
+        </Style>
+
+        <!-- Suggestion Chips -->
+        <Style Selector="Button.suggestion-chip-btn">
+            <Setter Property="Background" Value="#1E293B"/>
+            <Setter Property="Foreground" Value="#CBD5E1"/>
+            <Setter Property="BorderBrush" Value="#334155"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="CornerRadius" Value="14"/>
+            <Setter Property="Padding" Value="8,3"/>
+            <Setter Property="FontSize" Value="11"/>
+            <Setter Property="FontWeight" Value="Medium"/>
+            <Setter Property="Cursor" Value="Hand"/>
+        </Style>
+        <Style Selector="Button.suggestion-chip-btn:pointerover">
+            <Setter Property="Background" Value="#334155"/>
+        </Style>
+
+        <!-- Hardware Filter Buttons -->
+        <Style Selector="Button.hw-filter-btn">
+            <Setter Property="Background" Value="#1E293B"/>
+            <Setter Property="BorderThickness" Value="1.5"/>
+            <Setter Property="CornerRadius" Value="14"/>
+            <Setter Property="Padding" Value="8,3"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="Opacity" Value="1.0"/>
+        </Style>
+        <Style Selector="Button.hw-filter-btn:pointerover">
+            <Setter Property="Background" Value="#334155"/>
+        </Style>
+        <Style Selector="Button.hw-filter-btn.inactive">
+            <Setter Property="Opacity" Value="0.4"/>
+            <Setter Property="Background" Value="#0F172A"/>
+            <Setter Property="BorderBrush" Value="#334155"/>
+        </Style>
+        <Style Selector="Button.hw-filter-btn.inactive:pointerover">
+            <Setter Property="Opacity" Value="0.6"/>
+            <Setter Property="Background" Value="#1E293B"/>
+        </Style>
+    </UserControl.Styles>
+
+    <Grid RowDefinitions="Auto, Auto, Auto, *" Margin="0,12,0,0">
         <Grid Grid.Row="0" ColumnDefinitions="*, Auto" Margin="0,0,0,8">
             <TextBox Grid.Column="0" Text="{Binding CivitaiSearchQuery}" PlaceholderText="Search Stable Diffusion checkpoints &amp; LoRAs..." 
                      Classes="matte-input" VerticalAlignment="Center"/>
@@ -28,39 +94,84 @@
             </Grid>
         </Border>
 
-        <!-- Starter Suggestions Row -->
-        <ScrollViewer Grid.Row="2" HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Disabled" Margin="0,0,0,8">
-            <StackPanel Orientation="Horizontal" Spacing="6">
-                <TextBlock Text="Suggestions:" FontSize="11" Foreground="{StaticResource TextMutedBrush}" VerticalAlignment="Center" Margin="0,0,4,0"/>
-                <Button Content="🌟 SDXL" Command="{Binding ApplyStarterChipCommand}" CommandParameter="🌟 SDXL" Classes="matte-pill"/>
-                <Button Content="📸 Photorealistic" Command="{Binding ApplyStarterChipCommand}" CommandParameter="📸 Photorealistic" Classes="matte-pill"/>
-                <Button Content="🎨 Anime" Command="{Binding ApplyStarterChipCommand}" CommandParameter="🎨 Anime" Classes="matte-pill"/>
-                <Button Content="🎭 Detail LoRA" Command="{Binding ApplyStarterChipCommand}" CommandParameter="🎭 Detail LoRA" Classes="matte-pill"/>
-                <Button Content="⚡ Turbo" Command="{Binding ApplyStarterChipCommand}" CommandParameter="⚡ Turbo" Classes="matte-pill"/>
-                <Button Content="🔮 Flux" Command="{Binding ApplyStarterChipCommand}" CommandParameter="🔮 Flux" Classes="matte-pill"/>
-            </StackPanel>
-        </ScrollViewer>
+        <!-- Filter Controls Card -->
+        <Border Grid.Row="2" Classes="matte-card" Margin="0,0,0,10" Padding="12,10">
+            <StackPanel Spacing="10">
+                <!-- Row A: Model Type & Suggestions -->
+                <Grid ColumnDefinitions="Auto, *">
+                    <!-- Model Type Filter -->
+                    <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
+                        <TextBlock Text="Model Type:" FontSize="11" FontWeight="Bold" Foreground="{StaticResource SecondaryBrush}" VerticalAlignment="Center" Margin="0,0,2,0"/>
+                        <Button Command="{Binding SelectCivitaiTypeCommand}" CommandParameter="All" Classes="type-filter-btn" Classes.active="{Binding IsTypeAllActive}">
+                            <StackPanel Orientation="Horizontal" Spacing="4">
+                                <TextBlock Text="✓" IsVisible="{Binding IsTypeAllActive}" FontWeight="Bold"/>
+                                <TextBlock Text="All Types"/>
+                            </StackPanel>
+                        </Button>
+                        <Button Command="{Binding SelectCivitaiTypeCommand}" CommandParameter="Checkpoint" Classes="type-filter-btn" Classes.active="{Binding IsTypeCheckpointActive}">
+                            <StackPanel Orientation="Horizontal" Spacing="4">
+                                <TextBlock Text="✓" IsVisible="{Binding IsTypeCheckpointActive}" FontWeight="Bold"/>
+                                <TextBlock Text="Checkpoints"/>
+                            </StackPanel>
+                        </Button>
+                        <Button Command="{Binding SelectCivitaiTypeCommand}" CommandParameter="LORA" Classes="type-filter-btn" Classes.active="{Binding IsTypeLoraActive}">
+                            <StackPanel Orientation="Horizontal" Spacing="4">
+                                <TextBlock Text="✓" IsVisible="{Binding IsTypeLoraActive}" FontWeight="Bold"/>
+                                <TextBlock Text="LoRAs"/>
+                            </StackPanel>
+                        </Button>
+                    </StackPanel>
 
-        <!-- Hardware Compatibility Filter Chips -->
-        <ScrollViewer Grid.Row="3" HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Disabled" Margin="0,0,0,10">
-            <StackPanel Orientation="Horizontal" Spacing="6">
-                <TextBlock Text="Hardware Filter:" FontSize="11" Foreground="{StaticResource TextMutedBrush}" VerticalAlignment="Center" Margin="0,0,4,0"/>
-                <Button Command="{Binding ToggleFitVerdictCommand}" CommandParameter="FullVram" Classes="matte-pill" Padding="6,2">
-                    <TextBlock Text="🟢 Full VRAM" FontSize="11" FontWeight="Bold" Foreground="#10B981"/>
-                </Button>
-                <Button Command="{Binding ToggleFitVerdictCommand}" CommandParameter="PartialOffload" Classes="matte-pill" Padding="6,2">
-                    <TextBlock Text="🟡 Partial Offload" FontSize="11" FontWeight="Bold" Foreground="#F59E0B"/>
-                </Button>
-                <Button Command="{Binding ToggleFitVerdictCommand}" CommandParameter="CpuOnly" Classes="matte-pill" Padding="6,2">
-                    <TextBlock Text="🟠 CPU Only" FontSize="11" FontWeight="Bold" Foreground="#F97316"/>
-                </Button>
-                <Button Command="{Binding ToggleFitVerdictCommand}" CommandParameter="OutOfMemory" Classes="matte-pill" Padding="6,2">
-                    <TextBlock Text="🔴 Won't Fit" FontSize="11" FontWeight="Bold" Foreground="#EF4444"/>
-                </Button>
-            </StackPanel>
-        </ScrollViewer>
+                    <!-- Suggestions Chips -->
+                    <ScrollViewer Grid.Column="1" HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Disabled" Margin="16,0,0,0">
+                        <StackPanel Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
+                            <TextBlock Text="Suggestions:" FontSize="11" Foreground="{StaticResource TextMutedBrush}" VerticalAlignment="Center" Margin="0,0,2,0"/>
+                            <Button Content="🌟 SDXL" Command="{Binding ApplyStarterChipCommand}" CommandParameter="🌟 SDXL" Classes="suggestion-chip-btn"/>
+                            <Button Content="📸 Photorealistic" Command="{Binding ApplyStarterChipCommand}" CommandParameter="📸 Photorealistic" Classes="suggestion-chip-btn"/>
+                            <Button Content="🎨 Anime" Command="{Binding ApplyStarterChipCommand}" CommandParameter="🎨 Anime" Classes="suggestion-chip-btn"/>
+                            <Button Content="🎭 Detail LoRA" Command="{Binding ApplyStarterChipCommand}" CommandParameter="🎭 Detail LoRA" Classes="suggestion-chip-btn"/>
+                            <Button Content="⚡ Turbo" Command="{Binding ApplyStarterChipCommand}" CommandParameter="⚡ Turbo" Classes="suggestion-chip-btn"/>
+                            <Button Content="🔮 Flux" Command="{Binding ApplyStarterChipCommand}" CommandParameter="🔮 Flux" Classes="suggestion-chip-btn"/>
+                        </StackPanel>
+                    </ScrollViewer>
+                </Grid>
 
-        <ScrollViewer Grid.Row="4">
+                <!-- Row B: Hardware Compatibility Filter Chips -->
+                <StackPanel Orientation="Horizontal" Spacing="6">
+                    <TextBlock Text="Hardware Filter:" FontSize="11" Foreground="{StaticResource TextMutedBrush}" VerticalAlignment="Center" Margin="0,0,4,0"/>
+                    <Button Command="{Binding ToggleFitVerdictCommand}" CommandParameter="FullVram" Classes="hw-filter-btn" Classes.inactive="{Binding !IsFullVramActive}" BorderBrush="#10B981">
+                        <StackPanel Orientation="Horizontal" Spacing="5">
+                            <TextBlock Text="✓" IsVisible="{Binding IsFullVramActive}" Foreground="#10B981" FontWeight="Bold"/>
+                            <TextBlock Text="✕" IsVisible="{Binding !IsFullVramActive}" Foreground="#64748B"/>
+                            <TextBlock Text="🟢 Full VRAM" FontSize="11" FontWeight="Bold" Foreground="#10B981"/>
+                        </StackPanel>
+                    </Button>
+                    <Button Command="{Binding ToggleFitVerdictCommand}" CommandParameter="PartialOffload" Classes="hw-filter-btn" Classes.inactive="{Binding !IsPartialOffloadActive}" BorderBrush="#F59E0B">
+                        <StackPanel Orientation="Horizontal" Spacing="5">
+                            <TextBlock Text="✓" IsVisible="{Binding IsPartialOffloadActive}" Foreground="#F59E0B" FontWeight="Bold"/>
+                            <TextBlock Text="✕" IsVisible="{Binding !IsPartialOffloadActive}" Foreground="#64748B"/>
+                            <TextBlock Text="🟡 Partial Offload" FontSize="11" FontWeight="Bold" Foreground="#F59E0B"/>
+                        </StackPanel>
+                    </Button>
+                    <Button Command="{Binding ToggleFitVerdictCommand}" CommandParameter="CpuOnly" Classes="hw-filter-btn" Classes.inactive="{Binding !IsCpuOnlyActive}" BorderBrush="#F97316">
+                        <StackPanel Orientation="Horizontal" Spacing="5">
+                            <TextBlock Text="✓" IsVisible="{Binding IsCpuOnlyActive}" Foreground="#F97316" FontWeight="Bold"/>
+                            <TextBlock Text="✕" IsVisible="{Binding !IsCpuOnlyActive}" Foreground="#64748B"/>
+                            <TextBlock Text="🟠 CPU Only" FontSize="11" FontWeight="Bold" Foreground="#F97316"/>
+                        </StackPanel>
+                    </Button>
+                    <Button Command="{Binding ToggleFitVerdictCommand}" CommandParameter="OutOfMemory" Classes="hw-filter-btn" Classes.inactive="{Binding !IsOomActive}" BorderBrush="#EF4444">
+                        <StackPanel Orientation="Horizontal" Spacing="5">
+                            <TextBlock Text="✓" IsVisible="{Binding IsOomActive}" Foreground="#EF4444" FontWeight="Bold"/>
+                            <TextBlock Text="✕" IsVisible="{Binding !IsOomActive}" Foreground="#64748B"/>
+                            <TextBlock Text="🔴 Won't Fit" FontSize="11" FontWeight="Bold" Foreground="#EF4444"/>
+                        </StackPanel>
+                    </Button>
+                </StackPanel>
+            </StackPanel>
+        </Border>
+
+        <ScrollViewer Grid.Row="3">
             <StackPanel>
                 <!-- Starter Recommendations when no search results loaded -->
                 <StackPanel IsVisible="{Binding !FilteredCivitaiResults.Count}" Margin="0,0,0,16">
@@ -73,7 +184,7 @@
                         </Grid>
                     </Border>
 
-                    <ItemsControl ItemsSource="{Binding StarterModels}">
+                    <ItemsControl ItemsSource="{Binding FilteredStarterModels}">
                         <ItemsControl.ItemTemplate>
                             <DataTemplate DataType="vm:CivitaiModelItem">
                                 <Border Classes="matte-card" Margin="0,0,0,8" Padding="14,12">

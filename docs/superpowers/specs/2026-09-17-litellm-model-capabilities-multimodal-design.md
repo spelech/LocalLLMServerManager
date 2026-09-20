@@ -2,7 +2,7 @@
 
 ## 1. Overview & Objectives
 
-In `LocalLLMServerManager`, the In-App AI Assistant connects to external OpenAI-compatible endpoints—primarily a network-hosted LiteLLM proxy instance—to guide the user, evaluate hardware fit, adjust app settings, and trigger workflows.
+In `LocalLLMServerManager`, the In-AI Assistant connects to external OpenAI-compatible endpoints—primarily a network-hosted LiteLLM proxy instance—to guide the user, evaluate hardware fit, adjust app settings, and trigger workflows.
 
 This specification defines the architecture, data structures, UI/UX, and testing strategy to:
 1. **Discover LiteLLM Models & Rich Capabilities**: Dynamically query LiteLLM's `/model/info` (or `/v1/model_info` and `/v1/models`) catalog to extract model capabilities (modality, vision support, function calling, context window, max output tokens).

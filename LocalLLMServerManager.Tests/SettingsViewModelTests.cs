@@ -649,4 +649,37 @@ public class SettingsViewModelTests
 
         Assert.Contains(freshVm.AllPresets, p => p.Name == "Synchronized Video Preset" && p.Id == "custom-123");
     }
+
+    [Fact]
+    public void AiAssistantSettings_DefaultProperties()
+    {
+        var vm = new SettingsViewModel();
+        Assert.Equal("http://127.0.0.1:4000/v1", vm.AiAssistantEndpoint);
+        Assert.Equal("", vm.AiAssistantApiKey);
+        Assert.Equal("google/gemini-2.5-flash", vm.AiAssistantModel);
+        Assert.Equal("⚠️ Not Configured", vm.ApiKeyStatusText);
+        Assert.Equal("#F59E0B", vm.ApiKeyStatusColor);
+    }
+
+    [Fact]
+    public void AiAssistantSettings_SetApiKey_UpdatesStatus()
+    {
+        var vm = new SettingsViewModel();
+        vm.AiAssistantApiKey = "sk-1234567890abcdef";
+        Assert.Contains("cdef", vm.ApiKeyStatusText);
+        Assert.Contains("Configured", vm.ApiKeyStatusText);
+        Assert.Equal("#22C55E", vm.ApiKeyStatusColor);
+        
+        vm.ClearApiKey();
+        Assert.Equal("", vm.AiAssistantApiKey);
+        Assert.Equal("⚠️ Not Configured", vm.ApiKeyStatusText);
+    }
+
+    [Fact]
+    public void GetLocalIPv4Address_ReturnsValidIP()
+    {
+        var ip = SettingsViewModel.GetLocalIPv4Address();
+        Assert.NotNull(ip);
+        Assert.True(ip.Contains('.') || ip == "127.0.0.1");
+    }
 }

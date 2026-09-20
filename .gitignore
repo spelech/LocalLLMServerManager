@@ -6,6 +6,10 @@
 # dotenv files
 .env
 
+# Worktrees
+.worktrees/
+worktrees/
+
 # User-specific files
 *.rsuser
 *.suo

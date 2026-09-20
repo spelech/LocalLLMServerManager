@@ -42,7 +42,7 @@ The `Prompts/` directory contains four modular templates:
 
 ### 1. `system-prompt.md` (Persona & Identity)
 Sets the core identity of the assistant:
-* **Persona**: Defines the assistant as the intelligent copilot for Local LLM Server Manager.
+* **Persona**: Defines the assistant as the intelligent AI Assist for Local LLM Server Manager.
 * **Tone**: Enforces concise, technically precise, and actionable communication.
 * **Operating Rules**: Instructs the model to invoke tools proactively instead of asking the user to click buttons manually.
 

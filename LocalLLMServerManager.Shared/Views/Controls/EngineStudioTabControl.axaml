@@ -35,14 +35,16 @@
                     </StackPanel>
 
                     <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
-                        <Button Content="🚀 Diagnostic Test Flight" Command="{Binding OpenTestFlightCommand}"
+                        <Button x:Name="DiagnosticTestFlightButton" Content="🚀 Diagnostic Test Flight" Command="{Binding OpenTestFlightCommand}"
                                 Classes="matte-primary" Padding="12,6" FontSize="12" VerticalAlignment="Center"/>
 
-                        <RadioButton Content="🎨 Images" GroupName="StudioMode" Command="{Binding SelectStudioModeCommand}" CommandParameter="Images" IsChecked="{Binding SelectedStudioMode, Converter={x:Static ObjectConverters.Equal}, ConverterParameter=Images}" Classes="matte-radio"/>
-                        <RadioButton Content="💬 Text" GroupName="StudioMode" Command="{Binding SelectStudioModeCommand}" CommandParameter="Text" IsChecked="{Binding SelectedStudioMode, Converter={x:Static ObjectConverters.Equal}, ConverterParameter=Text}" Classes="matte-radio"/>
-                        <RadioButton Content="🎬 Video" GroupName="StudioMode" Command="{Binding SelectStudioModeCommand}" CommandParameter="Video" IsChecked="{Binding SelectedStudioMode, Converter={x:Static ObjectConverters.Equal}, ConverterParameter=Video}" Classes="matte-radio"/>
-                        <RadioButton Content="📦 3D Mesh" GroupName="StudioMode" Command="{Binding SelectStudioModeCommand}" CommandParameter="3D Mesh" IsChecked="{Binding SelectedStudioMode, Converter={x:Static ObjectConverters.Equal}, ConverterParameter=3D Mesh}" Classes="matte-radio"/>
-                        <RadioButton Content="🎵 Audio" GroupName="StudioMode" Command="{Binding SelectStudioModeCommand}" CommandParameter="Audio" IsChecked="{Binding SelectedStudioMode, Converter={x:Static ObjectConverters.Equal}, ConverterParameter=Audio}" Classes="matte-radio"/>
+                        <ComboBox SelectedItem="{Binding SelectedStudioMode}" Width="160" VerticalAlignment="Center">
+                            <x:String>Images</x:String>
+                            <x:String>Text</x:String>
+                            <x:String>Video</x:String>
+                            <x:String>3D Mesh</x:String>
+                            <x:String>Audio</x:String>
+                        </ComboBox>
                     </StackPanel>
                 </Grid>
 

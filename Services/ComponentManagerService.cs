@@ -130,7 +130,7 @@ public class ComponentManagerService : IComponentManagerService
             new ComponentPackInfo
             {
                 Id = "ai-assistant",
-                Name = "In-App AI Assistant & Copilot",
+                Name = "In-AI Assist",
                 Description = "External LLM hookup (LiteLLM / Vertex Flash) with natural language app control, tool calling, and living prompts.",
                 Installed = IsAiAssistantInstalled,
                 DiskSizeEstimate = "5 MB",

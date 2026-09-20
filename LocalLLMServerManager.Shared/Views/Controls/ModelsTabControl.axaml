@@ -8,17 +8,35 @@
     <Grid>
         <TabControl SelectedIndex="{Binding SelectedModelsTabIndex}" Background="Transparent">
             <!-- SUBTAB 1: Installed Ollama Models & KV Cache -->
-            <TabItem Header="💾 Downloaded &amp; Manage">
+            <TabItem>
+                <TabItem.Header>
+                    <StackPanel Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
+                        <PathIcon Data="{StaticResource IconDownloaded}" Width="13" Height="13" Foreground="{Binding $parent[TabItem].Foreground}"/>
+                        <TextBlock Text="Downloaded &amp; Manage" VerticalAlignment="Center"/>
+                    </StackPanel>
+                </TabItem.Header>
                 <controls:OllamaModelsTabControl DataContext="{Binding Ollama}"/>
             </TabItem>
 
             <!-- SUBTAB 2: Hugging Face GGUF & Multimodal Hub -->
-            <TabItem Header="🤗 Hugging Face Hub">
+            <TabItem>
+                <TabItem.Header>
+                    <StackPanel Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
+                        <PathIcon Data="{StaticResource IconHub}" Width="13" Height="13" Foreground="{Binding $parent[TabItem].Foreground}"/>
+                        <TextBlock Text="Hugging Face Hub" VerticalAlignment="Center"/>
+                    </StackPanel>
+                </TabItem.Header>
                 <controls:HuggingFaceTabControl DataContext="{Binding HuggingFace}"/>
             </TabItem>
 
             <!-- SUBTAB 3: CivitAI Stable Diffusion Hub -->
-            <TabItem Header="🎨 CivitAI Hub">
+            <TabItem>
+                <TabItem.Header>
+                    <StackPanel Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
+                        <PathIcon Data="{StaticResource IconCivitai}" Width="13" Height="13" Foreground="{Binding $parent[TabItem].Foreground}"/>
+                        <TextBlock Text="CivitAI Hub" VerticalAlignment="Center"/>
+                    </StackPanel>
+                </TabItem.Header>
                 <controls:CivitaiTabControl DataContext="{Binding Civitai}"/>
             </TabItem>
         </TabControl>
