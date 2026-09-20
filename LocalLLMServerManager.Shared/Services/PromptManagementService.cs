@@ -151,8 +151,8 @@ public class PromptManagementService : IPromptManagementService
         return fallbackContent;
     }
 
-    private const string FallbackSystemPrompt = @"# LocalLLMServerManager AI Copilot — System Prompt
-You are the LocalLLMServerManager Copilot, an expert AI engineer integrated directly into the application.
+    private const string FallbackSystemPrompt = @"# LocalLLMServerManager AI Assist — System Prompt
+You are the LocalLLMServerManager AI Assist, an expert AI engineer integrated directly into the application.
 Guide users on models, workflows, and settings, and proactively use your tools to perform actions in the app.";
 
     private const string FallbackCapabilitiesPrompt = @"# Application Capabilities Reference

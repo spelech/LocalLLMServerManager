@@ -5,7 +5,7 @@ using System.Threading.Tasks;
 namespace LocalLLMServerManager.Shared.Interfaces;
 
 /// <summary>
-/// Natural Language Integration Bridge: allows the AI Copilot to query telemetry,
+/// Natural Language Integration Bridge: allows the AI Assist to query telemetry,
 /// manage engines, update settings, trigger workflows, and query documentation.
 /// </summary>
 public interface IAiAppTools

@@ -61,7 +61,7 @@ public class AvaloniaHeadlessInteractionTests
         tabControl.SelectedIndex = 2;
         Assert.Equal(2, tabControl.SelectedIndex);
 
-        // Switch to Tab 4 (Copilot)
+        // Switch to Tab 4 (AI Assist)
         tabControl.SelectedIndex = 3;
         Assert.Equal(3, tabControl.SelectedIndex);
 
@@ -699,7 +699,7 @@ public class AvaloniaHeadlessInteractionTests
 
         // Find header title
         var textBlocks = control.GetVisualDescendants().OfType<TextBlock>().ToList();
-        var titleBlock = textBlocks.FirstOrDefault(t => t.Text != null && t.Text.Contains("AI Assistant & App Copilot"));
+        var titleBlock = textBlocks.FirstOrDefault(t => t.Text != null && t.Text.Contains("AI Assist"));
         Assert.NotNull(titleBlock);
 
         // Find model badge
@@ -721,8 +721,8 @@ public class AvaloniaHeadlessInteractionTests
         var inputBox = textBoxes.FirstOrDefault(tb => tb.Watermark != null && tb.Watermark.Contains("Ask anything"));
         Assert.NotNull(inputBox);
 
-        inputBox.Text = "Hello copilot!";
-        Assert.Equal("Hello copilot!", vm.InputText);
+        inputBox.Text = "Hello AI Assist!";
+        Assert.Equal("Hello AI Assist!", vm.InputText);
 
         window.Close();
     }
