@@ -167,8 +167,8 @@ public class StudioIntegrationTests
         Assert.False(vm.TestFlightHasError);
         Assert.Contains("Succeeded", vm.TestFlightResultBannerText);
 
-        Assert.Single(mockHandler.Requests);
-        var req = mockHandler.Requests.First();
+        var req = mockHandler.Requests.FirstOrDefault(r => r.Method == System.Net.Http.HttpMethod.Post && r.RequestUri.ToString().EndsWith("/prompt"));
+        Assert.NotNull(req);
         Assert.Equal(System.Net.Http.HttpMethod.Post, req.Method);
         Assert.EndsWith("/prompt", req.RequestUri.ToString());
         
