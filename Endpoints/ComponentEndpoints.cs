@@ -26,58 +26,63 @@ public static class ComponentEndpoints
             httpContext.Response.Headers.CacheControl = "no-cache";
             httpContext.Response.Headers.Connection = "keep-alive";
 
-            var syncLock = new SemaphoreSlim(1, 1);
+            var channel = System.Threading.Channels.Channel.CreateUnbounded<double>(new System.Threading.Channels.UnboundedChannelOptions
+            {
+                SingleWriter = true,
+                SingleReader = true
+            });
+
             var progress = new Progress<double>(percent =>
             {
-                _ = Task.Run(async () =>
+                channel.Writer.TryWrite(percent);
+            });
+
+            var writerTask = Task.Run(async () =>
+            {
+                try
                 {
-                    await syncLock.WaitAsync();
-                    try
+                    while (await channel.Reader.WaitToReadAsync(httpContext.RequestAborted))
                     {
-                        var eventData = JsonSerializer.Serialize(new { progress = percent, status = "installing" });
-                        await httpContext.Response.WriteAsync($"data: {eventData}\n\n");
-                        await httpContext.Response.Body.FlushAsync();
+                        while (channel.Reader.TryRead(out var percent))
+                        {
+                            var eventData = JsonSerializer.Serialize(new { progress = percent, status = "installing" });
+                            await httpContext.Response.WriteAsync($"data: {eventData}\n\n", httpContext.RequestAborted);
+                            await httpContext.Response.Body.FlushAsync(httpContext.RequestAborted);
+                        }
                     }
-                    catch { }
-                    finally
-                    {
-                        syncLock.Release();
-                    }
-                });
+                }
+                catch (OperationCanceledException) { }
+                catch { }
             });
 
             try
             {
                 var result = await componentService.InstallComponentAsync(componentId, progress, httpContext.RequestAborted);
-                await syncLock.WaitAsync();
-                try
-                {
-                    var finalData = JsonSerializer.Serialize(new { progress = 100.0, status = result ? "completed" : "failed", success = result });
-                    await httpContext.Response.WriteAsync($"data: {finalData}\n\n");
-                    await httpContext.Response.Body.FlushAsync();
-                }
-                finally
-                {
-                    syncLock.Release();
-                }
+                channel.Writer.TryComplete();
+                await writerTask;
+
+                var finalData = JsonSerializer.Serialize(new { progress = 100.0, status = result ? "completed" : "failed", success = result });
+                await httpContext.Response.WriteAsync($"data: {finalData}\n\n", httpContext.RequestAborted);
+                await httpContext.Response.Body.FlushAsync(httpContext.RequestAborted);
             }
             catch (OperationCanceledException)
             {
+                channel.Writer.TryComplete();
+                await writerTask;
                 // Request canceled
             }
             catch (Exception ex)
             {
-                await syncLock.WaitAsync();
+                channel.Writer.TryComplete();
+                await writerTask;
+
                 try
                 {
                     var errData = JsonSerializer.Serialize(new { progress = 0.0, status = "error", message = ex.Message });
-                    await httpContext.Response.WriteAsync($"data: {errData}\n\n");
-                    await httpContext.Response.Body.FlushAsync();
+                    await httpContext.Response.WriteAsync($"data: {errData}\n\n", httpContext.RequestAborted);
+                    await httpContext.Response.Body.FlushAsync(httpContext.RequestAborted);
                 }
-                finally
-                {
-                    syncLock.Release();
-                }
+                catch { }
             }
 
             return Results.Empty;
