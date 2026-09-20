@@ -18,6 +18,8 @@ public record DocStep(
 public record DocSection(
     string Id,
     string Title,
+    string Category,
+    string ReadingTime,
     string Icon,
     string Summary,
     string Prerequisite,
@@ -148,6 +150,8 @@ public partial class DocumentationViewModel : ObservableObject
         Sections.Add(new DocSection(
             Id: "image-generation",
             Title: "How to Generate Images",
+            Category: "Workflows",
+            ReadingTime: "2 min",
             Icon: "🎨",
             Summary: "Use this procedure to generate images with Stable Diffusion or ComfyUI.",
             Prerequisite: "Start the Forge or ComfyUI engine in the Workflows tab.",
@@ -175,6 +179,8 @@ public partial class DocumentationViewModel : ObservableObject
         Sections.Add(new DocSection(
             Id: "text-generation",
             Title: "How to Run Text LLM Models",
+            Category: "Workflows",
+            ReadingTime: "3 min",
             Icon: "💬",
             Summary: "Use this procedure to download and run local Large Language Models with Ollama.",
             Prerequisite: "Verify that Ollama status shows Online in the top telemetry header.",
@@ -197,6 +203,8 @@ public partial class DocumentationViewModel : ObservableObject
         Sections.Add(new DocSection(
             Id: "video-generation",
             Title: "How to Generate AI Videos",
+            Category: "Workflows",
+            ReadingTime: "3 min",
             Icon: "🎬",
             Summary: "Use this procedure to generate AI video clips with Wan 2.2, LTX-2.5, or HunyuanVideo.",
             Prerequisite: "Verify that at least 8 GB of VRAM is available and ComfyUI is running.",
@@ -223,6 +231,8 @@ public partial class DocumentationViewModel : ObservableObject
         Sections.Add(new DocSection(
             Id: "audio-generation",
             Title: "How to Synthesize Speech and Audio",
+            Category: "Workflows",
+            ReadingTime: "2 min",
             Icon: "🎵",
             Summary: "Use this procedure to create speech with Kokoro TTS or sound effects with Stable Audio.",
             Prerequisite: "Ensure the Audio Feature Pack is installed in the Settings tab.",
@@ -241,6 +251,8 @@ public partial class DocumentationViewModel : ObservableObject
         Sections.Add(new DocSection(
             Id: "mesh-generation",
             Title: "How to Generate 3D Meshes",
+            Category: "Workflows",
+            ReadingTime: "2 min",
             Icon: "📦",
             Summary: "Use this procedure to convert images or text into 3D mesh files (.GLB).",
             Prerequisite: "Ensure ComfyUI 3D pack is enabled with at least 12 GB VRAM free.",
@@ -259,6 +271,8 @@ public partial class DocumentationViewModel : ObservableObject
         Sections.Add(new DocSection(
             Id: "models-hub",
             Title: "How to Download and Manage Models",
+            Category: "Models",
+            ReadingTime: "4 min",
             Icon: "🌐",
             Summary: "Use this procedure to find, evaluate, and download models from Hugging Face and CivitAI.",
             Prerequisite: "Ensure an active internet connection is available.",
@@ -276,6 +290,8 @@ public partial class DocumentationViewModel : ObservableObject
         Sections.Add(new DocSection(
             Id: "can-i-run-it",
             Title: "How to Check Hardware Compatibility",
+            Category: "Tools",
+            ReadingTime: "1 min",
             Icon: "⚡",
             Summary: "Use this procedure to verify whether an AI model fits into your GPU memory before downloading.",
             Prerequisite: "Check that GPU memory telemetry is visible in the top header.",
@@ -292,6 +308,8 @@ public partial class DocumentationViewModel : ObservableObject
         Sections.Add(new DocSection(
             Id: "troubleshooting",
             Title: "System Health & Troubleshooting",
+            Category: "Maintenance",
+            ReadingTime: "2 min",
             Icon: "🛠️",
             Summary: "Use this procedure to identify and fix common server or engine connection issues.",
             Prerequisite: "Check the service status pills in the top header.",

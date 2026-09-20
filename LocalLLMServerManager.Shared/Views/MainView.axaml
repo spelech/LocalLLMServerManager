@@ -77,6 +77,9 @@
                     <StackPanel Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
                         <PathIcon Data="{StaticResource IconDocumentation}" Width="14" Height="14" Foreground="{Binding $parent[TabItem].Foreground}"/>
                         <TextBlock Text="Documentation" VerticalAlignment="Center"/>
+                        <Button Command="{Binding Documentation.PopOutNativeWindowCommand}" Classes="matte-pill" Padding="4,2" Margin="4,0,0,0" ToolTip.Tip="Pop out Documentation to a new window">
+                            <TextBlock Text="🗗 Pop-out" FontSize="10" Foreground="{StaticResource TextMutedBrush}"/>
+                        </Button>
                     </StackPanel>
                 </TabItem.Header>
                 <controls:DocumentationTabControl DataContext="{Binding Documentation}"/>
@@ -93,14 +96,6 @@
                 <controls:SettingsTabControl DataContext="{Binding Settings}"/>
             </TabItem>
         </TabControl>
-
-        <!-- Movable Floating Documentation Overlay -->
-        <Canvas Grid.Row="1" Margin="16,0,16,0" IsHitTestVisible="True" ZIndex="90">
-            <controls:DocumentationFloatingOverlay
-                DataContext="{Binding Documentation}"
-                Canvas.Left="{Binding OverlayX}"
-                Canvas.Top="{Binding OverlayY}"/>
-        </Canvas>
 
         <!-- Floating Toast Notifications Overlay -->
         <ItemsControl Grid.Row="1" ItemsSource="{Binding Toasts}" VerticalAlignment="Top" HorizontalAlignment="Right" Margin="0,20,24,0" IsHitTestVisible="False">

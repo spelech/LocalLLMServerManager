@@ -9,6 +9,7 @@
         Width="880" Height="680"
         MinWidth="600" MinHeight="450"
         WindowStartupLocation="CenterOwner"
+        WindowDecorations="BorderOnly"
         Background="{StaticResource BgDarkBrush}">
 
     <Grid RowDefinitions="Auto, *">
