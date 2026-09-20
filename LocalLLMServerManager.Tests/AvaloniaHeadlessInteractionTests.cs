@@ -37,7 +37,7 @@ public class AvaloniaHeadlessInteractionTests
         var versionTextBlock = textBlocks.FirstOrDefault(t => t.Text != null && t.Text.Contains("LocalLLMServerManager v"));
 
         Assert.NotNull(versionTextBlock);
-        Assert.Contains("v3.15.0", versionTextBlock.Text);
+        Assert.Contains("v3.15.1", versionTextBlock.Text);
 
         window.Close();
     }
