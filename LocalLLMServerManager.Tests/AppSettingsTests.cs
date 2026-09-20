@@ -135,4 +135,39 @@ public class AppSettingsTests
 
         Assert.Same(firstLoad, secondLoad);
     }
+
+    [Fact]
+    public async Task SettingsService_SaveAndLoadAsync_RoundTripsSuccessfully()
+    {
+        var service = new SettingsService();
+        var original = await service.LoadSettingsAsync();
+
+        try
+        {
+            var customSettings = new AppSettings(
+                ForgeModelsPath: @"C:\CustomForgeAsync",
+                ComfyModelsPath: @"C:\CustomComfyAsync"
+            );
+            await service.SaveSettingsAsync(customSettings);
+
+            var loaded = await service.LoadSettingsAsync();
+            Assert.Equal(@"C:\CustomForgeAsync", loaded.ForgeModelsPath);
+            Assert.Equal(@"C:\CustomComfyAsync", loaded.ComfyModelsPath);
+        }
+        finally
+        {
+            await service.SaveSettingsAsync(original);
+        }
+    }
+
+    [Fact]
+    public async Task SettingsService_SyncAndAsync_ShareCachedInstance()
+    {
+        var service = new SettingsService();
+        var syncLoad = service.LoadSettings();
+        var asyncLoad = await service.LoadSettingsAsync();
+
+        Assert.Same(syncLoad, asyncLoad);
+    }
 }
+

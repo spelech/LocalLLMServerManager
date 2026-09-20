@@ -99,6 +99,10 @@ public class Program
 
     public static void SaveSettings(AppSettings settings) => new SettingsService().SaveSettings(settings);
 
+    public static Task<AppSettings> LoadSettingsAsync(CancellationToken cancellationToken = default) => new SettingsService().LoadSettingsAsync(cancellationToken);
+
+    public static Task SaveSettingsAsync(AppSettings settings, CancellationToken cancellationToken = default) => new SettingsService().SaveSettingsAsync(settings, cancellationToken);
+
     public static string ResolvePath(string? rawPath, string fallbackRelativePath = "")
     {
         var target = string.IsNullOrWhiteSpace(rawPath) ? fallbackRelativePath : rawPath;
