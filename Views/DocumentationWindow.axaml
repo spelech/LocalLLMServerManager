@@ -9,8 +9,7 @@
         Width="880" Height="680"
         MinWidth="600" MinHeight="450"
         WindowStartupLocation="CenterOwner"
-        Background="{StaticResource BgDarkBrush}"
-        TransparencyLevelHint="Mica, AcrylicBlur, Transparent">
+        Background="{StaticResource BgDarkBrush}">
 
     <Grid RowDefinitions="Auto, *">
         <!-- Window Sub-Header / Tool Bar -->

@@ -77,6 +77,10 @@ public class Program
     {
         var builder = AppBuilder.Configure<App>()
             .UsePlatformDetect()
+            .With(new Win32PlatformOptions
+            {
+                CompositionMode = new[] { Win32CompositionMode.DirectComposition, Win32CompositionMode.RedirectionSurface }
+            })
             .WithInterFont()
             .LogToTrace();
 #if DEBUG

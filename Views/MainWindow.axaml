@@ -10,8 +10,8 @@
         Width="1280" Height="840"
         MinWidth="1024" MinHeight="700"
         WindowStartupLocation="CenterScreen"
-        TransparencyLevelHint="Mica, AcrylicBlur, Transparent"
-        Background="Transparent"
+        Background="{StaticResource BgDarkBrush}"
+        WindowDecorations="BorderOnly"
         ExtendClientAreaToDecorationsHint="True"
         ExtendClientAreaTitleBarHeightHint="-1">
 
