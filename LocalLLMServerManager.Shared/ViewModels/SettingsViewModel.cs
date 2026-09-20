@@ -54,11 +54,81 @@ public partial class SettingsViewModel : ObservableObject
     [ObservableProperty] private string _audioEngineUrl = "http://127.0.0.1:8880";
     [ObservableProperty] private string _preferredAudioVoice = "af_heart";
 
+    [ObservableProperty] private string _aiAssistantEndpoint = "http://127.0.0.1:4000/v1";
+    [ObservableProperty] private string _aiAssistantApiKey = "";
+    [ObservableProperty] private string _aiAssistantModel = "google/gemini-2.5-flash";
+    [ObservableProperty] private bool _isApiKeyVisible = false;
+
     [ObservableProperty] private IStorageProvider? _storageProvider;
     [ObservableProperty] private bool _isAutoDetecting;
 
     // Real-time status indicators
     [ObservableProperty] private string _comfyUiExecutableStatus = "⚠️ Missing";
+
+    public string ApiKeyStatusText => string.IsNullOrWhiteSpace(AiAssistantApiKey) 
+        ? "⚠️ Not Configured" 
+        : $"● Configured (••••••••{GetApiKeySuffix()})";
+
+    public string ApiKeyStatusColor => string.IsNullOrWhiteSpace(AiAssistantApiKey) ? "#F59E0B" : "#22C55E";
+
+    private string GetApiKeySuffix()
+    {
+        if (string.IsNullOrWhiteSpace(AiAssistantApiKey)) return "";
+        return AiAssistantApiKey.Length >= 4 ? AiAssistantApiKey.Substring(AiAssistantApiKey.Length - 4) : AiAssistantApiKey;
+    }
+
+    partial void OnAiAssistantApiKeyChanged(string value)
+    {
+        OnPropertyChanged(nameof(ApiKeyStatusText));
+        OnPropertyChanged(nameof(ApiKeyStatusColor));
+    }
+
+    [RelayCommand]
+    public void ToggleApiKeyVisibility()
+    {
+        IsApiKeyVisible = !IsApiKeyVisible;
+    }
+
+    [RelayCommand]
+    public void ClearApiKey()
+    {
+        AiAssistantApiKey = "";
+    }
+
+    public static string GetLocalIPv4Address()
+    {
+        try
+        {
+            foreach (var netInterface in System.Net.NetworkInformation.NetworkInterface.GetAllNetworkInterfaces())
+            {
+                if (netInterface.OperationalStatus == System.Net.NetworkInformation.OperationalStatus.Up &&
+                    netInterface.NetworkInterfaceType != System.Net.NetworkInformation.NetworkInterfaceType.Loopback &&
+                    !netInterface.Description.Contains("Virtual", StringComparison.OrdinalIgnoreCase) &&
+                    !netInterface.Description.Contains("Tunnel", StringComparison.OrdinalIgnoreCase) &&
+                    !netInterface.Description.Contains("Hyper-V", StringComparison.OrdinalIgnoreCase))
+                {
+                    var props = netInterface.GetIPProperties();
+                    foreach (var ip in props.UnicastAddresses)
+                    {
+                        if (ip.Address.AddressFamily == System.Net.Sockets.AddressFamily.InterNetwork)
+                        {
+                            var ipString = ip.Address.ToString();
+                            if (ipString.StartsWith("192.168.") || ipString.StartsWith("10."))
+                                return ipString;
+                            if (ipString.StartsWith("172."))
+                            {
+                                var bytes = ip.Address.GetAddressBytes();
+                                if (bytes[1] >= 16 && bytes[1] <= 31)
+                                    return ipString;
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        catch { }
+        return "127.0.0.1";
+    }
     [ObservableProperty] private string _forgeExecutableStatus = "⚠️ Missing";
     [ObservableProperty] private string _ollamaStatus = "⚠️ Missing";
     [ObservableProperty] private string _forgeModelsStatus = "⚠️ Missing";
@@ -780,12 +850,21 @@ public partial class SettingsViewModel : ObservableObject
                     ForgeExecutablePath = settings.ForgeExecutablePath ?? "";
                     OllamaExecutablePath = settings.OllamaExecutablePath ?? "ollama";
                     LanAccessUrl = settings.LanAccessUrl ?? "http://127.0.0.1:5246";
+                    if (string.IsNullOrWhiteSpace(LanAccessUrl) || LanAccessUrl.Contains("127.0.0.1") || LanAccessUrl.Contains("localhost") || LanAccessUrl.Contains("0.0.0.0"))
+                    {
+                        LanAccessUrl = $"http://{GetLocalIPv4Address()}:5246";
+                    }
+
                     SelectedThemeStyle = settings.SelectedThemeStyle ?? "semi";
                     ServiceName = settings.ServiceName ?? "LocalLLMServerManager";
                     PublishOutputPath = settings.PublishOutputPath ?? "C:\\LocalLLMServerManager";
                     AudioEngineExecutablePath = settings.AudioEngineExecutablePath ?? "";
                     AudioEngineUrl = settings.AudioEngineUrl ?? "http://127.0.0.1:8880";
                     PreferredAudioVoice = settings.PreferredAudioVoice ?? "af_heart";
+
+                    AiAssistantEndpoint = settings.AiAssistantEndpoint ?? "http://127.0.0.1:4000/v1";
+                    AiAssistantApiKey = settings.AiAssistantApiKey ?? "";
+                    AiAssistantModel = settings.AiAssistantModel ?? "google/gemini-2.5-flash";
 
                     if (settings.CustomPresets != null && settings.CustomPresets.Count > 0)
                     {
@@ -843,7 +922,10 @@ public partial class SettingsViewModel : ObservableObject
                 AudioEngineExecutablePath: this.AudioEngineExecutablePath,
                 AudioEngineUrl: this.AudioEngineUrl,
                 PreferredAudioVoice: this.PreferredAudioVoice,
-                CustomPresets: customPresets
+                CustomPresets: customPresets,
+                AiAssistantEndpoint: this.AiAssistantEndpoint,
+                AiAssistantApiKey: this.AiAssistantApiKey,
+                AiAssistantModel: this.AiAssistantModel
             );
 
             var content = new StringContent(

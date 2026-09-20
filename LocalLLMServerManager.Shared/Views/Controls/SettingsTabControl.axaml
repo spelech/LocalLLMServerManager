@@ -375,6 +375,38 @@
                         </Grid>
                     </StackPanel>
 
+                    <!-- AI Assistant LiteLLM Endpoint & API Key -->
+                    <StackPanel Spacing="10" Margin="0,8,0,8">
+                        <TextBlock Text="🤖 AI Assistant Settings" FontSize="14" FontWeight="Bold" Foreground="{StaticResource TextMainBrush}"/>
+                        
+                        <StackPanel Spacing="4">
+                            <TextBlock Text="LiteLLM / OpenAI Proxy Endpoint (Default: http://127.0.0.1:4000/v1)" FontSize="13" Foreground="{StaticResource TextMutedBrush}" FontWeight="Medium"/>
+                            <TextBlock Text="Set to your LiteLLM instance. Do not use Ollama's local URL (11434) here unless using an OpenAI-compatible translation proxy." FontSize="11" Foreground="{StaticResource TextMutedBrush}" TextWrapping="Wrap"/>
+                            <TextBox Text="{Binding AiAssistantEndpoint, Mode=TwoWay}" Classes="matte-input"/>
+                        </StackPanel>
+
+                        <StackPanel Spacing="4">
+                            <TextBlock Text="AI Assistant Model" FontSize="13" Foreground="{StaticResource TextMutedBrush}" FontWeight="Medium"/>
+                            <TextBox Text="{Binding AiAssistantModel, Mode=TwoWay}" Classes="matte-input"/>
+                        </StackPanel>
+
+                        <StackPanel Spacing="4">
+                            <StackPanel Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+                                <TextBlock Text="API Key" FontSize="13" Foreground="{StaticResource TextMutedBrush}" FontWeight="Medium"/>
+                                <Border Classes="matte-pill" Padding="6,2">
+                                    <TextBlock Text="{Binding ApiKeyStatusText}" FontSize="11" FontWeight="Bold" Foreground="{Binding ApiKeyStatusColor}"/>
+                                </Border>
+                            </StackPanel>
+                            <Grid ColumnDefinitions="*,Auto,Auto">
+                                <TextBox Grid.Column="0" Text="{Binding AiAssistantApiKey, Mode=TwoWay}" PasswordChar="•" Classes="matte-input" IsVisible="{Binding !IsApiKeyVisible}"/>
+                                <TextBox Grid.Column="0" Text="{Binding AiAssistantApiKey, Mode=TwoWay}" Classes="matte-input" IsVisible="{Binding IsApiKeyVisible}"/>
+                                
+                                <Button Grid.Column="1" Content="👁️ Toggle" Command="{Binding ToggleApiKeyVisibilityCommand}" Margin="8,0,0,0" Classes="matte-secondary"/>
+                                <Button Grid.Column="2" Content="🗑️ Clear" Command="{Binding ClearApiKeyCommand}" Margin="8,0,0,0" Classes="matte-secondary"/>
+                            </Grid>
+                        </StackPanel>
+                    </StackPanel>
+
                     <!-- ComfyUI URL -->
                     <StackPanel Spacing="4">
                         <TextBlock Text="ComfyUI URL" FontSize="13" Foreground="{StaticResource TextMutedBrush}" FontWeight="Medium"/>
