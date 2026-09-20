@@ -103,7 +103,7 @@
         </Canvas>
 
         <!-- Floating Toast Notifications Overlay -->
-        <ItemsControl Grid.Row="1" ItemsSource="{Binding Toasts}" VerticalAlignment="Top" HorizontalAlignment="Right" Margin="0,20,24,0" IsHitTestVisible="False">
+        <ItemsControl Grid.Row="1" ItemsSource="{Binding Toasts}" VerticalAlignment="Top" HorizontalAlignment="Right" Margin="0,20,24,0" IsHitTestVisible="False" ZIndex="95">
             <ItemsControl.ItemTemplate>
                 <DataTemplate DataType="services:ToastItem">
                     <Border Background="{StaticResource BgSurfaceBrush}" CornerRadius="6" BorderBrush="{Binding BadgeColor}" BorderThickness="1" Padding="12,8" Margin="0,0,0,8" Width="300">
@@ -112,6 +112,20 @@
                 </DataTemplate>
             </ItemsControl.ItemTemplate>
         </ItemsControl>
+
+        <!-- Service Confirmation Modal Overlay -->
+        <Border Grid.Row="0" Grid.RowSpan="3" Background="#A0000000" IsVisible="{Binding IsServiceConfirmModalOpen}" ZIndex="100">
+            <Border Classes="matte-card" Width="400" HorizontalAlignment="Center" VerticalAlignment="Center" Padding="24">
+                <StackPanel Spacing="16">
+                    <TextBlock Text="Confirm Engine Action" FontSize="16" FontWeight="Bold" Foreground="{StaticResource TextMainBrush}"/>
+                    <TextBlock Text="{Binding ServiceConfirmMessage}" FontSize="14" Foreground="{StaticResource TextMainBrush}" TextWrapping="Wrap"/>
+                    <StackPanel Orientation="Horizontal" Spacing="12" HorizontalAlignment="Right">
+                        <Button Content="Cancel" Command="{Binding CancelServiceConfirmCommand}" Classes="matte-secondary" Padding="16,8"/>
+                        <Button Content="Confirm" Command="{Binding ExecuteServiceConfirmCommand}" Classes="matte-primary" Padding="16,8"/>
+                    </StackPanel>
+                </StackPanel>
+            </Border>
+        </Border>
 
         <!-- Footer -->
         <Border Grid.Row="2" Background="{StaticResource BgSurfaceBrush}" BorderBrush="{StaticResource GlassBorderBrush}" BorderThickness="0,1,0,0" Padding="16,10,16,10" Margin="0,8,0,0">

@@ -45,9 +45,61 @@ public partial class TelemetryViewModel : ObservableObject
     [ObservableProperty] private bool _isServiceRunning = false;
     [ObservableProperty] private string _apiBase = OperatingSystem.IsBrowser() ? "" : "http://127.0.0.1:5246";
 
+    [ObservableProperty] private bool _isManageServiceModalOpen;
+    [ObservableProperty] private string _manageServicePrompt = "";
+    [ObservableProperty] private string _manageServiceTarget = "";
+    [ObservableProperty] private bool _manageServiceIsStart;
+
     public TelemetryViewModel(ITelemetryService telemetryService)
     {
         _telemetryService = telemetryService;
+    }
+
+    [RelayCommand]
+    public void ManageService(string serviceName)
+    {
+        ManageServiceTarget = serviceName;
+        bool isOnline = false;
+        if (serviceName == "Ollama") isOnline = IsOllamaOnline;
+        else if (serviceName == "Forge SD") isOnline = IsForgeOnline;
+        else if (serviceName == "ComfyUI") isOnline = IsComfyOnline;
+
+        ManageServiceIsStart = !isOnline;
+        string action = ManageServiceIsStart ? "start" : "stop";
+        ManageServicePrompt = $"Are you sure you want to {action} the {serviceName} service?";
+        IsManageServiceModalOpen = true;
+    }
+
+    [RelayCommand]
+    public void CancelManageService()
+    {
+        IsManageServiceModalOpen = false;
+    }
+
+    [RelayCommand]
+    public async Task ConfirmManageServiceAsync()
+    {
+        IsManageServiceModalOpen = false;
+        try
+        {
+            var actionEndpoint = ManageServiceIsStart ? "/api/comfy/start" : "/api/comfy/stop";
+            var engineName = ManageServiceTarget.ToLower().Replace(" sd", "");
+            if (ManageServiceTarget == "ComfyUI") engineName = "comfy";
+
+            var req = new { engine = engineName };
+            var content = new StringContent(
+                System.Text.Json.JsonSerializer.Serialize(req),
+                System.Text.Encoding.UTF8,
+                "application/json"
+            );
+            using var http = HttpHelper.CreateClient(ApiBase);
+            await http.PostAsync($"{ApiBase}{actionEndpoint}", content);
+        }
+        catch { }
+        finally
+        {
+            await RefreshStatusAsync();
+        }
     }
 
     [RelayCommand]

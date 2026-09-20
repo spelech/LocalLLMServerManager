@@ -174,7 +174,7 @@ public class AvaloniaHeadlessInteractionTests
     }
 
     [AvaloniaFact]
-    public void EngineStudioTabControl_RadioButtonSelection_UpdatesStudioMode()
+    public void EngineStudioTabControl_ComboBoxSelection_UpdatesStudioMode()
     {
         var vm = new MainViewModel();
         var control = new EngineStudioTabControl { DataContext = vm };
@@ -182,35 +182,17 @@ public class AvaloniaHeadlessInteractionTests
         var window = new Window { Content = control, Width = 1024, Height = 768 };
         window.Show();
 
-        // Find Studio Mode radio buttons
-        var radioButtons = control.GetVisualDescendants().OfType<RadioButton>().ToList();
-        Assert.True(radioButtons.Count >= 4);
+        // Find Studio Mode ComboBox
+        var comboBoxes = control.GetVisualDescendants().OfType<ComboBox>().ToList();
+        var modeComboBox = comboBoxes.FirstOrDefault();
+        Assert.NotNull(modeComboBox);
 
-        var audioRadio = radioButtons.FirstOrDefault(r => r.Content?.ToString()?.Contains("Audio") == true);
-        Assert.NotNull(audioRadio);
-
-        // Simulate user clicking Audio mode
-        if (audioRadio.Command != null && audioRadio.Command.CanExecute(audioRadio.CommandParameter))
-        {
-            audioRadio.Command.Execute(audioRadio.CommandParameter);
-        }
-        else
-        {
-            vm.SelectStudioMode("Audio");
-        }
+        // Simulate user selecting Audio mode
+        modeComboBox.SelectedItem = "Audio";
         Assert.Equal("Audio", vm.SelectedStudioMode);
 
-        var videoRadio = radioButtons.FirstOrDefault(r => r.Content?.ToString()?.Contains("Video") == true);
-        Assert.NotNull(videoRadio);
-
-        if (videoRadio.Command != null && videoRadio.Command.CanExecute(videoRadio.CommandParameter))
-        {
-            videoRadio.Command.Execute(videoRadio.CommandParameter);
-        }
-        else
-        {
-            vm.SelectStudioMode("Video");
-        }
+        // Simulate user selecting Video mode
+        modeComboBox.SelectedItem = "Video";
         Assert.Equal("Video", vm.SelectedStudioMode);
 
         window.Close();

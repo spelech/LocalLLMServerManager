@@ -259,6 +259,46 @@ public partial class MainViewModel : ObservableObject
     public string SelectedTheme { get => Settings.SelectedTheme; set => Settings.SelectedTheme = value; }
     public System.Collections.Generic.IReadOnlyList<string> AvailableThemes => Settings.AvailableThemes;
 
+    // Service Confirmation Modal Properties
+    [ObservableProperty]
+    private bool _isServiceConfirmModalOpen = false;
+
+    [ObservableProperty]
+    private string _serviceConfirmMessage = "";
+
+    private string _serviceConfirmTarget = "";
+
+    [RelayCommand]
+    public void ToggleServiceInteractive(string serviceName)
+    {
+        _serviceConfirmTarget = serviceName.ToLowerInvariant();
+        bool isOnline = false;
+        
+        if (_serviceConfirmTarget == "ollama") isOnline = Telemetry.IsOllamaOnline;
+        else if (_serviceConfirmTarget == "forge") isOnline = Telemetry.IsForgeOnline;
+        else if (_serviceConfirmTarget == "comfy") isOnline = Telemetry.IsComfyOnline;
+
+        string action = isOnline ? "stop" : "start";
+        ServiceConfirmMessage = $"Are you sure you want to {action} the {serviceName} engine?";
+        IsServiceConfirmModalOpen = true;
+    }
+
+    [RelayCommand]
+    public async Task ExecuteServiceConfirmAsync()
+    {
+        IsServiceConfirmModalOpen = false;
+        if (!string.IsNullOrEmpty(_serviceConfirmTarget))
+        {
+            await ToggleEngineAsync(_serviceConfirmTarget);
+        }
+    }
+
+    [RelayCommand]
+    public void CancelServiceConfirm()
+    {
+        IsServiceConfirmModalOpen = false;
+    }
+
     // Studio Preset Collections & Selections
     public ObservableCollection<StudioPreset> VideoPresets { get; } = new();
     public ObservableCollection<StudioPreset> VideoStarterPrompts { get; } = new();
@@ -810,23 +850,78 @@ public partial class MainViewModel : ObservableObject
         IsTestFlightRunning = true;
         IsTestFlightSuccess = false;
         TestFlightHasError = false;
-        TestFlightProgress = 15;
-        TestFlightStatusMessage = "1/4 Checking GPU clearance & allocating buffers...";
-        await Task.Delay(20);
+        TestFlightProgress = 10;
+        TestFlightStatusMessage = "1/3 Checking service health & allocating buffers...";
 
-        TestFlightProgress = 50;
-        TestFlightStatusMessage = $"2/4 Running test inference for {TestFlightModality}...";
-        await Task.Delay(20);
+        try
+        {
+            using var cts = new System.Threading.CancellationTokenSource(TimeSpan.FromSeconds(30));
+            
+            object reqObj = new { };
+            string endpoint = "";
+            string engineStr = TestFlightModality.ToString();
 
-        TestFlightProgress = 85;
-        TestFlightStatusMessage = "3/4 Verifying pipeline & memory deallocation...";
-        await Task.Delay(20);
+            if (TestFlightModality == StudioModality.Text)
+            {
+                endpoint = $"{ApiBase}/api/generate";
+                reqObj = new { prompt = SelectedTestFlightStarterPrompt?.SamplePrompt ?? "Hello", model = "llama3.2:latest" };
+            }
+            else if (TestFlightModality == StudioModality.Image)
+            {
+                endpoint = "http://127.0.0.1:7860/sdapi/v1/txt2img";
+                reqObj = new { prompt = SelectedTestFlightStarterPrompt?.SamplePrompt ?? "test", steps = 1 };
+            }
+            else if (TestFlightModality == StudioModality.Video)
+            {
+                endpoint = "http://127.0.0.1:8188/prompt";
+                reqObj = new { prompt = new { } };
+            }
+            else if (TestFlightModality == StudioModality.Audio)
+            {
+                endpoint = "http://127.0.0.1:8880/v1/audio/speech";
+                reqObj = new { input = SelectedTestFlightStarterPrompt?.SamplePrompt ?? "test", voice = "af_heart" };
+            }
 
-        TestFlightProgress = 100;
-        IsTestFlightRunning = false;
-        IsTestFlightSuccess = true;
-        TestFlightResultBannerText = $"🎉 {TestFlightModality} Test Flight Succeeded! Your local engine and GPU are verified and ready for studio generation.";
-        TestFlightStatusMessage = "Test flight completed successfully!";
+            TestFlightProgress = 40;
+            TestFlightStatusMessage = $"2/3 Sending real HTTP request to {engineStr} backend...";
+            
+            var content = new StringContent(JsonSerializer.Serialize(reqObj), System.Text.Encoding.UTF8, "application/json");
+            var response = await Http.PostAsync(endpoint, content, cts.Token);
+            
+            TestFlightProgress = 80;
+            TestFlightStatusMessage = "3/3 Verifying pipeline & HTTP response...";
+            
+            if (response.IsSuccessStatusCode)
+            {
+                TestFlightProgress = 100;
+                IsTestFlightSuccess = true;
+                TestFlightResultBannerText = $"🎉 {engineStr} Test Flight Succeeded! Your local engine and GPU are verified and ready for studio generation.";
+                TestFlightStatusMessage = "Test flight completed successfully with real inference payload!";
+            }
+            else
+            {
+                var errJson = await response.Content.ReadAsStringAsync();
+                throw new Exception($"HTTP {(int)response.StatusCode}: {errJson}");
+            }
+        }
+        catch (TaskCanceledException)
+        {
+            TestFlightHasError = true;
+            IsTestFlightSuccess = false;
+            TestFlightErrorMessage = "Test flight timed out after 30 seconds. The engine might be offline or hung.";
+            TestFlightStatusMessage = "Timeout connecting to local engine.";
+        }
+        catch (Exception ex)
+        {
+            TestFlightHasError = true;
+            IsTestFlightSuccess = false;
+            TestFlightErrorMessage = $"Engine failure or unavailable: {ex.Message}";
+            TestFlightStatusMessage = "Test flight encountered a real error.";
+        }
+        finally
+        {
+            IsTestFlightRunning = false;
+        }
     }
 
     private async Task StartBackgroundPollingAsync()
