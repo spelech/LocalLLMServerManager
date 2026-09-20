@@ -16,6 +16,9 @@ public partial class MainWindow : Window
     private DocumentationWindow? _docWindow;
     private AiAssistWindow? _aiAssistWindow;
 
+    public DocumentationWindow? DocWindow => _docWindow;
+    public AiAssistWindow? AiAssistWindow => _aiAssistWindow;
+
     public MainWindow()
     {
         InitializeComponent();
@@ -42,9 +45,11 @@ public partial class MainWindow : Window
                 _docWindow = new DocumentationWindow(mainVm.Documentation);
                 _docWindow.Closed += (s, e) => _docWindow = null;
                 _docWindow.Show();
+                WindowSnapManager.Instance.RegisterCompanion(this, _docWindow, SnapFlank.Left, autoAttach: true);
             }
             else
             {
+                WindowSnapManager.Instance.Attach(_docWindow);
                 _docWindow.Activate();
             }
         };
@@ -56,9 +61,11 @@ public partial class MainWindow : Window
                 _aiAssistWindow = new AiAssistWindow(mainVm.Assistant);
                 _aiAssistWindow.Closed += (s, e) => _aiAssistWindow = null;
                 _aiAssistWindow.Show();
+                WindowSnapManager.Instance.RegisterCompanion(this, _aiAssistWindow, SnapFlank.Right, autoAttach: true);
             }
             else
             {
+                WindowSnapManager.Instance.Attach(_aiAssistWindow);
                 _aiAssistWindow.Activate();
             }
         };

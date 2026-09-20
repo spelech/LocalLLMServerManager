@@ -8,7 +8,8 @@
         x:Class="LocalLLMServerManager.Views.AiAssistWindow"
         x:DataType="vm:AiAssistantViewModel"
         Title="AI Assist"
-        Width="900" Height="700"
+        Width="440" Height="700"
+        MinWidth="380" MinHeight="450"
         WindowDecorations="BorderOnly"
         Background="{StaticResource BgWindowBrush}">
 
