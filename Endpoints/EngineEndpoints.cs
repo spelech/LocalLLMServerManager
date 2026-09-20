@@ -21,14 +21,14 @@ public static class EngineEndpoints
             });
         });
 
-        app.MapGet("/api/settings", (ISettingsService settingsService) =>
+        app.MapGet("/api/settings", async (ISettingsService settingsService, CancellationToken ct) =>
         {
-            return Results.Ok(settingsService.LoadSettings());
+            return Results.Ok(await settingsService.LoadSettingsAsync(ct));
         });
 
-        app.MapPost("/api/settings", (AppSettings newSettings, ISettingsService settingsService) =>
+        app.MapPost("/api/settings", async (AppSettings newSettings, ISettingsService settingsService, CancellationToken ct) =>
         {
-            settingsService.SaveSettings(newSettings);
+            await settingsService.SaveSettingsAsync(newSettings, ct);
             return Results.Ok(newSettings);
         });
 
