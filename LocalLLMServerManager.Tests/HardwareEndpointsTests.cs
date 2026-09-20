@@ -259,4 +259,30 @@ public class HardwareEndpointsTests : IClassFixture<AppTestServerFixture>
         var response = await _client.PostAsync("/api/hardware/evaluate", content);
         Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
     }
+
+    [Fact]
+    public async Task PostHardwareEvaluate_MixedCasingAndAlternativeNames_Returns200AndLlmFitResult()
+    {
+        var rawJson = """
+        {
+            "MODALITY": "llm",
+            "model_name": "DeepSeek-R1-Distill-Qwen-14B",
+            "parameters": 14.0,
+            "quant": "Q4_K_M",
+            "context_length": 8192,
+            "available_vram_mb": 16384,
+            "available_ram_mb": 65536,
+            "total_layers": 48
+        }
+        """;
+
+        var content = new StringContent(rawJson, System.Text.Encoding.UTF8, "application/json");
+        var response = await _client.PostAsync("/api/hardware/evaluate", content);
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+
+        var result = await response.Content.ReadFromJsonAsync<LlmFitResult>(JsonOptions);
+        Assert.NotNull(result);
+        Assert.Equal(48, result.TotalLayers);
+    }
 }
+

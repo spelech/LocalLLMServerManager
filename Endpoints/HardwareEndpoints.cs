@@ -262,38 +262,60 @@ public static class HardwareEndpoints
         });
     }
 
-    private static string? GetString(JsonElement root, params string[] propertyNames)
+    private static bool TryFindProperty(JsonElement root, string[] propertyNames, out JsonElement element)
     {
+        if (root.ValueKind != JsonValueKind.Object)
+        {
+            element = default;
+            return false;
+        }
+
+        // Fast path: O(1) exact lookup by property name
+        foreach (var name in propertyNames)
+        {
+            if (root.TryGetProperty(name, out element))
+            {
+                return true;
+            }
+        }
+
+        // Fallback: Case-insensitive match if property names differ in casing
         foreach (var prop in root.EnumerateObject())
         {
             foreach (var name in propertyNames)
             {
                 if (string.Equals(prop.Name, name, StringComparison.OrdinalIgnoreCase))
                 {
-                    return prop.Value.ValueKind == JsonValueKind.String ? prop.Value.GetString() : prop.Value.ToString();
+                    element = prop.Value;
+                    return true;
                 }
             }
+        }
+
+        element = default;
+        return false;
+    }
+
+    private static string? GetString(JsonElement root, params string[] propertyNames)
+    {
+        if (TryFindProperty(root, propertyNames, out var prop))
+        {
+            return prop.ValueKind == JsonValueKind.String ? prop.GetString() : prop.ToString();
         }
         return null;
     }
 
     private static long? GetLong(JsonElement root, params string[] propertyNames)
     {
-        foreach (var prop in root.EnumerateObject())
+        if (TryFindProperty(root, propertyNames, out var prop))
         {
-            foreach (var name in propertyNames)
+            if (prop.ValueKind == JsonValueKind.Number && prop.TryGetInt64(out var val))
             {
-                if (string.Equals(prop.Name, name, StringComparison.OrdinalIgnoreCase))
-                {
-                    if (prop.Value.ValueKind == JsonValueKind.Number && prop.Value.TryGetInt64(out var val))
-                    {
-                        return val;
-                    }
-                    if (long.TryParse(prop.Value.ToString(), out var parsed))
-                    {
-                        return parsed;
-                    }
-                }
+                return val;
+            }
+            if (long.TryParse(prop.ToString(), out var parsed))
+            {
+                return parsed;
             }
         }
         return null;
@@ -301,21 +323,15 @@ public static class HardwareEndpoints
 
     private static int? GetInt(JsonElement root, params string[] propertyNames)
     {
-        foreach (var prop in root.EnumerateObject())
+        if (TryFindProperty(root, propertyNames, out var prop))
         {
-            foreach (var name in propertyNames)
+            if (prop.ValueKind == JsonValueKind.Number && prop.TryGetInt32(out var val))
             {
-                if (string.Equals(prop.Name, name, StringComparison.OrdinalIgnoreCase))
-                {
-                    if (prop.Value.ValueKind == JsonValueKind.Number && prop.Value.TryGetInt32(out var val))
-                    {
-                        return val;
-                    }
-                    if (int.TryParse(prop.Value.ToString(), out var parsed))
-                    {
-                        return parsed;
-                    }
-                }
+                return val;
+            }
+            if (int.TryParse(prop.ToString(), out var parsed))
+            {
+                return parsed;
             }
         }
         return null;
@@ -323,21 +339,15 @@ public static class HardwareEndpoints
 
     private static double? GetDouble(JsonElement root, params string[] propertyNames)
     {
-        foreach (var prop in root.EnumerateObject())
+        if (TryFindProperty(root, propertyNames, out var prop))
         {
-            foreach (var name in propertyNames)
+            if (prop.ValueKind == JsonValueKind.Number && prop.TryGetDouble(out var val))
             {
-                if (string.Equals(prop.Name, name, StringComparison.OrdinalIgnoreCase))
-                {
-                    if (prop.Value.ValueKind == JsonValueKind.Number && prop.Value.TryGetDouble(out var val))
-                    {
-                        return val;
-                    }
-                    if (double.TryParse(prop.Value.ToString(), System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out var parsed))
-                    {
-                        return parsed;
-                    }
-                }
+                return val;
+            }
+            if (double.TryParse(prop.ToString(), System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out var parsed))
+            {
+                return parsed;
             }
         }
         return null;
