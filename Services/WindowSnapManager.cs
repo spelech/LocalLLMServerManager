@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Concurrent;
 using Avalonia;
 using Avalonia.Controls;
 
@@ -10,9 +11,140 @@ public enum SnapFlank
     Right
 }
 
+public class SnappedCompanionState
+{
+    public Window MainWindow { get; }
+    public Window Companion { get; }
+    public SnapFlank Flank { get; set; }
+    public bool IsSnapped { get; set; }
+    public double PreferredWidth { get; set; }
+
+    public SnappedCompanionState(Window main, Window comp, SnapFlank flank)
+    {
+        MainWindow = main;
+        Companion = comp;
+        Flank = flank;
+        IsSnapped = true;
+        double w = comp.Bounds.Width > 0 ? comp.Bounds.Width : comp.Width;
+        PreferredWidth = double.IsFinite(w) && w > 0 ? w : 440;
+    }
+}
+
 public class WindowSnapManager
 {
     public static WindowSnapManager Instance { get; } = new();
+
+    private readonly ConcurrentDictionary<Window, SnappedCompanionState> _states = new();
+    public const int DefaultSnapThreshold = 35;
+
+    public void RegisterCompanion(Window mainWindow, Window companion, SnapFlank flank, bool autoAttach = true)
+    {
+        ArgumentNullException.ThrowIfNull(mainWindow);
+        ArgumentNullException.ThrowIfNull(companion);
+
+        var state = new SnappedCompanionState(mainWindow, companion, flank)
+        {
+            IsSnapped = autoAttach
+        };
+        _states[companion] = state;
+
+        if (autoAttach)
+        {
+            Attach(companion);
+        }
+
+        // Hook window position and state events
+        mainWindow.PositionChanged += (s, e) => SynchronizeAllForMain(mainWindow);
+        mainWindow.PropertyChanged += (s, e) =>
+        {
+            if (e.Property == Visual.BoundsProperty || e.Property == Window.WindowStateProperty)
+            {
+                SynchronizeAllForMain(mainWindow);
+            }
+        };
+
+        companion.Closed += (s, e) => _states.TryRemove(companion, out _);
+    }
+
+    public bool IsSnapped(Window companion) =>
+        _states.TryGetValue(companion, out var state) && state.IsSnapped;
+
+    public void Attach(Window companion)
+    {
+        if (_states.TryGetValue(companion, out var state))
+        {
+            state.IsSnapped = true;
+            SynchronizeCompanion(companion);
+        }
+    }
+
+    public void Detach(Window companion)
+    {
+        if (_states.TryGetValue(companion, out var state))
+        {
+            state.IsSnapped = false;
+        }
+    }
+
+    public void ToggleSnap(Window companion)
+    {
+        if (IsSnapped(companion))
+        {
+            Detach(companion);
+        }
+        else
+        {
+            Attach(companion);
+        }
+    }
+
+    public void SynchronizeCompanion(Window companion)
+    {
+        if (!_states.TryGetValue(companion, out var state) || !state.IsSnapped)
+            return;
+
+        var main = state.MainWindow;
+        if (main.WindowState == WindowState.Minimized)
+        {
+            if (companion.WindowState != WindowState.Minimized)
+                companion.WindowState = WindowState.Minimized;
+            return;
+        }
+        else if (companion.WindowState == WindowState.Minimized)
+        {
+            companion.WindowState = WindowState.Normal;
+        }
+
+        // Align height
+        double targetHeight = main.Bounds.Height > 0 ? main.Bounds.Height : main.Height;
+        if (double.IsFinite(targetHeight) && targetHeight >= 450)
+        {
+            companion.Height = targetHeight;
+        }
+
+        double scaling = main.RenderScaling > 0 ? main.RenderScaling : 1.0;
+        var targetPos = CalculateSnappedPosition(main, companion, state.Flank, scaling);
+        companion.Position = targetPos;
+    }
+
+    public void SynchronizeAllForMain(Window mainWindow)
+    {
+        foreach (var kvp in _states)
+        {
+            if (kvp.Value.MainWindow == mainWindow && kvp.Value.IsSnapped)
+            {
+                SynchronizeCompanion(kvp.Key);
+            }
+        }
+    }
+
+    public bool IsWithinSnapThreshold(Window mainWindow, Window companion, SnapFlank flank, int tolerancePixels = DefaultSnapThreshold, double scaling = 1.0)
+    {
+        var target = CalculateSnappedPosition(mainWindow, companion, flank, scaling);
+        int dx = Math.Abs(companion.Position.X - target.X);
+        int dy = Math.Abs(companion.Position.Y - target.Y);
+        return dx <= tolerancePixels && dy <= tolerancePixels * 2;
+    }
 
     public PixelPoint CalculateSnappedPosition(Window mainWindow, Window companion, SnapFlank flank, double scaling = 1.0)
     {
@@ -23,8 +155,14 @@ public class WindowSnapManager
 
         int mainX = mainWindow.Position.X;
         int mainY = mainWindow.Position.Y;
-        int mainWidth = (int)Math.Round((mainWindow.Bounds.Width > 0 ? mainWindow.Bounds.Width : mainWindow.Width) * scaling);
-        int compWidth = (int)Math.Round((companion.Bounds.Width > 0 ? companion.Bounds.Width : companion.Width) * scaling);
+        
+        double rawMainW = mainWindow.Bounds.Width > 0 ? mainWindow.Bounds.Width : mainWindow.Width;
+        double rawCompW = companion.Bounds.Width > 0 ? companion.Bounds.Width : companion.Width;
+        if (!double.IsFinite(rawMainW) || rawMainW <= 0) rawMainW = 1024;
+        if (!double.IsFinite(rawCompW) || rawCompW <= 0) rawCompW = 440;
+
+        int mainWidth = (int)Math.Round(rawMainW * scaling);
+        int compWidth = (int)Math.Round(rawCompW * scaling);
 
         int targetX = flank switch
         {
