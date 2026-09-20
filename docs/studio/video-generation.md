@@ -111,7 +111,7 @@ flowchart LR
 
 The right panel features an integrated video preview player for reviewing rendered clips:
 
-![Interactive Video Player Controls](file:///C:/Users/Alias/repos/LocalLLMServerManager/docs/images/dashboard_desktop.png)
+![Interactive Video Player Controls](../images/dashboard_3d_studio.png)
 
 ### Player Features and Controls
 

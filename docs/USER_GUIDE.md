@@ -6,30 +6,30 @@ Welcome to the **Local LLM Server Manager (v3.15.0)** User Guide. This document 
 
 ## Workspace Navigation
 
-The desktop application organizes capabilities into dedicated workspaces:
+The desktop application organizes capabilities into dedicated workspaces with docked companion windows:
 
 ```mermaid
 flowchart TD
     App["Local LLM Server Manager (Port 5246)"]
-    App --> Tab1["🦙 My Models\nHardware Telemetry & Installed LLMs"]
-    App --> Tab2["🤗 Hugging Face Hub\nGGUF Discovery & Downloads"]
-    App --> Tab3["🎨 CivitAI Models\nCheckpoints, LoRAs & VAEs"]
-    App --> Tab4["📦 Multimodal Studio\nImages, Video, Audio & 3D"]
-    App --> Tab5["🤖 AI Assistant\nIn-App Chat, Vision & App Control"]
-    App --> Tab6["⚙️ Settings\nPaths, Network & Feature Packs"]
+    App --> Tab1["📦 Models\nDownloaded, Hugging Face & CivitAI"]
+    App --> Tab2["⚡ Workflows\nImages, Text, Video, 3D Mesh & Audio"]
+    App --> Tab3["🔍 Can I Run It\nHardware Compatibility & Sizing"]
+    App --> Tab4["⚙️ Settings\nDiscovery, Themes, LAN & Feature Packs"]
+    App -.-> CompL["📖 Documentation\n(Left Flank Companion)"]
+    App -.-> CompR["🤖 AI Assist\n(Right Flank Companion)"]
 ```
 
 ---
 
 ## 1. Hardware Telemetry & My Models
 
-The **My Models** workspace monitors active hardware metrics and manages local Ollama language models.
+The **Models** workspace monitors active hardware metrics and manages local model weights.
 
 ![Desktop Dashboard Overview](images/dashboard_desktop.png)
 
 ### Key Capabilities
 * **Live VRAM Bar**: Displays total, used, and free GPU memory in real time via NVML CUDA telemetry.
-* **Model Capability Badges**: Identifies model capabilities (e.g., `Coding`, `Reasoning`, `Math`, `Chat`).
+* **Model Capability Badges**: Identifies model capabilities (e.g., `Coding & General`, `Reasoning`, `Math`).
 * **Interactive KV Cache Estimator**: Drag the context length slider (up to 32,768 tokens) to preview memory consumption before loading models.
 * **VRAM Orchestrator**: Automatically frees GPU memory before heavy diffusion or 3D tasks start.
 * **Unload All VRAM Button**: Releases all active models from GPU memory with a single click.
@@ -43,23 +43,44 @@ The **My Models** workspace monitors active hardware metrics and manages local O
 
 Download models directly without opening a web browser or using terminal commands.
 
+### Hugging Face Hub (GGUF & Multimodal)
+Search community repositories, compare quantization levels (`Q4_K_M`, `Q8_0`), filter by input/output modalities, and stream downloads to disk.
+
 ![Hugging Face Hub Search](images/dashboard_huggingface.png)
 
-### Download Workspaces
-* **Hugging Face Hub (GGUF)**: Search community repositories, compare quantization levels (`Q4_K_M`, `Q8_0`), and stream downloads to disk.
-* **Ollama Library**: One-click installation cards for popular models (`llama3.2`, `qwen2.5-coder`, `phi3`).
-* **CivitAI Integration**: Search image checkpoints, LoRA style adapters, and VAE files with thumbnail previews.
+### CivitAI Model Hub (Checkpoints & LoRAs)
+Search diffusion checkpoints, LoRA style adapters, and VAE models with real-time download counters and hardware compatibility badges.
+
+![CivitAI Models Hub](images/dashboard_civitai.png)
 
 > [!TIP]
 > Read the [Model Hubs & Downloads Guide](./engines/model-management.md) and [LoRA Art Styles Guide](./studio/lora-styles.md).
 
 ---
 
-## 3. Multimodal Studio
+## 3. Hardware Fit Calculator (Can I Run It)
 
-The **Studio** workspace provides generation tools across four creative modalities:
+The **Can I Run It** workspace estimates whether an AI model fits within your system memory before downloading files.
 
-![3D ComfyUI Studio & WebGL Canvas](images/dashboard_3d_studio.png)
+![Can I Run It Hardware Fit Calculator](images/dashboard_can_i_run_it.png)
+
+### Key Capabilities
+* **Live GPU Detection**: Queries your graphics card and system memory automatically.
+* **Multi-Modality Sizing**: Calculates memory consumption for Text LLMs, Diffusion Images, Video, Audio, and 3D Mesh models.
+* **Visual Allocation Bar**: Color-coded breakdown of Model Weights, Context/KV Cache, CUDA Overhead, and Free Headroom.
+* **Layer Offloading Calculation**: Predicts the exact number of transformer layers that fit in GPU VRAM versus CPU RAM.
+* **Performance Throughput**: Provides real-time token per second estimates for your hardware.
+
+> [!TIP]
+> Read the dedicated [Can I Run It Hardware Fit Guide](./guide/can-i-run-it.md).
+
+---
+
+## 4. Multimodal Generation Workflows
+
+The **Workflows** workspace provides generation pipelines across five creative modalities:
+
+![AI Generation Workflows](images/dashboard_3d_studio.png)
 
 | Modality | Supported Models | Output Formats | Dedicated Guide |
 | :--- | :--- | :--- | :--- |
@@ -80,7 +101,7 @@ Before starting complex renders, use the **Test Flight** control panel in the st
 
 ---
 
-## 4. In-App AI Assistant & Companion Windows
+## 5. In-App AI Assistant & Companion Windows
 
 The **AI Assistant** workspace provides interactive guidance, screenshot diagnostics, and app control without consuming local GPU memory.
 
@@ -101,7 +122,7 @@ flowchart LR
 
 ---
 
-## 5. Application Settings & Engine Controls
+## 6. Application Settings & Engine Controls
 
 The **Settings** workspace centralizes engine paths, port bindings, and optional component management.
 
@@ -124,6 +145,7 @@ The **Settings** workspace centralizes engine paths, port bindings, and optional
   - [Installation Guide](./getting-started/installation.md)
   - [First-Time Configuration](./getting-started/configuration.md)
   - [Quickstart Guide](./getting-started/quickstart.md)
+  - [Can I Run It Hardware Fit](./guide/can-i-run-it.md)
   - [Real Engine Test Flight](./getting-started/test-flight.md)
   - [Remote Access & Reverse Proxy](./getting-started/remote-access.md)
   - [Troubleshooting](./getting-started/troubleshooting.md)

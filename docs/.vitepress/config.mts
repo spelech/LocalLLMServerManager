@@ -33,6 +33,7 @@ export default defineConfig({
             { text: 'Installation', link: '/getting-started/installation' },
             { text: 'Configuration', link: '/getting-started/configuration' },
             { text: 'Quickstart Guide', link: '/getting-started/quickstart' },
+            { text: 'Can I Run It (Hardware Fit)', link: '/guide/can-i-run-it' },
             { text: 'Real Engine Test Flight', link: '/getting-started/test-flight' },
             { text: 'Remote Access & Reverse Proxy', link: '/getting-started/remote-access' },
             { text: 'Troubleshooting', link: '/getting-started/troubleshooting' }
@@ -44,6 +45,7 @@ export default defineConfig({
           text: 'Engines & Model Management',
           items: [
             { text: 'Engines Overview & VRAM', link: '/engines/' },
+            { text: 'Can I Run It Calculator', link: '/guide/can-i-run-it' },
             { text: 'Ollama LLM Engine', link: '/engines/ollama' },
             { text: 'Stable Diffusion Forge', link: '/engines/sd-forge' },
             { text: 'ComfyUI Engine', link: '/engines/comfyui' },

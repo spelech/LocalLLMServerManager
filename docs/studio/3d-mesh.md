@@ -109,7 +109,7 @@ Select your input mode:
 
 The right panel features an interactive WebGL canvas that renders generated `.glb` meshes in real time:
 
-![Interactive 3D Studio Canvas](file:///C:/Users/Alias/repos/LocalLLMServerManager/docs/images/dashboard_3d_studio.png)
+![Interactive 3D Studio Canvas](../images/dashboard_3d_studio.png)
 
 ### Viewport Navigation Controls
 
