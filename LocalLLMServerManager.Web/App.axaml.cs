@@ -31,7 +31,7 @@ public partial class App : Application
         LocalLLMServerManager.Shared.ViewModels.MainViewModel.EnableAutomaticPolling = true;
         if (ApplicationLifetime is ISingleViewApplicationLifetime singleView)
         {
-            singleView.MainView = new MainView();
+            singleView.MainView = new MainView { DataContext = new LocalLLMServerManager.Shared.ViewModels.MainViewModel() };
         }
 
         base.OnFrameworkInitializationCompleted();

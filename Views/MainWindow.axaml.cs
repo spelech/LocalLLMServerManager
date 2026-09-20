@@ -14,6 +14,7 @@ namespace LocalLLMServerManager.Views;
 public partial class MainWindow : Window
 {
     private DocumentationWindow? _docWindow;
+    private AiAssistWindow? _aiAssistWindow;
 
     public MainWindow()
     {
@@ -45,6 +46,20 @@ public partial class MainWindow : Window
             else
             {
                 _docWindow.Activate();
+            }
+        };
+
+        mainVm.Assistant.OnPopOutNativeWindowRequested = () =>
+        {
+            if (_aiAssistWindow == null || !_aiAssistWindow.IsVisible)
+            {
+                _aiAssistWindow = new AiAssistWindow(mainVm.Assistant);
+                _aiAssistWindow.Closed += (s, e) => _aiAssistWindow = null;
+                _aiAssistWindow.Show();
+            }
+            else
+            {
+                _aiAssistWindow.Activate();
             }
         };
 

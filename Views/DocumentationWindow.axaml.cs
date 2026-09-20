@@ -1,4 +1,5 @@
 using Avalonia.Controls;
+using Avalonia.Input;
 using Avalonia.Interactivity;
 using Avalonia.Markup.Xaml;
 using Avalonia.Media;
@@ -21,6 +22,44 @@ public partial class DocumentationWindow : Window
     private void InitializeComponent()
     {
         AvaloniaXamlLoader.Load(this);
+    }
+
+    private void OnTitleBarPointerPressed(object? sender, PointerPressedEventArgs e)
+    {
+        if (e.GetCurrentPoint(this).Properties.IsLeftButtonPressed)
+        {
+            BeginMoveDrag(e);
+        }
+    }
+
+    private void OnTitleBarDoubleTapped(object? sender, TappedEventArgs e)
+    {
+        ToggleMaximize();
+    }
+
+    private void OnMinimizeClicked(object? sender, RoutedEventArgs e)
+    {
+        WindowState = WindowState.Minimized;
+    }
+
+    private void OnMaximizeClicked(object? sender, RoutedEventArgs e)
+    {
+        ToggleMaximize();
+    }
+
+    private void ToggleMaximize()
+    {
+        WindowState = WindowState == WindowState.Maximized ? WindowState.Normal : WindowState.Maximized;
+        var maxBtn = this.FindControl<Button>("MaximizeButton");
+        if (maxBtn != null)
+        {
+            maxBtn.Content = WindowState == WindowState.Maximized ? "❐" : "🗖";
+        }
+    }
+
+    private void OnCloseClicked(object? sender, RoutedEventArgs e)
+    {
+        Close();
     }
 
     private void OnPinClicked(object? sender, RoutedEventArgs e)

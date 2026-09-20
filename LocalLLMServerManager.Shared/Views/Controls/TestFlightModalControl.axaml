@@ -23,7 +23,8 @@
                 </StackPanel>
 
                 <!-- Close Button -->
-                <Button Grid.Column="1"
+                <Button x:Name="CloseTestFlightBtn"
+                        Grid.Column="1"
                         Content="✕"
                         Command="{Binding CloseCommand, ElementName=RootControl}"
                         Classes="matte-secondary"
@@ -101,7 +102,8 @@
 
             <!-- Action Button & Mini Stepper Progress -->
             <StackPanel Spacing="10">
-                <Button Content="🚀 Launch Test Flight"
+                <Button x:Name="ExecuteTestFlightBtn"
+                        Content="🚀 Launch Test Flight"
                         Command="{Binding LaunchTestFlightCommand, ElementName=RootControl}"
                         IsEnabled="{Binding !IsRunning, ElementName=RootControl}"
                         Classes="matte-primary"
