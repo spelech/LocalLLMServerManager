@@ -352,54 +352,74 @@ public static class WorkflowEndpoints
             var list = new List<object>();
             var seenIds = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 
+            var fileTasks = new List<Task<(string dir, string id, object result)>>();
+
             foreach (var dir in searchDirs)
             {
                 foreach (var f in Directory.GetFiles(dir, "*.json"))
                 {
                     var id = Path.GetFileNameWithoutExtension(f);
-                    if (seenIds.Contains(id)) continue;
 
-                    try
+                    async Task<(string, string, object)> ProcessFileAsync(string fileDir, string filePath, string fileId)
                     {
-                        var jsonStr = await File.ReadAllTextAsync(f);
-                        var node = JsonNode.Parse(jsonStr);
-                        var name = node?["name"]?.ToString() ?? id.Replace('_', ' ');
-                        var type = node?["type"]?.ToString() ?? "audio";
-                        var description = node?["description"]?.ToString() ?? "";
-
-                        if (dir == audioWorkflowsDir || type.Equals("audio", StringComparison.OrdinalIgnoreCase))
+                        try
                         {
-                            seenIds.Add(id);
-                            list.Add(new
+                            var jsonStr = await File.ReadAllTextAsync(filePath);
+                            var node = JsonNode.Parse(jsonStr);
+                            var name = node?["name"]?.ToString() ?? fileId.Replace('_', ' ');
+                            var type = node?["type"]?.ToString() ?? "audio";
+                            var description = node?["description"]?.ToString() ?? "";
+
+                            if (fileDir == audioWorkflowsDir || type.Equals("audio", StringComparison.OrdinalIgnoreCase))
                             {
-                                id,
-                                name,
-                                filename = Path.GetFileName(f),
-                                path = f,
-                                type,
-                                description
-                            });
+                                return (fileDir, fileId, new
+                                {
+                                    id = fileId,
+                                    name,
+                                    filename = Path.GetFileName(filePath),
+                                    path = filePath,
+                                    type,
+                                    description
+                                });
+                            }
                         }
-                    }
-                    catch
-                    {
-                        if (seenIds.Add(id))
+                        catch
                         {
-                            list.Add(new
+                            return (fileDir, fileId, new
                             {
-                                id,
-                                name = id.Replace('_', ' '),
-                                filename = Path.GetFileName(f),
-                                path = f,
+                                id = fileId,
+                                name = fileId.Replace('_', ' '),
+                                filename = Path.GetFileName(filePath),
+                                path = filePath,
                                 type = "audio",
                                 description = ""
                             });
                         }
+
+                        return (fileDir, fileId, null);
+                    }
+
+                    fileTasks.Add(ProcessFileAsync(dir, f, id));
+                }
+            }
+
+            var processedFiles = await Task.WhenAll(fileTasks);
+
+            foreach (var dir in searchDirs)
+            {
+                var dirResults = processedFiles.Where(r => r.dir == dir && r.result != null);
+                foreach (var res in dirResults)
+                {
+                    if (seenIds.Add(res.id))
+                    {
+                        list.Add(res.result);
                     }
                 }
             }
 
-            return Results.Ok(list);
+            var sortedList = list.OrderBy(x => ((dynamic)x).name.ToString()).ToList();
+
+            return Results.Ok(sortedList);
         });
 
         app.MapPost("/api/audio/generate", async (AudioGenerateRequest request, ISettingsService settingsService, IHttpClientFactory clientFactory) =>
