@@ -1,7 +1,9 @@
 import { defineConfig } from 'vitepress';
+import { withMermaid } from 'vitepress-plugin-mermaid';
 
 // https://vitepress.dev/reference/site-config
-export default defineConfig({
+export default withMermaid(
+  defineConfig({
   title: 'Local LLM Server Manager',
   description: 'User Guide and Documentation for Local AI Engines, Multimodal Studio, and MCP Tools',
   base: '/LocalLLMServerManager/',
@@ -135,4 +137,4 @@ export default defineConfig({
       copyright: 'Copyright © Spelech'
     }
   }
-});
+}));

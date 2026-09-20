@@ -76,7 +76,7 @@ Install custom nodes for **TRELLIS V2** and **Hunyuan3D v2**:
 ```mermaid
 flowchart LR
     Manager["Local LLM Server Manager (:5246)"] -->|Unload LLM VRAM| Ollama["Ollama (:11434)"]
-    Manager -->|POST /prompt (API JSON)| ComfyUI["ComfyUI (:8188)"]
+    Manager -->|POST /prompt API JSON| ComfyUI["ComfyUI (:8188)"]
     ComfyUI -->|Generate .glb Mesh| Storage["Output Folder"]
     Storage -->|Serve WebGL Stream| Canvas["Interactive 3D Canvas"]
 ```
