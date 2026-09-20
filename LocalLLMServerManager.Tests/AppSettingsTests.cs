@@ -125,4 +125,14 @@ public class AppSettingsTests
             service.SaveSettings(original);
         }
     }
+
+    [Fact]
+    public void SettingsService_UsesCachedInstance_AfterInitialLoad()
+    {
+        var service = new SettingsService();
+        var firstLoad = service.LoadSettings();
+        var secondLoad = service.LoadSettings();
+
+        Assert.Same(firstLoad, secondLoad);
+    }
 }
