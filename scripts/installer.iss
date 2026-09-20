@@ -1,7 +1,7 @@
-; Script generated for Inno Setup - LocalLLMServerManager v3.14.0
+; Script generated for Inno Setup - LocalLLMServerManager v3.15.0
 ; Packaging Self-Contained Win-x64 Release Executable & Static Wasm UI
 #define MyAppName "Local LLM Server Manager"
-#define MyAppVersion "3.14.0"
+#define MyAppVersion "3.15.0"
 #define MyAppPublisher "LocalLLMServerManager Team"
 #define MyAppURL "https://github.com/spelech/LocalLLMServerManager"
 #define MyAppExeName "LocalLLMServerManager.exe"

@@ -99,7 +99,7 @@ public partial class MainViewModel : ObservableObject
     private int _selectedModelsTabIndex = 0;
 
     [ObservableProperty]
-    private string _appVersionText = $"LocalLLMServerManager v{typeof(MainViewModel).Assembly.GetName().Version?.ToString(3) ?? "3.14.0"} — Unified WASM & Desktop UI";
+    private string _appVersionText = $"LocalLLMServerManager v{typeof(MainViewModel).Assembly.GetName().Version?.ToString(3) ?? "3.15.0"} — Unified WASM & Desktop UI";
 
     public MainViewModel() : this(null)
     {
