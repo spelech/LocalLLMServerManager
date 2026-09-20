@@ -352,7 +352,7 @@ public static class WorkflowEndpoints
             var list = new List<object>();
             var seenIds = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 
-            var fileTasks = new List<Task<(string dir, string id, object result)>>();
+            var fileTasks = new List<Task<(string dir, string id, object? result)>>();
 
             foreach (var dir in searchDirs)
             {
@@ -360,7 +360,7 @@ public static class WorkflowEndpoints
                 {
                     var id = Path.GetFileNameWithoutExtension(f);
 
-                    async Task<(string, string, object)> ProcessFileAsync(string fileDir, string filePath, string fileId)
+                    async Task<(string, string, object?)> ProcessFileAsync(string fileDir, string filePath, string fileId)
                     {
                         try
                         {
