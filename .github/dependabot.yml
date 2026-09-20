@@ -11,6 +11,11 @@ updates:
       nuget-dependencies:
         patterns:
           - "*"
+    ignore:
+      - dependency-name: "xunit.v3"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "xunit.runner.visualstudio"
+        update-types: ["version-update:semver-major"]
 
   - package-ecosystem: "npm"
     directory: "/"
@@ -23,6 +28,9 @@ updates:
       npm-dependencies:
         patterns:
           - "*"
+    ignore:
+      - dependency-name: "typescript"
+        update-types: ["version-update:semver-major"]
 
   - package-ecosystem: "github-actions"
     directory: "/"
