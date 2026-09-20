@@ -59,6 +59,8 @@ public class ComponentManagerAndEndpointsTests : IClassFixture<AppTestServerFixt
         var installReq = new ComponentInstallRequest { ComponentId = "audio-tts" };
         var installResponse = await client.PostAsJsonAsync("/api/components/install", installReq);
         Assert.Equal(HttpStatusCode.OK, installResponse.StatusCode);
+        var installContent = await installResponse.Content.ReadAsStringAsync();
+        Assert.Contains("completed", installContent);
 
         // Uninstall request
         var uninstallReq = new ComponentInstallRequest { ComponentId = "audio-tts" };
@@ -69,6 +71,8 @@ public class ComponentManagerAndEndpointsTests : IClassFixture<AppTestServerFixt
         var aiInstallReq = new ComponentInstallRequest { ComponentId = "ai-assistant" };
         var aiInstallResponse = await client.PostAsJsonAsync("/api/components/install", aiInstallReq);
         Assert.Equal(HttpStatusCode.OK, aiInstallResponse.StatusCode);
+        var aiInstallContent = await aiInstallResponse.Content.ReadAsStringAsync();
+        Assert.Contains("completed", aiInstallContent);
 
         var aiUninstallReq = new ComponentInstallRequest { ComponentId = "ai-assistant" };
         var aiUninstallResponse = await client.PostAsJsonAsync("/api/components/uninstall", aiUninstallReq);
