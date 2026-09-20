@@ -5,6 +5,8 @@
             <ResourceDictionary.MergedDictionaries>
                 <ResourceInclude Source="avares://LocalLLMServerManager.Shared/Styles/DesignTokens.axaml" />
             </ResourceDictionary.MergedDictionaries>
+            <SolidColorBrush x:Key="SurfaceHoverBrush" Color="#21262d" />
+            <SolidColorBrush x:Key="PrimaryAccentBrush" Color="#4f46e5" />
         </ResourceDictionary>
     </Styles.Resources>
 
@@ -115,8 +117,11 @@
                                 Margin="0,0,0,16"
                                 Padding="4"
                                 HorizontalAlignment="Left">
-                            <ItemsPresenter Name="PART_ItemsPresenter"
-                                            ItemsPanel="{TemplateBinding ItemsPanel}" />
+                            <StackPanel Orientation="Horizontal" Spacing="0">
+                                <ItemsPresenter Name="PART_ItemsPresenter"
+                                                ItemsPanel="{TemplateBinding ItemsPanel}" />
+                                <ContentPresenter Content="{TemplateBinding Tag}" />
+                            </StackPanel>
                         </Border>
                         <ContentPresenter Name="PART_SelectedContentHost"
                                           Margin="{TemplateBinding Padding}"
@@ -156,5 +161,57 @@
         <Setter Property="BorderBrush" Value="{StaticResource GlassBorderBrush}" />
         <Setter Property="BorderThickness" Value="1" />
         <Setter Property="Foreground" Value="{StaticResource TextMainBrush}" />
+    </Style>
+
+    <!-- Navigation pop-out action buttons styled seamlessly inside segmented tab bar -->
+    <Style Selector="Button.nav-tab-btn">
+        <Setter Property="Background" Value="Transparent" />
+        <Setter Property="Foreground" Value="{StaticResource TextMutedBrush}" />
+        <Setter Property="BorderThickness" Value="0" />
+        <Setter Property="CornerRadius" Value="6" />
+        <Setter Property="Padding" Value="14,8" />
+        <Setter Property="Margin" Value="2,0" />
+        <Setter Property="MinHeight" Value="34" />
+        <Setter Property="FontWeight" Value="SemiBold" />
+        <Setter Property="FontSize" Value="13" />
+        <Setter Property="Cursor" Value="Hand" />
+        <Setter Property="VerticalAlignment" Value="Center" />
+    </Style>
+    <Style Selector="Button.nav-tab-btn /template/ ContentPresenter#PART_ContentPresenter">
+        <Setter Property="CornerRadius" Value="6" />
+    </Style>
+    <Style Selector="Button.nav-tab-btn:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+        <Setter Property="Background" Value="{StaticResource BgCardBrush}" />
+        <Setter Property="Foreground" Value="{StaticResource TextMainBrush}" />
+    </Style>
+    <Style Selector="Button.nav-tab-btn:pressed /template/ ContentPresenter#PART_ContentPresenter">
+        <Setter Property="Background" Value="{StaticResource BgSurfaceBrush}" />
+        <Setter Property="Opacity" Value="0.85" />
+    </Style>
+
+    <!-- Magnet Snap Button for Companion Windows -->
+    <Style Selector="Button.magnet-snap-btn">
+        <Setter Property="Background" Value="Transparent" />
+        <Setter Property="BorderBrush" Value="{StaticResource GlassBorderBrush}" />
+        <Setter Property="BorderThickness" Value="1" />
+        <Setter Property="CornerRadius" Value="6" />
+        <Setter Property="Padding" Value="8,4" />
+        <Setter Property="Cursor" Value="Hand" />
+    </Style>
+    <Style Selector="Button.magnet-snap-btn:pointerover">
+        <Setter Property="Background" Value="{StaticResource SurfaceHoverBrush}" />
+        <Setter Property="BorderBrush" Value="{StaticResource PrimaryAccentBrush}" />
+    </Style>
+    <Style Selector="Button.magnet-snap-btn:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+        <Setter Property="Background" Value="{StaticResource SurfaceHoverBrush}" />
+        <Setter Property="BorderBrush" Value="{StaticResource PrimaryAccentBrush}" />
+    </Style>
+    <Style Selector="Button.magnet-snap-btn.snapped">
+        <Setter Property="Background" Value="#1a4f46e5" />
+        <Setter Property="BorderBrush" Value="#4f46e5" />
+    </Style>
+    <Style Selector="Button.magnet-snap-btn.snapped /template/ ContentPresenter#PART_ContentPresenter">
+        <Setter Property="Background" Value="#1a4f46e5" />
+        <Setter Property="BorderBrush" Value="#4f46e5" />
     </Style>
 </Styles>

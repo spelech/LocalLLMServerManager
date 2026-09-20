@@ -149,10 +149,216 @@ public class WindowSnapManagerTests
         Assert.Throws<ArgumentNullException>(() => manager.Attach(null!));
         Assert.Throws<ArgumentNullException>(() => manager.Detach(null!));
         Assert.Throws<ArgumentNullException>(() => manager.ToggleSnap(null!));
+        Assert.Throws<ArgumentNullException>(() => manager.CheckDragDetachment(null!));
+        Assert.Throws<ArgumentNullException>(() => manager.CheckProximitySnap(null!));
         Assert.Throws<ArgumentNullException>(() => manager.SynchronizeCompanion(null!));
         Assert.Throws<ArgumentNullException>(() => manager.SynchronizeAllForMain(null!));
         Assert.Throws<ArgumentNullException>(() => manager.IsWithinSnapThreshold(null!, window, SnapFlank.Right));
         Assert.Throws<ArgumentNullException>(() => manager.IsWithinSnapThreshold(window, null!, SnapFlank.Right));
+    }
+
+    [AvaloniaFact]
+    public void CheckDragDetachment_WhenSnappedAndWithinThreshold_ReturnsFalse()
+    {
+        var manager = new WindowSnapManager();
+        var main = new Window { Width = 1000, Height = 700 };
+        main.Position = new PixelPoint(100, 100);
+
+        var companion = new Window { Width = 400, Height = 700 };
+        manager.RegisterCompanion(main, companion, SnapFlank.Right, autoAttach: true);
+
+        Assert.True(manager.IsSnapped(companion));
+        bool detached = manager.CheckDragDetachment(companion);
+
+        Assert.False(detached);
+        Assert.True(manager.IsSnapped(companion));
+    }
+
+    [AvaloniaFact]
+    public void CheckDragDetachment_WhenSnappedAndDraggedBeyondThreshold_DetachesAndReturnsTrue()
+    {
+        var manager = new WindowSnapManager();
+        var main = new Window { Width = 1000, Height = 700 };
+        main.Position = new PixelPoint(100, 100);
+
+        var companion = new Window { Width = 400, Height = 700 };
+        manager.RegisterCompanion(main, companion, SnapFlank.Right, autoAttach: true);
+
+        // Move companion 100px away from target (1100, 100) -> (1200, 100)
+        companion.Position = new PixelPoint(1200, 100);
+
+        bool detached = manager.CheckDragDetachment(companion);
+
+        Assert.True(detached);
+        Assert.False(manager.IsSnapped(companion));
+
+        // Subsequent check returns false because already detached
+        Assert.False(manager.CheckDragDetachment(companion));
+    }
+
+    [AvaloniaFact]
+    public void CheckProximitySnap_WhenDetachedAndMovedWithinThreshold_SnapsAndReturnsTrue()
+    {
+        var manager = new WindowSnapManager();
+        var main = new Window { Width = 1000, Height = 700 };
+        main.Position = new PixelPoint(100, 100);
+
+        var companion = new Window { Width = 400, Height = 700 };
+        manager.RegisterCompanion(main, companion, SnapFlank.Right, autoAttach: false);
+        Assert.False(manager.IsSnapped(companion));
+
+        // Place companion close to snapped position (1100, 100) -> (1110, 105)
+        companion.Position = new PixelPoint(1110, 105);
+
+        bool snapped = manager.CheckProximitySnap(companion);
+
+        Assert.True(snapped);
+        Assert.True(manager.IsSnapped(companion));
+        Assert.Equal(1100, companion.Position.X);
+        Assert.Equal(100, companion.Position.Y);
+    }
+
+    [AvaloniaFact]
+    public void CheckProximitySnap_WhenDetachedAndFarAway_ReturnsFalseAndRemainsDetached()
+    {
+        var manager = new WindowSnapManager();
+        var main = new Window { Width = 1000, Height = 700 };
+        main.Position = new PixelPoint(100, 100);
+
+        var companion = new Window { Width = 400, Height = 700 };
+        manager.RegisterCompanion(main, companion, SnapFlank.Right, autoAttach: false);
+
+        companion.Position = new PixelPoint(500, 500);
+
+        bool snapped = manager.CheckProximitySnap(companion);
+
+        Assert.False(snapped);
+        Assert.False(manager.IsSnapped(companion));
+    }
+
+    [AvaloniaFact]
+    public void CheckDragDetachment_UnregisteredWindow_ReturnsFalse()
+    {
+        var manager = new WindowSnapManager();
+        var unregistered = new Window();
+
+        Assert.False(manager.CheckDragDetachment(unregistered));
+        Assert.False(manager.CheckProximitySnap(unregistered));
+    }
+
+    [AvaloniaFact]
+    public void AiAssistWindow_UpdateSnapVisuals_TogglesButtonClassesAndText()
+    {
+        var win = new LocalLLMServerManager.Views.AiAssistWindow();
+        var btn = win.FindControl<Button>("SnapToggleButton");
+        var text = win.FindControl<TextBlock>("SnapButtonText");
+
+        Assert.NotNull(btn);
+        Assert.NotNull(text);
+
+        // Initially not registered in singleton, so IsSnapped is false
+        win.UpdateSnapVisuals();
+        Assert.Equal("Snap to Side", text.Text);
+        Assert.DoesNotContain("snapped", btn.Classes);
+
+        // Register with singleton as snapped
+        var main = new Window { Width = 1000, Height = 700 };
+        WindowSnapManager.Instance.RegisterCompanion(main, win, SnapFlank.Right, autoAttach: true);
+
+        win.UpdateSnapVisuals();
+        Assert.Equal("Attached", text.Text);
+        Assert.Contains("snapped", btn.Classes);
+
+        win.Close();
+        main.Close();
+    }
+
+    [AvaloniaFact]
+    public void DocumentationWindow_UpdateSnapVisuals_TogglesButtonClassesAndText()
+    {
+        var win = new LocalLLMServerManager.Views.DocumentationWindow();
+        var btn = win.FindControl<Button>("SnapToggleButton");
+        var text = win.FindControl<TextBlock>("SnapButtonText");
+
+        Assert.NotNull(btn);
+        Assert.NotNull(text);
+
+        win.UpdateSnapVisuals();
+        Assert.Equal("Snap to Side", text.Text);
+        Assert.DoesNotContain("snapped", btn.Classes);
+
+        var main = new Window { Width = 1000, Height = 700 };
+        WindowSnapManager.Instance.RegisterCompanion(main, win, SnapFlank.Left, autoAttach: true);
+
+        win.UpdateSnapVisuals();
+        Assert.Equal("Attached", text.Text);
+        Assert.Contains("snapped", btn.Classes);
+
+        win.Close();
+        main.Close();
+    }
+
+    [AvaloniaFact]
+    public void AiAssistWindow_PositionChanged_DetachesAndUpdatesVisuals_WhenDraggedAway()
+    {
+        var main = new Window { Width = 1000, Height = 700 };
+        main.Position = new PixelPoint(100, 100);
+
+        var win = new LocalLLMServerManager.Views.AiAssistWindow();
+        WindowSnapManager.Instance.RegisterCompanion(main, win, SnapFlank.Right, autoAttach: true);
+
+        Assert.True(WindowSnapManager.Instance.IsSnapped(win));
+        var btn = win.FindControl<Button>("SnapToggleButton");
+        var text = win.FindControl<TextBlock>("SnapButtonText");
+        Assert.NotNull(btn);
+        Assert.NotNull(text);
+        Assert.Equal("Attached", text.Text);
+        Assert.Contains("snapped", btn.Classes);
+
+        // Drag companion far away
+        win.Position = new PixelPoint(1500, 100);
+
+        Assert.False(WindowSnapManager.Instance.IsSnapped(win));
+        Assert.Equal("Snap to Side", text.Text);
+        Assert.DoesNotContain("snapped", btn.Classes);
+
+        // Move back within snap threshold
+        win.Position = new PixelPoint(1110, 105);
+
+        Assert.True(WindowSnapManager.Instance.IsSnapped(win));
+        Assert.Equal("Attached", text.Text);
+        Assert.Contains("snapped", btn.Classes);
+
+        win.Close();
+        main.Close();
+    }
+
+    [AvaloniaFact]
+    public void DocumentationWindow_PositionChanged_DetachesAndUpdatesVisuals_WhenDraggedAway()
+    {
+        var main = new Window { Width = 1000, Height = 700 };
+        main.Position = new PixelPoint(100, 100);
+
+        var win = new LocalLLMServerManager.Views.DocumentationWindow();
+        WindowSnapManager.Instance.RegisterCompanion(main, win, SnapFlank.Left, autoAttach: true);
+
+        Assert.True(WindowSnapManager.Instance.IsSnapped(win));
+        var btn = win.FindControl<Button>("SnapToggleButton");
+        var text = win.FindControl<TextBlock>("SnapButtonText");
+        Assert.NotNull(btn);
+        Assert.NotNull(text);
+        Assert.Equal("Attached", text.Text);
+        Assert.Contains("snapped", btn.Classes);
+
+        // Drag companion far away
+        win.Position = new PixelPoint(1500, 100);
+
+        Assert.False(WindowSnapManager.Instance.IsSnapped(win));
+        Assert.Equal("Snap to Side", text.Text);
+        Assert.DoesNotContain("snapped", btn.Classes);
+
+        win.Close();
+        main.Close();
     }
 
     [AvaloniaFact]

@@ -2,6 +2,7 @@ using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Input;
 using Avalonia.Interactivity;
+using LocalLLMServerManager.Services;
 using LocalLLMServerManager.Shared.ViewModels;
 
 namespace LocalLLMServerManager.Views;
@@ -11,11 +12,59 @@ public partial class AiAssistWindow : Window
     public AiAssistWindow()
     {
         InitializeComponent();
+        PositionChanged += OnWindowPositionChanged;
+        Opened += (s, e) => UpdateSnapVisuals();
     }
 
     public AiAssistWindow(AiAssistantViewModel viewModel) : this()
     {
         DataContext = viewModel;
+    }
+
+    private void OnWindowPositionChanged(object? sender, PixelPointEventArgs e)
+    {
+        if (WindowSnapManager.Instance.IsSnapped(this))
+        {
+            if (WindowSnapManager.Instance.CheckDragDetachment(this))
+            {
+                UpdateSnapVisuals();
+            }
+        }
+        else
+        {
+            if (WindowSnapManager.Instance.CheckProximitySnap(this))
+            {
+                UpdateSnapVisuals();
+            }
+        }
+    }
+
+    private void OnSnapToggleClicked(object? sender, RoutedEventArgs e)
+    {
+        WindowSnapManager.Instance.ToggleSnap(this);
+        UpdateSnapVisuals();
+    }
+
+    public void UpdateSnapVisuals()
+    {
+        bool isSnapped = WindowSnapManager.Instance.IsSnapped(this);
+        var snapText = this.FindControl<TextBlock>("SnapButtonText");
+        var snapBtn = this.FindControl<Button>("SnapToggleButton");
+        if (snapText != null)
+        {
+            snapText.Text = isSnapped ? "Attached" : "Snap to Side";
+        }
+        if (snapBtn != null)
+        {
+            if (isSnapped)
+            {
+                if (!snapBtn.Classes.Contains("snapped")) snapBtn.Classes.Add("snapped");
+            }
+            else
+            {
+                snapBtn.Classes.Remove("snapped");
+            }
+        }
     }
 
     private void OnTitleBarPointerPressed(object? sender, PointerPressedEventArgs e)

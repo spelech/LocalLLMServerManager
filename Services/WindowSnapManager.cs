@@ -112,6 +112,36 @@ public class WindowSnapManager
         }
     }
 
+    public bool CheckDragDetachment(Window companion)
+    {
+        ArgumentNullException.ThrowIfNull(companion);
+        if (_states.TryGetValue(companion, out var state) && state.IsSnapped)
+        {
+            double scaling = state.MainWindow.RenderScaling > 0 ? state.MainWindow.RenderScaling : 1.0;
+            if (!IsWithinSnapThreshold(state.MainWindow, companion, state.Flank, DefaultSnapThreshold, scaling))
+            {
+                state.IsSnapped = false;
+                return true;
+            }
+        }
+        return false;
+    }
+
+    public bool CheckProximitySnap(Window companion)
+    {
+        ArgumentNullException.ThrowIfNull(companion);
+        if (_states.TryGetValue(companion, out var state) && !state.IsSnapped)
+        {
+            double scaling = state.MainWindow.RenderScaling > 0 ? state.MainWindow.RenderScaling : 1.0;
+            if (IsWithinSnapThreshold(state.MainWindow, companion, state.Flank, DefaultSnapThreshold, scaling))
+            {
+                Attach(companion);
+                return true;
+            }
+        }
+        return false;
+    }
+
     public void SynchronizeCompanion(Window companion)
     {
         ArgumentNullException.ThrowIfNull(companion);
