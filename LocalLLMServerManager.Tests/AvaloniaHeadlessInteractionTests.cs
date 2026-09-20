@@ -174,7 +174,7 @@ public class AvaloniaHeadlessInteractionTests
     }
 
     [AvaloniaFact]
-    public void EngineStudioTabControl_ComboBoxSelection_UpdatesStudioMode()
+    public void EngineStudioTabControl_RadioButtonSelection_UpdatesStudioMode()
     {
         var vm = new MainViewModel();
         var control = new EngineStudioTabControl { DataContext = vm };
@@ -184,7 +184,7 @@ public class AvaloniaHeadlessInteractionTests
 
         // Find Studio Mode ComboBox
         var comboBoxes = control.GetVisualDescendants().OfType<ComboBox>().ToList();
-        var modeComboBox = comboBoxes.FirstOrDefault();
+        var modeComboBox = comboBoxes.FirstOrDefault(c => c.Items.Cast<object>().Any(i => i.ToString() == "Images"));
         Assert.NotNull(modeComboBox);
 
         // Simulate user selecting Audio mode
