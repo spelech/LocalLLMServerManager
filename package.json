@@ -21,7 +21,7 @@
     "mermaid": "^11.17.2",
     "playwright-layout-inspector": "github:spelech/playwright-layout-inspector",
     "typescript": "^5.7.0",
-    "typescript-eslint": "^8.24.0",
+    "typescript-eslint": "^8.70.0",
     "vitepress": "^1.6.3",
     "vitepress-plugin-mermaid": "^2.0.17"
   }
