@@ -6,7 +6,7 @@ namespace LocalLLMServerManager.Services;
 public class SettingsService : ISettingsService
 {
     private static readonly object SettingsLock = new();
-    private AppSettings? _cachedSettings;
+    private static AppSettings? _cachedSettings;
 
     public string SettingsFilePath()
     {
