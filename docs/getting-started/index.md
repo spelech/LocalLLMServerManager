@@ -58,15 +58,21 @@ The manager coordinates these engines through a unified reverse proxy on port `5
 Follow these sequential steps to set up and use Local LLM Server Manager:
 
 1. **[Installation Guide](./installation.md)**  
-   Install the application on Windows using the official installer, or on Linux using the automated installation script.
+   Review the required versus optional component matrix and install the application on Windows or Linux.
 
 2. **[First-Time Configuration](./configuration.md)**  
    Auto-detect installed engines, configure engine port numbers, and set your model storage directories.
 
 3. **[Quickstart Guide](./quickstart.md)**  
-   Download your first language model from Hugging Face or Ollama, and send your first chat prompt.
+   Download your first language model from Hugging Face or Ollama, and test your first prompt.
 
-4. **[Troubleshooting Guide](./troubleshooting.md)**  
+4. **[Real Engine Test Flight](./test-flight.md)**  
+   Verify that your local inference engines respond to real network requests before queuing heavy workloads.
+
+5. **[Remote Access & Reverse Proxy](./remote-access.md)**  
+   Access your dashboard over LAN, configure SSH tunnels, or set up Caddy reverse proxy authentication.
+
+6. **[Troubleshooting Guide](./troubleshooting.md)**  
    Resolve common operational issues, handle VRAM out-of-memory errors, and eliminate port conflicts.
 
 ---

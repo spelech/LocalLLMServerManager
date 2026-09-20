@@ -1,6 +1,25 @@
-# Installation Guide
+# Installation & Setup Guide
 
 This guide describes how to install Local LLM Server Manager on Windows and Linux systems.
+
+---
+
+## Testing & Setup Matrix
+
+Local LLM Server Manager uses a modular architecture. You only need to install components for the features you intend to test.
+
+| Feature Area | Role in Stack | Prerequisite Requirement | What It Enables |
+| :--- | :--- | :--- | :--- |
+| **Core Manager & Dashboard** | **REQUIRED** | Windows 10/11 x64 or Linux x64 | Hardware telemetry, VRAM bar, system tray, reverse proxy, web dashboard. |
+| **Ollama Engine** | *Optional* | [Ollama](https://ollama.com) installed | Local LLM text generation, GGUF downloads, KV cache calculator. |
+| **Stable Diffusion Forge** | *Optional* | [SD Forge](https://github.com/lllyasviel/stable-diffusion-webui-forge) installed | Local image generation, CivitAI checkpoint and LoRA downloads. |
+| **ComfyUI Engine** | *Optional* | [ComfyUI](https://github.com/comfyanonymous/ComfyUI) installed | 3D mesh reconstruction, video generation, and FLUX workflows. |
+| **Kokoro TTS Engine** | *Optional* | Python environment or Audio Pack | Local speech synthesis with OpenAI-compatible audio API. |
+| **AI Chat Assistant** | *Optional* | LiteLLM gateway or OpenAI endpoint | In-app assistant, multimodal screenshot analysis, and app control. |
+| **Feature Packs (`ext_*`)** | *Optional* | Installed via Settings tab | Video ComfyUI presets (`ext_video`) and Audio workflows (`ext_audio`). |
+
+> [!IMPORTANT]
+> The release package is **self-contained**. You do not need to install the .NET SDK or .NET runtime to run the application.
 
 ---
 
@@ -31,12 +50,13 @@ The official installer configures the application, sets up desktop shortcuts, an
 
 ### Method 2: Standalone Portable Archive (.zip)
 
-Use the portable archive to run the application without modifying system services.
+Use the portable archive to test the application without modifying system services.
 
 1. Download the `LocalLLMServerManager-win-x64.zip` archive from the Releases page.
 2. Extract the archive contents into a folder (for example: `C:\LocalLLMServerManager`).
 3. Open the extracted folder in File Explorer.
 4. Double-click `LocalLLMServerManager.exe` to start the application.
+5. The desktop window and system tray icon appear immediately.
 
 ---
 

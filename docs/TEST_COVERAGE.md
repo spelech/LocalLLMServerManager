@@ -8,16 +8,14 @@ This document provides a comprehensive audit of all unit, integration, mock serv
 
 ## 📊 Executive Summary & Test Metrics
 
-```
-+-----------------------------------------------------------------------------------------+
-| TOTAL TESTS EXECUTED : 174                                                              |
-| PASSED               : 173 (99.4%)                                                      |
-| SKIPPED              : 1   (Playwright screenshot generator on-demand)                  |
-| FAILED               : 0   (0.0%)                                                       |
-| TEST FIXTURE CLASSES : 20                                                               |
-| TARGET RUNTIMES      : Windows 11 x64, Linux x64 (systemd, X11, Wayland), Chromium Headless|
-+-----------------------------------------------------------------------------------------+
-```
+| Metric | Measured Value | Operational Notes |
+| :--- | :--- | :--- |
+| **Total Tests Executed** | `174` | Comprehensive test suite across Windows and Linux |
+| **Passed Tests** | `173 (99.4%)` | All unit, integration, and UI tests pass |
+| **Skipped Tests** | `1 (0.6%)` | On-demand Playwright screenshot generator |
+| **Failed Tests** | `0 (0.0%)` | Zero test failures across test suite |
+| **Test Fixture Classes** | `20` | Modular test fixtures partitioned by domain |
+| **Target Runtimes** | Windows 11 x64, Linux x64 (systemd, X11, Wayland), Headless Chromium | Dual-OS verified |
 
 ### Testing Frameworks & Tooling
 * **Test Runner**: [xUnit.net v3](https://xunit.net/) (`xunit.v3` 3.2.2)
@@ -32,20 +30,14 @@ This document provides a comprehensive audit of all unit, integration, mock serv
 
 To eliminate port contention and process memory race conditions during local and CI/CD test runs on Windows and Linux, the test suite is partitioned into five targeted execution chunks:
 
-```
-                  ┌─────────────────────────────────────────────────────────┐
-                  │                 LocalLLMServerManager.Tests             │
-                  │                        (174 Tests)                      │
-                  └────────────────────────────┬────────────────────────────┘
-                                               │
-         ┌──────────────────┬──────────────────┼──────────────────┬──────────────────┐
-         ▼                  ▼                  ▼                  ▼                  ▼
-  ┌──────────────┐   ┌──────────────┐   ┌──────────────┐   ┌──────────────┐   ┌──────────────┐
-  │   Chunk 1    │   │   Chunk 2    │   │   Chunk 3    │   │   Chunk 4    │   │   Chunk 5    │
-  │  ViewModels  │   │  Services    │   │  Endpoints   │   │  MCP Server  │   │  Playwright  │
-  │  & Settings  │   │  & Discovery │   │  & Workflows │   │  & Tools     │   │   WASM E2E   │
-  │  (37 Tests)  │   │  (46 Tests)  │   │  (67 Tests)  │   │  (22 Tests)  │   │   (2 Tests)  │
-  └──────────────┘   └──────────────┘   └──────────────┘   └──────────────┘   └──────────────┘
+```mermaid
+flowchart TD
+    Root["LocalLLMServerManager.Tests\n(174 Tests)"]
+    Root --> C1["Chunk 1: ViewModels & Settings\n(37 Tests)"]
+    Root --> C2["Chunk 2: Services & Discovery\n(46 Tests)"]
+    Root --> C3["Chunk 3: Endpoints & Workflows\n(67 Tests)"]
+    Root --> C4["Chunk 4: MCP Server & Tools\n(22 Tests)"]
+    Root --> C5["Chunk 5: Playwright WASM E2E\n(2 Tests)"]
 ```
 
 ### Execution Commands

@@ -12,7 +12,7 @@ This document contains the Caddyfile configuration needed on the remote proxy ma
 
 Pass this Caddyfile block to the agent managing your remote Caddy server. Ensure you replace `yourdomain.com` with your actual domain, and verify the `tinyauth.sock` path for your environment.
 
-```caddyfile
+```txt
 # Local LLM Server Manager Dashboard & Proxy
 manager.yourdomain.com {
     forward_auth * unix//var/run/tinyauth.sock {
