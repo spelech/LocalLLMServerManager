@@ -21,6 +21,9 @@ public class SnappedCompanionState
 
     public SnappedCompanionState(Window main, Window comp, SnapFlank flank)
     {
+        ArgumentNullException.ThrowIfNull(main);
+        ArgumentNullException.ThrowIfNull(comp);
+
         MainWindow = main;
         Companion = comp;
         Flank = flank;
@@ -35,6 +38,7 @@ public class WindowSnapManager
     public static WindowSnapManager Instance { get; } = new();
 
     private readonly ConcurrentDictionary<Window, SnappedCompanionState> _states = new();
+    private readonly ConcurrentDictionary<Window, byte> _hookedMainWindows = new();
     public const int DefaultSnapThreshold = 35;
 
     public void RegisterCompanion(Window mainWindow, Window companion, SnapFlank flank, bool autoAttach = true)
@@ -53,24 +57,32 @@ public class WindowSnapManager
             Attach(companion);
         }
 
-        // Hook window position and state events
-        mainWindow.PositionChanged += (s, e) => SynchronizeAllForMain(mainWindow);
-        mainWindow.PropertyChanged += (s, e) =>
+        // Deduplicate event subscriptions on MainWindow
+        if (_hookedMainWindows.TryAdd(mainWindow, 0))
         {
-            if (e.Property == Visual.BoundsProperty || e.Property == Window.WindowStateProperty)
+            mainWindow.PositionChanged += (s, e) => SynchronizeAllForMain(mainWindow);
+            mainWindow.PropertyChanged += (s, e) =>
             {
-                SynchronizeAllForMain(mainWindow);
-            }
-        };
+                if (e.Property == Visual.BoundsProperty || e.Property == Window.WindowStateProperty)
+                {
+                    SynchronizeAllForMain(mainWindow);
+                }
+            };
+            mainWindow.Closed += (s, e) => _hookedMainWindows.TryRemove(mainWindow, out _);
+        }
 
         companion.Closed += (s, e) => _states.TryRemove(companion, out _);
     }
 
-    public bool IsSnapped(Window companion) =>
-        _states.TryGetValue(companion, out var state) && state.IsSnapped;
+    public bool IsSnapped(Window companion)
+    {
+        ArgumentNullException.ThrowIfNull(companion);
+        return _states.TryGetValue(companion, out var state) && state.IsSnapped;
+    }
 
     public void Attach(Window companion)
     {
+        ArgumentNullException.ThrowIfNull(companion);
         if (_states.TryGetValue(companion, out var state))
         {
             state.IsSnapped = true;
@@ -80,6 +92,7 @@ public class WindowSnapManager
 
     public void Detach(Window companion)
     {
+        ArgumentNullException.ThrowIfNull(companion);
         if (_states.TryGetValue(companion, out var state))
         {
             state.IsSnapped = false;
@@ -88,6 +101,7 @@ public class WindowSnapManager
 
     public void ToggleSnap(Window companion)
     {
+        ArgumentNullException.ThrowIfNull(companion);
         if (IsSnapped(companion))
         {
             Detach(companion);
@@ -100,6 +114,7 @@ public class WindowSnapManager
 
     public void SynchronizeCompanion(Window companion)
     {
+        ArgumentNullException.ThrowIfNull(companion);
         if (!_states.TryGetValue(companion, out var state) || !state.IsSnapped)
             return;
 
@@ -115,11 +130,11 @@ public class WindowSnapManager
             companion.WindowState = WindowState.Normal;
         }
 
-        // Align height
+        // Align height (clamp minimum 450)
         double targetHeight = main.Bounds.Height > 0 ? main.Bounds.Height : main.Height;
-        if (double.IsFinite(targetHeight) && targetHeight >= 450)
+        if (double.IsFinite(targetHeight))
         {
-            companion.Height = targetHeight;
+            companion.Height = Math.Max(450, targetHeight);
         }
 
         double scaling = main.RenderScaling > 0 ? main.RenderScaling : 1.0;
@@ -129,6 +144,8 @@ public class WindowSnapManager
 
     public void SynchronizeAllForMain(Window mainWindow)
     {
+        ArgumentNullException.ThrowIfNull(mainWindow);
+
         foreach (var kvp in _states)
         {
             if (kvp.Value.MainWindow == mainWindow && kvp.Value.IsSnapped)
@@ -140,6 +157,9 @@ public class WindowSnapManager
 
     public bool IsWithinSnapThreshold(Window mainWindow, Window companion, SnapFlank flank, int tolerancePixels = DefaultSnapThreshold, double scaling = 1.0)
     {
+        ArgumentNullException.ThrowIfNull(mainWindow);
+        ArgumentNullException.ThrowIfNull(companion);
+
         var target = CalculateSnappedPosition(mainWindow, companion, flank, scaling);
         int dx = Math.Abs(companion.Position.X - target.X);
         int dy = Math.Abs(companion.Position.Y - target.Y);

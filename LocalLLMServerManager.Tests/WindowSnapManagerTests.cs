@@ -123,5 +123,58 @@ public class WindowSnapManagerTests
         Assert.Equal(1350, target.X);
         Assert.Equal(100, target.Y);
     }
+
+    [AvaloniaFact]
+    public void SynchronizeCompanion_ClampsHeightToMinimum450()
+    {
+        var manager = new WindowSnapManager();
+        var main = new Window { Width = 1000, Height = 300 };
+        var companion = new Window { Width = 400, Height = 300 };
+
+        manager.RegisterCompanion(main, companion, SnapFlank.Right, autoAttach: true);
+        manager.SynchronizeCompanion(companion);
+
+        Assert.Equal(450, companion.Height);
+    }
+
+    [AvaloniaFact]
+    public void ArgumentValidation_ThrowsArgumentNullException_WhenNullPassed()
+    {
+        var manager = new WindowSnapManager();
+        var window = new Window();
+
+        Assert.Throws<ArgumentNullException>(() => manager.RegisterCompanion(null!, window, SnapFlank.Right));
+        Assert.Throws<ArgumentNullException>(() => manager.RegisterCompanion(window, null!, SnapFlank.Right));
+        Assert.Throws<ArgumentNullException>(() => manager.IsSnapped(null!));
+        Assert.Throws<ArgumentNullException>(() => manager.Attach(null!));
+        Assert.Throws<ArgumentNullException>(() => manager.Detach(null!));
+        Assert.Throws<ArgumentNullException>(() => manager.ToggleSnap(null!));
+        Assert.Throws<ArgumentNullException>(() => manager.SynchronizeCompanion(null!));
+        Assert.Throws<ArgumentNullException>(() => manager.SynchronizeAllForMain(null!));
+        Assert.Throws<ArgumentNullException>(() => manager.IsWithinSnapThreshold(null!, window, SnapFlank.Right));
+        Assert.Throws<ArgumentNullException>(() => manager.IsWithinSnapThreshold(window, null!, SnapFlank.Right));
+    }
+
+    [AvaloniaFact]
+    public void RegisterCompanion_MultipleCompanions_SharesMainWindowHookSafely()
+    {
+        var manager = new WindowSnapManager();
+        var main = new Window { Width = 1000, Height = 700 };
+        main.Position = new PixelPoint(100, 100);
+
+        var comp1 = new Window { Width = 300, Height = 700 };
+        var comp2 = new Window { Width = 400, Height = 700 };
+
+        manager.RegisterCompanion(main, comp1, SnapFlank.Left, autoAttach: true);
+        manager.RegisterCompanion(main, comp2, SnapFlank.Right, autoAttach: true);
+
+        // Move MainWindow and trigger sync for all
+        main.Position = new PixelPoint(200, 200);
+        manager.SynchronizeAllForMain(main);
+
+        Assert.Equal(200 - 300, comp1.Position.X);
+        Assert.Equal(200 + 1000, comp2.Position.X);
+    }
 }
+
 
