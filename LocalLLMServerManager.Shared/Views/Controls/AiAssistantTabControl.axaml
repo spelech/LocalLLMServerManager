@@ -46,6 +46,7 @@
                     <Button Content="⚙️ Setup &amp; Endpoint" Command="{Binding ToggleSetupCardCommand}" Classes="matte-secondary" FontSize="11" Padding="10,6"/>
                     <Button Content="🔄 Reload Prompts" Command="{Binding ReloadPromptsCommand}" Classes="matte-secondary" FontSize="11" Padding="10,6"/>
                     <Button Content="🧹 Clear Chat" Command="{Binding ClearChatCommand}" Classes="matte-secondary" FontSize="11" Padding="10,6"/>
+                    <Button Content="🗗 Pop Out" Command="{Binding RequestPopOutCommand}" Classes="matte-secondary" FontSize="11" Padding="10,6"/>
                 </StackPanel>
             </Grid>
         </Border>
@@ -78,7 +79,15 @@
                     <StackPanel Grid.Column="2" Spacing="4" Margin="8,0,0,0">
                         <TextBlock Text="Model Identifier" FontSize="11" Foreground="{StaticResource TextMutedBrush}" FontWeight="SemiBold"/>
                         <Grid ColumnDefinitions="*, Auto">
-                            <ComboBox Grid.Column="0" ItemsSource="{Binding AvailableModels}" SelectedItem="{Binding SelectedModel}" HorizontalAlignment="Stretch" FontSize="12"/>
+                            <ComboBox Grid.Column="0" ItemsSource="{Binding AvailableModelCapabilities}"
+                                      SelectedItem="{Binding SelectedModelCapability}"
+                                      HorizontalAlignment="Stretch" FontSize="12">
+                                <ComboBox.ItemTemplate>
+                                    <DataTemplate DataType="models:AiModelCapabilityInfo">
+                                        <TextBlock Text="{Binding Id}"/>
+                                    </DataTemplate>
+                                </ComboBox.ItemTemplate>
+                            </ComboBox>
                             <Button Grid.Column="1" Content="🔄" Command="{Binding RefreshModelsCommand}" Classes="matte-secondary" Margin="4,0,0,0" Padding="6,4"/>
                         </Grid>
                     </StackPanel>
