@@ -20,7 +20,7 @@ public class AiAssistantViewModelTests
 
         Assert.Single(vm.Messages);
         Assert.True(vm.Messages[0].IsAssistant);
-        Assert.Contains("Copilot", vm.Messages[0].Content);
+        Assert.Contains("AI Assist", vm.Messages[0].Content);
         Assert.False(string.IsNullOrWhiteSpace(vm.SelectedModel));
         Assert.NotEmpty(vm.SuggestionChips);
         Assert.False(vm.IsGenerating);
@@ -38,6 +38,16 @@ public class AiAssistantViewModelTests
 
         vm.ToggleSetupCard();
         Assert.False(vm.IsSetupCardVisible);
+    }
+
+    [Fact]
+    public void RequestPopOut_InvokesCallback()
+    {
+        var vm = new AiAssistantViewModel();
+        bool invoked = false;
+        vm.OnPopOutNativeWindowRequested = () => invoked = true;
+        vm.RequestPopOut();
+        Assert.True(invoked);
     }
 
     [Fact]

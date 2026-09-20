@@ -437,7 +437,7 @@ public class AiAssistantService : IAiAssistantService
                     return null;
                 }
 
-                var provider = GetStringValue("litellm_provider") ?? GetStringValue("provider");
+                var provider = GetStringValue("litellm_provider") ?? GetStringValue("provider") ?? GetStringValue("owned_by");
                 if (string.IsNullOrWhiteSpace(provider))
                 {
                     if (id.Contains('/'))
@@ -488,7 +488,7 @@ public class AiAssistantService : IAiAssistantService
                     lowerId.Contains("realtime")
                 );
 
-                var maxInputTokens = GetIntValue("max_input_tokens", "max_tokens");
+                var maxInputTokens = GetIntValue("max_input_tokens", "context_window", "max_tokens");
                 var maxOutputTokens = GetIntValue("max_output_tokens");
 
                 list.Add(new AiModelCapabilityInfo(

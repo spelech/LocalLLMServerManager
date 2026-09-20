@@ -1,12 +1,12 @@
 ---
-title: In-App AI Assistant Architecture
+title: In-AI Assistant Architecture
 description: Technical architecture, component layers, model discovery, and multimodal execution flow.
 outline: deep
 ---
 
-# In-App AI Assistant Architecture
+# In-AI Assistant Architecture
 
-The In-App AI Assistant provides natural language control and diagnostics for LocalLLMServerManager. Local engines run image, audio, and text generation on your graphics card. These local engines can consume all available video memory. Therefore, the assistant routes requests to an external API endpoint. The assistant uses a LiteLLM proxy connected to Google Cloud Vertex AI Gemini Flash.
+The In-AI Assistant provides natural language control and diagnostics for LocalLLMServerManager. Local engines run image, audio, and text generation on your graphics card. These local engines can consume all available video memory. Therefore, the assistant routes requests to an external API endpoint. The assistant uses a LiteLLM proxy connected to Google Cloud Vertex AI Gemini Flash.
 
 ::: info External Proxy Design
 External routing keeps the assistant operational during heavy local generation tasks. The assistant requires zero megabytes of local GPU memory.

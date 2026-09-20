@@ -1,0 +1,37 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:controls="using:LocalLLMServerManager.Shared.Views.Controls"
+        xmlns:vm="using:LocalLLMServerManager.Shared.ViewModels"
+        mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="600"
+        x:Class="LocalLLMServerManager.Views.AiAssistWindow"
+        x:DataType="vm:AiAssistantViewModel"
+        Title="AI Assist"
+        Width="900" Height="700"
+        WindowDecorations="BorderOnly"
+        Background="{StaticResource BgWindowBrush}">
+
+    <Grid RowDefinitions="Auto, *">
+        <!-- Custom TitleBar -->
+        <Border Grid.Row="0" Background="{StaticResource BgHeaderBrush}" Height="40" 
+                PointerPressed="OnTitleBarPointerPressed" DoubleTapped="OnTitleBarDoubleTapped">
+            <Grid ColumnDefinitions="Auto, *, Auto">
+                <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="10" Margin="15,0">
+                    <TextBlock Text="🤖" VerticalAlignment="Center" FontSize="16"/>
+                    <TextBlock Text="AI Assist" VerticalAlignment="Center" FontWeight="Bold" Foreground="{StaticResource TextMainBrush}"/>
+                </StackPanel>
+
+                <!-- Window Controls -->
+                <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Top" Margin="0">
+                    <Button Click="OnMinimizeClicked" Classes="window-control" Content="🗕" Width="46" Height="32"/>
+                    <Button Click="OnMaximizeClicked" Classes="window-control" Content="🗖" Width="46" Height="32" x:Name="MaximizeButton"/>
+                    <Button Click="OnCloseClicked" Classes="window-control window-close" Content="✕" Width="46" Height="32"/>
+                </StackPanel>
+            </Grid>
+        </Border>
+
+        <!-- Main Content -->
+        <controls:AiAssistantTabControl Grid.Row="1" />
+    </Grid>
+</Window>

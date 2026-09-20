@@ -1,12 +1,12 @@
 ---
 title: AI Assistant Setup & Configuration Guide
-description: Step-by-step setup guide for LiteLLM proxy, model discovery, multimodal chat, and copilot controls.
+description: Step-by-step setup guide for LiteLLM proxy, model discovery, multimodal chat, and AI Assist controls.
 outline: deep
 ---
 
 # AI Assistant Setup & Configuration Guide
 
-This guide describes how to connect the In-App AI Assistant to an external OpenAI-compatible API endpoint. The recommended configuration uses **LiteLLM** proxying to **Google Cloud Vertex AI Gemini 2.5 Flash**.
+This guide describes how to connect the In-AI Assistant to an external OpenAI-compatible API endpoint. The recommended configuration uses **LiteLLM** proxying to **Google Cloud Vertex AI Gemini 2.5 Flash**.
 
 ---
 
@@ -66,7 +66,7 @@ LiteLLM now listens at `http://127.0.0.1:4000/v1` with OpenAI API compatibility.
 
 ### Method A: Use the In-App Setup Wizard (Recommended)
 1. Open **LocalLLMServerManager**.
-2. Select the **Copilot** tab.
+2. Select the **AI Assist** tab.
 3. Click **Setup & Endpoint** in the toolbar to expand settings.
 4. Enter the connection settings:
    - **OpenAI-Compatible Endpoint URL**: `http://127.0.0.1:4000/v1`
@@ -136,7 +136,7 @@ Click the remove button (`✕`) on any image thumbnail to remove it before sendi
 
 ---
 
-## Step 4: Verify Copilot Control Tools
+## Step 4: Verify AI Assist Control Tools
 
 Submit test queries to verify native C# tool execution:
 

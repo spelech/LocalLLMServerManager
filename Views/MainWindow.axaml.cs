@@ -7,6 +7,7 @@ using LocalLLMServerManager.Shared.ViewModels;
 
 using LocalLLMServerManager.Services;
 using LocalLLMServerManager.Shared.Services;
+using LocalLLMServerManager.Shared.Views;
 
 namespace LocalLLMServerManager.Views;
 

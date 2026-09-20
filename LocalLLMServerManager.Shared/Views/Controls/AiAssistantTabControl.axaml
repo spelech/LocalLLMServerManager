@@ -19,7 +19,7 @@
                 <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="10" VerticalAlignment="Center">
                     <TextBlock Text="🤖" FontSize="22" VerticalAlignment="Center"/>
                     <StackPanel Spacing="2">
-                        <TextBlock Text="AI Assistant &amp; App Copilot" FontSize="15" FontWeight="Bold" Foreground="{StaticResource TextMainBrush}"/>
+                        <TextBlock Text="AI Assist" FontSize="15" FontWeight="Bold" Foreground="{StaticResource TextMainBrush}"/>
                         <TextBlock Text="Natural language app control, tool calling &amp; living prompt orchestration" FontSize="11" Foreground="{StaticResource TextMutedBrush}"/>
                     </StackPanel>
                 </StackPanel>
@@ -42,9 +42,11 @@
 
                 <!-- Action Controls -->
                 <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+                    <Button Content="↗️ Pop Out" Command="{Binding RequestPopOutCommand}" Classes="matte-secondary" FontSize="11" Padding="10,6"/>
                     <Button Content="⚙️ Setup &amp; Endpoint" Command="{Binding ToggleSetupCardCommand}" Classes="matte-secondary" FontSize="11" Padding="10,6"/>
                     <Button Content="🔄 Reload Prompts" Command="{Binding ReloadPromptsCommand}" Classes="matte-secondary" FontSize="11" Padding="10,6"/>
                     <Button Content="🧹 Clear Chat" Command="{Binding ClearChatCommand}" Classes="matte-secondary" FontSize="11" Padding="10,6"/>
+                    <Button Content="🗗 Pop Out" Command="{Binding RequestPopOutCommand}" Classes="matte-secondary" FontSize="11" Padding="10,6"/>
                 </StackPanel>
             </Grid>
         </Border>
@@ -76,7 +78,18 @@
                     <!-- Model Name / Selection -->
                     <StackPanel Grid.Column="2" Spacing="4" Margin="8,0,0,0">
                         <TextBlock Text="Model Identifier" FontSize="11" Foreground="{StaticResource TextMutedBrush}" FontWeight="SemiBold"/>
-                        <TextBox Text="{Binding SelectedModel}" Watermark="vertex_ai/gemini-2.5-flash or gpt-4o" FontSize="12"/>
+                        <Grid ColumnDefinitions="*, Auto">
+                            <ComboBox Grid.Column="0" ItemsSource="{Binding AvailableModelCapabilities}"
+                                      SelectedItem="{Binding SelectedModelCapability}"
+                                      HorizontalAlignment="Stretch" FontSize="12">
+                                <ComboBox.ItemTemplate>
+                                    <DataTemplate DataType="models:AiModelCapabilityInfo">
+                                        <TextBlock Text="{Binding Id}"/>
+                                    </DataTemplate>
+                                </ComboBox.ItemTemplate>
+                            </ComboBox>
+                            <Button Grid.Column="1" Content="🔄" Command="{Binding RefreshModelsCommand}" Classes="matte-secondary" Margin="4,0,0,0" Padding="6,4"/>
+                        </Grid>
                     </StackPanel>
                 </Grid>
 
@@ -144,7 +157,7 @@
                                         <!-- Header -->
                                         <Grid ColumnDefinitions="*, Auto">
                                             <StackPanel Orientation="Horizontal" Spacing="6">
-                                                <TextBlock Text="🤖 Copilot" FontSize="11" FontWeight="Bold" Foreground="{StaticResource PrimaryBrush}"/>
+                                                <TextBlock Text="🤖 AI Assist" FontSize="11" FontWeight="Bold" Foreground="{StaticResource PrimaryBrush}"/>
                                                 <TextBlock Text="{Binding StatusText}" FontSize="10" Foreground="{StaticResource WarningBrush}" IsVisible="{Binding StatusText, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>
                                             </StackPanel>
                                             <TextBlock Grid.Column="1" Text="{Binding Timestamp, StringFormat='{}{0:HH:mm}'}" FontSize="9" Foreground="{StaticResource TextMutedBrush}"/>

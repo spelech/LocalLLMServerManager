@@ -60,12 +60,12 @@
                 <controls:CanIRunItView DataContext="{Binding HardwareFit}"/>
             </TabItem>
 
-            <!-- TAB 4: In-App AI Assistant & Copilot -->
+            <!-- TAB 4: In-AI Assist -->
             <TabItem>
                 <TabItem.Header>
                     <StackPanel Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
-                        <PathIcon Data="{StaticResource IconCopilot}" Width="14" Height="14" Foreground="{Binding $parent[TabItem].Foreground}"/>
-                        <TextBlock Text="Copilot" VerticalAlignment="Center"/>
+                        <PathIcon Data="{StaticResource IconAiAssist}" Width="14" Height="14" Foreground="{Binding $parent[TabItem].Foreground}"/>
+                        <TextBlock Text="AI Assist" VerticalAlignment="Center"/>
                     </StackPanel>
                 </TabItem.Header>
                 <controls:AiAssistantTabControl DataContext="{Binding Assistant}"/>

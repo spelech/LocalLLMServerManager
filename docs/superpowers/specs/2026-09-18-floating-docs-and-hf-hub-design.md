@@ -24,7 +24,7 @@ Currently, in-app documentation is confined to a full-screen tab (`📖 Document
   * Supports a **Minimize to Pill** mode (collapses to a compact 36px floating badge showing current step title and quick Next/Prev buttons).
   * Works identically across both Desktop and WebAssembly (WASM).
 * **Smart Step Navigation**:
-  * `DocStep` is extended with an optional `TargetTab` property (`Models = 0`, `Workflows = 1`, `HardwareFit = 2`, `Copilot = 3`, `Documentation = 4`, `Settings = 5`).
+  * `DocStep` is extended with an optional `TargetTab` property (`Models = 0`, `Workflows = 1`, `HardwareFit = 2`, `AI Assist = 3`, `Documentation = 4`, `Settings = 5`).
   * Each step card in the floating guide features a **"Jump to Tab"** button (`🚀`). Clicking it updates `MainViewModel.SelectedTabIndex` so the target workspace immediately appears behind the guide.
 
 ---

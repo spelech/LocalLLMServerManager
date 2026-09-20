@@ -125,7 +125,7 @@ public class AiAssistantServiceTests
 
         var request = new AiChatRequest(new List<AiChatMessageItem>
         {
-            new() { Role = "user", Content = "Hello copilot" }
+            new() { Role = "user", Content = "Hello AI Assist" }
         });
 
         var response = await service.SendChatAsync(request);

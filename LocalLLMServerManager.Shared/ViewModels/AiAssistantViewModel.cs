@@ -18,7 +18,7 @@ using LocalLLMServerManager.Shared.Services;
 namespace LocalLLMServerManager.Shared.ViewModels;
 
 /// <summary>
-/// ViewModel managing the In-App AI Assistant & Copilot interface.
+/// ViewModel managing the In-AI Assist interface.
 /// Provides multi-turn chat orchestration, streaming token rendering, tool invocation cards,
 /// setup wizard with connection validation, and natural language app interaction.
 /// </summary>
@@ -35,6 +35,20 @@ public partial class AiAssistantViewModel : ObservableObject
         PropertyNameCaseInsensitive = true,
         Converters = { new JsonStringEnumConverter() }
     };
+
+    public Action? OnPopOutNativeWindowRequested { get; set; }
+
+    [RelayCommand]
+    public void RequestPopOut()
+    {
+        OnPopOutNativeWindowRequested?.Invoke();
+    }
+
+    [RelayCommand]
+    public async Task RefreshModelsAsync()
+    {
+        await LoadAvailableModelsAsync(refresh: true);
+    }
 
     // Chat History
     public ObservableCollection<AiChatMessageItem> Messages { get; } = new();
@@ -163,7 +177,7 @@ public partial class AiAssistantViewModel : ObservableObject
         Messages.Add(new AiChatMessageItem
         {
             Role = "assistant",
-            Content = "👋 Hello! I am your AI Assistant and App Copilot. I can query live VRAM telemetry, evaluate model hardware fit, inspect or update app settings, launch workflows, and answer questions about the platform.\n\nType a request below or tap any suggestion chip to get started!",
+            Content = "👋 Hello! I am your AI Assist. I can query live VRAM telemetry, evaluate model hardware fit, inspect or update app settings, launch workflows, and answer questions about the platform.\n\nType a request below or tap any suggestion chip to get started!",
             Timestamp = DateTime.UtcNow
         });
     }

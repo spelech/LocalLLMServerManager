@@ -1,4 +1,4 @@
-# In-App AI Assistant & Natural Language App Control Design Specification
+# In-AI Assistant & Natural Language App Control Design Specification
 
 ## 1. Overview & Goals
 
