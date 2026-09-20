@@ -66,28 +66,29 @@ Inspect your installed model and calculate memory requirements:
 
 ---
 
-## Step 4: Send Your First Prompt
+## Step 4: Test Your Installed Model
 
-Test your model with an interactive prompt.
+Test your newly downloaded model with an interactive prompt or automated test flight.
 
-### Method 1: Use the Built-In AI Assistant
+### Option A: Verify with Real Engine Test Flight (Fastest)
 
-1. Click the **AI Assistant** tab in the application.
-2. Select your newly downloaded model from the model selector dropdown.
-3. Click inside the text input box at the bottom of the window.
-4. Type your prompt:
-   ```text
-   Write a Python function to check whether an integer is prime. Include unit tests.
-   ```
-5. Click **Send** or press `Enter`.
-6. Read the streamed response as the model generates text.
-7. Observe the VRAM bar at the top of the window as the GPU allocates memory for inference.
+Verify that your installed model executes properly and clears GPU memory:
+
+1. Click the **Studio** tab on the navigation bar.
+2. Locate the **Test Flight** panel in the studio header.
+3. Select **Text** from the **Modality** dropdown.
+4. Select or type a starter prompt.
+5. Click **🚀 Launch Test Flight**.
+6. The test runner sends a verified prompt to Ollama, confirms VRAM allocation, and returns the response in seconds.
+
+> [!TIP]
+> Read the complete [Real Engine Test Flight Guide](./test-flight.md) to test Image, Video, and Audio engines.
 
 ---
 
-### Method 2: Send a Prompt via the REST API
+### Option B: Send a Prompt via the REST API Proxy
 
-Send a prompt from your terminal using the OpenAI-compatible HTTP endpoint:
+Send a prompt from your terminal using the unified OpenAI-compatible endpoint on port `5246`:
 
 ```bash
 curl http://localhost:5246/v1/chat/completions \
@@ -104,7 +105,18 @@ curl http://localhost:5246/v1/chat/completions \
   }'
 ```
 
-The server returns a JSON response containing the generated text completion.
+The server routes the request to Ollama on port `11434` and returns the generated text.
+
+---
+
+### Option C: Connect External Chat Frontends
+
+You can connect popular web chat frontends to Local LLM Server Manager:
+- **Open WebUI**: Set the Ollama URL to `http://localhost:5246` or `http://localhost:11434`.
+- **LibreChat**: Add an OpenAI-compatible custom endpoint pointing to `http://localhost:5246/v1`.
+
+> [!NOTE]
+> The built-in **AI Assistant** tab connects to an external gateway (such as LiteLLM or Vertex AI Gemini Flash). The assistant intentionally excludes local models from its selector to keep 100% of your local GPU memory available for heavy diffusion and creative tasks. See the [AI Chat Assistant Guide](../ai-and-mcp/assistant.md) to configure external credentials.
 
 ---
 

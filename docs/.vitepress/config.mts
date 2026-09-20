@@ -33,6 +33,8 @@ export default defineConfig({
             { text: 'Installation', link: '/getting-started/installation' },
             { text: 'Configuration', link: '/getting-started/configuration' },
             { text: 'Quickstart Guide', link: '/getting-started/quickstart' },
+            { text: 'Real Engine Test Flight', link: '/getting-started/test-flight' },
+            { text: 'Remote Access & Reverse Proxy', link: '/getting-started/remote-access' },
             { text: 'Troubleshooting', link: '/getting-started/troubleshooting' }
           ]
         }
@@ -56,9 +58,11 @@ export default defineConfig({
           items: [
             { text: 'Studio Overview', link: '/studio/' },
             { text: 'Image Generation', link: '/studio/image-generation' },
+            { text: 'LoRA Art Styles & CivitAI', link: '/studio/lora-styles' },
             { text: 'Video Generation', link: '/studio/video-generation' },
             { text: 'Audio & Music Synthesis', link: '/studio/audio-and-music' },
-            { text: '3D Mesh Reconstruction', link: '/studio/3d-mesh' }
+            { text: '3D Mesh Reconstruction', link: '/studio/3d-mesh' },
+            { text: 'ComfyUI & 3D Setup', link: '/studio/comfyui-setup' }
           ]
         }
       ],
@@ -68,6 +72,7 @@ export default defineConfig({
           items: [
             { text: 'Overview', link: '/ai-and-mcp/' },
             { text: 'AI Chat Assistant', link: '/ai-and-mcp/assistant' },
+            { text: 'Magnetic Companion Windows', link: '/guide/companion-windows' },
             { text: 'Model Context Protocol (MCP)', link: '/ai-and-mcp/mcp-tools' },
             { text: 'Workflow Presets', link: '/ai-and-mcp/flows-and-presets' }
           ]
@@ -80,6 +85,7 @@ export default defineConfig({
             { text: 'Technical Overview', link: '/technical/' },
             { text: 'System Architecture', link: '/technical/architecture' },
             { text: 'Development & Build Guide', link: '/technical/development' },
+            { text: 'Magnetic Companion Windows', link: '/guide/companion-windows' },
             { text: 'Collaborative UI Debugging', link: '/guide/collaborative-debugging' },
             { text: 'Requirements Specification', link: '/technical/requirements' },
             { text: 'Windows Process Validation', link: '/technical/validation' },
@@ -95,6 +101,7 @@ export default defineConfig({
             { text: 'Technical Overview', link: '/technical/' },
             { text: 'System Architecture', link: '/technical/architecture' },
             { text: 'Development & Build Guide', link: '/technical/development' },
+            { text: 'Magnetic Companion Windows', link: '/guide/companion-windows' },
             { text: 'Collaborative UI Debugging', link: '/guide/collaborative-debugging' },
             { text: 'Requirements Specification', link: '/technical/requirements' },
             { text: 'Windows Process Validation', link: '/technical/validation' },

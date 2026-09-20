@@ -18,19 +18,28 @@ Follow these steps to access the assistant interface:
 2. Click the **AI Assistant** tab in the top navigation bar.
 3. Verify that the chat view loads with the header toolbar, suggestion chips, and composer bar.
 
+```mermaid
+flowchart TD
+    Header["🤖 AI Assist Header: Model Selector | ⚙️ Setup & Endpoint | ⧉ Pop Out"]
+    History["Chat Message History Area (Dialogue, Tool Cards, Error Diagnostics)"]
+    Chips["Suggestion Chips: [⚡ Check live VRAM] [🦙 Can I run Llama 70B?] [🎨 Generate image]"]
+    Composer["Composer Bar: [📎 Attach] [Enter prompt here...] [👁️ ⚡ 1M] [🚀 Send]"]
+
+    Header --> History
+    History --> Chips
+    Chips --> Composer
 ```
-+-----------------------------------------------------------------------+
-|  🤖 AI Assist       Model: gemini-2.5-flash   [Setup]|
-+-----------------------------------------------------------------------+
-|                                                                       |
-|  [Chat Message History Area]                                          |
-|                                                                       |
-+-----------------------------------------------------------------------+
-|  [⚡ Check live VRAM]  [🦙 Can I run Llama 70B?]  [🎨 Generate image]  |
-+-----------------------------------------------------------------------+
-|  [📎] [Enter prompt here...]                    [👁️ ⚡ 1M] [🚀 Send]    |
-+-----------------------------------------------------------------------+
-```
+
+### Interface Component Breakdown
+
+| Interface Component | Location | Operational Function |
+| :--- | :--- | :--- |
+| **Model Selector** | Header Bar | Selects active model with capability icons (Vision `👁️`, Tool Calling `⚡`, Context `1M`). |
+| **Setup & Endpoint** | Top Right | Opens connection settings dialog for LiteLLM URL and API key. |
+| **Pop Out Button** | Top Right | Detaches AI Assist into a magnetic companion window snapped to the right flank. |
+| **Quick Action Chips** | Above Composer | One-click prompts for common operations (VRAM check, hardware fitting, image creation). |
+| **Image Attachment** | Composer Bar | Attaches PNG/JPG screenshots via file picker or clipboard paste (**Ctrl+V**). |
+| **Send Button** | Composer Bar | Submits prompt and streams tokens back into chat history. |
 
 ---
 
@@ -109,13 +118,19 @@ Staged images appear in a preview tray directly above the text box:
 3. Type your question (for example: *"Review this error message and suggest the correct resolution"*).
 4. Click **🚀 Send** or press **Enter**.
 
-```
-+-----------------------------------------------------------------------+
-| Staged Attachments:                                                   |
-| [🖼️ error_screenshot.png  ✕]  [🖼️ comfyui_graph.png  ✕]              |
-+-----------------------------------------------------------------------+
-| [📎] Why did this ComfyUI node fail?            [👁️ ⚡ 1M] [🚀 Send]   |
-+-----------------------------------------------------------------------+
+```mermaid
+flowchart TD
+    subgraph StagedTray["Staged Attachment Tray"]
+        Img1["🖼️ error_screenshot.png  [✕ Remove]"]
+        Img2["🖼️ comfyui_graph.png     [✕ Remove]"]
+    end
+    subgraph PromptBar["Input Composer Bar"]
+        Attach["📎 Attach File"]
+        Input["Text Input: 'Why did this ComfyUI node fail?'"]
+        Cap["Badge: 👁️ ⚡ 1M"]
+        Send["🚀 Send Button"]
+    end
+    StagedTray --> PromptBar
 ```
 
 ---
@@ -124,29 +139,40 @@ Staged images appear in a preview tray directly above the text box:
 
 When you ask the assistant to perform an action, the model executes native C# tools autonomously.
 
+```mermaid
+sequenceDiagram
+    autonumber
+    actor User as User
+    participant Chat as AI Assist Interface
+    participant Gateway as External LLM (LiteLLM / Gemini)
+    participant Host as Server Manager Host
+
+    User->>Chat: "Can I run Llama 3.3 70B on my current GPU?"
+    Chat->>Gateway: POST /v1/chat/completions (tools: [calculate_hardware_fit])
+    Gateway-->>Chat: Tool Call: calculate_hardware_fit(model: "llama3.3:70b")
+    Chat->>Host: Execute C# Tool calculate_hardware_fit
+    Host-->>Chat: Result: { verdict: "PERFECT FIT", vramRequiredMb: 41200 }
+    Note over Chat: Renders Inline Tool Execution Card (12 ms)
+    Chat->>Gateway: POST tool result payload
+    Gateway-->>Chat: Stream final advice ("Llama 3.3 70B fits comfortably...")
+    Chat-->>User: Display rendered answer
+```
+
 ### Inline Execution Cards
 
 During tool calling, the assistant displays an execution card inside the chat response bubble:
 
-* **Tool Name**: Displays the executed function (e.g., `get_gpu_vram_telemetry`).
-* **Execution Time**: Shows tool duration in milliseconds.
+* **Tool Name**: Displays the executed function (e.g., `calculate_hardware_fit`).
+* **Execution Time**: Shows tool duration in milliseconds (e.g., `12 ms`).
 * **Arguments**: Details the parameter values sent to the tool.
 * **Result**: Displays the response data returned to the model.
 
-```
-+-------------------------------------------------------------------+
-| 🤖 AI Assist                                               14:32    |
-|                                                                   |
-| +---------------------------------------------------------------+ |
-| | ⚡ Tool: calculate_hardware_fit                       12 ms   | |
-| | Args: {"modelName": "llama3.3:70b", "quantization": "Q4_K_M"} | |
-| | Result: {"verdict": "PERFECT FIT", "vramRequiredMb": 41200}   | |
-| +---------------------------------------------------------------+ |
-|                                                                   |
-| Llama 3.3 70B in Q4_K_M quantization fits comfortably in your    |
-| configured 48 GB VRAM pool.                                       |
-+-------------------------------------------------------------------+
-```
+| Execution Card Field | Example Content | Purpose |
+| :--- | :--- | :--- |
+| **Tool Header** | `⚡ Tool: calculate_hardware_fit` | Identifies the executed C# tool. |
+| **Execution Latency**| `12 ms` | Reports internal tool execution duration. |
+| **Input Arguments** | `{"modelName": "llama3.3:70b", "quantization": "Q4_K_M"}` | Shows parameters passed by the LLM. |
+| **Output Result** | `{"verdict": "PERFECT FIT", "vramRequiredMb": 41200}` | Shows structured payload passed back to the model. |
 
 ### Safety and Approval Boundaries
 
@@ -177,8 +203,27 @@ Click any suggestion chip above the composer to trigger pre-built diagnostic tas
 
 ---
 
+## Floating Pop-Out Mode & Magnetic Docking
+
+The AI Assistant can detach from the tab row into a floating companion window (`AiAssistWindow`).
+
+### Detach and Dock
+1. Click the pop-out button (**⧉ Pop Out**) in the AI Assistant header bar.
+2. The assistant window pops out and docks to the **right flank** of the main window.
+3. The `WindowSnapManager` binds the companion window in lockstep with the main window.
+4. Dragging the main window moves the AI Assistant companion window automatically.
+5. Click **`🧲 Attached`** in the companion window title bar to detach the window.
+6. Drag the companion window within 32 pixels of the right flank to re-snap automatically.
+7. Click the close button (**✕**) in the companion title bar to return the assistant to the main tab layout.
+
+> [!TIP]
+> Read the complete [Magnetic Companion Windows Guide](../guide/companion-windows.md) to learn about multi-monitor workflows and proximity thresholds.
+
+---
+
 ## Related Documentation
 
+* [Magnetic Companion Windows Guide](../guide/companion-windows.md): Learn about lockstep tracking and proximity snapping.
 * [Model Context Protocol (MCP) Tools](./mcp-tools.md): Learn how external agents access application tools.
 * [Living Prompts & Workflow Presets](./flows-and-presets.md): Customize system prompts and automated workflows.
 * [AI Assistant Technical Internals](../technical/ai-assistant-internals.md): Read the technical architecture specification.

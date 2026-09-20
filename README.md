@@ -1,7 +1,7 @@
 # Local LLM Server Manager
 
-> **v3.11.0** — A unified cross-platform application (.NET 10 + Avalonia UI & WebAssembly), System Tray app, background service/daemon, Model Context Protocol (MCP) AI API, visual orchestrator dashboard, and automated Playwright E2E testing framework to manage local Large Language Models (**Ollama**), Image Generation (**Stable Diffusion / Forge & ComfyUI**), **3D Mesh Generation (TRELLIS V2 & Hunyuan3D v2)**, **Video Generation (Wan 2.2, LTX-2.5, HunyuanVideo)**, and **Audio & Speech Generation (Kokoro TTS, AllTalk XTTS-v2, Faster-Whisper, Stable Audio Open 3.0, MusicGen, YuE)** on Windows, Linux, Mobile, and Web.
-It features the official **`L³M²`** monochromatic brand identity, a high-contrast **Matte Carbon Design System**, a live **Dynamic Theming Engine** (Matte Carbon, OLED Black, Clean Light), integrated **`playwright-layout-inspector`** automated visual & layout audits, NVML CUDA real-time telemetry, **Hugging Face Hub** Multimodal discovery (GGUF, Text-to-Video, Image-to-Video, TTS, Text-to-Audio), **CivitAI** checkpoint downloads, **Multimodal Studio** with interactive 3D WebGL viewer, Video Player Preview, Audio Waveform Visualizer, a unified **Avalonia WebAssembly (WASM)** dashboard, **Modular Feature Packs** (`--with-video`, `--with-audio`), and an active **Model Context Protocol (MCP) Server** (`/mcp`).
+> **v3.15.0** — A unified cross-platform application (.NET 10 + Avalonia UI & WebAssembly), System Tray app, background service/daemon, Model Context Protocol (MCP) AI API, visual orchestrator dashboard, and automated Playwright E2E testing framework to manage local Large Language Models (**Ollama**), Image Generation (**Stable Diffusion / Forge & ComfyUI**), **3D Mesh Generation (TRELLIS V2 & Hunyuan3D v2)**, **Video Generation (Wan 2.2, LTX-2.5, HunyuanVideo)**, and **Audio & Speech Generation (Kokoro TTS, AllTalk XTTS-v2, Faster-Whisper, Stable Audio Open 3.0, MusicGen, YuE)** on Windows, Linux, Mobile, and Web.
+It features the official **`L³M²`** monochromatic brand identity, a high-contrast **Matte Carbon Design System**, a live **Dynamic Theming Engine** (Matte Carbon, OLED Black, Clean Light), **Magnetic Companion Windows** (`WindowSnapManager`), in-app **AI Assist** with multimodal diagnostics, **Real Engine Test Flight**, integrated **`playwright-layout-inspector`** automated visual audits, NVML CUDA real-time telemetry, **Hugging Face Hub** Multimodal discovery (GGUF, Text-to-Video, Image-to-Video, TTS, Text-to-Audio), **CivitAI** checkpoint downloads, **Multimodal Studio** with interactive 3D WebGL viewer, Video Player Preview, Audio Waveform Visualizer, a unified **Avalonia WebAssembly (WASM)** dashboard, **Modular Feature Packs** (`--with-video`, `--with-audio`), and an active **Model Context Protocol (MCP) Server** (`/mcp`).
 
 ![Dashboard Overview](docs/images/dashboard_desktop.png)
 
@@ -9,32 +9,18 @@ It features the official **`L³M²`** monochromatic brand identity, a high-contr
 
 ## 🖥️ User Interface Layout & Dashboard Structure
 
-The application features a dark Fluent Avalonia UI theme (`#0F172A`) organized into modular tabs:
+The application features a dark Fluent Avalonia UI theme (`#0F172A`) organized into modular workspaces:
 
-```
-+-----------------------------------------------------------------------------------------+
-| Local LLM Server Manager                                                                |
-| GPU: NVIDIA GeForce RTX 4070 Ti SUPER -- 16 GB • Service Connected 🟢   [🔄 Refresh]    |
-| GPU VRAM Allocation: 4.2 GB / 16.0 GB (26.3%)                                           |
-| [========================-------------------------------------------------------------] |
-+-----------------------------------------------------------------------------------------+
-| [🦙 Installed Models] [🤗 Hugging Face Hub] [🎨 CivitAI Models] [📦 Studio] [⚙️ Settings]|
-+-----------------------------------------------------------------------------------------+
-| Ollama Local Model Library                                          [🧹 Unload All VRAM] |
-|                                                                                         |
-| +-------------------------------------------------------------------------------------+ |
-| | qwen2.5-coder:7b                         [Coding] [4.7 GB]              Installed 🟢 | |
-| +-------------------------------------------------------------------------------------+ |
-| | llama3.2:latest                          [Chat] [2.0 GB]                Installed 🟢 | |
-| +-------------------------------------------------------------------------------------+ |
-|                                                                                         |
-| Interactive KV Cache Calculator                             ~0.5 GB                     |
-| [====================================------------------------------------------------]  |
-| 8,192 tokens                                                                            |
-+-----------------------------------------------------------------------------------------+
-| LocalLLMServerManager v3.11.0 -- Unified WASM & Desktop UI        System Tray Enabled 🟢 |
-+-----------------------------------------------------------------------------------------+
-```
+| UI Workspace | Target Capabilities | Active Controls |
+| :--- | :--- | :--- |
+| **Telemetry Header** | Real-Time Hardware Telemetry | GPU name, total/used VRAM bar, service health indicator, and refresh button. |
+| **Installed Models** | Local Model Management | Ollama model cards, family tags (`Coding`, `Chat`), and interactive KV Cache Context Calculator. |
+| **Hugging Face Hub** | Multimodal GGUF Discovery | Search repositories, inspect branch quantization trees (`Q4_K_M`, `Q8_0`), and stream downloads. |
+| **CivitAI Models** | Diffusion Checkpoints & LoRAs | Filter by model type, inspect preview thumbnails, and download directly to disk. |
+| **Multimodal Studio** | Creative Generation Suite | Workspaces for Images, Video, Audio, 3D Mesh, and the one-click **Real Engine Test Flight** runner. |
+| **AI Assistant** | In-App Conversational Copilot | Multimodal screenshot diagnostics, dynamic LiteLLM capability badges, and detachable companion window. |
+| **Settings & Tools** | Configuration & Auto-Discovery | Multi-drive tool auto-detection, path status badges (`Valid`, `Missing`), and LAN IP endpoint summaries. |
+| **Companion Windows** | Multi-Window Workspaces | Detachable Documentation and AI Assist windows with magnetic flank docking and lockstep dragging. |
 
 ---
 
@@ -81,51 +67,69 @@ The application features a dark Fluent Avalonia UI theme (`#0F172A`) organized i
 26. **CivitAI Integration** — Search by name, type (Checkpoint / LoRA / Embedding / VAE / ControlNet), and sort order. Shows preview thumbnails, download counts, and star ratings.
 27. **Direct-to-Disk Downloads** — Stream CivitAI files directly to disk with live progress bars.
 
-### Application Settings & Engine Controls
+### Application Settings, Network & Engine Controls
 28. **Flexible Path Configuration & Auto-Discovery** — Customize executable/script paths and model directories for Ollama, Stable Diffusion / Forge, ComfyUI, and Audio TTS Engine. Use the one-click "🔍 Auto-Detect Installed Tools" feature (or `POST /api/tools/detect`) to automatically scan common install locations across drives, with real-time path validation badges (`Valid` 🟢 / `Missing` 🔴 / `Unset` ⚪).
-29. **Component Manager** — View, install, and uninstall optional feature packs (`ext_video`, `ext_audio`) directly from the Settings UI.
+29. **Auto-Detected LAN IP & Network Endpoints** — Automatically discovers local area network addresses (e.g. `http://10.0.0.21:5246`) and publishes firewall-ready LAN MCP URLs for connected devices.
+30. **Component Manager** — View, install, and uninstall optional feature packs (`ext_video`, `ext_audio`) directly from the Settings UI.
+
+### Magnetic Companion Windows & Multi-Window Workflow
+31. **WindowSnapManager & Magnetic Flank Docking** — Detach the Documentation tab (left flank) or AI Assistant tab (right flank) into floating companion windows with smooth lockstep movement, proximity snap (< 32 px), and drag detachment (> 24 px).
+32. **In-App AI Chat Assistant (AI Assist)** — Interactive copilot featuring dynamic LiteLLM capability badges (`👁️`, `⚡`, `1M`), multimodal screenshot paste (**Ctrl+V**), inline C# tool execution cards, and zero local GPU VRAM usage.
+33. **Real Engine Test Flight** — Instant in-app verification runner testing Text, Image, Video, and Audio engine network connectivity and GPU buffer allocation before launching complex generative jobs.
 
 ### Infrastructure & Reverse Proxy
-30. **YARP Reverse Proxy** — Transparently proxies Ollama (`:11434`), Forge (`:7860`), ComfyUI (`:8188`), and Audio Engine (`:8880`) traffic through a single unified endpoint (`:5246`).
-31. **VRAM Orchestrator** — Auto-unloads active LLM models from GPU memory before heavy Stable Diffusion, ComfyUI 3D, or Video render jobs to prevent OOM errors.
-32. **Background Engine Management** — UI controls to start/stop engines directly from the dashboard cleanly.
-33. **Lazy Boot** — AI engines can boot lazily on-demand when first requested, conserving system resources when idle.
+34. **YARP Reverse Proxy** — Transparently proxies Ollama (`:11434`), Forge (`:7860`), ComfyUI (`:8188`), and Audio Engine (`:8880`) traffic through a single unified endpoint (`:5246`).
+35. **VRAM Orchestrator** — Auto-unloads active LLM models from GPU memory before heavy Stable Diffusion, ComfyUI 3D, or Video render jobs to prevent OOM errors.
+36. **Background Engine Management** — UI controls to start/stop engines directly from the dashboard cleanly.
+37. **Lazy Boot** — AI engines can boot lazily on-demand when first requested, conserving system resources when idle.
 
 ---
 
 ## 🏛️ System Architecture
 
-```
-                  +-------------------------------------------------+
-                  | AI Assistants & External Clients                |
-                  | - Claude Desktop / Antigravity / Cursor / Agents|
-                  | - Model Context Protocol Streamable HTTP / SSE  |
-                  +------------------------+------------------------+
-                                           | JSON-RPC 2.0 (/mcp)
-                                           v
-                  +----------------------------------------------+
-                  |  Desktop Session (User Logon - Win/Linux)    |
-                  |  - Avalonia UI System Tray Icon / Window     |
-                  |  - Native XAML Dark Dashboard Window         |
-                  |  - Auto-Attaches to local server (:5246)     |
-                  +----------------------+-----------------------+
-                                         | REST / HTTP (:5246)
-                                         v
-+-----------------------------------------------------------------------------------+
-|  Local HTTP Server & Reverse Proxy Host                                           |
-|  - ASP.NET Core Web API + YARP Reverse Proxy (:5246)                              |
-|  - Model Context Protocol (MCP) Server (/mcp)                                     |
-|  - VRAM Orchestrator & Process Management                                         |
-|  - Responsive Web Dashboard & WebGL 3D Studio (wwwroot)                           |
-+------------------------------------+----------------------------------------------+
-                                     |
-                                     v
-                  +-----------------------------------+
-                  | Managed Processes                 |
-                  | - Ollama (:11434)                 |
-                  | - SD Forge (:7860)                |
-                  | - ComfyUI (:8188)                 |
-                  +-----------------------------------+
+```mermaid
+flowchart TD
+    subgraph ExternalClients["AI Assistants & External Clients"]
+        Claude["Claude Desktop / Antigravity / Cursor / Agents"]
+        WebClients["Browser & Mobile Clients (:5246)"]
+    end
+
+    subgraph DesktopSession["Desktop Session (User Logon - Win/Linux)"]
+        Tray["Avalonia UI System Tray Icon"]
+        DesktopApp["Native Avalonia Dark Dashboard Window"]
+        CompanionWins["Magnetic Companion Windows (AI Assist & Docs)"]
+    end
+
+    subgraph ServerHost["Local HTTP Server & Reverse Proxy Host (:5246)"]
+        ProgramHost["ASP.NET Core Web API + YARP Reverse Proxy"]
+        McpServer["Model Context Protocol (MCP) Server (/mcp)"]
+        VramOrch["VRAM Orchestrator & Telemetry Provider"]
+        TestFlight["Real Engine Test Flight Runner"]
+        WasmStatic["Avalonia WebAssembly & WebGL 3D Studio"]
+    end
+
+    subgraph Engines["Managed Local AI Engines"]
+        Ollama["Ollama Engine (:11434)\nLLMs & Text Generation"]
+        Forge["Stable Diffusion Forge (:7860)\nCheckpoints & LoRAs"]
+        Comfy["ComfyUI Engine (:8188)\n3D Mesh, Video & Workflows"]
+        Audio["Kokoro TTS Engine (:8880)\nSpeech Synthesis & OpenAI API"]
+    end
+
+    Claude -->|JSON-RPC 2.0 /mcp| McpServer
+    WebClients -->|HTTP / WebSocket| ProgramHost
+    DesktopApp <-->|Magnetic Snap & Lockstep| CompanionWins
+    DesktopApp -->|Local REST & IPC| ProgramHost
+    Tray -->|Tray IPC| ProgramHost
+
+    ProgramHost --> VramOrch
+    ProgramHost --> TestFlight
+    ProgramHost --> WasmStatic
+
+    VramOrch -.->|Unload VRAM: keep_alive: 0| Ollama
+    ProgramHost -->|YARP Proxy| Ollama
+    ProgramHost -->|YARP Proxy| Forge
+    ProgramHost -->|YARP Proxy| Comfy
+    ProgramHost -->|YARP Proxy| Audio
 ```
 
 ### Dual-Session Lifecycle
@@ -303,19 +307,14 @@ The Web Dashboard features a responsive CSS layout engine:
 
 ## 🧪 Quality Assurance, Test Coverage & Requirements Traceability
 
-LocalLLMServerManager includes an automated test harness ensuring cross-platform stability across **Windows 11** and **Linux** environments:
-
-```
-+-----------------------------------------------------------------------------------------+
-| TOTAL TESTS EXECUTED : 174                                                              |
-| PASSED               : 173 (99.4%)                                                      |
-| SKIPPED              : 1   (Playwright screenshot generator on-demand)                  |
-| FAILED               : 0   (0.0%)                                                       |
-| TEST FIXTURE CLASSES : 20                                                               |
-| TEST FRAMEWORKS      : .NET 10 LTS • xUnit v3 • Avalonia Headless • Microsoft Playwright|
-| OPERATING SYSTEMS    : Windows 11 x64 (Win32 Jobs) • Linux x64 (systemd / procfs / X11) |
-+-----------------------------------------------------------------------------------------+
-```
+| Metric | Measured Value | Operational Notes |
+| :--- | :--- | :--- |
+| **Total Tests Executed** | `174` | Automated test suite across Windows and Linux |
+| **Passed Tests** | `173 (99.4%)` | All unit, integration, and UI tests pass |
+| **Skipped Tests** | `1 (0.6%)` | On-demand Playwright screenshot generator |
+| **Failed Tests** | `0 (0.0%)` | Zero test failures across matrix |
+| **Test Fixture Classes** | `20` | Partitioned test fixtures across 5 execution chunks |
+| **Target Platforms** | Windows 11 x64, Linux x64, Headless Chromium | Dual-OS verified |
 
 * **[Full Test Coverage Specification](docs/TEST_COVERAGE.md)** — Detailed component-by-component coverage mapping across all 20 test classes, cross-platform validation matrix (Windows & Linux), and 5-chunk test execution guide.
 * **[Software Requirements Specification & Traceability Matrix](docs/REQUIREMENTS.md)** — Formal requirements specification across 12 functional domains (`CORE-xxx`, `LLM-xxx`, `HUB-xxx`, `DIFF-xxx`, `3D-xxx`, `VRAM-xxx`, `MCP-xxx`, `INST-xxx`, `DISC-xxx`, `UI-xxx`, `WASM-xxx`, `E2E-xxx`), mapping each requirement to source files and test assertions, plus explicit gap analysis.
@@ -324,12 +323,15 @@ LocalLLMServerManager includes an automated test harness ensuring cross-platform
 
 ## 📚 Guides & Documentation
 
-- [Full Test Coverage Specification](docs/TEST_COVERAGE.md) — Comprehensive test coverage mapping, metrics, cross-platform testing matrix, and execution guidelines.
-- [Software Requirements Specification & RTM](docs/REQUIREMENTS.md) — Complete SRS with bidirectional Traceability Matrix mapping requirement IDs to tests and code, plus gap analysis.
-- [Developer & Contributor Guide](docs/DEVELOPMENT_GUIDE.md) — Comprehensive guide on project layout, SOLID Avalonia XAML controls, design tokens, MVVM pattern, Minimal API endpoints, and testing.
-- [System Architecture & Mermaid Diagrams](docs/ARCHITECTURE.md) — Visual architecture blueprints, component hierarchy, VRAM orchestration sequence diagrams, and service mapping matrices.
-- [ComfyUI & 3D Mesh Generation Setup Guide](docs/COMFYUI_AND_3D_GUIDE.md) — How to configure ComfyUI, install 3D nodes (TRELLIS V2 / Hunyuan3D v2), and export custom workflow presets.
-- [Linux Caddy Proxy & Open WebUI / LibreChat Integration Guide](docs/CADDY_OPENWEBUI_SETUP.md) — How to expose LocalLLMServerManager via Caddy reverse proxy to Open WebUI and LibreChat clients.
+- [User Guide Hub](docs/USER_GUIDE.md) — Complete overview of all dashboard workspaces and engine controls.
+- [Real Engine Test Flight Guide](docs/getting-started/test-flight.md) — Verify engine readiness and GPU clearance with one-click test flight payloads.
+- [Magnetic Companion Windows Guide](docs/guide/companion-windows.md) — Floating helper windows, lockstep tracking, and magnetic flank snapping.
+- [Remote Access & Reverse Proxy Guide](docs/getting-started/remote-access.md) — LAN IP configuration, SSH tunneling, and Caddy reverse proxy setup.
+- [LoRA Art Styles & CivitAI](docs/studio/lora-styles.md) — Download and apply community style adapters in ComfyUI and SD Forge.
+- [AI Chat Assistant Guide](docs/ai-and-mcp/assistant.md) — Configure LiteLLM gateway, dynamic model badges, and multimodal screenshot diagnostics.
+- [Developer & Contributor Guide](docs/DEVELOPMENT_GUIDE.md) — Architecture layout, MVVM patterns, Minimal API endpoints, and Playwright tests.
+- [System Architecture Blueprint](docs/ARCHITECTURE.md) — High-level architecture, component hierarchy, and VRAM sequence diagrams.
+- [Documentation Writing Style Guide](docs/standards/ste-100.md) — ASD-STE100 writing rules for clarity, brevity, and active voice.
 
 ---
 
@@ -357,13 +359,31 @@ We use **MAJOR.MINOR.PATCH** (SemVer):
 | `3.8.0` | Cross-Platform Tool Discovery (FFmpeg hardware encoder detection: NVENC, Intel QSV, VAAPI, AMD AMF; Kokoro Python environment inspection; Linux paths & shell runners), Dual-OS GitHub Actions CI Matrix (`[windows-latest, ubuntu-latest]`), Windows Service directory handling & Linux headless guard, and enhanced Windows & Linux installers with automated Firewall rule creation and LAN/MCP endpoint summaries |
 | `3.9.0` | Local Audio & Music Studio suite (Kokoro TTS, AllTalk XTTS-v2 voice cloning, Faster-Whisper STT with `/v1/audio/transcriptions` & `/v1/audio/translations`, ComfyUI MusicGen & Stable Audio Open presets, automated setup scripts, and `D:\AI\audio` storage isolation) |
 | `3.11.0` | Dynamic WebAssembly browser origin resolution via JSImport, centralized `HttpHelper` with `BaseAddress` validation, thread-safe model collection synchronization, dynamic engine health status indicators, headless UI interaction test suite, and enhanced browser E2E test harness |
+| `3.15.0` | Magnetic Companion Windows (`WindowSnapManager`) with lockstep dragging, proximity snap, and multi-monitor detach; in-app AI Assist with LiteLLM capability discovery badges and multimodal screenshot analysis; Real Engine Test Flight verification runner for Text, Image, Video, and Audio backends; auto-detected LAN IP endpoints with LAN MCP URLs; optimized SettingsService async caching and hardware JSON lookup performance |
 
 ---
 
 ## 🚀 Installation & Downloads
 
+### Testing & Setup Requirements Matrix
+
+Local LLM Server Manager uses a modular design. Testers only need to install components for the features they want to test:
+
+| Feature Area | Stack Requirement | Prerequisite Needed | What It Enables |
+| :--- | :--- | :--- | :--- |
+| **Core Manager & Dashboard** | **REQUIRED** | Windows 10/11 x64 or Linux x64 | Hardware telemetry, VRAM bar, system tray, reverse proxy, web dashboard. |
+| **Ollama Engine** | *Optional* | [Ollama](https://ollama.com) installed | Local LLM text generation, GGUF downloads, KV cache calculator. |
+| **Stable Diffusion Forge** | *Optional* | [SD Forge](https://github.com/lllyasviel/stable-diffusion-webui-forge) installed | Local image generation, CivitAI checkpoint and LoRA downloads. |
+| **ComfyUI Engine** | *Optional* | [ComfyUI](https://github.com/comfyanonymous/ComfyUI) installed | 3D mesh reconstruction, video generation, and FLUX workflows. |
+| **Kokoro TTS Engine** | *Optional* | Python environment or Audio Pack | Local speech synthesis with OpenAI-compatible audio API. |
+| **AI Chat Assistant** | *Optional* | LiteLLM gateway or OpenAI endpoint | In-app assistant, multimodal screenshot analysis, and app control. |
+| **Feature Packs (`ext_*`)** | *Optional* | Installed via Settings tab | Video ComfyUI presets (`ext_video`) and Audio workflows (`ext_audio`). |
+
+> [!IMPORTANT]
+> The release package is **self-contained**. You do not need to install the .NET SDK or .NET runtime to run the application.
+
 ### Option 1: Official Windows Installer (.exe) — Seamless In-Place Upgrades
-Download the latest `LocalLLMServerManager-v3.5.0-Setup.exe` from the [GitHub Releases](https://github.com/spelech/LocalLLMServerManager/releases) page.
+Download the latest `LocalLLMServerManager-Setup.exe` from the [GitHub Releases](https://github.com/spelech/LocalLLMServerManager/releases) page.
 * **In-Place Upgrades**: Running setup over an existing installation automatically stops any active `LocalLLMServerManager` Windows Service (`net stop`) and closes running tray processes, safely overwrites binaries without file lock errors, preserves your custom `settings.json`, and reconfigures & restarts the background service.
 * Includes an installation wizard with options for:
   * 🟢 **Install Windows Service** (Headless pre-logon machine boot)
@@ -383,7 +403,7 @@ sudo ./install_linux.sh
 * Installs desktop launcher (`localllmmanager.desktop`) in your application menu
 
 ### Option 3: Standalone Portable (.zip / .tar.gz)
-Download `LocalLLMServerManager-v3.5.0-win-x64.zip` or `LocalLLMServerManager-v3.5.0-linux-x64.tar.gz` from Releases, extract, and run executable. Includes bundled runtime — no .NET SDK required!
+Download `LocalLLMServerManager-win-x64.zip` or `LocalLLMServerManager-linux-x64.tar.gz` from Releases, extract, and run executable. Includes bundled runtime — no .NET SDK required!
 
 ### Option 4: Building Release Packages Locally
 - **Windows:** Run `.\build_release.ps1` (or `.\scripts\update.ps1` for in-place local build & upgrade)
@@ -494,10 +514,16 @@ Dashboard available at **http://localhost:5246/**
 
 ---
 
-## 🔧 Prerequisites
+## 🔧 Prerequisites & Engine Links
 
-- **[Ollama](https://ollama.com/)** — Local LLM inference runtime
-- **[Stable Diffusion WebUI Forge](https://github.com/lllyasviel/stable-diffusion-webui-forge)** *(optional)* — SD image generation backend
-- **[ComfyUI](https://github.com/comfyanonymous/ComfyUI)** *(optional)* — Node-based 3D mesh & image generation backend
-- **[.NET 10 SDK](https://dotnet.microsoft.com/download/dotnet/10)** *(optional)* — Only required if compiling from source code
+For complete installation steps and testing requirements, see the [Testing & Setup Requirements Matrix](#testing--setup-requirements-matrix) above.
+
+- **Operating System**: Windows 10/11 (64-bit) or Linux (Ubuntu 22.04+, Debian 12+, Fedora 38+)
+- **GPU Acceleration**: NVIDIA GPU with CUDA support (8 GB+ VRAM recommended; CPU inference supported for text models)
+- **[Ollama](https://ollama.com/)** *(Optional)* — Local LLM inference engine for chat and code generation
+- **[Stable Diffusion WebUI Forge](https://github.com/lllyasviel/stable-diffusion-webui-forge)** *(Optional)* — Checkpoint and LoRA image generation backend
+- **[ComfyUI](https://github.com/comfyanonymous/ComfyUI)** *(Optional)* — Node-based 3D mesh, video, and complex diffusion backend
+- **[LiteLLM Proxy](https://github.com/BerriAI/litellm)** *(Optional)* — External gateway for the in-app AI Assistant
+- **[.NET 10 SDK](https://dotnet.microsoft.com/download/dotnet/10)** *(Optional)* — Only required if building the application from source code
+
 

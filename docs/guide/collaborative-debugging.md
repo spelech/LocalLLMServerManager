@@ -19,45 +19,38 @@ Collaborative debugging operates on a dual-channel architecture:
 1. **Human Developer Channel**: The developer interacts with the running desktop application, evaluates ergonomics and visual aesthetics, and uses built-in F12 DevTools to inspect layout bounds, active styles, and element trees interactively.
 2. **AI Assistant Channel**: The AI coding assistant connects through the `AvaloniaMcp` protocol server over a local named pipe, querying visual trees, serialized ViewModel state, and binding diagnostic logs via structured JSON-RPC tool calls.
 
-```
-+-------------------------------------------------------------------------+
-|                           DEVELOPER WORKSPACE                           |
-|  - Runs application in Debug mode                                       |
-|  - Inspects visual layout & controls via F12 DevTools                   |
-|  - Reports visual anomalies or UX friction in conversation              |
-+------------------------------------+------------------------------------+
-                                     |
-                                     v
-+-------------------------------------------------------------------------+
-|                  AVALONIA RUNTIME PROCESS (PID: {pid})                  |
-|                                                                         |
-|  - AppBuilder.Configure<App>()                                          |
-|      .UsePlatformDetect()                                               |
-|      .UseMcpDiagnostics()        <-- AvaloniaMcp Named Pipe Endpoint    |
-|      .LogToTrace()                                                      |
-|                                                                         |
-|  - Named Pipe Endpoint: `avalonia-mcp-{pid}`                            |
-|  - Process Discovery File: `%TEMP%/avalonia-mcp/{pid}.json`             |
-|  - UI Diagnostic Logger (Binding error trace capture)                   |
-+------------------------------------+------------------------------------+
-                                     | Named Pipe (JSON-RPC)
-                                     v
-+-------------------------------------------------------------------------+
-|                  AVALONIA MCP SERVER (`avaloniamcp`)                    |
-|                                                                         |
-|  - Global .NET Tool (`dotnet avalonia-mcp`)                             |
-|  - Exposes 15 MCP Tools to AI Assistant over stdio                      |
-+------------------------------------+------------------------------------+
-                                     | MCP Protocol (stdio)
-                                     v
-+-------------------------------------------------------------------------+
-|                        ANTIGRAVITY AI ASSISTANT                         |
-|  - Discovers running UI app instance (`discover_apps`)                  |
-|  - Queries visual/logical trees, DataContexts, & broken bindings        |
-|  - Mutates properties live to test layout hypotheses                    |
-|  - Captures element screenshots for visual inspection                   |
-|  - Formulates and applies codebase fixes directly                       |
-+-------------------------------------------------------------------------+
+```mermaid
+flowchart TD
+    subgraph DevWorkspace["DEVELOPER WORKSPACE"]
+        D1["Runs application in Debug mode: `dotnet run -c Debug`"]
+        D2["Inspects visual layout & controls via F12 DevTools"]
+        D3["Reports visual anomalies or UX issues in dialogue"]
+    end
+
+    subgraph RuntimeProcess["AVALONIA RUNTIME PROCESS (PID: {pid})"]
+        R1["AppBuilder.Configure&lt;App&gt;()\n.UseMcpDiagnostics()\n.LogToTrace()"]
+        R2["Named Pipe Endpoint: avalonia-mcp-{pid}"]
+        R3["Process Discovery Metadata: %TEMP%/avalonia-mcp/{pid}.json"]
+        R4["UI Diagnostic Logger (Binding Error Trace Capture)"]
+    end
+
+    subgraph McpServer["AVALONIA MCP SERVER (avaloniamcp)"]
+        M1[".NET Global Tool: dotnet avalonia-mcp"]
+        M2["Exposes 15 Diagnostic Tools over stdio"]
+    end
+
+    subgraph AIAssistant["AI CODING ASSISTANT (ANTIGRAVITY / CLAUDE)"]
+        A1["Discovers running app instance: discover_apps"]
+        A2["Inspects visual/logical trees, DataContexts & bindings"]
+        A3["Mutates properties live to test layout hypotheses"]
+        A4["Captures element screenshots for visual verification"]
+        A5["Formulates and applies codebase fixes directly"]
+    end
+
+    DevWorkspace -->|Interactive Visual Inspection| RuntimeProcess
+    RuntimeProcess -->|Named Pipe JSON-RPC| McpServer
+    McpServer -->|MCP Protocol stdio| AIAssistant
+    AIAssistant -->|Automated Fixes & Verification| DevWorkspace
 ```
 
 ### Production Isolation & Security
