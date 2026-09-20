@@ -55,9 +55,10 @@ public class ComponentManagerAndEndpointsTests : IClassFixture<AppTestServerFixt
     {
         var client = _fixture.CreateClient();
 
-        // Install request
+        // Install request (Uses SSE, so use ResponseHeadersRead to prevent HttpClient buffering issues)
         var installReq = new ComponentInstallRequest { ComponentId = "audio-tts" };
-        var installResponse = await client.PostAsJsonAsync("/api/components/install", installReq);
+        using var installReqMsg = new HttpRequestMessage(HttpMethod.Post, "/api/components/install") { Content = JsonContent.Create(installReq) };
+        var installResponse = await client.SendAsync(installReqMsg, HttpCompletionOption.ResponseHeadersRead);
         Assert.Equal(HttpStatusCode.OK, installResponse.StatusCode);
 
         // Uninstall request
@@ -65,9 +66,10 @@ public class ComponentManagerAndEndpointsTests : IClassFixture<AppTestServerFixt
         var uninstallResponse = await client.PostAsJsonAsync("/api/components/uninstall", uninstallReq);
         Assert.Equal(HttpStatusCode.OK, uninstallResponse.StatusCode);
 
-        // Install and Uninstall ai-assistant
+        // Install and Uninstall ai-assistant (Uses SSE)
         var aiInstallReq = new ComponentInstallRequest { ComponentId = "ai-assistant" };
-        var aiInstallResponse = await client.PostAsJsonAsync("/api/components/install", aiInstallReq);
+        using var aiInstallReqMsg = new HttpRequestMessage(HttpMethod.Post, "/api/components/install") { Content = JsonContent.Create(aiInstallReq) };
+        var aiInstallResponse = await client.SendAsync(aiInstallReqMsg, HttpCompletionOption.ResponseHeadersRead);
         Assert.Equal(HttpStatusCode.OK, aiInstallResponse.StatusCode);
 
         var aiUninstallReq = new ComponentInstallRequest { ComponentId = "ai-assistant" };
