@@ -12,6 +12,7 @@ public partial class TelemetryViewModel : ObservableObject
 {
     private readonly ITelemetryService _telemetryService;
 
+    [ObservableProperty] private bool _isCollapsed = false;
     [ObservableProperty] private string _gpuName = "GPU Telemetry Active";
     [ObservableProperty] private double _vramUsedGb = 0.0;
     [ObservableProperty] private double _vramTotalGb = 16.0;
@@ -53,6 +54,12 @@ public partial class TelemetryViewModel : ObservableObject
     public TelemetryViewModel(ITelemetryService telemetryService)
     {
         _telemetryService = telemetryService;
+    }
+
+    [RelayCommand]
+    public void ToggleCollapse()
+    {
+        IsCollapsed = !IsCollapsed;
     }
 
     [RelayCommand]
