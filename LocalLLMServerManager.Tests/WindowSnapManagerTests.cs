@@ -381,6 +381,91 @@ public class WindowSnapManagerTests
         Assert.Equal(200 - 300, comp1.Position.X);
         Assert.Equal(200 + 1000, comp2.Position.X);
     }
+
+    [AvaloniaFact]
+    public void SynchronizeAllForMain_WhenMainMinimized_MinimizesAttachedAndDetachedCompanions()
+    {
+        var manager = new WindowSnapManager();
+        var main = new Window { Width = 1000, Height = 700 };
+        var compAttached = new Window { Width = 400, Height = 700 };
+        var compDetached = new Window { Width = 400, Height = 700 };
+
+        manager.RegisterCompanion(main, compAttached, SnapFlank.Right, autoAttach: true);
+        manager.RegisterCompanion(main, compDetached, SnapFlank.Left, autoAttach: false);
+
+        Assert.True(manager.IsSnapped(compAttached));
+        Assert.False(manager.IsSnapped(compDetached));
+
+        // Minimize main
+        main.WindowState = WindowState.Minimized;
+        manager.SynchronizeAllForMain(main);
+
+        Assert.Equal(WindowState.Minimized, compAttached.WindowState);
+        Assert.Equal(WindowState.Minimized, compDetached.WindowState);
+    }
+
+    [AvaloniaFact]
+    public void SynchronizeAllForMain_WhenMainRestored_RestoresCompanions()
+    {
+        var manager = new WindowSnapManager();
+        var main = new Window { Width = 1000, Height = 700 };
+        main.Position = new PixelPoint(100, 100);
+        var compAttached = new Window { Width = 400, Height = 700 };
+        var compDetached = new Window { Width = 400, Height = 700 };
+        compDetached.Position = new PixelPoint(50, 50);
+
+        manager.RegisterCompanion(main, compAttached, SnapFlank.Right, autoAttach: true);
+        manager.RegisterCompanion(main, compDetached, SnapFlank.Left, autoAttach: false);
+
+        // Minimize main and sync
+        main.WindowState = WindowState.Minimized;
+        manager.SynchronizeAllForMain(main);
+
+        Assert.Equal(WindowState.Minimized, compAttached.WindowState);
+        Assert.Equal(WindowState.Minimized, compDetached.WindowState);
+
+        // Restore main to Normal
+        main.WindowState = WindowState.Normal;
+        manager.SynchronizeAllForMain(main);
+
+        Assert.Equal(WindowState.Normal, compAttached.WindowState);
+        Assert.Equal(WindowState.Normal, compDetached.WindowState);
+        // Snapped companion repositioned flush against right flank: 100 + 1000 = 1100
+        Assert.Equal(1100, compAttached.Position.X);
+        Assert.Equal(100, compAttached.Position.Y);
+        // Detached companion remains at its previous position
+        Assert.Equal(50, compDetached.Position.X);
+        Assert.Equal(50, compDetached.Position.Y);
+    }
+
+    [AvaloniaFact]
+    public void AttachedCompanion_WhenMinimized_MinimizesMainWindow()
+    {
+        var manager = new WindowSnapManager();
+        var main = new Window { Width = 1000, Height = 700 };
+        var companion = new Window { Width = 400, Height = 700 };
+
+        manager.RegisterCompanion(main, companion, SnapFlank.Right, autoAttach: true);
+
+        // Companion gets minimized
+        companion.WindowState = WindowState.Minimized;
+
+        Assert.Equal(WindowState.Minimized, main.WindowState);
+    }
+
+    [AvaloniaFact]
+    public void RegisterCompanion_SetsMainWindowAsOwner_WhenCompanionOwnerIsNull()
+    {
+        var manager = new WindowSnapManager();
+        var main = new Window { Width = 1000, Height = 700 };
+        var companion = new Window { Width = 400, Height = 700 };
+
+        Assert.Null(companion.Owner);
+        manager.RegisterCompanion(main, companion, SnapFlank.Right, autoAttach: true);
+
+        Assert.Same(main, companion.Owner);
+    }
 }
+
 
 

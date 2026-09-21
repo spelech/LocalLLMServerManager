@@ -46,6 +46,11 @@ public class WindowSnapManager
         ArgumentNullException.ThrowIfNull(mainWindow);
         ArgumentNullException.ThrowIfNull(companion);
 
+        if (companion.Owner == null)
+        {
+            SetOwner(companion, mainWindow);
+        }
+
         var state = new SnappedCompanionState(mainWindow, companion, flank)
         {
             IsSnapped = autoAttach
@@ -56,6 +61,23 @@ public class WindowSnapManager
         {
             Attach(companion);
         }
+
+        // Hook companion WindowState changes to synchronize minimize to mainWindow if snapped
+        EventHandler<AvaloniaPropertyChangedEventArgs>? onCompPropertyChanged = null;
+        onCompPropertyChanged = (s, e) =>
+        {
+            if (e.Property == Window.WindowStateProperty)
+            {
+                if (companion.WindowState == WindowState.Minimized && state.IsSnapped)
+                {
+                    if (state.MainWindow.WindowState != WindowState.Minimized)
+                    {
+                        state.MainWindow.WindowState = WindowState.Minimized;
+                    }
+                }
+            }
+        };
+        companion.PropertyChanged += onCompPropertyChanged;
 
         // Deduplicate event subscriptions on MainWindow
         if (_hookedMainWindows.TryAdd(mainWindow, 0))
@@ -85,7 +107,11 @@ public class WindowSnapManager
             mainWindow.Closed += onClosed;
         }
 
-        companion.Closed += (s, e) => _states.TryRemove(companion, out _);
+        companion.Closed += (s, e) =>
+        {
+            companion.PropertyChanged -= onCompPropertyChanged;
+            _states.TryRemove(companion, out _);
+        };
     }
 
     public bool IsSnapped(Window companion)
@@ -190,13 +216,63 @@ public class WindowSnapManager
     {
         ArgumentNullException.ThrowIfNull(mainWindow);
 
-        foreach (var kvp in _states)
+        if (mainWindow.WindowState == WindowState.Minimized)
         {
-            if (kvp.Value.MainWindow == mainWindow && kvp.Value.IsSnapped)
+            foreach (var kvp in _states)
             {
-                SynchronizeCompanion(kvp.Key);
+                if (kvp.Value.MainWindow == mainWindow)
+                {
+                    var companion = kvp.Key;
+                    if (companion.WindowState != WindowState.Minimized)
+                    {
+                        companion.WindowState = WindowState.Minimized;
+                    }
+                }
             }
         }
+        else if (mainWindow.WindowState == WindowState.Normal || mainWindow.WindowState == WindowState.Maximized)
+        {
+            foreach (var kvp in _states)
+            {
+                if (kvp.Value.MainWindow == mainWindow)
+                {
+                    var companion = kvp.Key;
+                    if (companion.WindowState == WindowState.Minimized)
+                    {
+                        companion.WindowState = WindowState.Normal;
+                    }
+
+                    if (kvp.Value.IsSnapped)
+                    {
+                        SynchronizeCompanion(companion);
+                    }
+                }
+            }
+        }
+        else
+        {
+            foreach (var kvp in _states)
+            {
+                if (kvp.Value.MainWindow == mainWindow && kvp.Value.IsSnapped)
+                {
+                    SynchronizeCompanion(kvp.Key);
+                }
+            }
+        }
+    }
+
+    public System.Collections.Generic.IReadOnlyList<Window> GetAllCompanionsForMain(Window mainWindow)
+    {
+        ArgumentNullException.ThrowIfNull(mainWindow);
+        var list = new System.Collections.Generic.List<Window>();
+        foreach (var kvp in _states)
+        {
+            if (kvp.Value.MainWindow == mainWindow)
+            {
+                list.Add(kvp.Key);
+            }
+        }
+        return list;
     }
 
     public bool IsWithinSnapThreshold(Window mainWindow, Window companion, SnapFlank flank, int tolerancePixels = DefaultSnapThreshold, double scaling = 1.0)
@@ -236,5 +312,21 @@ public class WindowSnapManager
         };
 
         return new PixelPoint(targetX, mainY);
+    }
+
+    public static void SetOwner(Window companion, Window owner)
+    {
+        ArgumentNullException.ThrowIfNull(companion);
+        ArgumentNullException.ThrowIfNull(owner);
+        try
+        {
+            var ownerProp = typeof(WindowBase).GetProperty("Owner");
+            var setter = ownerProp?.GetSetMethod(true);
+            setter?.Invoke(companion, new object[] { owner });
+        }
+        catch
+        {
+            // Fallback or ignore if platform doesn't permit reflection
+        }
     }
 }
