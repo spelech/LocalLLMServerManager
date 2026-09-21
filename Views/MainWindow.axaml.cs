@@ -36,6 +36,7 @@ public partial class MainWindow : Window
             assistantService: null,
             settingsService: new SettingsService(),
             promptService: new PromptManagementService());
+        mainVm.IsDesktopHost = true;
         DataContext = mainVm;
 
         mainVm.Documentation.OnPopOutNativeWindowRequested = () =>

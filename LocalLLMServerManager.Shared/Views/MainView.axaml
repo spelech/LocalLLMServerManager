@@ -98,8 +98,7 @@
             </TabItem>
         </TabControl>
 
-        <!-- Dimmer Backdrop for Slide-Out Drawers -->
-        <Border Grid.Row="1" Background="#66000000" IsVisible="{Binding IsAnyDrawerOpen}" PointerPressed="OnBackdropPointerPressed" ZIndex="90"/>
+        <!-- Non-Modal Slide-Out Drawers -->
 
         <!-- Left Slide-Out Drawer for Documentation -->
         <Border Grid.Row="1" HorizontalAlignment="Left" VerticalAlignment="Stretch" Width="480"

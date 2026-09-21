@@ -103,10 +103,17 @@ public partial class MainViewModel : ObservableObject
     private int _selectedModelsTabIndex = 0;
 
     [ObservableProperty] private bool _isAnyDrawerOpen = false;
+    [ObservableProperty] private bool _isDesktopHost = false;
 
     [RelayCommand]
     public void ToggleDocumentationDrawer()
     {
+        if (IsDesktopHost)
+        {
+            Documentation.PopOutNativeWindowCommand.Execute(null);
+            return;
+        }
+
         Assistant.IsDrawerOpen = false;
         Ollama.IsPullDrawerOpen = false;
         Documentation.IsDrawerOpen = !Documentation.IsDrawerOpen;
@@ -116,6 +123,12 @@ public partial class MainViewModel : ObservableObject
     [RelayCommand]
     public void ToggleAiAssistDrawer()
     {
+        if (IsDesktopHost)
+        {
+            Assistant.RequestPopOutCommand.Execute(null);
+            return;
+        }
+
         Documentation.IsDrawerOpen = false;
         Ollama.IsPullDrawerOpen = false;
         Assistant.IsDrawerOpen = !Assistant.IsDrawerOpen;
