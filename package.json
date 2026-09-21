@@ -10,8 +10,7 @@
     "docs:build": "vitepress build docs",
     "docs:preview": "vitepress preview docs",
     "update": "pwsh -ExecutionPolicy Bypass -File ./scripts/fast_update.ps1",
-    "build:installer": "pwsh -ExecutionPolicy Bypass -File ./scripts/build_release.ps1",
-    "test:layout": "playwright test --config=playwright.config.ts"
+    "build:installer": "pwsh -ExecutionPolicy Bypass -File ./scripts/build_release.ps1"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
@@ -19,7 +18,6 @@
     "@types/node": "^26.6.1",
     "eslint": "^10.10.0",
     "mermaid": "^12.0.0",
-    "playwright-layout-inspector": "github:spelech/playwright-layout-inspector#c042a04",
     "typescript": "^5.7.0",
     "typescript-eslint": "^8.70.0",
     "vitepress": "^1.6.3",
