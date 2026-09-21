@@ -42,8 +42,8 @@
 
         <!-- Hardware Compatibility Filter Chips -->
         <ScrollViewer Grid.Row="1" HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Disabled" Margin="0,0,0,10">
-            <StackPanel Orientation="Horizontal" Spacing="6">
-                <TextBlock Text="Hardware Filter:" FontSize="12" Foreground="{StaticResource TextMutedBrush}" VerticalAlignment="Center" Margin="0,0,4,0"/>
+            <StackPanel Orientation="Horizontal" Spacing="8">
+                <TextBlock Text="Hardware Filter:" FontSize="12" Foreground="{StaticResource TextMutedBrush}" VerticalAlignment="Center"/>
                 <Button Command="{Binding ToggleFitVerdictCommand}" CommandParameter="FullVram" Classes="hw-filter-btn" Classes.inactive="{Binding !IsFullVramActive}" BorderBrush="#10B981">
                     <StackPanel Orientation="Horizontal" Spacing="5">
                         <TextBlock Text="✓" IsVisible="{Binding IsFullVramActive}" Foreground="#10B981" FontWeight="Bold"/>

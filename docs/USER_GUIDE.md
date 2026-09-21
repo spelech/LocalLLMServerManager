@@ -1,6 +1,6 @@
 # Local LLM Server Manager — User Guide Hub
 
-Welcome to the **Local LLM Server Manager (v3.15.1)** User Guide. This document provides a complete guide to operating the dashboard, configuring local AI engines, and using generative studio tools.
+Welcome to the **Local LLM Server Manager (v3.16.0)** User Guide. This document provides a complete guide to operating the dashboard, configuring local AI engines, and using generative studio tools.
 
 ---
 

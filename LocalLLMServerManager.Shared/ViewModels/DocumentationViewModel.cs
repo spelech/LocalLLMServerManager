@@ -57,16 +57,19 @@ public partial class DocumentationViewModel : ObservableObject
     public Action<int>? OnNavigateToTabRequested { get; set; }
     public Action? OnPopOutNativeWindowRequested { get; set; }
 
+    [ObservableProperty] private bool _isDrawerOpen = false;
+
     [RelayCommand]
     public void PopOutNativeWindow()
     {
         if (OnPopOutNativeWindowRequested != null)
         {
+            IsDrawerOpen = false;
             OnPopOutNativeWindowRequested.Invoke();
         }
         else
         {
-            ToggleFloatingOverlay();
+            IsDrawerOpen = !IsDrawerOpen;
         }
     }
 

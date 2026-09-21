@@ -18,6 +18,9 @@ jobs:
     - name: Checkout Code
       uses: actions/checkout@v7
 
+    - name: Checkout Avalonia.LayoutInspector
+      run: git clone https://github.com/spelech/Avalonia.LayoutInspector.git ../Avalonia.LayoutInspector
+
     - name: Setup .NET SDK 10.0
       uses: actions/setup-dotnet@v6
       with:

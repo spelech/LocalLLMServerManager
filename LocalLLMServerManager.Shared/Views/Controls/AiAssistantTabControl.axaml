@@ -43,9 +43,15 @@
                 <!-- Action Controls -->
                 <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
                     <Button x:Name="AiPopOutButton" Content="↗️ Pop Out" Command="{Binding RequestPopOutCommand}" Classes="matte-secondary" FontSize="11" Padding="10,6"/>
-                    <Button Content="⚙️ Setup &amp; Endpoint" Command="{Binding ToggleSetupCardCommand}" Classes="matte-secondary" FontSize="11" Padding="10,6"/>
-                    <Button Content="🔄 Reload Prompts" Command="{Binding ReloadPromptsCommand}" Classes="matte-secondary" FontSize="11" Padding="10,6"/>
-                    <Button Content="🧹 Clear Chat" Command="{Binding ClearChatCommand}" Classes="matte-secondary" FontSize="11" Padding="10,6"/>
+                    <Button Content="⋮" ToolTip.Tip="More Actions" Classes="matte-secondary" FontSize="14" Padding="8,4">
+                        <Button.Flyout>
+                            <MenuFlyout Placement="BottomEdgeAlignedRight">
+                                <MenuItem Header="⚙️ Setup &amp; Endpoint" Command="{Binding ToggleSetupCardCommand}"/>
+                                <MenuItem Header="🔄 Reload Prompts" Command="{Binding ReloadPromptsCommand}"/>
+                                <MenuItem Header="🧹 Clear Chat" Command="{Binding ClearChatCommand}"/>
+                            </MenuFlyout>
+                        </Button.Flyout>
+                    </Button>
                 </StackPanel>
             </Grid>
         </Border>
@@ -268,37 +274,33 @@
                     </ScrollViewer>
                 </Border>
 
-                <!-- Composer Input & Controls Row -->
-                <Grid ColumnDefinitions="Auto, *, Auto">
-                    <Button x:Name="AttachFileButton"
-                            Grid.Column="0"
-                            Click="OnAttachFileButtonClick"
-                            Content="📎"
-                            ToolTip.Tip="Attach image (PNG, JPG, WEBP)"
-                            Classes="matte-secondary"
-                            Padding="10,8"
-                            FontSize="12"
-                            Margin="0,0,6,0"
-                            VerticalAlignment="Center"/>
+                <!-- Row 1: Full-width multiline Prompt TextBox -->
+                <TextBox x:Name="PromptTextBox"
+                         KeyDown="OnPromptTextBoxKeyDown"
+                         Text="{Binding InputText}"
+                         Watermark="Ask anything or command the application (e.g., 'What is my current VRAM usage?' or 'Generate an image with Flux')..."
+                         AcceptsReturn="True"
+                         MaxHeight="120"
+                         FontSize="12"
+                         HorizontalAlignment="Stretch"/>
 
-                    <TextBox x:Name="PromptTextBox"
-                             Grid.Column="1"
-                             KeyDown="OnPromptTextBoxKeyDown"
-                             Text="{Binding InputText}"
-                             Watermark="Ask anything or command the application (e.g., 'What is my current VRAM usage?' or 'Generate an image with Flux')..."
-                             AcceptsReturn="True"
-                             MaxHeight="100"
-                             FontSize="12"
-                             VerticalAlignment="Center"
-                             Margin="0,0,8,0"/>
+                <!-- Row 2: Controls Toolbar -->
+                <Grid Margin="0,8,0,0">
+                    <!-- Left-aligned Controls -->
+                    <StackPanel Orientation="Horizontal" Spacing="6" HorizontalAlignment="Left" VerticalAlignment="Center">
+                        <Button x:Name="AttachFileButton"
+                                Click="OnAttachFileButtonClick"
+                                Content="📎"
+                                ToolTip.Tip="Attach image (PNG, JPG, WEBP)"
+                                Classes="matte-secondary"
+                                Padding="10,8"
+                                FontSize="12"/>
 
-                    <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
                         <ComboBox ItemsSource="{Binding AvailableModelCapabilities}"
                                   SelectedItem="{Binding SelectedModelCapability}"
-                                  MinWidth="200"
-                                  MaxWidth="300"
-                                  VerticalAlignment="Center"
-                                  Margin="0,0,6,0">
+                                  MinWidth="180"
+                                  MaxWidth="280"
+                                  VerticalAlignment="Center">
                             <ComboBox.ItemTemplate>
                                 <DataTemplate DataType="models:AiModelCapabilityInfo">
                                     <StackPanel Orientation="Horizontal" Spacing="6">
@@ -308,11 +310,24 @@
                                 </DataTemplate>
                             </ComboBox.ItemTemplate>
                         </ComboBox>
+                    </StackPanel>
 
-                        <Button Content="⏹️ Stop" Command="{Binding StopGenerationCommand}" Classes="matte-secondary"
-                                IsVisible="{Binding IsGenerating}" Padding="14,8" FontSize="12"/>
-                        <Button x:Name="SendButton" Content="🚀 Send" Command="{Binding SendMessageCommand}" Classes="matte-primary"
-                                IsVisible="{Binding !IsGenerating}" Padding="16,8" FontSize="12"/>
+                    <!-- Right-aligned Controls -->
+                    <StackPanel Orientation="Horizontal" Spacing="6" HorizontalAlignment="Right" VerticalAlignment="Center">
+                        <Button Content="⏹️ Stop"
+                                Command="{Binding StopGenerationCommand}"
+                                Classes="matte-secondary"
+                                IsVisible="{Binding IsGenerating}"
+                                Padding="14,8"
+                                FontSize="12"/>
+
+                        <Button x:Name="SendButton"
+                                Content="🚀 Send"
+                                Command="{Binding SendMessageCommand}"
+                                Classes="matte-primary"
+                                IsVisible="{Binding !IsGenerating}"
+                                Padding="16,8"
+                                FontSize="12"/>
                     </StackPanel>
                 </Grid>
             </StackPanel>

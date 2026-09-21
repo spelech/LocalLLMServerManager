@@ -32,6 +32,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\LocalLLMServerManager.csproj" />
+    <ProjectReference Include="..\..\Avalonia.LayoutInspector\src\Avalonia.LayoutInspector\Avalonia.LayoutInspector.csproj" />
   </ItemGroup>
 
   <ItemGroup>

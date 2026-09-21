@@ -98,6 +98,32 @@ public partial class MainViewModel : ObservableObject
     [ObservableProperty]
     private int _selectedModelsTabIndex = 0;
 
+    [ObservableProperty] private bool _isAnyDrawerOpen = false;
+
+    [RelayCommand]
+    public void ToggleDocumentationDrawer()
+    {
+        Assistant.IsDrawerOpen = false;
+        Documentation.IsDrawerOpen = !Documentation.IsDrawerOpen;
+        IsAnyDrawerOpen = Documentation.IsDrawerOpen;
+    }
+
+    [RelayCommand]
+    public void ToggleAiAssistDrawer()
+    {
+        Documentation.IsDrawerOpen = false;
+        Assistant.IsDrawerOpen = !Assistant.IsDrawerOpen;
+        IsAnyDrawerOpen = Assistant.IsDrawerOpen;
+    }
+
+    [RelayCommand]
+    public void CloseDrawers()
+    {
+        Documentation.IsDrawerOpen = false;
+        Assistant.IsDrawerOpen = false;
+        IsAnyDrawerOpen = false;
+    }
+
     [ObservableProperty]
     private string _appVersionText = $"LocalLLMServerManager v{typeof(MainViewModel).Assembly.GetName().Version?.ToString(3) ?? "3.15.1"} — Unified WASM & Desktop UI";
 

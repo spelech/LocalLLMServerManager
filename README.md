@@ -1,6 +1,6 @@
 # Local LLM Server Manager
 
-> **v3.15.1** — The unified orchestrator for local AI. Manage Large Language Models (**Ollama**), Image Generation (**Stable Diffusion Forge & ComfyUI**), **3D Mesh Generation**, **Video Generation**, and **Audio & Speech Synthesis (Kokoro TTS)** from a single desktop dashboard, background daemon, and Model Context Protocol (MCP) server.
+> **v3.16.0** — The unified orchestrator for local AI. Manage Large Language Models (**Ollama**), Image Generation (**Stable Diffusion Forge & ComfyUI**), **3D Mesh Generation**, **Video Generation**, and **Audio & Speech Synthesis (Kokoro TTS)** from a single desktop dashboard, background daemon, and Model Context Protocol (MCP) server.
 > 
 > Designed with the **`L³M²`** Matte Carbon design system, real-time GPU VRAM telemetry, automated memory management, and magnetic multi-window support on Windows and Linux.
 
@@ -350,6 +350,7 @@ We use **MAJOR.MINOR.PATCH** (SemVer):
 | `3.11.0` | Dynamic WebAssembly browser origin resolution via JSImport, centralized `HttpHelper` with `BaseAddress` validation, thread-safe model collection synchronization, dynamic engine health status indicators, headless UI interaction test suite, and enhanced browser E2E test harness |
 | `3.15.0` | Magnetic Companion Windows (`WindowSnapManager`) with lockstep dragging, proximity snap, and multi-monitor detach; in-app AI Assist with LiteLLM capability discovery badges and multimodal screenshot analysis; Real Engine Test Flight verification runner for Text, Image, Video, and Audio backends; auto-detected LAN IP endpoints with LAN MCP URLs; optimized SettingsService async caching and hardware JSON lookup performance |
 | `3.15.1` | Consolidated dependency updates across NuGet, npm, and GitHub Actions; configured Dependabot grouped updates to prevent PR clutter; updated Microsoft.NET.Test.Sdk (18.10.1), Microsoft.Playwright (1.62.0), ESLint 10, TypeScript-ESLint 8.70, and actions/checkout@v7; synchronized WASM UI distribution |
+| `3.16.0` | Replaced deprecated WASM Playwright layout inspector with native Avalonia.LayoutInspector test suite; integrated automated headless layout auditing for MainWindow and UI tabs across Desktop, Tablet, and Mobile viewports; pruned legacy Playwright test dependencies |
 
 ---
 
