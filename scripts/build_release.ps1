@@ -1,8 +1,8 @@
-# LocalLLMServerManager v3.15.1 — Release Build & Package Script
+# LocalLLMServerManager v3.16.0 — Release Build & Package Script
 # Builds Win-x64 Desktop exe, Linux-x64 SingleFile daemon, and Browser-WASM distribution.
 
 param(
-    [string]$Version = "3.15.1"
+    [string]$Version = "3.16.0"
 )
 $ErrorActionPreference = "Stop"
 
