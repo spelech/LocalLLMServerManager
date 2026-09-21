@@ -15,73 +15,78 @@
     <Grid RowDefinitions="Auto, Auto, *, Auto, Auto" Margin="0,12,0,8">
         <!-- 1. Header Toolbar -->
         <Border Grid.Row="0" Classes="matte-card" Padding="14,10" Margin="0,0,0,10">
-            <Grid ColumnDefinitions="Auto, *, Auto">
-                <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="10" VerticalAlignment="Center">
-                    <TextBlock Text="🤖" FontSize="22" VerticalAlignment="Center"/>
-                    <StackPanel Spacing="2">
-                        <TextBlock Text="AI Assist" FontSize="15" FontWeight="Bold" Foreground="{StaticResource TextMainBrush}"/>
-                        <TextBlock Text="Natural language app control, tool calling &amp; living prompt orchestration" FontSize="11" Foreground="{StaticResource TextMutedBrush}"/>
-                    </StackPanel>
-                </StackPanel>
+            <StackPanel Spacing="8">
+                <!-- Top Tier: Title and Actions -->
+                <Grid ColumnDefinitions="*, Auto">
+                    <Grid Grid.Column="0" ColumnDefinitions="Auto, *" VerticalAlignment="Center" Margin="0,0,8,0">
+                        <TextBlock Grid.Column="0" Text="🤖" FontSize="22" VerticalAlignment="Center" Margin="0,0,10,0"/>
+                        <StackPanel Grid.Column="1" Spacing="2" VerticalAlignment="Center">
+                            <TextBlock Text="AI Assist" FontSize="15" FontWeight="Bold" Foreground="{StaticResource TextMainBrush}"/>
+                            <TextBlock Text="Natural language app control, tool calling &amp; living prompt orchestration"
+                                       FontSize="11" Foreground="{StaticResource TextMutedBrush}"
+                                       TextWrapping="Wrap" TextTrimming="CharacterEllipsis"/>
+                        </StackPanel>
+                    </Grid>
 
-                <!-- Model Indicator / Status -->
-                <StackPanel Grid.Column="1" Orientation="Horizontal" HorizontalAlignment="Center" VerticalAlignment="Center" Spacing="6">
-                    <Border Classes="matte-pill" Padding="8,3">
+                    <!-- Action Controls -->
+                    <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+                        <Button x:Name="AiPopOutButton" Content="↗️ Pop Out" Command="{Binding RequestPopOutCommand}" Classes="matte-secondary" FontSize="11" Padding="10,6"/>
+                        <Button Content="⋮" ToolTip.Tip="More Actions" Classes="matte-secondary" FontSize="14" Padding="8,4">
+                            <Button.Flyout>
+                                <MenuFlyout Placement="BottomEdgeAlignedRight">
+                                    <MenuItem Header="⚙️ Setup &amp; Endpoint" Command="{Binding ToggleSetupCardCommand}"/>
+                                    <MenuItem Header="🔄 Reload Prompts" Command="{Binding ReloadPromptsCommand}"/>
+                                    <MenuItem Header="🧹 Clear Chat" Command="{Binding ClearChatCommand}"/>
+                                </MenuFlyout>
+                            </Button.Flyout>
+                        </Button>
+                    </StackPanel>
+                </Grid>
+
+                <!-- Model Indicator / Status Pills (Adapts cleanly / wraps into secondary row) -->
+                <WrapPanel Orientation="Horizontal" VerticalAlignment="Center">
+                    <Border Classes="matte-pill" Padding="8,3" Margin="0,0,6,4">
                         <StackPanel Orientation="Horizontal" Spacing="5">
                             <TextBlock Text="Model:" FontSize="11" Foreground="{StaticResource TextMutedBrush}"/>
-                            <TextBlock Text="{Binding SelectedModel}" FontSize="11" FontWeight="SemiBold" Foreground="{StaticResource PrimaryBrush}"/>
+                            <TextBlock Text="{Binding SelectedModel}" FontSize="11" FontWeight="SemiBold" Foreground="{StaticResource PrimaryBrush}" MaxWidth="220" TextTrimming="CharacterEllipsis"/>
                         </StackPanel>
                     </Border>
-                    <Border Classes="matte-pill" Padding="8,3" IsVisible="{Binding IsGenerating}">
+                    <Border Classes="matte-pill" Padding="8,3" Margin="0,0,6,4" IsVisible="{Binding IsGenerating}">
                         <StackPanel Orientation="Horizontal" Spacing="5">
                             <TextBlock Text="⚡" FontSize="10"/>
-                            <TextBlock Text="{Binding CurrentStatus}" FontSize="11" Foreground="{StaticResource OnlineBrush}"/>
+                            <TextBlock Text="{Binding CurrentStatus}" FontSize="11" Foreground="{StaticResource OnlineBrush}" MaxWidth="180" TextTrimming="CharacterEllipsis"/>
                         </StackPanel>
                     </Border>
-                </StackPanel>
-
-                <!-- Action Controls -->
-                <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
-                    <Button x:Name="AiPopOutButton" Content="↗️ Pop Out" Command="{Binding RequestPopOutCommand}" Classes="matte-secondary" FontSize="11" Padding="10,6"/>
-                    <Button Content="⋮" ToolTip.Tip="More Actions" Classes="matte-secondary" FontSize="14" Padding="8,4">
-                        <Button.Flyout>
-                            <MenuFlyout Placement="BottomEdgeAlignedRight">
-                                <MenuItem Header="⚙️ Setup &amp; Endpoint" Command="{Binding ToggleSetupCardCommand}"/>
-                                <MenuItem Header="🔄 Reload Prompts" Command="{Binding ReloadPromptsCommand}"/>
-                                <MenuItem Header="🧹 Clear Chat" Command="{Binding ClearChatCommand}"/>
-                            </MenuFlyout>
-                        </Button.Flyout>
-                    </Button>
-                </StackPanel>
-            </Grid>
+                </WrapPanel>
+            </StackPanel>
         </Border>
 
         <!-- 2. Collapsible Setup Wizard Card -->
         <Border Grid.Row="1" Classes="matte-card" Padding="16,14" Margin="0,0,0,10" IsVisible="{Binding IsSetupCardVisible}">
             <StackPanel Spacing="12">
                 <Grid ColumnDefinitions="*, Auto">
-                    <StackPanel Spacing="2">
-                        <TextBlock Text="🛠️ AI Assistant Configuration &amp; Endpoint Setup" FontSize="13" FontWeight="Bold" Foreground="{StaticResource TextMainBrush}"/>
-                        <TextBlock Text="Connect to your LiteLLM proxy, OpenAI compatible server, or Vertex AI Gemini Flash gateway" FontSize="11" Foreground="{StaticResource TextMutedBrush}"/>
+                    <StackPanel Spacing="2" Margin="0,0,8,0">
+                        <TextBlock Text="🛠️ AI Assistant Configuration &amp; Endpoint Setup" FontSize="13" FontWeight="Bold" Foreground="{StaticResource TextMainBrush}" TextWrapping="Wrap"/>
+                        <TextBlock Text="Connect to your LiteLLM proxy, OpenAI compatible server, or Vertex AI Gemini Flash gateway" FontSize="11" Foreground="{StaticResource TextMutedBrush}" TextWrapping="Wrap"/>
                     </StackPanel>
-                    <Button Grid.Column="1" Content="✕" Command="{Binding ToggleSetupCardCommand}" Classes="matte-secondary" Padding="8,4" FontSize="11"/>
+                    <Button Grid.Column="1" Content="✕" Command="{Binding ToggleSetupCardCommand}" Classes="matte-secondary" Padding="8,4" FontSize="11" VerticalAlignment="Top"/>
                 </Grid>
 
-                <Grid ColumnDefinitions="*, *, *">
+                <WrapPanel Orientation="Horizontal">
                     <!-- Endpoint URL -->
-                    <StackPanel Grid.Column="0" Spacing="4" Margin="0,0,8,0">
+                    <StackPanel MinWidth="260" Width="360" Spacing="4" Margin="0,0,12,10">
                         <TextBlock Text="OpenAI-Compatible Endpoint URL" FontSize="11" Foreground="{StaticResource TextMutedBrush}" FontWeight="SemiBold"/>
                         <TextBox Text="{Binding Endpoint}" Watermark="http://127.0.0.1:4000/v1" FontSize="12"/>
                     </StackPanel>
 
                     <!-- API Key -->
-                    <StackPanel Grid.Column="1" Spacing="4" Margin="4,0">
+                    <StackPanel MinWidth="260" Width="360" Spacing="4" Margin="0,0,12,10">
                         <TextBlock Text="API Key (Optional for local LiteLLM)" FontSize="11" Foreground="{StaticResource TextMutedBrush}" FontWeight="SemiBold"/>
                         <TextBox Text="{Binding ApiKey}" PasswordChar="*" Watermark="sk-..." FontSize="12"/>
                     </StackPanel>
 
                     <!-- Model Name / Selection -->
-                    <StackPanel Grid.Column="2" Spacing="4" Margin="8,0,0,0">
+                    <StackPanel MinWidth="260" Width="360" Spacing="4" Margin="0,0,12,10">
                         <TextBlock Text="Model Identifier" FontSize="11" Foreground="{StaticResource TextMutedBrush}" FontWeight="SemiBold"/>
                         <Grid ColumnDefinitions="*, Auto">
                             <ComboBox Grid.Column="0" ItemsSource="{Binding AvailableModelCapabilities}"
@@ -96,18 +101,18 @@
                             <Button Grid.Column="1" Content="🔄" Command="{Binding RefreshModelsCommand}" Classes="matte-secondary" Margin="4,0,0,0" Padding="6,4"/>
                         </Grid>
                     </StackPanel>
-                </Grid>
+                </WrapPanel>
 
-                <Grid ColumnDefinitions="*, Auto">
-                    <StackPanel Grid.Column="0" Spacing="4" VerticalAlignment="Center">
-                        <TextBlock Text="{Binding ConnectionStatusMessage}" FontSize="11" Foreground="{StaticResource TextMutedBrush}" TextWrapping="Wrap" IsVisible="{Binding ConnectionStatusMessage, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>
-                        <TextBlock Text="{Binding PromptDirectory, StringFormat='Living Prompts Directory: {0}'}" FontSize="10" Foreground="{StaticResource TextMutedBrush}" IsVisible="{Binding PromptDirectory, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>
+                <Grid RowDefinitions="Auto, Auto">
+                    <StackPanel Grid.Row="0" Spacing="4" Margin="0,0,0,8" IsVisible="{Binding ConnectionStatusMessage, Converter={x:Static StringConverters.IsNotNullOrEmpty}}">
+                        <TextBlock Text="{Binding ConnectionStatusMessage}" FontSize="11" Foreground="{StaticResource TextMutedBrush}" TextWrapping="Wrap"/>
+                        <TextBlock Text="{Binding PromptDirectory, StringFormat='Living Prompts Directory: {0}'}" FontSize="10" Foreground="{StaticResource TextMutedBrush}" TextWrapping="Wrap" IsVisible="{Binding PromptDirectory, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>
                     </StackPanel>
 
-                    <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8">
-                        <Button Content="⚡ Test Connection" Command="{Binding TestConnectionCommand}" IsEnabled="{Binding !IsTestingConnection}" Classes="matte-secondary" FontSize="11" Padding="12,6"/>
-                        <Button Content="💾 Save Settings" Command="{Binding SaveConfigurationCommand}" Classes="matte-primary" FontSize="11" Padding="12,6"/>
-                    </StackPanel>
+                    <WrapPanel Grid.Row="1" Orientation="Horizontal" HorizontalAlignment="Right">
+                        <Button Content="⚡ Test Connection" Command="{Binding TestConnectionCommand}" IsEnabled="{Binding !IsTestingConnection}" Classes="matte-secondary" FontSize="11" Padding="10,6" Margin="0,0,8,0"/>
+                        <Button Content="💾 Save Settings" Command="{Binding SaveConfigurationCommand}" Classes="matte-primary" FontSize="11" Padding="10,6"/>
+                    </WrapPanel>
                 </Grid>
             </StackPanel>
         </Border>
@@ -284,22 +289,24 @@
                          FontSize="12"
                          HorizontalAlignment="Stretch"/>
 
-                <!-- Row 2: Controls Toolbar -->
-                <Grid Margin="0,8,0,0">
-                    <!-- Left-aligned Controls -->
-                    <StackPanel Orientation="Horizontal" Spacing="6" HorizontalAlignment="Left" VerticalAlignment="Center">
+                <!-- Row 2: Controls Toolbar (Two-tier responsive layout) -->
+                <Grid RowDefinitions="Auto, Auto" Margin="0,8,0,0">
+                    <!-- Tier 1: Attach button + Model selector (stretched horizontally to fill space) -->
+                    <Grid Grid.Row="0" ColumnDefinitions="Auto, *">
                         <Button x:Name="AttachFileButton"
+                                Grid.Column="0"
                                 Click="OnAttachFileButtonClick"
                                 Content="📎"
                                 ToolTip.Tip="Attach image (PNG, JPG, WEBP)"
                                 Classes="matte-secondary"
                                 Padding="10,8"
-                                FontSize="12"/>
+                                FontSize="12"
+                                Margin="0,0,6,0"/>
 
-                        <ComboBox ItemsSource="{Binding AvailableModelCapabilities}"
+                        <ComboBox Grid.Column="1"
+                                  ItemsSource="{Binding AvailableModelCapabilities}"
                                   SelectedItem="{Binding SelectedModelCapability}"
-                                  MinWidth="180"
-                                  MaxWidth="280"
+                                  HorizontalAlignment="Stretch"
                                   VerticalAlignment="Center">
                             <ComboBox.ItemTemplate>
                                 <DataTemplate DataType="models:AiModelCapabilityInfo">
@@ -310,10 +317,10 @@
                                 </DataTemplate>
                             </ComboBox.ItemTemplate>
                         </ComboBox>
-                    </StackPanel>
+                    </Grid>
 
-                    <!-- Right-aligned Controls -->
-                    <StackPanel Orientation="Horizontal" Spacing="6" HorizontalAlignment="Right" VerticalAlignment="Center">
+                    <!-- Tier 2: Send / Stop Action Buttons aligned cleanly to the right -->
+                    <StackPanel Grid.Row="1" Orientation="Horizontal" Spacing="6" HorizontalAlignment="Right" VerticalAlignment="Center" Margin="0,8,0,0">
                         <Button Content="⏹️ Stop"
                                 Command="{Binding StopGenerationCommand}"
                                 Classes="matte-secondary"
