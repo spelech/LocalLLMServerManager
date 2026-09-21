@@ -1,8 +1,5 @@
-using System;
-using System.Linq;
 using Avalonia.Controls;
 using Avalonia.Headless.XUnit;
-using Avalonia.LayoutInspector.Assertions;
 using Avalonia.LayoutInspector.Engine;
 using Avalonia.LayoutInspector.Models;
 using Avalonia.LayoutInspector.Responsive;
