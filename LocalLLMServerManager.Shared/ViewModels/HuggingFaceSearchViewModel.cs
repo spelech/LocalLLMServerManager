@@ -75,6 +75,7 @@ public partial class HuggingFaceSearchViewModel : ObservableObject
     [ObservableProperty] private double _totalRamMb = 32768.0;
 
     public Action<string, string>? OnInspectModelRequested { get; set; }
+    public Action<string>? OnPullModelRequested { get; set; }
 
     public HuggingFaceSearchViewModel(IHuggingFaceSearchService hfSearchService)
         : this(hfSearchService, new CanIRunItService(), null)
@@ -588,4 +589,65 @@ public partial class HuggingFaceSearchViewModel : ObservableObject
     {
         IsHfModalOpen = false;
     }
+
+    [RelayCommand]
+    public void OpenInBrowser(string? repoId)
+    {
+        if (string.IsNullOrWhiteSpace(repoId)) return;
+        var safeId = repoId.Trim();
+        BrowserLauncher.OpenUrl($"https://huggingface.co/{safeId}");
+    }
+
+    [RelayCommand]
+    public async Task OpenHfModalAsync(HuggingFaceRepoItem? item)
+    {
+        if (item == null || string.IsNullOrWhiteSpace(item.Id)) return;
+        await OpenHfModalAsync(item.Id, ApiBase, HttpHelper.CreateClient(ApiBase));
+    }
+
+    [RelayCommand]
+    public async Task DownloadHfFileAsync(HfFileQuantItem? file)
+    {
+        if (file == null || string.IsNullOrWhiteSpace(file.Filename) || string.IsNullOrWhiteSpace(ModalRepoId)) return;
+        await DownloadHfFileAsync(file, ApiBase, HttpHelper.CreateClient(ApiBase));
+    }
+
+    public async Task DownloadHfFileAsync(HfFileQuantItem file, string apiBase, HttpClient http)
+    {
+        if (file == null || string.IsNullOrWhiteSpace(file.Filename) || string.IsNullOrWhiteSpace(ModalRepoId)) return;
+
+        var fileUrl = $"https://huggingface.co/{ModalRepoId}/resolve/main/{file.Filename}";
+        var pipelineTag = SelectedPipelineTag ?? DetermineModality(ModalRepoId, null);
+
+        ToastService.Instance.Show($"Queued download for '{file.Filename}'", ToastType.Info);
+
+        try
+        {
+            var url = $"{apiBase}/api/hf/download?fileUrl={Uri.EscapeDataString(fileUrl)}&fileName={Uri.EscapeDataString(file.Filename)}&pipelineTag={Uri.EscapeDataString(pipelineTag)}";
+            var resp = await http.GetAsync(url);
+            if (resp.IsSuccessStatusCode)
+            {
+                ToastService.Instance.Show($"Download started for '{file.Filename}'", ToastType.Success);
+            }
+            else
+            {
+                ToastService.Instance.Show($"Download failed ({(int)resp.StatusCode}) for '{file.Filename}'", ToastType.Error);
+            }
+        }
+        catch
+        {
+            ToastService.Instance.Show($"Failed to queue download for '{file.Filename}'", ToastType.Error);
+        }
+    }
+
+    [RelayCommand]
+    public void PullHfGgufInOllama(HfFileQuantItem? file)
+    {
+        if (file == null || string.IsNullOrWhiteSpace(ModalRepoId)) return;
+        string quant = (file.Quantization ?? "").Trim().ToLowerInvariant();
+        string pullTag = string.IsNullOrEmpty(quant) ? $"hf.co/{ModalRepoId}" : $"hf.co/{ModalRepoId}:{quant}";
+        OnPullModelRequested?.Invoke(pullTag);
+    }
 }
+
+

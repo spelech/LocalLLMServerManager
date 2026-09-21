@@ -145,6 +145,54 @@
             </Grid>
         </Border>
 
+        <!-- Right Slide-Out Drawer for Model Pull Progress -->
+        <Border x:Name="PullProgressDrawer" Grid.Row="1" HorizontalAlignment="Right" VerticalAlignment="Stretch" Width="480"
+                Background="{StaticResource BgDarkBrush}" BorderBrush="{StaticResource GlassBorderBrush}"
+                BorderThickness="1,0,0,0" BoxShadow="-4 0 24 0 #90000000"
+                IsVisible="{Binding Ollama.IsPullDrawerOpen}" ZIndex="93">
+            <Grid RowDefinitions="Auto, *">
+                <Border Grid.Row="0" Background="{StaticResource BgSurfaceBrush}" BorderBrush="{StaticResource GlassBorderBrush}" BorderThickness="0,0,0,1" Padding="14,10">
+                    <Grid ColumnDefinitions="Auto, *, Auto">
+                        <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+                            <TextBlock Text="🦙" FontSize="16" VerticalAlignment="Center"/>
+                            <TextBlock Text="Ollama Model Pull" FontSize="14" FontWeight="Bold" Foreground="{StaticResource TextMainBrush}"/>
+                        </StackPanel>
+                        <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="6">
+                            <Button Content="✕" Command="{Binding ClosePullDrawerCommand}" Classes="matte-secondary" FontSize="11" Padding="8,4" ToolTip.Tip="Close Drawer"/>
+                        </StackPanel>
+                    </Grid>
+                </Border>
+                <Grid Grid.Row="1" RowDefinitions="Auto, Auto, Auto, *" Margin="16" DataContext="{Binding Ollama}">
+                    <!-- Model Name -->
+                    <StackPanel Grid.Row="0" Spacing="4" Margin="0,0,0,12">
+                        <TextBlock Text="PULLING MODEL" FontSize="11" FontWeight="Bold" Foreground="{StaticResource TextMutedBrush}"/>
+                        <Border Background="{StaticResource BgSurfaceBrush}" CornerRadius="6" Padding="10,8" BorderBrush="{StaticResource GlassBorderBrush}" BorderThickness="1">
+                            <TextBlock Text="{Binding PullModelName}" FontSize="13" FontWeight="SemiBold" Foreground="{StaticResource AccentBrush}" TextWrapping="Wrap"/>
+                        </Border>
+                    </StackPanel>
+
+                    <!-- Progress Bar & Status -->
+                    <StackPanel Grid.Row="1" Spacing="6" Margin="0,0,0,12">
+                        <Grid ColumnDefinitions="*, Auto">
+                            <TextBlock Grid.Column="0" Text="{Binding PullProgressBytesText}" FontSize="12" Foreground="{StaticResource TextMainBrush}"/>
+                            <TextBlock Grid.Column="1" Text="{Binding PullProgressPercent, StringFormat='{}{0}%'}" FontSize="12" FontWeight="Bold" Foreground="{StaticResource AccentBrush}"/>
+                        </Grid>
+                        <ProgressBar Minimum="0" Maximum="100" Value="{Binding PullProgressPercent}" Height="8" CornerRadius="4" Foreground="{StaticResource AccentBrush}" Background="{StaticResource BgSurfaceBrush}"/>
+                    </StackPanel>
+
+                    <!-- Status Log Header -->
+                    <TextBlock Grid.Row="2" Text="PULL LOG OUTPUT" FontSize="11" FontWeight="Bold" Foreground="{StaticResource TextMutedBrush}" Margin="0,0,0,4"/>
+
+                    <!-- Status Log Terminal -->
+                    <Border Grid.Row="3" Background="#0C0E14" CornerRadius="6" BorderBrush="{StaticResource GlassBorderBrush}" BorderThickness="1" Padding="10">
+                        <ScrollViewer HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto">
+                            <SelectableTextBlock Text="{Binding PullStatusLog}" FontFamily="Consolas,Menlo,monospace" FontSize="11" Foreground="#94A3B8" TextWrapping="Wrap"/>
+                        </ScrollViewer>
+                    </Border>
+                </Grid>
+            </Grid>
+        </Border>
+
         <!-- Floating Toast Notifications Overlay -->
         <ItemsControl Grid.Row="1" ItemsSource="{Binding Toasts}" VerticalAlignment="Top" HorizontalAlignment="Right" Margin="0,20,24,0" IsHitTestVisible="False" ZIndex="95">
             <ItemsControl.ItemTemplate>

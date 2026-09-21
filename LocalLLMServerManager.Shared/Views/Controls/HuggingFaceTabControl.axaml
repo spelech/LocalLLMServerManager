@@ -315,6 +315,30 @@
                                             </StackPanel>
                                         </Button>
 
+                                        <Button Command="{Binding $parent[UserControl].((vm:HuggingFaceSearchViewModel)DataContext).OpenHfModalCommand}"
+                                                CommandParameter="{Binding}"
+                                                Classes="matte-primary"
+                                                Padding="10,4"
+                                                FontSize="11"
+                                                ToolTip.Tip="Inspect downloadable files and quantizations"
+                                                VerticalAlignment="Center">
+                                            <StackPanel Orientation="Horizontal" Spacing="4">
+                                                <TextBlock Text="📂 Files &amp; Downloads"/>
+                                            </StackPanel>
+                                        </Button>
+
+                                        <Button Command="{Binding $parent[UserControl].((vm:HuggingFaceSearchViewModel)DataContext).OpenInBrowserCommand}"
+                                                CommandParameter="{Binding Id}"
+                                                Classes="matte-secondary"
+                                                Padding="8,4"
+                                                FontSize="11"
+                                                ToolTip.Tip="View model repository on Hugging Face"
+                                                VerticalAlignment="Center">
+                                            <StackPanel Orientation="Horizontal" Spacing="4">
+                                                <TextBlock Text="🌐 View on Hub"/>
+                                            </StackPanel>
+                                        </Button>
+
                                         <Border Classes="matte-pill" Padding="8,4" IsVisible="{Binding PipelineTag, Converter={x:Static StringConverters.IsNotNullOrEmpty}}">
                                             <TextBlock Text="{Binding PipelineTag}" FontSize="11" Foreground="{StaticResource AccentBrush}" FontWeight="SemiBold"/>
                                         </Border>
@@ -342,9 +366,19 @@
                             <TextBlock Text="{Binding ModalRepoId}" FontWeight="Bold" FontSize="14" Foreground="{StaticResource SecondaryBrush}"/>
                             <TextBlock Text="{Binding ModalAuthor, StringFormat='Author: {0}'}" FontSize="11" Foreground="{StaticResource TextMutedBrush}"/>
                         </StackPanel>
-                        <Button Grid.Column="1" Content="✕" Command="{Binding CloseHfModalCommand}" Classes="matte-secondary" Padding="8,4"/>
+                        <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8">
+                            <Button Command="{Binding OpenInBrowserCommand}"
+                                    CommandParameter="{Binding ModalRepoId}"
+                                    Classes="matte-secondary"
+                                    Padding="8,4"
+                                    FontSize="11"
+                                    ToolTip.Tip="Open model page on Hugging Face">
+                                <TextBlock Text="🌐 View on Hub"/>
+                            </Button>
+                            <Button Content="✕" Command="{Binding CloseHfModalCommand}" Classes="matte-secondary" Padding="8,4"/>
+                        </StackPanel>
                     </Grid>
-                    <TextBlock Text="Available GGUF Quantizations" FontSize="12" FontWeight="SemiBold" Foreground="{StaticResource TextMainBrush}"/>
+                    <TextBlock Text="Available Model Files &amp; Quantizations" FontSize="12" FontWeight="SemiBold" Foreground="{StaticResource TextMainBrush}"/>
                     <ProgressBar IsIndeterminate="True" Height="3" IsVisible="{Binding IsModalLoading}" Margin="0,2,0,4"/>
                     <ScrollViewer MaxHeight="300">
                         <ItemsControl ItemsSource="{Binding ModalHfFiles}">
@@ -363,23 +397,47 @@
                                                     </Border>
                                                 </StackPanel>
                                             </StackPanel>
-                                            <Button Grid.Column="1"
-                                                    Command="{Binding $parent[UserControl].((vm:HuggingFaceSearchViewModel)DataContext).InspectQuantFileCommand}"
-                                                    CommandParameter="{Binding}"
-                                                    Background="#1E293B"
-                                                    BorderBrush="{Binding FitBadge.BadgeColorHex}"
-                                                    BorderThickness="1"
-                                                    CornerRadius="6"
-                                                    Padding="8,4"
-                                                    ToolTip.Tip="{Binding FitBadge.Tooltip}"
-                                                    IsVisible="{Binding FitBadge, Converter={x:Static ObjectConverters.IsNotNull}}"
-                                                    Cursor="Hand"
-                                                    VerticalAlignment="Center">
-                                                <StackPanel Orientation="Horizontal" Spacing="4">
-                                                    <TextBlock Text="{Binding FitBadge.BadgeText}" FontSize="11" Foreground="{Binding FitBadge.BadgeColorHex}" FontWeight="Bold"/>
-                                                    <TextBlock Text="⚡ Check Fit" FontSize="10" Foreground="{StaticResource TextMutedBrush}" VerticalAlignment="Center"/>
-                                                </StackPanel>
-                                            </Button>
+                                            <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
+                                                <Button Command="{Binding $parent[UserControl].((vm:HuggingFaceSearchViewModel)DataContext).InspectQuantFileCommand}"
+                                                        CommandParameter="{Binding}"
+                                                        Background="#1E293B"
+                                                        BorderBrush="{Binding FitBadge.BadgeColorHex}"
+                                                        BorderThickness="1"
+                                                        CornerRadius="6"
+                                                        Padding="8,4"
+                                                        ToolTip.Tip="{Binding FitBadge.Tooltip}"
+                                                        IsVisible="{Binding FitBadge, Converter={x:Static ObjectConverters.IsNotNull}}"
+                                                        Cursor="Hand"
+                                                        VerticalAlignment="Center">
+                                                    <StackPanel Orientation="Horizontal" Spacing="4">
+                                                        <TextBlock Text="{Binding FitBadge.BadgeText}" FontSize="11" Foreground="{Binding FitBadge.BadgeColorHex}" FontWeight="Bold"/>
+                                                        <TextBlock Text="⚡ Check Fit" FontSize="10" Foreground="{StaticResource TextMutedBrush}" VerticalAlignment="Center"/>
+                                                    </StackPanel>
+                                                </Button>
+
+                                                <!-- Pull in Ollama for GGUF files -->
+                                                <Button Command="{Binding $parent[UserControl].((vm:HuggingFaceSearchViewModel)DataContext).PullHfGgufInOllamaCommand}"
+                                                        CommandParameter="{Binding}"
+                                                        IsVisible="{Binding IsGguf}"
+                                                        Classes="matte-secondary"
+                                                        Padding="8,4"
+                                                        FontSize="11"
+                                                        ToolTip.Tip="Pull directly into Ollama runtime"
+                                                        VerticalAlignment="Center">
+                                                    <TextBlock Text="🦙 Pull in Ollama"/>
+                                                </Button>
+
+                                                <!-- Direct download to disk -->
+                                                <Button Command="{Binding $parent[UserControl].((vm:HuggingFaceSearchViewModel)DataContext).DownloadHfFileCommand}"
+                                                        CommandParameter="{Binding}"
+                                                        Classes="matte-primary"
+                                                        Padding="8,4"
+                                                        FontSize="11"
+                                                        ToolTip.Tip="Download model file directly to disk storage"
+                                                        VerticalAlignment="Center">
+                                                    <TextBlock Text="⬇️ Download"/>
+                                                </Button>
+                                            </StackPanel>
                                         </Grid>
                                     </Border>
                                 </DataTemplate>
@@ -389,5 +447,6 @@
                 </StackPanel>
             </Border>
         </Border>
+
     </Grid>
 </UserControl>

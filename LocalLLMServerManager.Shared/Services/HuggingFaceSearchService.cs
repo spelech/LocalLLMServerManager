@@ -130,15 +130,25 @@ public class HuggingFaceSearchService : IHuggingFaceSearchService
                     foreach (var sib in siblings)
                     {
                         string rfilename = sib?["rfilename"]?.ToString() ?? "";
-                        if (rfilename.EndsWith(".gguf", StringComparison.OrdinalIgnoreCase))
+                        string lower = rfilename.ToLowerInvariant();
+                        if (lower.EndsWith(".gguf") || lower.EndsWith(".safetensors") || lower.EndsWith(".pt") || lower.EndsWith(".bin") || lower.EndsWith(".onnx"))
                         {
                             long size = sib?["size"]?.GetValue<long>() ?? 0L;
                             double sizeGb = Math.Round(size / (1024.0 * 1024.0 * 1024.0), 2);
-                            string sizeText = sizeGb > 0 ? $"{sizeGb} GB" : "N/A";
-                            string quant = "Q4_K_M";
-                            if (rfilename.Contains("Q8_0", StringComparison.OrdinalIgnoreCase)) quant = "Q8_0";
-                            else if (rfilename.Contains("Q5_K_M", StringComparison.OrdinalIgnoreCase)) quant = "Q5_K_M";
-                            else if (rfilename.Contains("FP16", StringComparison.OrdinalIgnoreCase)) quant = "FP16";
+                            string sizeText = sizeGb > 0 ? $"{sizeGb} GB" : (size > 0 ? $"{Math.Round(size / (1024.0 * 1024.0), 1)} MB" : "N/A");
+                            string quant = "Weight";
+                            if (lower.EndsWith(".gguf"))
+                            {
+                                quant = "Q4_K_M";
+                                if (rfilename.Contains("Q8_0", StringComparison.OrdinalIgnoreCase)) quant = "Q8_0";
+                                else if (rfilename.Contains("Q5_K_M", StringComparison.OrdinalIgnoreCase)) quant = "Q5_K_M";
+                                else if (rfilename.Contains("Q4_0", StringComparison.OrdinalIgnoreCase)) quant = "Q4_0";
+                                else if (rfilename.Contains("FP16", StringComparison.OrdinalIgnoreCase) || rfilename.Contains("F16", StringComparison.OrdinalIgnoreCase)) quant = "FP16";
+                            }
+                            else if (lower.EndsWith(".safetensors")) quant = "Safetensors";
+                            else if (lower.EndsWith(".pt")) quant = "PyTorch";
+                            else if (lower.EndsWith(".onnx")) quant = "ONNX";
+                            else if (lower.EndsWith(".bin")) quant = "Binary";
 
                             result.Add(new HfFileQuantItem(rfilename, quant, sizeText, size));
                         }
@@ -150,4 +160,5 @@ public class HuggingFaceSearchService : IHuggingFaceSearchService
 
         return result;
     }
+
 }
