@@ -38,10 +38,20 @@ public partial class AiAssistantViewModel : ObservableObject
 
     public Action? OnPopOutNativeWindowRequested { get; set; }
 
+    [ObservableProperty] private bool _isDrawerOpen = false;
+
     [RelayCommand]
     public void RequestPopOut()
     {
-        OnPopOutNativeWindowRequested?.Invoke();
+        if (OnPopOutNativeWindowRequested != null)
+        {
+            IsDrawerOpen = false;
+            OnPopOutNativeWindowRequested.Invoke();
+        }
+        else
+        {
+            IsDrawerOpen = !IsDrawerOpen;
+        }
     }
 
     [RelayCommand]

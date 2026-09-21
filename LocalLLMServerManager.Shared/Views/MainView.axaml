@@ -31,23 +31,23 @@
                 <StackPanel Orientation="Horizontal" Spacing="4" VerticalAlignment="Center" Margin="4,0,0,0">
                     <Rectangle Width="1" Height="20" Fill="{StaticResource GlassBorderBrush}" Margin="2,0,4,0" VerticalAlignment="Center"/>
                     <Button x:Name="NavDocumentationBtn"
-                            Command="{Binding Documentation.PopOutNativeWindowCommand}"
+                            Command="{Binding ToggleDocumentationDrawerCommand}"
                             Classes="nav-tab-btn"
-                            ToolTip.Tip="Open Documentation in a standalone companion window (Left Flank)">
+                            ToolTip.Tip="Open Documentation Drawer (Left Flank)">
                         <StackPanel Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
                             <PathIcon Data="{StaticResource IconDocumentation}" Width="14" Height="14" Foreground="{Binding $parent[Button].Foreground}"/>
                             <TextBlock Text="Documentation" VerticalAlignment="Center"/>
-                            <TextBlock Text="📖" FontSize="11" VerticalAlignment="Center" Margin="2,0,0,0"/>
+                            <TextBlock Text="📖" FontSize="12" Width="18" VerticalAlignment="Center" Margin="4,0,0,0"/>
                         </StackPanel>
                     </Button>
                     <Button x:Name="NavAiAssistBtn"
-                            Command="{Binding Assistant.RequestPopOutCommand}"
+                            Command="{Binding ToggleAiAssistDrawerCommand}"
                             Classes="nav-tab-btn"
-                            ToolTip.Tip="Open AI Assist in a standalone companion window (Right Flank)">
+                            ToolTip.Tip="Open AI Assist Drawer (Right Flank)">
                         <StackPanel Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
                             <PathIcon Data="{StaticResource IconAiAssist}" Width="14" Height="14" Foreground="{Binding $parent[Button].Foreground}"/>
                             <TextBlock Text="AI Assist" VerticalAlignment="Center"/>
-                            <TextBlock Text="🤖" FontSize="11" VerticalAlignment="Center" Margin="2,0,0,0"/>
+                            <TextBlock Text="🤖" FontSize="12" Width="18" VerticalAlignment="Center" Margin="4,0,0,0"/>
                         </StackPanel>
                     </Button>
                 </StackPanel>
@@ -97,6 +97,53 @@
                 <controls:SettingsTabControl DataContext="{Binding Settings}"/>
             </TabItem>
         </TabControl>
+
+        <!-- Dimmer Backdrop for Slide-Out Drawers -->
+        <Border Grid.Row="1" Background="#66000000" IsVisible="{Binding IsAnyDrawerOpen}" PointerPressed="OnBackdropPointerPressed" ZIndex="90"/>
+
+        <!-- Left Slide-Out Drawer for Documentation -->
+        <Border Grid.Row="1" HorizontalAlignment="Left" VerticalAlignment="Stretch" Width="480"
+                Background="{StaticResource BgDarkBrush}" BorderBrush="{StaticResource GlassBorderBrush}"
+                BorderThickness="0,0,1,0" BoxShadow="4 0 24 0 #90000000"
+                IsVisible="{Binding Documentation.IsDrawerOpen}" ZIndex="92">
+            <Grid RowDefinitions="Auto, *">
+                <Border Grid.Row="0" Background="{StaticResource BgSurfaceBrush}" BorderBrush="{StaticResource GlassBorderBrush}" BorderThickness="0,0,0,1" Padding="14,10">
+                    <Grid ColumnDefinitions="Auto, *, Auto">
+                        <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+                            <TextBlock Text="📖" FontSize="16" VerticalAlignment="Center"/>
+                            <TextBlock Text="Documentation &amp; Guides" FontSize="14" FontWeight="Bold" Foreground="{StaticResource TextMainBrush}"/>
+                        </StackPanel>
+                        <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="6">
+                            <Button Content="↗️ Pop Out" Command="{Binding Documentation.PopOutNativeWindowCommand}" Classes="matte-secondary" FontSize="11" Padding="8,4" ToolTip.Tip="Pop out into native window"/>
+                            <Button Content="✕" Command="{Binding CloseDrawersCommand}" Classes="matte-secondary" FontSize="11" Padding="8,4" ToolTip.Tip="Close Drawer"/>
+                        </StackPanel>
+                    </Grid>
+                </Border>
+                <controls:DocumentationTabControl Grid.Row="1" DataContext="{Binding Documentation}"/>
+            </Grid>
+        </Border>
+
+        <!-- Right Slide-Out Drawer for AI Assistant -->
+        <Border Grid.Row="1" HorizontalAlignment="Right" VerticalAlignment="Stretch" Width="460"
+                Background="{StaticResource BgDarkBrush}" BorderBrush="{StaticResource GlassBorderBrush}"
+                BorderThickness="1,0,0,0" BoxShadow="-4 0 24 0 #90000000"
+                IsVisible="{Binding Assistant.IsDrawerOpen}" ZIndex="92">
+            <Grid RowDefinitions="Auto, *">
+                <Border Grid.Row="0" Background="{StaticResource BgSurfaceBrush}" BorderBrush="{StaticResource GlassBorderBrush}" BorderThickness="0,0,0,1" Padding="14,10">
+                    <Grid ColumnDefinitions="Auto, *, Auto">
+                        <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+                            <TextBlock Text="🤖" FontSize="16" VerticalAlignment="Center"/>
+                            <TextBlock Text="AI Assistant" FontSize="14" FontWeight="Bold" Foreground="{StaticResource TextMainBrush}"/>
+                        </StackPanel>
+                        <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="6">
+                            <Button Content="↗️ Pop Out" Command="{Binding Assistant.RequestPopOutCommand}" Classes="matte-secondary" FontSize="11" Padding="8,4" ToolTip.Tip="Pop out into native window"/>
+                            <Button Content="✕" Command="{Binding CloseDrawersCommand}" Classes="matte-secondary" FontSize="11" Padding="8,4" ToolTip.Tip="Close Drawer"/>
+                        </StackPanel>
+                    </Grid>
+                </Border>
+                <controls:AiAssistantTabControl Grid.Row="1" DataContext="{Binding Assistant}" Margin="8"/>
+            </Grid>
+        </Border>
 
         <!-- Floating Toast Notifications Overlay -->
         <ItemsControl Grid.Row="1" ItemsSource="{Binding Toasts}" VerticalAlignment="Top" HorizontalAlignment="Right" Margin="0,20,24,0" IsHitTestVisible="False" ZIndex="95">

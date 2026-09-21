@@ -690,13 +690,20 @@ public class AvaloniaHeadlessInteractionTests
         var modelBlock = textBlocks.FirstOrDefault(t => t.Text != null && t.Text == vm.SelectedModel);
         Assert.NotNull(modelBlock);
 
-        // Find buttons (Setup, Reload, Clear, Send)
+        // Find overflow menu button and setup menu item
         var buttons = control.GetVisualDescendants().OfType<Button>().ToList();
-        var setupBtn = buttons.FirstOrDefault(b => b.Content?.ToString()?.Contains("Setup") == true);
-        Assert.NotNull(setupBtn);
+        var moreActionsBtn = buttons.FirstOrDefault(b => b.Flyout is MenuFlyout || b.Content?.ToString() == "⋮");
+        Assert.NotNull(moreActionsBtn);
+        var menuFlyout = Assert.IsType<MenuFlyout>(moreActionsBtn.Flyout);
+        moreActionsBtn.Flyout?.ShowAt(moreActionsBtn);
+        Avalonia.Threading.Dispatcher.UIThread.RunJobs();
+
+        var setupMenuItem = menuFlyout.Items.OfType<MenuItem>().FirstOrDefault(m => m.Header?.ToString()?.Contains("Setup") == true);
+        Assert.NotNull(setupMenuItem);
+        Assert.NotNull(setupMenuItem.Command);
 
         // Toggle setup card
-        setupBtn.Command?.Execute(null);
+        setupMenuItem.Command?.Execute(null);
         Avalonia.Threading.Dispatcher.UIThread.RunJobs();
         Assert.True(vm.IsSetupCardVisible);
 

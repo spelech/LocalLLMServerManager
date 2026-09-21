@@ -1,4 +1,5 @@
 using Avalonia.Controls;
+using Avalonia.Controls.Primitives;
 using Avalonia.Headless.XUnit;
 using Avalonia.LayoutInspector.Engine;
 using Avalonia.LayoutInspector.Models;
@@ -19,6 +20,30 @@ public class AvaloniaLayoutAuditTests
         _output = output;
     }
 
+    private static AuditOptions CreateConfiguredAuditOptions(bool checkTouchErgonomics = true, bool checkTextClipping = true)
+    {
+        var options = new AuditOptions
+        {
+            CheckBoundaryOverflow = true,
+            CheckSiblingCollisions = true,
+            CheckTouchErgonomics = checkTouchErgonomics,
+            CheckTextClipping = checkTextClipping
+        };
+        options.IgnoredControlTypes.Add(typeof(ScrollBar));
+        options.IgnoredControlTypes.Add(typeof(Track));
+        options.IgnoredControlTypes.Add(typeof(RepeatButton));
+        return options;
+    }
+
+    private static List<LayoutViolation> FilterAppViolations(AuditReport report)
+    {
+        return report.Violations.Where(v =>
+            !v.VisualPath.Contains("ScrollBar") &&
+            !v.VisualPath.Contains("PART_") &&
+            !v.VisualPath.Contains("FocusTarget") &&
+            !v.VisualPath.Contains("TrackBackground")).ToList();
+    }
+
     [AvaloniaFact]
     public void MainWindow_ResponsiveLayoutAudit()
     {
@@ -26,7 +51,16 @@ public class AvaloniaLayoutAuditTests
         try
         {
             var runner = new ResponsiveAuditRunner();
-            var responsiveReport = runner.Run(window, StandardBreakpoints.AllStandard);
+            var options = CreateConfiguredAuditOptions();
+            var breakpoints = new[]
+            {
+                StandardBreakpoints.Desktop1440p,
+                StandardBreakpoints.Desktop1080p,
+                StandardBreakpoints.Desktop720p,
+                StandardBreakpoints.TabletiPad
+            };
+
+            var responsiveReport = runner.Run(window, breakpoints, options);
 
             _output.WriteLine($"MainWindow Responsive Audit - AllPassed: {responsiveReport.AllPassed}, TotalViolations: {responsiveReport.TotalViolations}");
             foreach (var (bp, report) in responsiveReport.BreakpointReports)
@@ -36,6 +70,9 @@ public class AvaloniaLayoutAuditTests
                 {
                     _output.WriteLine(report.ToDetailedReport());
                 }
+
+                var appViolations = FilterAppViolations(report);
+                Assert.Empty(appViolations);
             }
 
             Assert.NotNull(responsiveReport);
@@ -58,13 +95,7 @@ public class AvaloniaLayoutAuditTests
             window.Show();
 
             var auditor = new LayoutAuditor();
-            var options = new AuditOptions
-            {
-                CheckBoundaryOverflow = true,
-                CheckSiblingCollisions = true,
-                CheckTouchErgonomics = false,
-                CheckTextClipping = false
-            };
+            var options = CreateConfiguredAuditOptions(checkTouchErgonomics: false, checkTextClipping: false);
 
             var report = auditor.Audit(control, options);
             _output.WriteLine($"CivitaiTabControl Audit - Health={report.HealthScore}/100, Violations={report.Violations.Count}");
@@ -73,7 +104,9 @@ public class AvaloniaLayoutAuditTests
                 _output.WriteLine(report.ToDetailedReport());
             }
 
+            var appViolations = FilterAppViolations(report);
             Assert.NotNull(report);
+            Assert.Empty(appViolations);
         }
         finally
         {
@@ -92,7 +125,8 @@ public class AvaloniaLayoutAuditTests
             window.Show();
 
             var auditor = new LayoutAuditor();
-            var report = auditor.Audit(control);
+            var options = CreateConfiguredAuditOptions();
+            var report = auditor.Audit(control, options);
 
             _output.WriteLine($"HuggingFaceTabControl Audit - Health={report.HealthScore}/100, Violations={report.Violations.Count}");
             if (report.Violations.Count > 0)
@@ -100,7 +134,9 @@ public class AvaloniaLayoutAuditTests
                 _output.WriteLine(report.ToDetailedReport());
             }
 
+            var appViolations = FilterAppViolations(report);
             Assert.NotNull(report);
+            Assert.Empty(appViolations);
         }
         finally
         {
@@ -119,7 +155,8 @@ public class AvaloniaLayoutAuditTests
             window.Show();
 
             var auditor = new LayoutAuditor();
-            var report = auditor.Audit(control);
+            var options = CreateConfiguredAuditOptions();
+            var report = auditor.Audit(control, options);
 
             _output.WriteLine($"OllamaModelsTabControl Audit - Health={report.HealthScore}/100, Violations={report.Violations.Count}");
             if (report.Violations.Count > 0)
@@ -127,7 +164,9 @@ public class AvaloniaLayoutAuditTests
                 _output.WriteLine(report.ToDetailedReport());
             }
 
+            var appViolations = FilterAppViolations(report);
             Assert.NotNull(report);
+            Assert.Empty(appViolations);
         }
         finally
         {
@@ -146,7 +185,8 @@ public class AvaloniaLayoutAuditTests
             window.Show();
 
             var auditor = new LayoutAuditor();
-            var report = auditor.Audit(control);
+            var options = CreateConfiguredAuditOptions();
+            var report = auditor.Audit(control, options);
 
             _output.WriteLine($"SettingsTabControl Audit - Health={report.HealthScore}/100, Violations={report.Violations.Count}");
             if (report.Violations.Count > 0)
@@ -154,7 +194,9 @@ public class AvaloniaLayoutAuditTests
                 _output.WriteLine(report.ToDetailedReport());
             }
 
+            var appViolations = FilterAppViolations(report);
             Assert.NotNull(report);
+            Assert.Empty(appViolations);
         }
         finally
         {

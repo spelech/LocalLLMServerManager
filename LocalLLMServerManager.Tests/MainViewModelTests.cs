@@ -499,5 +499,64 @@ public class MainViewModelTests : IClassFixture<AppTestServerFixture>
         Assert.Equal("test_video.mp4", vm.GeneratedVideosList[0].Filename);
         Assert.Equal("http://127.0.0.1:5246/outputs/test_video.mp4", vm.RenderedVideoUrl);
     }
+
+    [Fact]
+    public void SlideOutDrawer_ToggleAndClose_MutuallyExclusiveAndUpdatesState()
+    {
+        var vm = new MainViewModel();
+
+        Assert.False(vm.IsAnyDrawerOpen);
+        Assert.False(vm.Documentation.IsDrawerOpen);
+        Assert.False(vm.Assistant.IsDrawerOpen);
+
+        // Toggle Documentation Drawer
+        vm.ToggleDocumentationDrawer();
+        Assert.True(vm.Documentation.IsDrawerOpen);
+        Assert.False(vm.Assistant.IsDrawerOpen);
+        Assert.True(vm.IsAnyDrawerOpen);
+
+        // Toggle AI Assist Drawer (should close documentation drawer)
+        vm.ToggleAiAssistDrawer();
+        Assert.False(vm.Documentation.IsDrawerOpen);
+        Assert.True(vm.Assistant.IsDrawerOpen);
+        Assert.True(vm.IsAnyDrawerOpen);
+
+        // Close Drawers
+        vm.CloseDrawers();
+        Assert.False(vm.Documentation.IsDrawerOpen);
+        Assert.False(vm.Assistant.IsDrawerOpen);
+        Assert.False(vm.IsAnyDrawerOpen);
+
+        // Toggle Documentation Drawer twice (open then close)
+        vm.ToggleDocumentationDrawer();
+        Assert.True(vm.Documentation.IsDrawerOpen);
+        Assert.True(vm.IsAnyDrawerOpen);
+        vm.ToggleDocumentationDrawer();
+        Assert.False(vm.Documentation.IsDrawerOpen);
+        Assert.False(vm.IsAnyDrawerOpen);
+    }
+
+    [Fact]
+    public void PopOut_NativeWindowRequested_ClosesDrawerAndInvokesCallback()
+    {
+        var docVm = new DocumentationViewModel();
+        var aiVm = new AiAssistantViewModel();
+
+        bool docPopOutCalled = false;
+        bool aiPopOutCalled = false;
+
+        docVm.OnPopOutNativeWindowRequested = () => docPopOutCalled = true;
+        aiVm.OnPopOutNativeWindowRequested = () => aiPopOutCalled = true;
+
+        docVm.IsDrawerOpen = true;
+        docVm.PopOutNativeWindow();
+        Assert.False(docVm.IsDrawerOpen);
+        Assert.True(docPopOutCalled);
+
+        aiVm.IsDrawerOpen = true;
+        aiVm.RequestPopOut();
+        Assert.False(aiVm.IsDrawerOpen);
+        Assert.True(aiPopOutCalled);
+    }
 }
 

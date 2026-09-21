@@ -10,7 +10,7 @@
         Icon="avares://LocalLLMServerManager/Assets/app-icon.ico"
         Title="Local LLM Server Manager v3.16.0"
         Width="1280" Height="840"
-        MinWidth="1024" MinHeight="700"
+        MinWidth="768" MinHeight="600"
         WindowStartupLocation="CenterScreen"
         Background="{StaticResource BgDarkBrush}"
         WindowDecorations="BorderOnly"
