@@ -36,7 +36,11 @@ public record HfFileQuantItem(
     string FormatSize,
     long SizeBytes,
     QuickFitBadge? FitBadge = null
-);
+)
+{
+    public bool IsGguf => (Filename ?? "").EndsWith(".gguf", StringComparison.OrdinalIgnoreCase);
+}
+
 
 public record CivitaiModelItem(
     int Id,
@@ -104,16 +108,22 @@ public partial class MainViewModel : ObservableObject
     public void ToggleDocumentationDrawer()
     {
         Assistant.IsDrawerOpen = false;
+        Ollama.IsPullDrawerOpen = false;
         Documentation.IsDrawerOpen = !Documentation.IsDrawerOpen;
-        IsAnyDrawerOpen = Documentation.IsDrawerOpen;
+        UpdateIsAnyDrawerOpen();
     }
 
     [RelayCommand]
     public void ToggleAiAssistDrawer()
     {
         Documentation.IsDrawerOpen = false;
+        Ollama.IsPullDrawerOpen = false;
         Assistant.IsDrawerOpen = !Assistant.IsDrawerOpen;
-        IsAnyDrawerOpen = Assistant.IsDrawerOpen;
+        if (Assistant.IsDrawerOpen && Assistant.AvailableModelCapabilities.Count <= 1)
+        {
+            _ = Assistant.LoadAvailableModelsAsync();
+        }
+        UpdateIsAnyDrawerOpen();
     }
 
     [RelayCommand]
@@ -121,8 +131,15 @@ public partial class MainViewModel : ObservableObject
     {
         Documentation.IsDrawerOpen = false;
         Assistant.IsDrawerOpen = false;
-        IsAnyDrawerOpen = false;
+        Ollama.ClosePullDrawer();
+        UpdateIsAnyDrawerOpen();
     }
+
+    public void UpdateIsAnyDrawerOpen()
+    {
+        IsAnyDrawerOpen = Documentation.IsDrawerOpen || Assistant.IsDrawerOpen || Ollama.IsPullDrawerOpen;
+    }
+
 
     [ObservableProperty]
     private string _appVersionText = $"LocalLLMServerManager v{typeof(MainViewModel).Assembly.GetName().Version?.ToString(3) ?? "3.15.1"} — Unified WASM & Desktop UI";
@@ -175,9 +192,19 @@ public partial class MainViewModel : ObservableObject
         HuggingFace = new HuggingFaceSearchViewModel(hfSearchService, _canIRunItService, telemetryService)
         {
             ApiBase = ApiBase,
-            OnInspectModelRequested = (modelName, modality) => NavigateToCanIRunIt(modelName, modality)
+            OnInspectModelRequested = (modelName, modality) => NavigateToCanIRunIt(modelName, modality),
+            OnPullModelRequested = model => _ = PullModelAsync(model)
+        };
+        Ollama.PropertyChanged += (s, e) =>
+        {
+            if (e.PropertyName == nameof(Ollama.IsPullDrawerOpen))
+            {
+                OnPropertyChanged(nameof(IsPullDrawerOpen));
+                UpdateIsAnyDrawerOpen();
+            }
         };
         Civitai = new CivitaiSearchViewModel(civitaiSearchService, _canIRunItService, telemetryService)
+
         {
             ApiBase = ApiBase,
             OnInspectModelRequested = (modelName, modality) => NavigateToCanIRunIt(modelName, modality)

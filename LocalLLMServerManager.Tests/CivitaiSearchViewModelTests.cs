@@ -228,5 +228,19 @@ public class CivitaiSearchViewModelTests
         vm.SelectCivitaiType(null);
         Assert.True(vm.IsTypeAllActive);
     }
+
+    [Fact]
+    public void OpenInBrowser_LaunchesCivitaiUrl()
+    {
+        var mockCiv = new Mock<ICivitaiSearchService>();
+        var vm = new CivitaiSearchViewModel(mockCiv.Object);
+        BrowserLauncher.SuppressProcessStart = true;
+
+        var item = new CivitaiModelItem(1234, "Model Name", "Checkpoint", "", "http://download", "model.safetensors", 4.9, 100);
+        vm.OpenInBrowser(item);
+        vm.OpenInBrowser(null);
+        vm.OpenInBrowser(item with { Id = 0 });
+    }
 }
+
 

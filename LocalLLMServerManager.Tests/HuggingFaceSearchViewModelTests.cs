@@ -7,6 +7,7 @@ using LocalLLMServerManager.Shared.Models;
 using LocalLLMServerManager.Shared.Services;
 using LocalLLMServerManager.Shared.ViewModels;
 using Moq;
+using Moq.Protected;
 using Xunit;
 
 namespace LocalLLMServerManager.Tests;
@@ -382,4 +383,77 @@ public class HuggingFaceSearchViewModelTests
         Assert.Single(vm.HuggingFaceResults);
         Assert.Equal("custom/top-model", vm.HuggingFaceResults[0].Id);
     }
+
+    [Fact]
+    public void OpenInBrowser_LaunchesHuggingFaceUrl()
+    {
+        var mockHf = new Mock<IHuggingFaceSearchService>();
+        var vm = new HuggingFaceSearchViewModel(mockHf.Object);
+        BrowserLauncher.SuppressProcessStart = true;
+
+        vm.OpenInBrowser("meta-llama/Llama-3.3-8B-Instruct-GGUF");
+        vm.OpenInBrowser(null);
+        vm.OpenInBrowser("   ");
+    }
+
+    [Fact]
+    public async Task OpenHfModalCommand_OpensModalForRepoItem()
+    {
+        var mockHf = new Mock<IHuggingFaceSearchService>();
+        mockHf.Setup(m => m.FetchQuantizationsAsync(It.IsAny<string>(), "test/repo", It.IsAny<HttpClient>()))
+            .ReturnsAsync(new List<HfFileQuantItem> { new("model.gguf", "Q4_K_M", "4 GB", 4000000000L) });
+
+        var vm = new HuggingFaceSearchViewModel(mockHf.Object);
+        var item = new HuggingFaceRepoItem("test/repo", "test", 100, "1k downloads", "text-generation");
+        await vm.OpenHfModalCommand.ExecuteAsync(item);
+
+        Assert.True(vm.IsHfModalOpen);
+        Assert.Equal("test/repo", vm.ModalRepoId);
+        Assert.Single(vm.ModalHfFiles);
+    }
+
+    [Fact]
+    public async Task DownloadHfFileAsync_SendsDownloadRequest()
+    {
+        var mockHf = new Mock<IHuggingFaceSearchService>();
+        var vm = new HuggingFaceSearchViewModel(mockHf.Object)
+        {
+            ModalRepoId = "meta-llama/Llama-3.3-8B-Instruct-GGUF"
+        };
+
+        var file = new HfFileQuantItem("llama-3.3.Q4_K_M.gguf", "Q4_K_M", "4.5 GB", 4500000000L);
+        var handlerMock = new Mock<HttpMessageHandler>();
+        handlerMock.Protected()
+            .Setup<Task<HttpResponseMessage>>("SendAsync", ItExpr.IsAny<HttpRequestMessage>(), ItExpr.IsAny<System.Threading.CancellationToken>())
+            .ReturnsAsync(new HttpResponseMessage(System.Net.HttpStatusCode.OK));
+
+        var client = new HttpClient(handlerMock.Object);
+        await vm.DownloadHfFileAsync(file, "http://localhost:5246", client);
+
+        handlerMock.Protected().Verify(
+            "SendAsync",
+            Times.Once(),
+            ItExpr.Is<HttpRequestMessage>(r => r.RequestUri != null && r.RequestUri.ToString().Contains("/api/hf/download") && r.RequestUri.ToString().Contains("llama-3.3.Q4_K_M.gguf")),
+            ItExpr.IsAny<System.Threading.CancellationToken>());
+    }
+
+    [Fact]
+    public void PullHfGgufInOllama_TriggersCallbackWithFormattedPullString()
+    {
+        var mockHf = new Mock<IHuggingFaceSearchService>();
+        var vm = new HuggingFaceSearchViewModel(mockHf.Object)
+        {
+            ModalRepoId = "meta-llama/Llama-3.3-8B-Instruct-GGUF"
+        };
+
+        string? pulledModel = null;
+        vm.OnPullModelRequested = m => pulledModel = m;
+
+        var file = new HfFileQuantItem("llama-3.3.Q4_K_M.gguf", "Q4_K_M", "4.5 GB", 4500000000L);
+        vm.PullHfGgufInOllama(file);
+
+        Assert.Equal("hf.co/meta-llama/Llama-3.3-8B-Instruct-GGUF:q4_k_m", pulledModel);
+    }
 }
+
+

@@ -82,7 +82,7 @@ public partial class AiAssistantTabControl : UserControl
     protected override void OnAttachedToVisualTree(VisualTreeAttachmentEventArgs e)
     {
         base.OnAttachedToVisualTree(e);
-        if (DataContext is AiAssistantViewModel vm && vm.AvailableModelCapabilities.Count <= 1)
+        if (DataContext is AiAssistantViewModel vm && vm.IsDrawerOpen && vm.AvailableModelCapabilities.Count <= 1)
         {
             _ = vm.LoadAvailableModelsAsync();
         }

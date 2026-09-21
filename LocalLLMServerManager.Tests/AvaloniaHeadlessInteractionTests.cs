@@ -745,6 +745,51 @@ public class AvaloniaHeadlessInteractionTests
         mainWindow.AiAssistWindow?.Close();
         mainWindow.Close();
     }
+
+    [AvaloniaFact]
+    public void MainView_PullProgressDrawer_RendersAndBindsToOllamaPullState()
+    {
+        var vm = new MainViewModel();
+        var view = new MainView { DataContext = vm };
+
+        var window = new Window { Content = view, Width = 1024, Height = 768 };
+        window.Show();
+
+        var pullDrawer = view.GetVisualDescendants().OfType<Border>().FirstOrDefault(b => b.Name == "PullProgressDrawer");
+        Assert.NotNull(pullDrawer);
+        Assert.False(pullDrawer.IsVisible);
+
+        // Open pull drawer
+        vm.Ollama.PullModelName = "qwen2.5-coder:7b";
+        vm.Ollama.PullProgressPercent = 55.5;
+        vm.Ollama.PullProgressBytesText = "555 MB / 1000 MB (55.5%)";
+        vm.Ollama.PullStatusLog = "downloading layer\nverifying sha256";
+        vm.Ollama.IsPullDrawerOpen = true;
+
+        Avalonia.Threading.Dispatcher.UIThread.RunJobs();
+
+        Assert.True(pullDrawer.IsVisible);
+
+        var progressBar = pullDrawer.GetVisualDescendants().OfType<ProgressBar>().FirstOrDefault();
+        Assert.NotNull(progressBar);
+        Assert.Equal(55.5, progressBar.Value);
+
+        var textBlocks = pullDrawer.GetVisualDescendants().OfType<TextBlock>().ToList();
+        Assert.Contains(textBlocks, t => t.Text != null && t.Text.Contains("qwen2.5-coder:7b"));
+        Assert.Contains(textBlocks, t => t.Text != null && t.Text.Contains("555 MB / 1000 MB (55.5%)"));
+
+        var selectableText = pullDrawer.GetVisualDescendants().OfType<SelectableTextBlock>().FirstOrDefault();
+        Assert.NotNull(selectableText);
+        Assert.Contains("downloading layer", selectableText.Text);
+
+        // Close drawer
+        vm.ClosePullDrawer();
+        Avalonia.Threading.Dispatcher.UIThread.RunJobs();
+
+        Assert.False(pullDrawer.IsVisible);
+
+        window.Close();
+    }
 }
 
 

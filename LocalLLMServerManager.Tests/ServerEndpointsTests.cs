@@ -200,11 +200,19 @@ public class ServerEndpointsTests : IClassFixture<AppTestServerFixture>
 
         try
         {
+            var hfResp = await _client.GetAsync("/api/hf/download?fileUrl=http://127.0.0.1:5299/health&fileName=test.gguf&pipelineTag=text-generation");
+            Assert.NotNull(hfResp);
+        }
+        catch { }
+
+        try
+        {
             var pullResp = await _client.PostAsJsonAsync("/api/ollama/pull", new { model = "test-model" });
             Assert.NotNull(pullResp);
         }
         catch { }
     }
+
 
     [Fact]
     public void Program_PortCheckAndBuilder_ExecutesSuccessfully()

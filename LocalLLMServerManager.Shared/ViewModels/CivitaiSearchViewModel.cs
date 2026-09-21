@@ -292,4 +292,12 @@ public partial class CivitaiSearchViewModel : ObservableObject
             ToastService.Instance.Show($"Failed to queue download for '{item.Name}'", ToastType.Error);
         }
     }
+
+    [RelayCommand]
+    public void OpenInBrowser(CivitaiModelItem? item)
+    {
+        if (item == null || item.Id <= 0) return;
+        BrowserLauncher.OpenUrl($"https://civitai.com/models/{item.Id}");
+    }
 }
+
