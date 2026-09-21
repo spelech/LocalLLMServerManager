@@ -58,6 +58,13 @@ public partial class DocumentationViewModel : ObservableObject
     public Action? OnPopOutNativeWindowRequested { get; set; }
 
     [ObservableProperty] private bool _isDrawerOpen = false;
+    [ObservableProperty] private bool _isDetailActive = false;
+
+    [RelayCommand]
+    public void BackToTopics()
+    {
+        IsDetailActive = false;
+    }
 
     [RelayCommand]
     public void PopOutNativeWindow()
@@ -142,6 +149,7 @@ public partial class DocumentationViewModel : ObservableObject
         if (match != null)
         {
             SelectedSection = match;
+            IsDetailActive = true;
         }
     }
 
