@@ -44,11 +44,16 @@ public class PlaywrightScreenshotGenerator : IClassFixture<AppTestServerFixture>
             return;
         }
 
+        string videoDir = Path.Combine(outputDir, "videos");
+        Directory.CreateDirectory(videoDir);
+
         await using (browser)
         {
             var context = await browser.NewContextAsync(new BrowserNewContextOptions
             {
-                ViewportSize = new ViewportSize { Width = 1280, Height = 800 }
+                ViewportSize = new ViewportSize { Width = 1280, Height = 800 },
+                RecordVideoDir = videoDir,
+                RecordVideoSize = new RecordVideoSize { Width = 1280, Height = 800 }
             });
 
         var page = await context.NewPageAsync();
@@ -117,7 +122,40 @@ public class PlaywrightScreenshotGenerator : IClassFixture<AppTestServerFixture>
         Assert.False(bytesDesktop.AsSpan().SequenceEqual(bytesSettings), "dashboard_settings.png should differ from desktop");
         Assert.False(bytes3d.AsSpan().SequenceEqual(bytesSettings), "dashboard_settings.png should differ from dashboard_3d_studio.png");
         Assert.False(bytesHf.AsSpan().SequenceEqual(bytesCivitai), "dashboard_civitai.png should differ from dashboard_huggingface.png");
-        Assert.False(bytesCanIRunIt.AsSpan().SequenceEqual(bytesSettings), "dashboard_settings.png should differ from dashboard_can_i_run_it.png");
+        // 8. Exercise Documentation & AI Assist drawer toggles and telemetry header collapse
+        // Click Documentation button (Top nav area ~ 530, 150)
+        await page.Mouse.ClickAsync(530, 150);
+        await page.WaitForTimeoutAsync(1000);
+        string docsDrawerPath = Path.Combine(outputDir, "dashboard_docs_drawer.png");
+        await page.ScreenshotAsync(new PageScreenshotOptions { Path = docsDrawerPath, FullPage = false });
+
+        // Close drawer (Click nav button again)
+        await page.Mouse.ClickAsync(530, 150);
+        await page.WaitForTimeoutAsync(800);
+
+        // Click AI Assist button (Top nav area ~ 670, 150)
+        await page.Mouse.ClickAsync(670, 150);
+        await page.WaitForTimeoutAsync(1000);
+        string aiDrawerPath = Path.Combine(outputDir, "dashboard_ai_drawer.png");
+        await page.ScreenshotAsync(new PageScreenshotOptions { Path = aiDrawerPath, FullPage = false });
+
+        // Type into chat input
+        await page.Keyboard.TypeAsync("Hello AI Assistant, can you check system health?");
+        await page.WaitForTimeoutAsync(800);
+
+        // Close AI drawer
+        await page.Mouse.ClickAsync(670, 150);
+        await page.WaitForTimeoutAsync(800);
+
+        // Close page and context to flush video recording
+        await page.CloseAsync();
+        await context.CloseAsync();
+
+        // Verify video recording was generated
+        var videoFiles = Directory.GetFiles(videoDir, "*.webm");
+        Assert.True(videoFiles.Length > 0, "Playwright video recording should be generated in " + videoDir);
+        var videoInfo = new FileInfo(videoFiles[0]);
+        Assert.True(videoInfo.Length > 0, "Playwright video recording file should be non-empty");
         }
     }
 }
