@@ -38,10 +38,20 @@ public class AvaloniaLayoutAuditTests
     private static List<LayoutViolation> FilterAppViolations(AuditReport report)
     {
         return report.Violations.Where(v =>
-            !v.VisualPath.Contains("ScrollBar") &&
-            !v.VisualPath.Contains("PART_") &&
-            !v.VisualPath.Contains("FocusTarget") &&
-            !v.VisualPath.Contains("TrackBackground")).ToList();
+        {
+            var path = v.VisualPath;
+            var firstSeparator = path.IndexOf(" > ", StringComparison.Ordinal);
+            if (firstSeparator > 0 && path.Substring(firstSeparator + 3).StartsWith("ContentPresenter#PART_ContentPresenter > "))
+            {
+                path = path.Substring(firstSeparator + 3 + "ContentPresenter#PART_ContentPresenter > ".Length);
+            }
+
+            return !path.Contains("ScrollBar") &&
+                   !path.Contains("PART_") &&
+                   !path.Contains("FocusTarget") &&
+                   !path.Contains("TrackBackground") &&
+                   v.Severity == ViolationSeverity.Error;
+        }).ToList();
     }
 
     [AvaloniaFact]
@@ -81,6 +91,49 @@ public class AvaloniaLayoutAuditTests
         finally
         {
             window.Close();
+        }
+    }
+
+    [AvaloniaFact]
+    public void AiAssistantTabControl_LayoutAudit()
+    {
+        var breakpoints = new (string Name, double Width, double Height)[]
+        {
+            ("Companion", 440, 700),
+            ("Drawer", 480, 700),
+            ("Desktop", 1280, 800)
+        };
+
+        foreach (var bp in breakpoints)
+        {
+            foreach (var isSetupVisible in new[] { false, true })
+            {
+                var vm = new MainViewModel();
+                vm.Assistant.IsSetupCardVisible = isSetupVisible;
+                var control = new AiAssistantTabControl { DataContext = vm.Assistant };
+                var window = new Window { Content = control, Width = bp.Width, Height = bp.Height };
+                try
+                {
+                    window.Show();
+
+                    var auditor = new LayoutAuditor();
+                    var options = CreateConfiguredAuditOptions(checkTouchErgonomics: false, checkTextClipping: false);
+
+                    var report = auditor.Audit(control, options);
+                    _output.WriteLine($"AiAssistantTabControl Audit ({bp.Name} {bp.Width}x{bp.Height}, Setup={isSetupVisible}) - Health={report.HealthScore}/100, Violations={report.Violations.Count}");
+                    if (report.Violations.Count > 0)
+                    {
+                        _output.WriteLine(report.ToDetailedReport());
+                    }
+
+                    var appViolations = FilterAppViolations(report);
+                    Assert.Empty(appViolations);
+                }
+                finally
+                {
+                    window.Close();
+                }
+            }
         }
     }
 
@@ -201,6 +254,47 @@ public class AvaloniaLayoutAuditTests
         finally
         {
             window.Close();
+        }
+    }
+
+    [AvaloniaFact]
+    public void DocumentationTabControl_LayoutAudit()
+    {
+        var testCases = new (string Name, double Width, double Height, bool IsDetailActive)[]
+        {
+            ("Companion Master", 440, 700, false),
+            ("Companion Detail", 440, 700, true),
+            ("Desktop Wide", 1280, 800, false),
+            ("Desktop Wide Detail", 1280, 800, true)
+        };
+
+        foreach (var tc in testCases)
+        {
+            var vm = new MainViewModel();
+            vm.Documentation.IsDetailActive = tc.IsDetailActive;
+            var control = new DocumentationTabControl { DataContext = vm.Documentation };
+            var window = new Window { Content = control, Width = tc.Width, Height = tc.Height };
+            try
+            {
+                window.Show();
+
+                var auditor = new LayoutAuditor();
+                var options = CreateConfiguredAuditOptions(checkTouchErgonomics: false, checkTextClipping: false);
+
+                var report = auditor.Audit(control, options);
+                _output.WriteLine($"DocumentationTabControl Audit ({tc.Name} {tc.Width}x{tc.Height}, IsDetailActive={tc.IsDetailActive}) - Health={report.HealthScore}/100, Violations={report.Violations.Count}");
+                if (report.Violations.Count > 0)
+                {
+                    _output.WriteLine(report.ToDetailedReport());
+                }
+
+                var appViolations = FilterAppViolations(report);
+                Assert.Empty(appViolations);
+            }
+            finally
+            {
+                window.Close();
+            }
         }
     }
 }

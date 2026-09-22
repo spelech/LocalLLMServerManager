@@ -36,37 +36,70 @@ public partial class MainWindow : Window
             assistantService: null,
             settingsService: new SettingsService(),
             promptService: new PromptManagementService());
+        mainVm.IsDesktopHost = true;
         DataContext = mainVm;
 
         mainVm.Documentation.OnPopOutNativeWindowRequested = () =>
         {
-            if (_docWindow == null || !_docWindow.IsVisible)
+            if (_docWindow == null)
             {
                 _docWindow = new DocumentationWindow(mainVm.Documentation);
                 _docWindow.Closed += (s, e) => _docWindow = null;
+                WindowSnapManager.SetOwner(_docWindow, this);
                 _docWindow.Show();
                 WindowSnapManager.Instance.RegisterCompanion(this, _docWindow, SnapFlank.Left, autoAttach: true);
             }
-            else
+            else if (!_docWindow.IsVisible)
             {
+                WindowSnapManager.SetOwner(_docWindow, this);
+                _docWindow.Show();
                 WindowSnapManager.Instance.Attach(_docWindow);
                 _docWindow.Activate();
+            }
+            else
+            {
+                // Companion is already open and visible
+                if (WindowSnapManager.Instance.IsSnapped(_docWindow))
+                {
+                    _docWindow.Hide();
+                }
+                else
+                {
+                    WindowSnapManager.Instance.Attach(_docWindow);
+                    _docWindow.Activate();
+                }
             }
         };
 
         mainVm.Assistant.OnPopOutNativeWindowRequested = () =>
         {
-            if (_aiAssistWindow == null || !_aiAssistWindow.IsVisible)
+            if (_aiAssistWindow == null)
             {
                 _aiAssistWindow = new AiAssistWindow(mainVm.Assistant);
                 _aiAssistWindow.Closed += (s, e) => _aiAssistWindow = null;
+                WindowSnapManager.SetOwner(_aiAssistWindow, this);
                 _aiAssistWindow.Show();
                 WindowSnapManager.Instance.RegisterCompanion(this, _aiAssistWindow, SnapFlank.Right, autoAttach: true);
             }
-            else
+            else if (!_aiAssistWindow.IsVisible)
             {
+                WindowSnapManager.SetOwner(_aiAssistWindow, this);
+                _aiAssistWindow.Show();
                 WindowSnapManager.Instance.Attach(_aiAssistWindow);
                 _aiAssistWindow.Activate();
+            }
+            else
+            {
+                // Companion is already open and visible
+                if (WindowSnapManager.Instance.IsSnapped(_aiAssistWindow))
+                {
+                    _aiAssistWindow.Hide();
+                }
+                else
+                {
+                    WindowSnapManager.Instance.Attach(_aiAssistWindow);
+                    _aiAssistWindow.Activate();
+                }
             }
         };
 

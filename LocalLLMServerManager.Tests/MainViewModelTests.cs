@@ -558,5 +558,42 @@ public class MainViewModelTests : IClassFixture<AppTestServerFixture>
         Assert.False(aiVm.IsDrawerOpen);
         Assert.True(aiPopOutCalled);
     }
+
+    [Fact]
+    public void ToggleDrawers_OnWeb_OpensInAppDrawersAndUpdatesState()
+    {
+        var vm = new MainViewModel();
+        Assert.False(vm.IsDesktopHost);
+
+        vm.ToggleDocumentationDrawerCommand.Execute(null);
+        Assert.True(vm.Documentation.IsDrawerOpen);
+        Assert.False(vm.Assistant.IsDrawerOpen);
+        Assert.True(vm.IsAnyDrawerOpen);
+
+        vm.ToggleAiAssistDrawerCommand.Execute(null);
+        Assert.False(vm.Documentation.IsDrawerOpen);
+        Assert.True(vm.Assistant.IsDrawerOpen);
+        Assert.True(vm.IsAnyDrawerOpen);
+    }
+
+    [Fact]
+    public void ToggleDrawers_OnDesktop_ExecutesPopOutWithoutOpeningInAppDrawers()
+    {
+        var vm = new MainViewModel { IsDesktopHost = true };
+        bool docPopOutCalled = false;
+        bool aiPopOutCalled = false;
+        vm.Documentation.OnPopOutNativeWindowRequested = () => docPopOutCalled = true;
+        vm.Assistant.OnPopOutNativeWindowRequested = () => aiPopOutCalled = true;
+
+        vm.ToggleDocumentationDrawerCommand.Execute(null);
+        Assert.True(docPopOutCalled);
+        Assert.False(vm.Documentation.IsDrawerOpen);
+        Assert.False(vm.IsAnyDrawerOpen);
+
+        vm.ToggleAiAssistDrawerCommand.Execute(null);
+        Assert.True(aiPopOutCalled);
+        Assert.False(vm.Assistant.IsDrawerOpen);
+        Assert.False(vm.IsAnyDrawerOpen);
+    }
 }
 
