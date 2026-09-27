@@ -33,7 +33,7 @@
             ClipToBounds="True">
         <Grid>
             <!-- Dashed Border Outline -->
-            <Rectangle Classes="dashed-border" IsHitTestVisible="False" />
+            <Rectangle Classes="dashed-border" IsHitTestVisible="False" ZIndex="-1" />
 
             <!-- Empty State (No Image) -->
             <Grid IsVisible="{Binding !HasImage, RelativeSource={RelativeSource AncestorType=controls:ImageDropZoneControl}}"

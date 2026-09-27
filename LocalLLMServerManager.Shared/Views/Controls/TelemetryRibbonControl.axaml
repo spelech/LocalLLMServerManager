@@ -77,20 +77,18 @@
             </StackPanel>
 
             <!-- Center: Compact VRAM Badge & Telemetry Pill -->
-            <StackPanel Grid.Column="1" Orientation="Horizontal" HorizontalAlignment="Center" VerticalAlignment="Center" Spacing="6">
-                <Border Classes="matte-pill" Height="24" Padding="8,2" VerticalAlignment="Center">
-                    <StackPanel Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
-                        <TextBlock Text="🎮" FontSize="11" VerticalAlignment="Center"/>
-                        <TextBlock Text="{Binding GpuName}" FontSize="11" Foreground="{StaticResource TextMutedBrush}"
-                                   FontWeight="Medium" VerticalAlignment="Center" MaxWidth="200"
-                                   TextTrimming="CharacterEllipsis" ToolTip.Tip="{Binding GpuName}"/>
-                        <ProgressBar Value="{Binding VramPercentage}" Maximum="100" Classes="matte-progress"
-                                     Width="50" Height="4" VerticalAlignment="Center"/>
-                        <TextBlock Text="{Binding VramStatusText}" FontSize="11" Foreground="{StaticResource PrimaryBrush}"
-                                   FontWeight="Bold" VerticalAlignment="Center"/>
-                    </StackPanel>
-                </Border>
-            </StackPanel>
+            <Border Grid.Column="1" Classes="matte-pill" Height="24" Padding="8,2" HorizontalAlignment="Center" VerticalAlignment="Center" ClipToBounds="True">
+                <StackPanel Orientation="Horizontal" Spacing="6" VerticalAlignment="Center" ClipToBounds="True">
+                    <TextBlock Text="🎮" FontSize="11" VerticalAlignment="Center"/>
+                    <TextBlock Text="{Binding GpuName}" FontSize="11" Foreground="{StaticResource TextMutedBrush}"
+                               FontWeight="Medium" VerticalAlignment="Center" MaxWidth="140"
+                               TextTrimming="CharacterEllipsis" ToolTip.Tip="{Binding GpuName}"/>
+                    <ProgressBar Value="{Binding VramPercentage}" Maximum="100" Classes="matte-progress"
+                                 MinWidth="0" Width="40" Height="4" VerticalAlignment="Center"/>
+                    <TextBlock Text="{Binding VramStatusText}" FontSize="11" Foreground="{StaticResource PrimaryBrush}"
+                               FontWeight="Bold" VerticalAlignment="Center" TextTrimming="CharacterEllipsis"/>
+                </StackPanel>
+            </Border>
 
             <!-- Right: Refresh & Actions -->
             <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="4" VerticalAlignment="Center">

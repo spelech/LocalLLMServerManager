@@ -36,18 +36,18 @@
         <!-- Non-Modal Slide-Out Drawers -->
 
         <!-- Left Slide-Out Drawer for Documentation -->
-        <Border Grid.Row="1" HorizontalAlignment="Left" VerticalAlignment="Stretch" Width="480"
+        <Border x:Name="DocumentationDrawer" Grid.Row="1" HorizontalAlignment="Left" VerticalAlignment="Stretch" Width="480"
                 Background="{StaticResource BgDarkBrush}" BorderBrush="{StaticResource GlassBorderBrush}"
                 BorderThickness="0,0,1,0" BoxShadow="4 0 24 0 #90000000"
                 IsVisible="{Binding Documentation.IsDrawerOpen}" ZIndex="92">
             <Grid RowDefinitions="Auto, *">
                 <Border Grid.Row="0" Background="{StaticResource BgSurfaceBrush}" BorderBrush="{StaticResource GlassBorderBrush}" BorderThickness="0,0,0,1" Padding="14,10">
-                    <Grid ColumnDefinitions="Auto, *, Auto">
-                        <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
-                            <TextBlock Text="📖" FontSize="16" VerticalAlignment="Center"/>
-                            <TextBlock Text="Documentation &amp; Guides" FontSize="14" FontWeight="Bold" Foreground="{StaticResource TextMainBrush}"/>
-                        </StackPanel>
-                        <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="6">
+                    <Grid ColumnDefinitions="*, Auto">
+                        <DockPanel Grid.Column="0" VerticalAlignment="Center" Margin="0,0,8,0">
+                            <TextBlock DockPanel.Dock="Left" Text="📖" FontSize="16" VerticalAlignment="Center" Margin="0,0,8,0" TextTrimming="CharacterEllipsis"/>
+                            <TextBlock Text="Documentation &amp; Guides" FontSize="14" FontWeight="Bold" Foreground="{StaticResource TextMainBrush}" TextTrimming="CharacterEllipsis"/>
+                        </DockPanel>
+                        <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="6">
                             <Button Content="↗️ Pop Out" Command="{Binding Documentation.PopOutNativeWindowCommand}" Classes="matte-secondary" FontSize="11" Padding="8,4" ToolTip.Tip="Pop out into native window"/>
                             <Button Content="✕" Command="{Binding CloseDrawersCommand}" Classes="matte-secondary" FontSize="11" Padding="8,4" ToolTip.Tip="Close Drawer"/>
                         </StackPanel>
@@ -58,18 +58,18 @@
         </Border>
 
         <!-- Right Slide-Out Drawer for AI Assistant -->
-        <Border Grid.Row="1" HorizontalAlignment="Right" VerticalAlignment="Stretch" Width="460"
+        <Border x:Name="AiAssistantDrawer" Grid.Row="1" HorizontalAlignment="Right" VerticalAlignment="Stretch" Width="460"
                 Background="{StaticResource BgDarkBrush}" BorderBrush="{StaticResource GlassBorderBrush}"
                 BorderThickness="1,0,0,0" BoxShadow="-4 0 24 0 #90000000"
                 IsVisible="{Binding Assistant.IsDrawerOpen}" ZIndex="92">
             <Grid RowDefinitions="Auto, *">
                 <Border Grid.Row="0" Background="{StaticResource BgSurfaceBrush}" BorderBrush="{StaticResource GlassBorderBrush}" BorderThickness="0,0,0,1" Padding="14,10">
-                    <Grid ColumnDefinitions="Auto, *, Auto">
-                        <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
-                            <TextBlock Text="🤖" FontSize="16" VerticalAlignment="Center"/>
-                            <TextBlock Text="AI Assistant" FontSize="14" FontWeight="Bold" Foreground="{StaticResource TextMainBrush}"/>
-                        </StackPanel>
-                        <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="6">
+                    <Grid ColumnDefinitions="*, Auto">
+                        <DockPanel Grid.Column="0" VerticalAlignment="Center" Margin="0,0,8,0">
+                            <TextBlock DockPanel.Dock="Left" Text="🤖" FontSize="16" VerticalAlignment="Center" Margin="0,0,8,0" TextTrimming="CharacterEllipsis"/>
+                            <TextBlock Text="AI Assistant" FontSize="14" FontWeight="Bold" Foreground="{StaticResource TextMainBrush}" TextTrimming="CharacterEllipsis"/>
+                        </DockPanel>
+                        <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="6">
                             <Button Content="↗️ Pop Out" Command="{Binding Assistant.RequestPopOutCommand}" Classes="matte-secondary" FontSize="11" Padding="8,4" ToolTip.Tip="Pop out into native window"/>
                             <Button Content="✕" Command="{Binding CloseDrawersCommand}" Classes="matte-secondary" FontSize="11" Padding="8,4" ToolTip.Tip="Close Drawer"/>
                         </StackPanel>

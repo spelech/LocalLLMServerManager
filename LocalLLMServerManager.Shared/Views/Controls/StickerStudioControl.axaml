@@ -240,7 +240,7 @@
 
                     <!-- Arrow 1 -->
                     <TextBlock Grid.Column="1" Text="➔" FontSize="11" HorizontalAlignment="Center" VerticalAlignment="Center"
-                               Foreground="{StaticResource TextMutedBrush}" Margin="4,0" />
+                               Foreground="{StaticResource TextMutedBrush}" Margin="4,0" TextTrimming="CharacterEllipsis" />
 
                     <!-- Step 2: Subject Isolation -->
                     <Border Grid.Column="2" Classes="matte-pill" Padding="8,4" CornerRadius="6">
@@ -255,7 +255,7 @@
 
                     <!-- Arrow 2 -->
                     <TextBlock Grid.Column="3" Text="➔" FontSize="11" HorizontalAlignment="Center" VerticalAlignment="Center"
-                               Foreground="{StaticResource TextMutedBrush}" Margin="4,0" />
+                               Foreground="{StaticResource TextMutedBrush}" Margin="4,0" TextTrimming="CharacterEllipsis" />
 
                     <!-- Step 3: Contour Application -->
                     <Border Grid.Column="4" Classes="matte-pill" Padding="8,4" CornerRadius="6">
@@ -270,7 +270,7 @@
 
                     <!-- Arrow 3 -->
                     <TextBlock Grid.Column="5" Text="➔" FontSize="11" HorizontalAlignment="Center" VerticalAlignment="Center"
-                               Foreground="{StaticResource TextMutedBrush}" Margin="4,0" />
+                               Foreground="{StaticResource TextMutedBrush}" Margin="4,0" TextTrimming="CharacterEllipsis" />
 
                     <!-- Step 4: Ready -->
                     <Border Grid.Column="6" Classes="matte-pill" Padding="8,4" CornerRadius="6">
