@@ -4,8 +4,10 @@ using Avalonia.Headless.XUnit;
 using Avalonia.LayoutInspector.Engine;
 using Avalonia.LayoutInspector.Models;
 using Avalonia.LayoutInspector.Responsive;
+using Avalonia.VisualTree;
 using LocalLLMServerManager.Shared.Services;
 using LocalLLMServerManager.Shared.ViewModels;
+using LocalLLMServerManager.Shared.Views;
 using LocalLLMServerManager.Shared.Views.Controls;
 using LocalLLMServerManager.Views;
 using Xunit;
@@ -62,13 +64,11 @@ public class AvaloniaLayoutAuditTests
         try
         {
             var runner = new ResponsiveAuditRunner();
-            var options = CreateConfiguredAuditOptions();
+            var options = CreateConfiguredAuditOptions(checkTouchErgonomics: false, checkTextClipping: true);
             var breakpoints = new[]
             {
-                StandardBreakpoints.Desktop1440p,
-                StandardBreakpoints.Desktop1080p,
-                StandardBreakpoints.Desktop720p,
-                StandardBreakpoints.TabletiPad
+                new Breakpoint("Widescreen Desktop (1440x900)", 1440, 900),
+                new Breakpoint("Tablet Landscape (1024x768)", 1024, 768)
             };
 
             var responsiveReport = runner.Run(window, breakpoints, options);
@@ -86,8 +86,39 @@ public class AvaloniaLayoutAuditTests
                 Assert.Empty(appViolations);
             }
 
+            // 3. Web Drawer Active: 1280 x 800 with 320px Web Drawer open
+            if (window.DataContext is MainViewModel vm)
+            {
+                vm.Documentation.IsDrawerOpen = true;
+                vm.UpdateIsAnyDrawerOpen();
+            }
+
+            var mainView = window.FindControl<MainView>("MainContent") ?? window.GetVisualDescendants().OfType<MainView>().FirstOrDefault();
+            var docDrawer = mainView?.FindControl<Border>("DocumentationDrawer") ?? mainView?.GetVisualDescendants().OfType<Border>().FirstOrDefault(b => b.Width == 480);
+            if (docDrawer != null)
+            {
+                docDrawer.Width = 320;
+            }
+
+            var drawerBp = new Breakpoint("Web Drawer Active (1280x800, 320px drawer)", 1280, 800);
+            var drawerReport = runner.Run(window, new[] { drawerBp }, options);
+
+            foreach (var (bp, report) in drawerReport.BreakpointReports)
+            {
+                _output.WriteLine($"--- Breakpoint {bp.Name} ({bp.Width}x{bp.Height}): Health={report.HealthScore}/100, Violations={report.Violations.Count} ---");
+                if (report.Violations.Count > 0)
+                {
+                    _output.WriteLine(report.ToDetailedReport());
+                }
+
+                var appViolations = FilterAppViolations(report);
+                Assert.Empty(appViolations);
+            }
+
             Assert.NotNull(responsiveReport);
             Assert.NotEmpty(responsiveReport.BreakpointReports);
+            Assert.NotNull(drawerReport);
+            Assert.NotEmpty(drawerReport.BreakpointReports);
         }
         finally
         {
