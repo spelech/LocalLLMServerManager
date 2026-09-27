@@ -102,7 +102,7 @@ public partial class MainViewModel : ObservableObject
     private bool _isStickerStudioActive = true;
 
     [ObservableProperty]
-    private int _selectedTabIndex = 0;
+    private int _selectedTabIndex = 1;
 
     partial void OnSelectedTabIndexChanged(int value)
     {

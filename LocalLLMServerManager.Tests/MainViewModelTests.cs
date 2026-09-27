@@ -604,6 +604,7 @@ public class MainViewModelTests : IClassFixture<AppTestServerFixture>
         Assert.NotNull(vm.NavigationRail);
         Assert.NotNull(vm.StickerStudio);
         Assert.Equal(NavDomain.Studio, vm.NavigationRail.SelectedDomain);
+        Assert.Equal(1, vm.SelectedTabIndex);
 
         // Orchestration: NavDomain changes update SelectedTabIndex
         vm.NavigationRail.SelectDomain(NavDomain.Models);
