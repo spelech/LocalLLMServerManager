@@ -1,0 +1,149 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:vm="using:LocalLLMServerManager.Shared.ViewModels"
+             xmlns:models="using:LocalLLMServerManager.Shared.Models"
+             xmlns:controls="using:LocalLLMServerManager.Shared.Views.Controls"
+             mc:Ignorable="d" d:DesignWidth="1100" d:DesignHeight="800"
+             x:Class="LocalLLMServerManager.Shared.Views.Controls.DynamicStageContainerControl"
+             x:DataType="vm:MainViewModel">
+
+    <UserControl.Styles>
+        <!-- Hide the TabStrip header border because navigation is hosted in the left ActivityRailControl -->
+        <Style Selector="TabControl.stage-tabs /template/ DockPanel > Border">
+            <Setter Property="IsVisible" Value="False" />
+        </Style>
+        <Style Selector="TabControl.stage-tabs /template/ ItemsPresenter#PART_ItemsPresenter">
+            <Setter Property="IsVisible" Value="False" />
+        </Style>
+
+        <Style Selector="Button.workflow-tab-btn">
+            <Setter Property="Background" Value="Transparent" />
+            <Setter Property="Foreground" Value="{StaticResource TextMutedBrush}" />
+            <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="BorderBrush" Value="Transparent" />
+            <Setter Property="CornerRadius" Value="6" />
+            <Setter Property="Height" Value="32" />
+            <Setter Property="Padding" Value="12,6" />
+            <Setter Property="Cursor" Value="Hand" />
+        </Style>
+        <Style Selector="Button.workflow-tab-btn /template/ ContentPresenter#PART_ContentPresenter">
+            <Setter Property="CornerRadius" Value="6" />
+        </Style>
+        <Style Selector="Button.workflow-tab-btn:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+            <Setter Property="Background" Value="{StaticResource BgCardBrush}" />
+            <Setter Property="Foreground" Value="{StaticResource TextMainBrush}" />
+        </Style>
+        <Style Selector="Button.workflow-tab-btn.active">
+            <Setter Property="Foreground" Value="{StaticResource TextMainBrush}" />
+        </Style>
+        <Style Selector="Button.workflow-tab-btn.active /template/ ContentPresenter#PART_ContentPresenter">
+            <Setter Property="Background" Value="#1A388BFD" />
+            <Setter Property="BorderBrush" Value="{StaticResource PrimaryBrush}" />
+            <Setter Property="Foreground" Value="{StaticResource TextMainBrush}" />
+        </Style>
+
+        <Style Selector="Button.workflow-sub-btn">
+            <Setter Property="Background" Value="Transparent" />
+            <Setter Property="Foreground" Value="{StaticResource TextMutedBrush}" />
+            <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="BorderBrush" Value="{StaticResource GlassBorderBrush}" />
+            <Setter Property="CornerRadius" Value="4" />
+            <Setter Property="Height" Value="28" />
+            <Setter Property="Padding" Value="8,4" />
+            <Setter Property="Cursor" Value="Hand" />
+        </Style>
+        <Style Selector="Button.workflow-sub-btn:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+            <Setter Property="Background" Value="{StaticResource BgCardBrush}" />
+            <Setter Property="BorderBrush" Value="{StaticResource PrimaryBrush}" />
+            <Setter Property="Foreground" Value="{StaticResource TextMainBrush}" />
+        </Style>
+    </UserControl.Styles>
+
+    <TabControl Classes="stage-tabs" SelectedIndex="{Binding SelectedTabIndex}" Background="Transparent">
+        <!-- TAB 0: Models (Downloaded, Hugging Face Hub, CivitAI Hub) -->
+        <TabItem Header="Models">
+            <controls:ModelsTabControl DataContext="{Binding}" Margin="16,0,16,16"/>
+        </TabItem>
+
+        <!-- TAB 1: Studio Workflows (Sticker Studio + Engine Workflows) -->
+        <TabItem Header="Studio">
+            <Grid RowDefinitions="Auto, *">
+                <!-- Studio Sub-Navigation Bar: Toggle between Sticker Studio and other Generation Workflows -->
+                <Border Grid.Row="0"
+                        Background="{StaticResource BgSurfaceBrush}"
+                        BorderBrush="{StaticResource GlassBorderBrush}"
+                        BorderThickness="0,0,0,1"
+                        Padding="14,6">
+                    <Grid ColumnDefinitions="Auto, *, Auto">
+                        <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
+                            <Button Classes="workflow-tab-btn"
+                                    Classes.active="{Binding IsStickerStudioActive}"
+                                    Command="{Binding SwitchToStickerStudioCommand}"
+                                    ToolTip.Tip="Sticker Studio: Reference image to die-cut sticker generation">
+                                <StackPanel Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
+                                    <TextBlock Text="🏷️" FontSize="13" VerticalAlignment="Center"/>
+                                    <TextBlock Text="Sticker Studio" FontSize="12" FontWeight="SemiBold" VerticalAlignment="Center"/>
+                                </StackPanel>
+                            </Button>
+                            <Button Classes="workflow-tab-btn"
+                                    Classes.active="{Binding !IsStickerStudioActive}"
+                                    Command="{Binding SwitchToEngineWorkflowsCommand}"
+                                    ToolTip.Tip="Engine Workflows: Sequential image, text, video, 3D, and audio pathways">
+                                <StackPanel Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
+                                    <TextBlock Text="⚡" FontSize="13" VerticalAlignment="Center"/>
+                                    <TextBlock Text="Engine Workflows" FontSize="12" FontWeight="SemiBold" VerticalAlignment="Center"/>
+                                </StackPanel>
+                            </Button>
+                        </StackPanel>
+
+                        <!-- Modality Quick-Switchers (Visible when Engine Workflows is active) -->
+                        <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="4" VerticalAlignment="Center"
+                                    IsVisible="{Binding !IsStickerStudioActive}">
+                            <Button Content="🖼️ Images" Classes="workflow-sub-btn"
+                                    Command="{Binding SwitchToEngineWorkflowCommand}" CommandParameter="Images"
+                                    FontSize="11"/>
+                            <Button Content="💬 Text" Classes="workflow-sub-btn"
+                                    Command="{Binding SwitchToEngineWorkflowCommand}" CommandParameter="Text"
+                                    FontSize="11"/>
+                            <Button Content="🎬 Video" Classes="workflow-sub-btn"
+                                    Command="{Binding SwitchToEngineWorkflowCommand}" CommandParameter="Video"
+                                    FontSize="11"/>
+                            <Button Content="🧊 3D Mesh" Classes="workflow-sub-btn"
+                                    Command="{Binding SwitchToEngineWorkflowCommand}" CommandParameter="3D Mesh"
+                                    FontSize="11"/>
+                            <Button Content="🎵 Audio" Classes="workflow-sub-btn"
+                                    Command="{Binding SwitchToEngineWorkflowCommand}" CommandParameter="Audio"
+                                    FontSize="11"/>
+                        </StackPanel>
+                    </Grid>
+                </Border>
+
+                <!-- Studio Stage Area -->
+                <Panel Grid.Row="1">
+                    <!-- Sticker Studio Control (Default Dual-Stage Canvas) -->
+                    <Panel IsVisible="{Binding IsStickerStudioActive}">
+                        <controls:StickerStudioControl DataContext="{Binding StickerStudio}"/>
+                    </Panel>
+
+                    <!-- Engine Studio Control (Workflows: Image, Text, Video, 3D Mesh, Audio) -->
+                    <Panel IsVisible="{Binding !IsStickerStudioActive}">
+                        <controls:EngineStudioTabControl DataContext="{Binding}"
+                                                         Margin="16,0,16,16"/>
+                    </Panel>
+                </Panel>
+            </Grid>
+        </TabItem>
+
+        <!-- TAB 2: Can I Run It Hardware Fit Calculator -->
+        <TabItem Header="HardwareFit">
+            <controls:CanIRunItView DataContext="{Binding HardwareFit}" Margin="16,0,16,16"/>
+        </TabItem>
+
+        <!-- TAB 3: Remote Access & Settings -->
+        <TabItem Header="Settings">
+            <controls:SettingsTabControl DataContext="{Binding Settings}" Margin="16,0,16,16"/>
+        </TabItem>
+    </TabControl>
+</UserControl>

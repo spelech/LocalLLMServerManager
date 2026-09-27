@@ -95,9 +95,30 @@ public partial class MainViewModel : ObservableObject
     public CanIRunItViewModel HardwareFit { get; }
     public DocumentationViewModel Documentation { get; } = new();
     public AiAssistantViewModel Assistant { get; }
+    public NavigationRailViewModel NavigationRail { get; } = new();
+    public StickerStudioViewModel StickerStudio { get; } = new(new StickerGenerationService());
+
+    [ObservableProperty]
+    private bool _isStickerStudioActive = true;
 
     [ObservableProperty]
     private int _selectedTabIndex = 0;
+
+    partial void OnSelectedTabIndexChanged(int value)
+    {
+        var domain = value switch
+        {
+            0 => NavDomain.Models,
+            1 => NavDomain.Studio,
+            2 => NavDomain.HardwareFit,
+            3 => NavDomain.Settings,
+            _ => NavDomain.Studio
+        };
+        if (NavigationRail != null && NavigationRail.SelectedDomain != domain)
+        {
+            NavigationRail.SelectedDomain = domain;
+        }
+    }
 
     [ObservableProperty]
     private int _selectedModelsTabIndex = 0;
@@ -233,6 +254,28 @@ public partial class MainViewModel : ObservableObject
             ApiBase = ApiBase
         };
         Documentation.OnNavigateToTabRequested = tab => SelectedTabIndex = tab;
+
+        NavigationRail.PropertyChanged += (s, e) =>
+        {
+            if (e.PropertyName == nameof(NavigationRail.SelectedDomain))
+            {
+                var newTabIndex = NavigationRail.SelectedDomain switch
+                {
+                    NavDomain.Models => 0,
+                    NavDomain.Studio => 1,
+                    NavDomain.HardwareFit => 2,
+                    NavDomain.Settings => 3,
+                    _ => SelectedTabIndex
+                };
+                if (SelectedTabIndex != newTabIndex)
+                {
+                    SelectedTabIndex = newTabIndex;
+                }
+            }
+        };
+
+        NavigationRail.DocumentationRequested += () => ToggleDocumentationDrawer();
+        NavigationRail.AiAssistRequested += () => ToggleAiAssistDrawer();
 
         LoadStudioPresets();
         RecalculateVideoHardwareFit();
@@ -533,6 +576,28 @@ public partial class MainViewModel : ObservableObject
     public void SelectStudioMode(object? modeParam)
     {
         var mode = modeParam?.ToString();
+        if (!string.IsNullOrWhiteSpace(mode))
+        {
+            SelectedStudioMode = mode;
+        }
+    }
+
+    [RelayCommand]
+    public void SwitchToStickerStudio()
+    {
+        IsStickerStudioActive = true;
+    }
+
+    [RelayCommand]
+    public void SwitchToEngineWorkflows()
+    {
+        IsStickerStudioActive = false;
+    }
+
+    [RelayCommand]
+    public void SwitchToEngineWorkflow(string mode)
+    {
+        IsStickerStudioActive = false;
         if (!string.IsNullOrWhiteSpace(mode))
         {
             SelectedStudioMode = mode;

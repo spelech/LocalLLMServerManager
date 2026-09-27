@@ -128,7 +128,7 @@
                 <Rectangle Height="1" Fill="{StaticResource GlassBorderBrush}" Margin="6,4" />
 
                 <!-- 📖 Documentation -->
-                <Button x:Name="DocsBtn"
+                <Button x:Name="NavDocumentationBtn"
                         Classes="rail-btn"
                         Command="{Binding DocumentationCommand}"
                         ToolTip.Tip="📖 Documentation">
@@ -142,7 +142,7 @@
                 </Button>
 
                 <!-- 🤖 AI Assist -->
-                <Button x:Name="AiAssistBtn"
+                <Button x:Name="NavAiAssistBtn"
                         Classes="rail-btn"
                         Command="{Binding AiAssistCommand}"
                         ToolTip.Tip="🤖 AI Assistant">

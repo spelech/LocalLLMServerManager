@@ -5,6 +5,7 @@ using System.Net.Http;
 using System.Text;
 using System.Text.Json;
 using System.Threading.Tasks;
+using LocalLLMServerManager.Shared.Models;
 using LocalLLMServerManager.Shared.Services;
 using LocalLLMServerManager.Shared.ViewModels;
 using LocalLLMServerManager;
@@ -594,6 +595,54 @@ public class MainViewModelTests : IClassFixture<AppTestServerFixture>
         Assert.True(aiPopOutCalled);
         Assert.False(vm.Assistant.IsDrawerOpen);
         Assert.False(vm.IsAnyDrawerOpen);
+    }
+
+    [Fact]
+    public void MainViewModel_OrchestratesNavigationRailAndStickerStudio()
+    {
+        var vm = new MainViewModel();
+        Assert.NotNull(vm.NavigationRail);
+        Assert.NotNull(vm.StickerStudio);
+        Assert.Equal(NavDomain.Studio, vm.NavigationRail.SelectedDomain);
+
+        // Orchestration: NavDomain changes update SelectedTabIndex
+        vm.NavigationRail.SelectDomain(NavDomain.Models);
+        Assert.Equal(0, vm.SelectedTabIndex);
+
+        vm.NavigationRail.SelectDomain(NavDomain.HardwareFit);
+        Assert.Equal(2, vm.SelectedTabIndex);
+
+        vm.NavigationRail.SelectDomain(NavDomain.Settings);
+        Assert.Equal(3, vm.SelectedTabIndex);
+
+        vm.NavigationRail.SelectDomain(NavDomain.Studio);
+        Assert.Equal(1, vm.SelectedTabIndex);
+
+        // SelectedTabIndex changes update NavigationRail.SelectedDomain
+        vm.SelectedTabIndex = 0;
+        Assert.Equal(NavDomain.Models, vm.NavigationRail.SelectedDomain);
+
+        vm.SelectedTabIndex = 2;
+        Assert.Equal(NavDomain.HardwareFit, vm.NavigationRail.SelectedDomain);
+
+        vm.SelectedTabIndex = 3;
+        Assert.Equal(NavDomain.Settings, vm.NavigationRail.SelectedDomain);
+
+        vm.SelectedTabIndex = 1;
+        Assert.Equal(NavDomain.Studio, vm.NavigationRail.SelectedDomain);
+
+        // Companion event orchestration
+        vm.CloseDrawers();
+        Assert.False(vm.Documentation.IsDrawerOpen);
+        Assert.False(vm.Assistant.IsDrawerOpen);
+
+        vm.NavigationRail.DocumentationCommand.Execute(null);
+        Assert.True(vm.Documentation.IsDrawerOpen);
+        Assert.False(vm.Assistant.IsDrawerOpen);
+
+        vm.NavigationRail.AiAssistCommand.Execute(null);
+        Assert.False(vm.Documentation.IsDrawerOpen);
+        Assert.True(vm.Assistant.IsDrawerOpen);
     }
 }
 

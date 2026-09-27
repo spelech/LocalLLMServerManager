@@ -1,6 +1,7 @@
 <Window xmlns="https://github.com/avaloniaui"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:sharedViews="using:LocalLLMServerManager.Shared.Views"
+        xmlns:controls="using:LocalLLMServerManager.Shared.Views.Controls"
         xmlns:vm="using:LocalLLMServerManager.Shared.ViewModels"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
@@ -59,8 +60,11 @@
                     </Border>
                 </StackPanel>
 
-                <!-- Center Drag Region -->
-                <Panel Grid.Column="1" Background="Transparent" HorizontalAlignment="Stretch" VerticalAlignment="Stretch"/>
+                <!-- Center: Telemetry Ribbon and Drag Region -->
+                <Grid Grid.Column="1">
+                    <Panel Background="Transparent" HorizontalAlignment="Stretch" VerticalAlignment="Stretch"/>
+                    <controls:TelemetryRibbonControl DataContext="{Binding Telemetry}" HorizontalAlignment="Stretch" VerticalAlignment="Center"/>
+                </Grid>
 
                 <!-- Window Control Buttons (Minimize, Maximize/Restore, Close) -->
                 <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="0" VerticalAlignment="Center">

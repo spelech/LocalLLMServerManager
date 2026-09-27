@@ -22,81 +22,16 @@
     </Design.DataContext>
 
     <Grid RowDefinitions="Auto, *, Auto" Background="{StaticResource BgDarkBrush}">
-        <!-- Top Telemetry Header -->
-        <controls:TelemetryHeaderControl Grid.Row="0" DataContext="{Binding Telemetry}"/>
+        <!-- Top Telemetry Ribbon (Visible on Web; embedded in custom TitleBar on Desktop) -->
+        <Panel Grid.Row="0" IsVisible="{Binding !IsDesktopHost}">
+            <controls:TelemetryRibbonControl DataContext="{Binding Telemetry}"/>
+        </Panel>
 
-        <!-- Main Content Area: Native Avalonia XAML Tabs with Standalone Companion Actions -->
-        <TabControl Grid.Row="1" SelectedIndex="{Binding SelectedTabIndex}" Background="Transparent" Margin="16,0,16,0">
-            <TabControl.Tag>
-                <StackPanel Orientation="Horizontal" Spacing="4" VerticalAlignment="Center" Margin="4,0,0,0">
-                    <Rectangle Width="1" Height="20" Fill="{StaticResource GlassBorderBrush}" Margin="2,0,4,0" VerticalAlignment="Center"/>
-                    <Button x:Name="NavDocumentationBtn"
-                            Command="{Binding ToggleDocumentationDrawerCommand}"
-                            Classes="nav-tab-btn"
-                            ToolTip.Tip="Open Documentation Drawer (Left Flank)">
-                        <StackPanel Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
-                            <PathIcon Data="{StaticResource IconDocumentation}" Width="14" Height="14" Foreground="{Binding $parent[Button].Foreground}"/>
-                            <TextBlock Text="Documentation" VerticalAlignment="Center"/>
-                            <TextBlock Text="📖" FontSize="12" Width="18" VerticalAlignment="Center" Margin="4,0,0,0"/>
-                        </StackPanel>
-                    </Button>
-                    <Button x:Name="NavAiAssistBtn"
-                            Command="{Binding ToggleAiAssistDrawerCommand}"
-                            Classes="nav-tab-btn"
-                            ToolTip.Tip="Open AI Assist Drawer (Right Flank)">
-                        <StackPanel Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
-                            <PathIcon Data="{StaticResource IconAiAssist}" Width="14" Height="14" Foreground="{Binding $parent[Button].Foreground}"/>
-                            <TextBlock Text="AI Assist" VerticalAlignment="Center"/>
-                            <TextBlock Text="🤖" FontSize="12" Width="18" VerticalAlignment="Center" Margin="4,0,0,0"/>
-                        </StackPanel>
-                    </Button>
-                </StackPanel>
-            </TabControl.Tag>
-
-            <!-- TAB 1: Models (Downloaded, Hugging Face Hub, CivitAI Hub) -->
-            <TabItem>
-                <TabItem.Header>
-                    <StackPanel Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
-                        <PathIcon Data="{StaticResource IconModels}" Width="14" Height="14" Foreground="{Binding $parent[TabItem].Foreground}"/>
-                        <TextBlock Text="Models" VerticalAlignment="Center"/>
-                    </StackPanel>
-                </TabItem.Header>
-                <controls:ModelsTabControl DataContext="{Binding}"/>
-            </TabItem>
-
-            <!-- TAB 2: Workflows (Image, Text, Video, 3D Mesh, Audio) -->
-            <TabItem>
-                <TabItem.Header>
-                    <StackPanel Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
-                        <PathIcon Data="{StaticResource IconWorkflows}" Width="14" Height="14" Foreground="{Binding $parent[TabItem].Foreground}"/>
-                        <TextBlock Text="Workflows" VerticalAlignment="Center"/>
-                    </StackPanel>
-                </TabItem.Header>
-                <controls:EngineStudioTabControl DataContext="{Binding}"/>
-            </TabItem>
-
-            <!-- TAB 3: Can I Run It Hardware Fit Calculator -->
-            <TabItem>
-                <TabItem.Header>
-                    <StackPanel Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
-                        <PathIcon Data="{StaticResource IconCanIRunIt}" Width="14" Height="14" Foreground="{Binding $parent[TabItem].Foreground}"/>
-                        <TextBlock Text="Can I Run It" VerticalAlignment="Center"/>
-                    </StackPanel>
-                </TabItem.Header>
-                <controls:CanIRunItView DataContext="{Binding HardwareFit}"/>
-            </TabItem>
-
-            <!-- TAB 4: Remote Access & Settings -->
-            <TabItem>
-                <TabItem.Header>
-                    <StackPanel Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
-                        <PathIcon Data="{StaticResource IconSettings}" Width="14" Height="14" Foreground="{Binding $parent[TabItem].Foreground}"/>
-                        <TextBlock Text="Settings" VerticalAlignment="Center"/>
-                    </StackPanel>
-                </TabItem.Header>
-                <controls:SettingsTabControl DataContext="{Binding Settings}"/>
-            </TabItem>
-        </TabControl>
+        <!-- Main Content Area: Activity Rail + Dynamic Dual-Stage Canvas -->
+        <Grid Grid.Row="1" ColumnDefinitions="Auto, *">
+            <controls:ActivityRailControl Grid.Column="0" DataContext="{Binding NavigationRail}" VerticalAlignment="Stretch"/>
+            <controls:DynamicStageContainerControl Grid.Column="1" DataContext="{Binding}" VerticalAlignment="Stretch" HorizontalAlignment="Stretch"/>
+        </Grid>
 
         <!-- Non-Modal Slide-Out Drawers -->
 
