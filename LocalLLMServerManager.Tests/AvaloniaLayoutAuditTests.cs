@@ -4,6 +4,7 @@ using Avalonia.Headless.XUnit;
 using Avalonia.LayoutInspector.Engine;
 using Avalonia.LayoutInspector.Models;
 using Avalonia.LayoutInspector.Responsive;
+using LocalLLMServerManager.Shared.Services;
 using LocalLLMServerManager.Shared.ViewModels;
 using LocalLLMServerManager.Shared.Views.Controls;
 using LocalLLMServerManager.Views;
@@ -343,6 +344,31 @@ public class AvaloniaLayoutAuditTests
             var auditor = new LayoutAuditor();
             var options = CreateConfiguredAuditOptions(checkTouchErgonomics: false, checkTextClipping: true);
             var report = auditor.Audit(ribbon, options);
+            var violations = FilterAppViolations(report);
+
+            Assert.Empty(violations);
+        }
+        finally
+        {
+            window.Close();
+        }
+    }
+
+    [AvaloniaFact]
+    public void StickerStudioControl_LayoutAudit()
+    {
+        var control = new StickerStudioControl
+        {
+            DataContext = new StickerStudioViewModel(new StickerGenerationService())
+        };
+        var window = new Window { Content = control, Width = 1280, Height = 800 };
+        try
+        {
+            window.Show();
+
+            var auditor = new LayoutAuditor();
+            var options = CreateConfiguredAuditOptions(checkTouchErgonomics: false, checkTextClipping: true);
+            var report = auditor.Audit(control, options);
             var violations = FilterAppViolations(report);
 
             Assert.Empty(violations);

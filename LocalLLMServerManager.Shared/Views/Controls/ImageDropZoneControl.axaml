@@ -1,0 +1,134 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:vm="using:LocalLLMServerManager.Shared.ViewModels"
+             xmlns:controls="using:LocalLLMServerManager.Shared.Views.Controls"
+             mc:Ignorable="d" d:DesignWidth="350" d:DesignHeight="180"
+             x:Class="LocalLLMServerManager.Shared.Views.Controls.ImageDropZoneControl">
+
+    <UserControl.Styles>
+        <Style Selector="Border.drop-zone">
+            <Setter Property="Background" Value="{StaticResource BgSurfaceBrush}" />
+            <Setter Property="BorderThickness" Value="0" />
+            <Setter Property="CornerRadius" Value="8" />
+        </Style>
+        <Style Selector="Rectangle.dashed-border">
+            <Setter Property="Stroke" Value="{StaticResource GlassBorderBrush}" />
+            <Setter Property="StrokeDashArray" Value="4,3" />
+            <Setter Property="StrokeThickness" Value="1.5" />
+            <Setter Property="RadiusX" Value="8" />
+            <Setter Property="RadiusY" Value="8" />
+            <Setter Property="Fill" Value="Transparent" />
+        </Style>
+        <Style Selector="Border.drop-zone.dragover Rectangle.dashed-border">
+            <Setter Property="Stroke" Value="{StaticResource PrimaryBrush}" />
+            <Setter Property="Fill" Value="#1A388BFD" />
+        </Style>
+    </UserControl.Styles>
+
+    <Border Classes="drop-zone"
+            Classes.dragover="{Binding IsDragOver, RelativeSource={RelativeSource AncestorType=controls:ImageDropZoneControl}}"
+            MinHeight="150"
+            ClipToBounds="True">
+        <Grid>
+            <!-- Dashed Border Outline -->
+            <Rectangle Classes="dashed-border" IsHitTestVisible="False" />
+
+            <!-- Empty State (No Image) -->
+            <Grid IsVisible="{Binding !HasImage, RelativeSource={RelativeSource AncestorType=controls:ImageDropZoneControl}}"
+                  Margin="16"
+                  RowDefinitions="Auto, Auto, Auto, Auto"
+                  HorizontalAlignment="Center"
+                  VerticalAlignment="Center">
+                <!-- Icon -->
+                <TextBlock Grid.Row="0" Text="🖼️" FontSize="28" HorizontalAlignment="Center" Margin="0,0,0,8" />
+
+                <!-- Main Prompt -->
+                <TextBlock Grid.Row="1" Text="Drag &amp; drop reference image"
+                           FontSize="13" FontWeight="SemiBold"
+                           Foreground="{StaticResource TextMainBrush}"
+                           HorizontalAlignment="Center"
+                           TextTrimming="CharacterEllipsis"
+                           Margin="0,0,0,4" />
+
+                <!-- Format Hint -->
+                <TextBlock Grid.Row="2" Text="PNG, JPG, WebP up to 25MB"
+                           FontSize="11" Foreground="{StaticResource TextMutedBrush}"
+                           HorizontalAlignment="Center"
+                           TextTrimming="CharacterEllipsis"
+                           Margin="0,0,0,12" />
+
+                <!-- Browse Button -->
+                <Button Grid.Row="3"
+                        x:Name="BrowseButton"
+                        Classes="matte-secondary"
+                        Click="OnBrowseFilesClick"
+                        HorizontalAlignment="Center"
+                        Height="30"
+                        Padding="14,4"
+                        Cursor="Hand">
+                    <StackPanel Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
+                        <TextBlock Text="📁" FontSize="12" VerticalAlignment="Center" />
+                        <TextBlock Text="Browse Files..." FontSize="11" FontWeight="SemiBold" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" />
+                    </StackPanel>
+                </Button>
+            </Grid>
+
+            <!-- Populated State (Image Loaded) -->
+            <Grid IsVisible="{Binding HasImage, RelativeSource={RelativeSource AncestorType=controls:ImageDropZoneControl}}"
+                  Margin="8"
+                  RowDefinitions="*, Auto">
+                <!-- Preview Thumbnail -->
+                <Border Grid.Row="0"
+                        CornerRadius="6"
+                        ClipToBounds="True"
+                        Background="#0D1117"
+                        BorderBrush="{StaticResource GlassBorderBrush}"
+                        BorderThickness="1"
+                        MaxHeight="160"
+                        Margin="0,0,0,6">
+                    <Image Source="{Binding PreviewBitmap, RelativeSource={RelativeSource AncestorType=controls:ImageDropZoneControl}}"
+                           Stretch="Uniform"
+                           HorizontalAlignment="Center"
+                           VerticalAlignment="Center" />
+                </Border>
+
+                <!-- Action Bar Below Thumbnail -->
+                <Grid Grid.Row="1" ColumnDefinitions="*, Auto, Auto" VerticalAlignment="Center">
+                    <!-- File Name / Path -->
+                    <TextBlock Grid.Column="0"
+                               Text="{Binding DisplayFileName, RelativeSource={RelativeSource AncestorType=controls:ImageDropZoneControl}}"
+                               FontSize="11"
+                               Foreground="{StaticResource TextMutedBrush}"
+                               VerticalAlignment="Center"
+                               TextTrimming="CharacterEllipsis"
+                               Margin="4,0,8,0" />
+
+                    <!-- Replace Button -->
+                    <Button Grid.Column="1"
+                            Classes="matte-secondary"
+                            Click="OnBrowseFilesClick"
+                            Height="26"
+                            Padding="8,2"
+                            Margin="0,0,4,0"
+                            ToolTip.Tip="Select a different image"
+                            Cursor="Hand">
+                        <TextBlock Text="Replace" FontSize="11" FontWeight="Medium" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" />
+                    </Button>
+
+                    <!-- Remove Button -->
+                    <Button Grid.Column="2"
+                            Classes="matte-secondary"
+                            Click="OnRemoveImageClick"
+                            Height="26"
+                            Padding="8,2"
+                            ToolTip.Tip="Remove reference image"
+                            Cursor="Hand">
+                        <TextBlock Text="✕ Remove" FontSize="11" FontWeight="Medium" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" />
+                    </Button>
+                </Grid>
+            </Grid>
+        </Grid>
+    </Border>
+</UserControl>

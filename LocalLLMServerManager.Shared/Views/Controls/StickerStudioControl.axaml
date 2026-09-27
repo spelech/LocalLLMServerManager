@@ -1,0 +1,385 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:vm="using:LocalLLMServerManager.Shared.ViewModels"
+             xmlns:models="using:LocalLLMServerManager.Shared.Models"
+             xmlns:controls="using:LocalLLMServerManager.Shared.Views.Controls"
+             mc:Ignorable="d" d:DesignWidth="1280" d:DesignHeight="800"
+             x:Class="LocalLLMServerManager.Shared.Views.Controls.StickerStudioControl"
+             x:DataType="vm:StickerStudioViewModel"
+             Background="{StaticResource BgDarkBrush}">
+
+    <UserControl.Resources>
+        <!-- Alpha Checkerboard DrawingBrush -->
+        <DrawingBrush x:Key="AlphaCheckerboardBrush" TileMode="Tile" SourceRect="0,0,24,24" DestinationRect="0,0,24,24">
+            <DrawingBrush.Drawing>
+                <DrawingGroup>
+                    <GeometryDrawing Brush="#12161c" Geometry="M0,0 H24 V24 H0 Z" />
+                    <GeometryDrawing Brush="#1a202c" Geometry="M0,0 H12 V12 H0 Z M12,12 H24 V24 H12 Z" />
+                </DrawingGroup>
+            </DrawingBrush.Drawing>
+        </DrawingBrush>
+    </UserControl.Resources>
+
+    <UserControl.Styles>
+        <!-- Style Preset Chip Styling -->
+        <Style Selector="Border.chip-border">
+            <Setter Property="Background" Value="{StaticResource BgSurfaceBrush}" />
+            <Setter Property="BorderBrush" Value="{StaticResource GlassBorderBrush}" />
+        </Style>
+        <Style Selector="Border.chip-border TextBlock">
+            <Setter Property="Foreground" Value="{StaticResource TextMutedBrush}" />
+        </Style>
+        <Style Selector="Border.chip-border:pointerover">
+            <Setter Property="Background" Value="{StaticResource BgCardBrush}" />
+            <Setter Property="BorderBrush" Value="{StaticResource PrimaryBrush}" />
+        </Style>
+        <Style Selector="Border.chip-border:pointerover TextBlock">
+            <Setter Property="Foreground" Value="{StaticResource TextMainBrush}" />
+        </Style>
+        <Style Selector="Border.chip-border.selected">
+            <Setter Property="Background" Value="#25388BFD" />
+            <Setter Property="BorderBrush" Value="{StaticResource PrimaryBrush}" />
+        </Style>
+        <Style Selector="Border.chip-border.selected TextBlock">
+            <Setter Property="Foreground" Value="{StaticResource TextMainBrush}" />
+            <Setter Property="FontWeight" Value="SemiBold" />
+        </Style>
+    </UserControl.Styles>
+
+    <Grid ColumnDefinitions="380, *">
+        <!-- ============================================== -->
+        <!-- LEFT COLUMN: 380px Input Deck (Scrollable)     -->
+        <!-- ============================================== -->
+        <Border Grid.Column="0"
+                BorderBrush="{StaticResource GlassBorderBrush}"
+                BorderThickness="0,0,1,0"
+                Background="{StaticResource BgSurfaceBrush}">
+            <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+                <StackPanel Spacing="16" Margin="16">
+                    <!-- Title & Header -->
+                    <StackPanel Spacing="4">
+                        <StackPanel Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+                            <TextBlock Text="🏷️" FontSize="20" VerticalAlignment="Center" />
+                            <TextBlock Text="Sticker Studio" FontSize="18" FontWeight="Bold"
+                                       Foreground="{StaticResource TextMainBrush}" VerticalAlignment="Center"
+                                       TextTrimming="CharacterEllipsis" />
+                        </StackPanel>
+                        <TextBlock Text="Turn reference images into die-cut vinyl stickers"
+                                   FontSize="12" Foreground="{StaticResource TextMutedBrush}"
+                                   TextTrimming="CharacterEllipsis" />
+                    </StackPanel>
+
+                    <!-- Divider -->
+                    <Rectangle Height="1" Fill="{StaticResource GlassBorderBrush}" />
+
+                    <!-- 1. Reference Image Drop Zone -->
+                    <StackPanel Spacing="6">
+                        <TextBlock Text="Reference Image" FontSize="12" FontWeight="SemiBold"
+                                   Foreground="{StaticResource TextMutedBrush}"
+                                   TextTrimming="CharacterEllipsis" />
+                        <controls:ImageDropZoneControl />
+                    </StackPanel>
+
+                    <!-- 2. Style Preset Chips (WrapPanel of 6 style chips) -->
+                    <StackPanel Spacing="8">
+                        <Grid ColumnDefinitions="*, Auto" VerticalAlignment="Center">
+                            <TextBlock Grid.Column="0" Text="Style Preset" FontSize="12" FontWeight="SemiBold"
+                                       Foreground="{StaticResource TextMutedBrush}"
+                                       TextTrimming="CharacterEllipsis" />
+                            <TextBlock Grid.Column="1" Text="{Binding SelectedStylePreset.DisplayName}"
+                                       FontSize="11" Foreground="{StaticResource PrimaryBrush}"
+                                       FontWeight="Bold" TextTrimming="CharacterEllipsis" />
+                        </Grid>
+
+                        <ListBox ItemsSource="{Binding StylePresets}"
+                                 SelectedItem="{Binding SelectedStylePreset, Mode=TwoWay}"
+                                 Background="Transparent"
+                                 BorderThickness="0"
+                                 Padding="0">
+                            <ListBox.ItemsPanel>
+                                <ItemsPanelTemplate>
+                                    <WrapPanel Orientation="Horizontal" />
+                                </ItemsPanelTemplate>
+                            </ListBox.ItemsPanel>
+                            <ListBox.Styles>
+                                <Style Selector="ListBoxItem">
+                                    <Setter Property="Padding" Value="0" />
+                                    <Setter Property="Margin" Value="0,0,6,6" />
+                                    <Setter Property="Background" Value="Transparent" />
+                                    <Setter Property="CornerRadius" Value="16" />
+                                    <Setter Property="Cursor" Value="Hand" />
+                                </Style>
+                                <Style Selector="ListBoxItem /template/ ContentPresenter#PART_ContentPresenter">
+                                    <Setter Property="Background" Value="Transparent" />
+                                </Style>
+                                <Style Selector="ListBoxItem:selected /template/ ContentPresenter#PART_ContentPresenter">
+                                    <Setter Property="Background" Value="Transparent" />
+                                </Style>
+                            </ListBox.Styles>
+                            <ListBox.ItemTemplate>
+                                <DataTemplate x:DataType="models:StickerStylePreset">
+                                    <Border Classes="chip-border"
+                                            Classes.selected="{Binding $parent[ListBoxItem].IsSelected}"
+                                            CornerRadius="16"
+                                            Padding="10,5"
+                                            BorderThickness="1"
+                                            ToolTip.Tip="{Binding Description}">
+                                        <StackPanel Orientation="Horizontal" Spacing="5" VerticalAlignment="Center">
+                                            <TextBlock Text="{Binding Icon}" FontSize="12" VerticalAlignment="Center" />
+                                            <TextBlock Text="{Binding DisplayName}" FontSize="11" FontWeight="Medium"
+                                                       VerticalAlignment="Center" TextTrimming="CharacterEllipsis" />
+                                        </StackPanel>
+                                    </Border>
+                                </DataTemplate>
+                            </ListBox.ItemTemplate>
+                        </ListBox>
+                    </StackPanel>
+
+                    <!-- 3. Prompt Input -->
+                    <StackPanel Spacing="6">
+                        <TextBlock Text="Custom Prompt / Tuning" FontSize="12" FontWeight="SemiBold"
+                                   Foreground="{StaticResource TextMutedBrush}"
+                                   TextTrimming="CharacterEllipsis" />
+                        <TextBox Classes="matte-input"
+                                 Text="{Binding CustomPrompt, Mode=TwoWay}"
+                                 PlaceholderText="e.g. golden sunglasses, holographic glow..."
+                                 Height="34" />
+                    </StackPanel>
+
+                    <!-- 4. Die-Cut Contour & Parameters Card -->
+                    <Border Classes="matte-card" Padding="12" CornerRadius="8">
+                        <StackPanel Spacing="12">
+                            <!-- Die-Cut Border Slider -->
+                            <StackPanel Spacing="4">
+                                <Grid ColumnDefinitions="*, Auto" VerticalAlignment="Center">
+                                    <TextBlock Grid.Column="0" Text="Die-Cut White Border" FontSize="12"
+                                               FontWeight="SemiBold" Foreground="{StaticResource TextMainBrush}"
+                                               TextTrimming="CharacterEllipsis" />
+                                    <TextBlock Grid.Column="1" Text="{Binding BorderWidth, StringFormat='{}{0} px'}"
+                                               FontSize="12" FontWeight="Bold" Foreground="{StaticResource PrimaryBrush}"
+                                               TextTrimming="CharacterEllipsis" />
+                                </Grid>
+                                <Slider Minimum="0" Maximum="24"
+                                        Value="{Binding BorderWidth, Mode=TwoWay}"
+                                        Height="28" />
+                            </StackPanel>
+
+                            <!-- Auto-Cutout Switch -->
+                            <Grid ColumnDefinitions="*, Auto" VerticalAlignment="Center">
+                                <StackPanel Grid.Column="0" Spacing="2">
+                                    <TextBlock Text="Auto-cutout Subject" FontSize="12" FontWeight="SemiBold"
+                                               Foreground="{StaticResource TextMainBrush}" TextTrimming="CharacterEllipsis" />
+                                    <TextBlock Text="Isolate subject &amp; remove background" FontSize="11"
+                                               Foreground="{StaticResource TextMutedBrush}" TextTrimming="CharacterEllipsis" />
+                                </StackPanel>
+                                <ToggleSwitch Grid.Column="1"
+                                              IsChecked="{Binding IsAutoCutoutEnabled, Mode=TwoWay}"
+                                              OnContent="" OffContent=""
+                                              VerticalAlignment="Center" />
+                            </Grid>
+                        </StackPanel>
+                    </Border>
+
+                    <!-- 5. Generate Sticker Button -->
+                    <StackPanel Spacing="8">
+                        <Button Classes="matte-primary"
+                                Command="{Binding GenerateStickerCommand}"
+                                HorizontalAlignment="Stretch"
+                                HorizontalContentAlignment="Center"
+                                Height="42"
+                                Cursor="Hand">
+                            <StackPanel Orientation="Horizontal" Spacing="8" HorizontalAlignment="Center" VerticalAlignment="Center">
+                                <TextBlock Text="⚡" FontSize="15" VerticalAlignment="Center"
+                                           IsVisible="{Binding !IsGenerating}" />
+                                <ProgressBar Classes="matte-progress" IsIndeterminate="True" Width="20" Height="4"
+                                             IsVisible="{Binding IsGenerating}" VerticalAlignment="Center" />
+                                <TextBlock Text="Generate Sticker" FontSize="13" FontWeight="Bold" VerticalAlignment="Center"
+                                           IsVisible="{Binding !IsGenerating}" TextTrimming="CharacterEllipsis" />
+                                <TextBlock Text="Generating..." FontSize="13" FontWeight="Bold" VerticalAlignment="Center"
+                                           IsVisible="{Binding IsGenerating}" TextTrimming="CharacterEllipsis" />
+                            </StackPanel>
+                        </Button>
+
+                        <!-- Error Message Banner -->
+                        <Border Classes="matte-card"
+                                Background="#26da3633"
+                                BorderBrush="{StaticResource OfflineBrush}"
+                                Padding="10,8"
+                                CornerRadius="6"
+                                IsVisible="{Binding ErrorMessage, Converter={x:Static StringConverters.IsNotNullOrEmpty}}">
+                            <StackPanel Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+                                <TextBlock Text="⚠️" FontSize="14" VerticalAlignment="Center" />
+                                <TextBlock Text="{Binding ErrorMessage}" Foreground="{StaticResource TextMainBrush}"
+                                           FontSize="11" TextWrapping="Wrap" VerticalAlignment="Center" />
+                            </StackPanel>
+                        </Border>
+                    </StackPanel>
+                </StackPanel>
+            </ScrollViewer>
+        </Border>
+
+        <!-- ============================================== -->
+        <!-- RIGHT COLUMN: Flexible Output Canvas (*)       -->
+        <!-- ============================================== -->
+        <Grid Grid.Column="1" Margin="16" RowDefinitions="Auto, *, Auto">
+            <!-- Top Bar: Generation Stage Tracker -->
+            <Border Grid.Row="0" Classes="matte-card" Padding="12,8" Margin="0,0,0,12" CornerRadius="8">
+                <Grid ColumnDefinitions="Auto, *, Auto, *, Auto, *, Auto" VerticalAlignment="Center">
+                    <!-- Step 1: Diffusion Generation -->
+                    <Border Grid.Column="0" Classes="matte-pill" Padding="8,4" CornerRadius="6">
+                        <StackPanel Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
+                            <TextBlock Text="{Binding CurrentStage, Converter={x:Static controls:StageIconConverter.Instance}, ConverterParameter='1'}"
+                                       Foreground="{Binding CurrentStage, Converter={x:Static controls:StageStatusBrushConverter.Instance}, ConverterParameter='1'}"
+                                       FontSize="11" FontWeight="Bold" VerticalAlignment="Center" />
+                            <TextBlock Text="1. Diffusion" FontSize="11" FontWeight="Medium"
+                                       Foreground="{StaticResource TextMainBrush}" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" />
+                        </StackPanel>
+                    </Border>
+
+                    <!-- Arrow 1 -->
+                    <TextBlock Grid.Column="1" Text="➔" FontSize="11" HorizontalAlignment="Center" VerticalAlignment="Center"
+                               Foreground="{StaticResource TextMutedBrush}" Margin="4,0" />
+
+                    <!-- Step 2: Subject Isolation -->
+                    <Border Grid.Column="2" Classes="matte-pill" Padding="8,4" CornerRadius="6">
+                        <StackPanel Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
+                            <TextBlock Text="{Binding CurrentStage, Converter={x:Static controls:StageIconConverter.Instance}, ConverterParameter='2'}"
+                                       Foreground="{Binding CurrentStage, Converter={x:Static controls:StageStatusBrushConverter.Instance}, ConverterParameter='2'}"
+                                       FontSize="11" FontWeight="Bold" VerticalAlignment="Center" />
+                            <TextBlock Text="2. Isolation" FontSize="11" FontWeight="Medium"
+                                       Foreground="{StaticResource TextMainBrush}" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" />
+                        </StackPanel>
+                    </Border>
+
+                    <!-- Arrow 2 -->
+                    <TextBlock Grid.Column="3" Text="➔" FontSize="11" HorizontalAlignment="Center" VerticalAlignment="Center"
+                               Foreground="{StaticResource TextMutedBrush}" Margin="4,0" />
+
+                    <!-- Step 3: Contour Application -->
+                    <Border Grid.Column="4" Classes="matte-pill" Padding="8,4" CornerRadius="6">
+                        <StackPanel Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
+                            <TextBlock Text="{Binding CurrentStage, Converter={x:Static controls:StageIconConverter.Instance}, ConverterParameter='3'}"
+                                       Foreground="{Binding CurrentStage, Converter={x:Static controls:StageStatusBrushConverter.Instance}, ConverterParameter='3'}"
+                                       FontSize="11" FontWeight="Bold" VerticalAlignment="Center" />
+                            <TextBlock Text="3. Contour" FontSize="11" FontWeight="Medium"
+                                       Foreground="{StaticResource TextMainBrush}" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" />
+                        </StackPanel>
+                    </Border>
+
+                    <!-- Arrow 3 -->
+                    <TextBlock Grid.Column="5" Text="➔" FontSize="11" HorizontalAlignment="Center" VerticalAlignment="Center"
+                               Foreground="{StaticResource TextMutedBrush}" Margin="4,0" />
+
+                    <!-- Step 4: Ready -->
+                    <Border Grid.Column="6" Classes="matte-pill" Padding="8,4" CornerRadius="6">
+                        <StackPanel Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
+                            <TextBlock Text="{Binding CurrentStage, Converter={x:Static controls:StageIconConverter.Instance}, ConverterParameter='4'}"
+                                       Foreground="{Binding CurrentStage, Converter={x:Static controls:StageStatusBrushConverter.Instance}, ConverterParameter='4'}"
+                                       FontSize="11" FontWeight="Bold" VerticalAlignment="Center" />
+                            <TextBlock Text="4. Ready" FontSize="11" FontWeight="Medium"
+                                       Foreground="{StaticResource TextMainBrush}" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" />
+                        </StackPanel>
+                    </Border>
+                </Grid>
+            </Border>
+
+            <!-- Center Stage: Checkerboard Transparency Grid & Preview Image -->
+            <Border Grid.Row="1"
+                    CornerRadius="8"
+                    ClipToBounds="True"
+                    BorderBrush="{StaticResource GlassBorderBrush}"
+                    BorderThickness="1"
+                    Background="{StaticResource AlphaCheckerboardBrush}">
+                <Grid>
+                    <!-- Idle State Placeholder (When No Sticker and Not Generating) -->
+                    <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center" Spacing="10"
+                                IsVisible="{Binding !HasGeneratedSticker}">
+                        <Border Width="64" Height="64" CornerRadius="32"
+                                Background="{StaticResource BgCardBrush}"
+                                BorderBrush="{StaticResource GlassBorderBrush}"
+                                BorderThickness="1"
+                                HorizontalAlignment="Center">
+                            <TextBlock Text="🏷️" FontSize="28" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                        </Border>
+                        <TextBlock Text="Sticker Canvas" FontSize="16" FontWeight="Bold"
+                                   Foreground="{StaticResource TextMainBrush}" HorizontalAlignment="Center"
+                                   TextTrimming="CharacterEllipsis" />
+                        <TextBlock Text="Drop a reference image on the left and click Generate Sticker"
+                                   FontSize="12" Foreground="{StaticResource TextMutedBrush}" HorizontalAlignment="Center"
+                                   TextAlignment="Center" MaxWidth="360" TextWrapping="Wrap" />
+                    </StackPanel>
+
+                    <!-- Generating Stage Overlay -->
+                    <Border Background="#CC0d1117"
+                            IsVisible="{Binding IsGenerating}"
+                            HorizontalAlignment="Stretch"
+                            VerticalAlignment="Stretch">
+                        <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center" Spacing="12">
+                            <ProgressBar Classes="matte-progress" IsIndeterminate="True" Width="200" Height="6" />
+                            <TextBlock Text="{Binding StatusMessage}" FontSize="13" FontWeight="SemiBold"
+                                       Foreground="{StaticResource TextMainBrush}" HorizontalAlignment="Center"
+                                       TextTrimming="CharacterEllipsis" />
+                        </StackPanel>
+                    </Border>
+
+                    <!-- Transparent Generated Sticker Preview Image -->
+                    <Image Source="{Binding GeneratedPngBytes, Converter={x:Static controls:ImageSourceConverter.Instance}}"
+                           Stretch="Uniform"
+                           Margin="24"
+                           IsVisible="{Binding HasGeneratedSticker}" />
+                </Grid>
+            </Border>
+
+            <!-- Bottom Bar: Status Text & Floating Export Action Pills -->
+            <Grid Grid.Row="2" Margin="0,12,0,0" ColumnDefinitions="*, Auto" VerticalAlignment="Center">
+                <!-- Status Message -->
+                <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
+                    <TextBlock Text="Status:" FontSize="12" Foreground="{StaticResource TextMutedBrush}" VerticalAlignment="Center" />
+                    <TextBlock Text="{Binding StatusMessage}" FontSize="12" Foreground="{StaticResource TextMainBrush}"
+                               FontWeight="Medium" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" MaxWidth="500" />
+                </StackPanel>
+
+                <!-- Floating Export Action Pills -->
+                <Border Grid.Column="1"
+                        Classes="matte-pill"
+                        Background="{StaticResource BgSurfaceBrush}"
+                        BorderBrush="{StaticResource GlassBorderBrush}"
+                        BorderThickness="1"
+                        Padding="6,4"
+                        CornerRadius="8">
+                    <StackPanel Orientation="Horizontal" Spacing="8">
+                        <!-- Copy PNG Pill -->
+                        <Button Classes="matte-secondary"
+                                Command="{Binding CopyStickerCommand}"
+                                IsEnabled="{Binding HasGeneratedSticker}"
+                                Height="32"
+                                Padding="12,4"
+                                ToolTip.Tip="Copy transparent 32-bit PNG to clipboard"
+                                Cursor="Hand">
+                            <StackPanel Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
+                                <TextBlock Text="📋" FontSize="12" VerticalAlignment="Center" />
+                                <TextBlock Text="Copy PNG" FontSize="12" FontWeight="SemiBold" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" />
+                            </StackPanel>
+                        </Button>
+
+                        <!-- Save File Pill -->
+                        <Button Classes="matte-secondary"
+                                Command="{Binding SaveStickerCommand}"
+                                IsEnabled="{Binding HasGeneratedSticker}"
+                                Height="32"
+                                Padding="12,4"
+                                ToolTip.Tip="Save transparent PNG to disk"
+                                Cursor="Hand">
+                            <StackPanel Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
+                                <TextBlock Text="💾" FontSize="12" VerticalAlignment="Center" />
+                                <TextBlock Text="Save File" FontSize="12" FontWeight="SemiBold" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" />
+                            </StackPanel>
+                        </Button>
+                    </StackPanel>
+                </Border>
+            </Grid>
+        </Grid>
+    </Grid>
+</UserControl>
