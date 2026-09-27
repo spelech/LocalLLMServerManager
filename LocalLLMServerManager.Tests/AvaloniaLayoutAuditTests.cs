@@ -297,4 +297,60 @@ public class AvaloniaLayoutAuditTests
             }
         }
     }
+
+    [AvaloniaFact]
+    public void ActivityRailControl_LayoutAudit()
+    {
+        foreach (var isExpanded in new[] { false, true })
+        {
+            var vm = new NavigationRailViewModel { IsExpanded = isExpanded };
+            var rail = new ActivityRailControl
+            {
+                DataContext = vm
+            };
+            var window = new Window { Content = rail, Width = 200, Height = 800 };
+            try
+            {
+                window.Show();
+
+                var auditor = new LayoutAuditor();
+                var options = CreateConfiguredAuditOptions(checkTouchErgonomics: false, checkTextClipping: true);
+                var report = auditor.Audit(rail, options);
+                var violations = FilterAppViolations(report);
+
+                Assert.Empty(violations);
+            }
+            finally
+            {
+                window.Close();
+            }
+        }
+    }
+
+    [AvaloniaFact]
+    public void TelemetryRibbonControl_LayoutAudit()
+    {
+        var vm = new MainViewModel();
+        var ribbon = new TelemetryRibbonControl
+        {
+            DataContext = vm.Telemetry
+        };
+        var window = new Window { Content = ribbon, Width = 1280, Height = 100 };
+        try
+        {
+            window.Show();
+
+            var auditor = new LayoutAuditor();
+            var options = CreateConfiguredAuditOptions(checkTouchErgonomics: false, checkTextClipping: true);
+            var report = auditor.Audit(ribbon, options);
+            var violations = FilterAppViolations(report);
+
+            Assert.Empty(violations);
+        }
+        finally
+        {
+            window.Close();
+        }
+    }
 }
+

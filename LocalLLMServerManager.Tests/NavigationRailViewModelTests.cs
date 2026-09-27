@@ -51,6 +51,51 @@ public class NavigationRailViewModelTests
     }
 
     [Fact]
+    public void DomainSelectionFlags_ReflectSelectedDomain()
+    {
+        var vm = new NavigationRailViewModel();
+        Assert.True(vm.IsStudioSelected);
+        Assert.False(vm.IsModelsSelected);
+        Assert.False(vm.IsHardwareFitSelected);
+        Assert.False(vm.IsSettingsSelected);
+
+        vm.SelectDomain(NavDomain.Models);
+        Assert.False(vm.IsStudioSelected);
+        Assert.True(vm.IsModelsSelected);
+        Assert.False(vm.IsHardwareFitSelected);
+        Assert.False(vm.IsSettingsSelected);
+
+        vm.SelectDomain(NavDomain.HardwareFit);
+        Assert.False(vm.IsStudioSelected);
+        Assert.False(vm.IsModelsSelected);
+        Assert.True(vm.IsHardwareFitSelected);
+        Assert.False(vm.IsSettingsSelected);
+
+        vm.SelectDomain(NavDomain.Settings);
+        Assert.False(vm.IsStudioSelected);
+        Assert.False(vm.IsModelsSelected);
+        Assert.False(vm.IsHardwareFitSelected);
+        Assert.True(vm.IsSettingsSelected);
+    }
+
+    [Fact]
+    public void UtilityCommands_TriggerEvents()
+    {
+        var vm = new NavigationRailViewModel();
+        bool docFired = false;
+        bool assistFired = false;
+
+        vm.DocumentationRequested += () => docFired = true;
+        vm.AiAssistRequested += () => assistFired = true;
+
+        vm.DocumentationCommand.Execute(null);
+        Assert.True(docFired);
+
+        vm.AiAssistCommand.Execute(null);
+        Assert.True(assistFired);
+    }
+
+    [Fact]
     public void StickerStylePreset_DefaultProperties()
     {
         var preset = new StickerStylePreset();
