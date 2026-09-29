@@ -1,7 +1,7 @@
 export const config = /*json-start*/{
   "mainAssemblyName": "LocalLLMServerManager.Web.dll",
   "resources": {
-    "hash": "sha256-j28EEDssX24oN2fQtbPS+AvL3ataZldng0OHXGY3yK0=",
+    "hash": "sha256-cUu5sp/tPue4O1eVA+84XhQmjWaZcYQ7uC2rH4hI31c=",
     "jsModuleNative": [
       {
         "name": "dotnet.native.js"
@@ -15,7 +15,7 @@ export const config = /*json-start*/{
     "wasmNative": [
       {
         "name": "dotnet.native.wasm",
-        "hash": "sha256-bAI7X1Uzm1vRrb7JNnFs/fW48abA3aVvlBnC758Cbb4="
+        "hash": "sha256-coBX/LVo4QdOSdH3WGVzPbY1jEAz+4CK+UYFJPq7cd8="
       }
     ],
     "wasmSymbols": [
@@ -44,7 +44,7 @@ export const config = /*json-start*/{
       {
         "virtualPath": "System.Private.CoreLib.wasm",
         "name": "System.Private.CoreLib.wasm",
-        "hash": "sha256-+ZC1hTPJvvK5oxst59u4ES8qJtJrgnjKneACttgtGxU="
+        "hash": "sha256-KbptiwtQEHMtuW1JjpMfwHi4h2Nu9NPBS8mPV+YL0DE="
       },
       {
         "virtualPath": "System.Runtime.InteropServices.JavaScript.wasm",
@@ -131,12 +131,12 @@ export const config = /*json-start*/{
       {
         "virtualPath": "LocalLLMServerManager.Shared.wasm",
         "name": "LocalLLMServerManager.Shared.wasm",
-        "hash": "sha256-kE2C4zfFRO7Q6Q/PedfmqEMOQUUA7vnfKKGFkotjsAo="
+        "hash": "sha256-qHVIpaXUV9uN+7lxwRWho2JNCZ4teEXaEofLBZcuGxM="
       },
       {
         "virtualPath": "LocalLLMServerManager.Web.wasm",
         "name": "LocalLLMServerManager.Web.wasm",
-        "hash": "sha256-S28+++0ZuxbAqpbZ0VSP91wwh1jJOku9IJO/hK+8Qzs="
+        "hash": "sha256-GnEK4p4sfPa841jBQHkkInO/of5HihM3cAfPzGqGImE="
       },
       {
         "virtualPath": "Semi.Avalonia.wasm",
@@ -201,7 +201,7 @@ export const config = /*json-start*/{
       {
         "virtualPath": "System.IO.Compression.wasm",
         "name": "System.IO.Compression.wasm",
-        "hash": "sha256-gC8FJgcGHxEYX2Zqe8y58IhTmuj3UtQB/9K+1v0jHbw="
+        "hash": "sha256-uC4VsDaTvI51WjAuAY0cCXUdnF4aXJB78pn/MZ1M0Dw="
       },
       {
         "virtualPath": "System.IO.Pipelines.wasm",
@@ -226,7 +226,7 @@ export const config = /*json-start*/{
       {
         "virtualPath": "System.Net.Http.wasm",
         "name": "System.Net.Http.wasm",
-        "hash": "sha256-B2vf79l/vnmoHplwK/uJSXD3YdqII/B6ZkrUpVT/zOM="
+        "hash": "sha256-HTQ5gwh+h7XlWo88RPMQ6Imb/cJVpB9lDICJhL04f58="
       },
       {
         "virtualPath": "System.Net.Http.Json.wasm",
@@ -266,7 +266,7 @@ export const config = /*json-start*/{
       {
         "virtualPath": "System.Text.Json.wasm",
         "name": "System.Text.Json.wasm",
-        "hash": "sha256-cnDEHhbRundoo8QAxmMS5i7j72Cdpbv3f9VioB4O13c="
+        "hash": "sha256-XxcoJNT2dnTmvtdY5+KbVc2eRVZOQdE3bZoIHqAZl+g="
       },
       {
         "virtualPath": "System.Text.RegularExpressions.wasm",

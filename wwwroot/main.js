@@ -5,7 +5,7 @@ if (!is_browser) {
     throw new Error(`Expected to be running in a browser`);
 }
 
-const APP_VERSION = "3.16.0";
+const APP_VERSION = "3.17.0";
 
 globalThis.getOrigin = function () {
     return window.location.origin;
