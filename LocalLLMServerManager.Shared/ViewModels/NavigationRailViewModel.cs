@@ -13,7 +13,7 @@ public partial class NavigationRailViewModel : ObservableObject
     [NotifyPropertyChangedFor(nameof(IsModelsSelected))]
     [NotifyPropertyChangedFor(nameof(IsHardwareFitSelected))]
     [NotifyPropertyChangedFor(nameof(IsSettingsSelected))]
-    private NavDomain _selectedDomain = NavDomain.Studio;
+    private NavDomain _selectedDomain = NavDomain.Models;
 
     [ObservableProperty]
     private bool _isExpanded = false;

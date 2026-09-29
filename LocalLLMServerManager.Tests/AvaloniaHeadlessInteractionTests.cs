@@ -176,26 +176,34 @@ public class AvaloniaHeadlessInteractionTests
     }
 
     [AvaloniaFact]
-    public void EngineStudioTabControl_RadioButtonSelection_UpdatesStudioMode()
+    public void DynamicStageContainerControl_WorkflowButtonSelection_UpdatesStudioMode()
     {
         var vm = new MainViewModel();
-        var control = new EngineStudioTabControl { DataContext = vm };
+        var control = new DynamicStageContainerControl { DataContext = vm };
 
         var window = new Window { Content = control, Width = 1024, Height = 768 };
         window.Show();
 
-        // Find Studio Mode ComboBox
-        var comboBoxes = control.GetVisualDescendants().OfType<ComboBox>().ToList();
-        var modeComboBox = comboBoxes.FirstOrDefault(c => c.Items.Cast<object>().Any(i => i.ToString() == "Images"));
-        Assert.NotNull(modeComboBox);
+        // Initial default is Images workflow, not Sticker Studio
+        Assert.Equal("Images", vm.SelectedStudioMode);
+        Assert.False(vm.IsStickerStudioActive);
+        Assert.True(vm.IsImagesWorkflowActive);
 
-        // Simulate user selecting Audio mode
-        modeComboBox.SelectedItem = "Audio";
+        // Simulate user selecting Audio workflow
+        vm.SwitchToEngineWorkflow("Audio");
         Assert.Equal("Audio", vm.SelectedStudioMode);
+        Assert.True(vm.IsAudioWorkflowActive);
+        Assert.False(vm.IsStickerStudioActive);
 
-        // Simulate user selecting Video mode
-        modeComboBox.SelectedItem = "Video";
+        // Simulate user selecting Video workflow
+        vm.SwitchToEngineWorkflow("Video");
         Assert.Equal("Video", vm.SelectedStudioMode);
+        Assert.True(vm.IsVideoWorkflowActive);
+
+        // Simulate user selecting Sticker Studio
+        vm.SwitchToStickerStudio();
+        Assert.True(vm.IsStickerStudioActive);
+        Assert.False(vm.IsVideoWorkflowActive);
 
         window.Close();
     }
@@ -732,8 +740,8 @@ public class AvaloniaHeadlessInteractionTests
         // Open AI Assist
         vm.Assistant.RequestPopOut();
 
-        // Verify TabControl remained on its current tab (SelectedTabIndex == 1 for Studio)
-        Assert.Equal(1, vm.SelectedTabIndex);
+        // Verify TabControl remained on its current tab (SelectedTabIndex == 0 for Models)
+        Assert.Equal(0, vm.SelectedTabIndex);
 
         // Verify registered and snapped with WindowSnapManager
         Assert.NotNull(mainWindow.DocWindow);

@@ -99,10 +99,15 @@ public partial class MainViewModel : ObservableObject
     public StickerStudioViewModel StickerStudio { get; } = new(new StickerGenerationService());
 
     [ObservableProperty]
-    private bool _isStickerStudioActive = true;
+    [NotifyPropertyChangedFor(nameof(IsImagesWorkflowActive))]
+    [NotifyPropertyChangedFor(nameof(IsTextWorkflowActive))]
+    [NotifyPropertyChangedFor(nameof(IsVideoWorkflowActive))]
+    [NotifyPropertyChangedFor(nameof(Is3DMeshWorkflowActive))]
+    [NotifyPropertyChangedFor(nameof(IsAudioWorkflowActive))]
+    private bool _isStickerStudioActive = false;
 
     [ObservableProperty]
-    private int _selectedTabIndex = 1;
+    private int _selectedTabIndex = 0;
 
     partial void OnSelectedTabIndexChanged(int value)
     {
@@ -546,7 +551,18 @@ public partial class MainViewModel : ObservableObject
 
     // Studio & Video Studio Observable Properties
     [ObservableProperty]
-    private string _selectedStudioMode = "Video"; // "Images", "Text", "Video", "3D Mesh", "Audio"
+    [NotifyPropertyChangedFor(nameof(IsImagesWorkflowActive))]
+    [NotifyPropertyChangedFor(nameof(IsTextWorkflowActive))]
+    [NotifyPropertyChangedFor(nameof(IsVideoWorkflowActive))]
+    [NotifyPropertyChangedFor(nameof(Is3DMeshWorkflowActive))]
+    [NotifyPropertyChangedFor(nameof(IsAudioWorkflowActive))]
+    private string _selectedStudioMode = "Images"; // "Images", "Text", "Video", "3D Mesh", "Audio"
+
+    public bool IsImagesWorkflowActive => !IsStickerStudioActive && SelectedStudioMode == "Images";
+    public bool IsTextWorkflowActive => !IsStickerStudioActive && SelectedStudioMode == "Text";
+    public bool IsVideoWorkflowActive => !IsStickerStudioActive && SelectedStudioMode == "Video";
+    public bool Is3DMeshWorkflowActive => !IsStickerStudioActive && SelectedStudioMode == "3D Mesh";
+    public bool IsAudioWorkflowActive => !IsStickerStudioActive && SelectedStudioMode == "Audio";
 
     [ObservableProperty]
     private string _ollamaPrompt = "Explain how local LLM quantization works in plain language.";

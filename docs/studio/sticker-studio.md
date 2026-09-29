@@ -19,6 +19,8 @@ Every generated sticker includes a clean, die-cut border and an alpha-transparen
 
 ## Interface Layout: Dual-Stage Workspace
 
+![Sticker Studio Dual-Stage Workspace](../images/dashboard_sticker_studio.png)
+
 Sticker Studio uses a dynamic dual-stage canvas layout designed for creative focus:
 
 ```mermaid
