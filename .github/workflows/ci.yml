@@ -7,7 +7,30 @@ on:
     branches: [ main ]
 
 jobs:
+  lint-and-typecheck:
+    name: Lint & Typecheck
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout Code
+      uses: actions/checkout@v7
+
+    - name: Setup Node.js
+      uses: actions/setup-node@v6
+      with:
+        node-version: 20
+        cache: 'npm'
+
+    - name: Install Dependencies
+      run: npm ci
+
+    - name: Run ESLint
+      run: npm run lint
+
+    - name: Run TypeScript Typecheck
+      run: npx tsc --noEmit
+
   build-and-test:
+    name: build-and-test (${{ matrix.os }})
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
@@ -18,13 +41,15 @@ jobs:
     - name: Checkout Code
       uses: actions/checkout@v7
 
-    - name: Checkout Avalonia.LayoutInspector
-      run: git clone https://github.com/spelech/Avalonia.LayoutInspector.git ../Avalonia.LayoutInspector
+    - name: Checkout Avalonia.LayoutInspector (Shallow)
+      run: git clone --depth 1 https://github.com/spelech/Avalonia.LayoutInspector.git ../Avalonia.LayoutInspector
 
     - name: Setup .NET SDK 10.0
       uses: actions/setup-dotnet@v6
       with:
         dotnet-version: '10.0.x'
+        cache: true
+        cache-dependency-path: 'LocalLLMServerManager.slnx'
 
     - name: Restore Dependencies
       run: dotnet restore LocalLLMServerManager.slnx
@@ -32,5 +57,10 @@ jobs:
     - name: Build Solution
       run: dotnet build LocalLLMServerManager.slnx -c Release --no-restore
 
-    - name: Run Unit Tests & Collect Code Coverage
+    - name: Run Unit Tests & Collect Code Coverage (Ubuntu)
+      if: matrix.os == 'ubuntu-latest'
       run: dotnet test LocalLLMServerManager.Tests/LocalLLMServerManager.Tests.csproj -c Release --no-build --collect:"XPlat Code Coverage" --nologo
+
+    - name: Run Unit Tests (Windows)
+      if: matrix.os == 'windows-latest'
+      run: dotnet test LocalLLMServerManager.Tests/LocalLLMServerManager.Tests.csproj -c Release --no-build --nologo

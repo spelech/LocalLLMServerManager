@@ -17,13 +17,15 @@ jobs:
       - name: Checkout Code
         uses: actions/checkout@v7
 
-      - name: Checkout Avalonia.LayoutInspector
-        run: git clone https://github.com/spelech/Avalonia.LayoutInspector.git ../Avalonia.LayoutInspector
+      - name: Checkout Avalonia.LayoutInspector (Shallow)
+        run: git clone --depth 1 https://github.com/spelech/Avalonia.LayoutInspector.git ../Avalonia.LayoutInspector
 
       - name: Setup .NET 10 SDK
         uses: actions/setup-dotnet@v6
         with:
           dotnet-version: '10.0.x'
+          cache: true
+          cache-dependency-path: 'LocalLLMServerManager.slnx'
 
       - name: Install WASM Workload
         run: dotnet workload install wasm-tools
