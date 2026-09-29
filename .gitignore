@@ -10,6 +10,9 @@
 .worktrees/
 worktrees/
 
+# Superpowers
+.superpowers/
+
 # User-specific files
 *.rsuser
 *.suo

@@ -732,8 +732,8 @@ public class AvaloniaHeadlessInteractionTests
         // Open AI Assist
         vm.Assistant.RequestPopOut();
 
-        // Verify TabControl remained on its current tab (SelectedTabIndex == 0)
-        Assert.Equal(0, vm.SelectedTabIndex);
+        // Verify TabControl remained on its current tab (SelectedTabIndex == 1 for Studio)
+        Assert.Equal(1, vm.SelectedTabIndex);
 
         // Verify registered and snapped with WindowSnapManager
         Assert.NotNull(mainWindow.DocWindow);

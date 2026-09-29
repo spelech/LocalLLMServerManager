@@ -1,0 +1,103 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:vm="using:LocalLLMServerManager.Shared.ViewModels"
+             mc:Ignorable="d" d:DesignWidth="1280" d:DesignHeight="34"
+             x:Class="LocalLLMServerManager.Shared.Views.Controls.TelemetryRibbonControl"
+             x:DataType="vm:TelemetryViewModel"
+             Height="34">
+
+    <UserControl.Styles>
+        <Style Selector="Button.ribbon-btn">
+            <Setter Property="Background" Value="Transparent" />
+            <Setter Property="BorderThickness" Value="0" />
+            <Setter Property="CornerRadius" Value="4" />
+            <Setter Property="Padding" Value="6,2" />
+            <Setter Property="Height" Value="24" />
+            <Setter Property="Cursor" Value="Hand" />
+        </Style>
+        <Style Selector="Button.ribbon-btn:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+            <Setter Property="Background" Value="{StaticResource BgCardBrush}" />
+        </Style>
+        <Style Selector="Button.ribbon-icon-btn">
+            <Setter Property="Background" Value="Transparent" />
+            <Setter Property="BorderThickness" Value="0" />
+            <Setter Property="CornerRadius" Value="4" />
+            <Setter Property="Width" Value="26" />
+            <Setter Property="Height" Value="24" />
+            <Setter Property="Padding" Value="0" />
+            <Setter Property="Cursor" Value="Hand" />
+        </Style>
+        <Style Selector="Button.ribbon-icon-btn:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+            <Setter Property="Background" Value="{StaticResource BgCardBrush}" />
+        </Style>
+    </UserControl.Styles>
+
+    <Border Height="34"
+            Background="{StaticResource BgSurfaceBrush}"
+            BorderBrush="{StaticResource GlassBorderBrush}"
+            BorderThickness="0,0,0,1"
+            Padding="12,0">
+        <Grid ColumnDefinitions="Auto, *, Auto" VerticalAlignment="Center">
+            <!-- Left: Service status dots for Ollama, Forge SD, ComfyUI -->
+            <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
+                <!-- Ollama Service Dot -->
+                <Button Classes="ribbon-btn"
+                        Command="{Binding ManageServiceCommand}"
+                        CommandParameter="Ollama"
+                        ToolTip.Tip="Ollama Service">
+                    <StackPanel Orientation="Horizontal" Spacing="5" VerticalAlignment="Center">
+                        <Ellipse Width="7" Height="7" Fill="{Binding OllamaStatusColor}" VerticalAlignment="Center"/>
+                        <TextBlock Text="Ollama" FontSize="11" Foreground="{StaticResource TextMainBrush}" FontWeight="SemiBold" VerticalAlignment="Center"/>
+                    </StackPanel>
+                </Button>
+
+                <!-- Forge SD Service Dot -->
+                <Button Classes="ribbon-btn"
+                        Command="{Binding ManageServiceCommand}"
+                        CommandParameter="Forge SD"
+                        ToolTip.Tip="Forge SD Service">
+                    <StackPanel Orientation="Horizontal" Spacing="5" VerticalAlignment="Center">
+                        <Ellipse Width="7" Height="7" Fill="{Binding ForgeStatusColor}" VerticalAlignment="Center"/>
+                        <TextBlock Text="Forge SD" FontSize="11" Foreground="{StaticResource TextMainBrush}" FontWeight="SemiBold" VerticalAlignment="Center"/>
+                    </StackPanel>
+                </Button>
+
+                <!-- ComfyUI Service Dot -->
+                <Button Classes="ribbon-btn"
+                        Command="{Binding ManageServiceCommand}"
+                        CommandParameter="ComfyUI"
+                        ToolTip.Tip="ComfyUI Service">
+                    <StackPanel Orientation="Horizontal" Spacing="5" VerticalAlignment="Center">
+                        <Ellipse Width="7" Height="7" Fill="{Binding ComfyStatusColor}" VerticalAlignment="Center"/>
+                        <TextBlock Text="ComfyUI" FontSize="11" Foreground="{StaticResource TextMainBrush}" FontWeight="SemiBold" VerticalAlignment="Center"/>
+                    </StackPanel>
+                </Button>
+            </StackPanel>
+
+            <!-- Center: Compact VRAM Badge & Telemetry Pill -->
+            <Border Grid.Column="1" Classes="matte-pill" Height="24" Padding="8,2" HorizontalAlignment="Center" VerticalAlignment="Center" ClipToBounds="True">
+                <StackPanel Orientation="Horizontal" Spacing="6" VerticalAlignment="Center" ClipToBounds="True">
+                    <TextBlock Text="🎮" FontSize="11" VerticalAlignment="Center"/>
+                    <TextBlock Text="{Binding GpuName}" FontSize="11" Foreground="{StaticResource TextMutedBrush}"
+                               FontWeight="Medium" VerticalAlignment="Center" MaxWidth="140"
+                               TextTrimming="CharacterEllipsis" ToolTip.Tip="{Binding GpuName}"/>
+                    <ProgressBar Value="{Binding VramPercentage}" Maximum="100" Classes="matte-progress"
+                                 MinWidth="0" Width="40" Height="4" VerticalAlignment="Center"/>
+                    <TextBlock Text="{Binding VramStatusText}" FontSize="11" Foreground="{StaticResource PrimaryBrush}"
+                               FontWeight="Bold" VerticalAlignment="Center" TextTrimming="CharacterEllipsis"/>
+                </StackPanel>
+            </Border>
+
+            <!-- Right: Refresh & Actions -->
+            <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="4" VerticalAlignment="Center">
+                <Button Classes="ribbon-icon-btn"
+                        Command="{Binding RefreshStatusCommand}"
+                        ToolTip.Tip="Refresh Service &amp; GPU Telemetry">
+                    <TextBlock Text="🔄" FontSize="11" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                </Button>
+            </StackPanel>
+        </Grid>
+    </Border>
+</UserControl>
