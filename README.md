@@ -18,13 +18,15 @@ The application features a dark Fluent Avalonia UI theme (`#0F172A`) organized i
 
 | UI Workspace | Target Capabilities | Active Controls |
 | :--- | :--- | :--- |
-| **Telemetry Header** | Real-Time Hardware Telemetry | GPU name, total/used VRAM bar, service health indicator, and refresh button. |
-| **Installed Models** | Local Model Management | Ollama model cards, family tags (`Coding`, `Chat`), and interactive KV Cache Context Calculator. |
-| **Hugging Face Hub** | Multimodal GGUF Discovery | Search repositories, inspect branch quantization trees (`Q4_K_M`, `Q8_0`), and stream downloads. |
-| **CivitAI Models** | Diffusion Checkpoints & LoRAs | Filter by model type, inspect preview thumbnails, and download directly to disk. |
-| **Multimodal Studio** | Creative Generation Suite | Workspaces for Images, Video, Audio, 3D Mesh, and the one-click **Real Engine Test Flight** runner. |
+| **Activity Rail & Titlebar Ribbon** | Navigation & Hardware Telemetry | Collapsible 56px / 200px rail with domain switching (Studio, Models, Hardware Fit, Settings) and 34px titlebar ribbon showing engine status dots and VRAM telemetry. |
+| **Sticker Studio (Dual-Stage)** | Die-Cut Vinyl & Vector Stickers | 380px Input Deck with reference image drop zone, 6 curated style presets, auto-cutout toggle, border dilation slider (0–24px), and alpha checkerboard output canvas. |
+| **Multimodal Studio (Dual-Stage)** | Creative Generation Suite | Dedicated workspaces for Images, Video, Audio, 3D Mesh, and the one-click **Real Engine Test Flight** runner. |
+| **Installed Models (Full-Bleed)** | Local Model Management | Ollama model cards, family capability tags (`Coding`, `Chat`), and interactive KV Cache Context Calculator. |
+| **Hugging Face Hub (Full-Bleed)** | Multimodal GGUF Discovery | Search repositories, inspect branch quantization trees (`Q4_K_M`, `Q8_0`), and stream downloads. |
+| **CivitAI Models (Full-Bleed)** | Diffusion Checkpoints & LoRAs | Filter by model type, inspect preview thumbnails, and download directly to disk. |
+| **Hardware Fit (Full-Bleed)** | Memory Sizing Calculator | Real-time GPU detection, memory allocation bars, layer offloading calculator, and throughput estimation. |
 | **AI Assistant** | In-App Conversational Copilot | Multimodal screenshot diagnostics, dynamic LiteLLM capability badges, and detachable companion window. |
-| **Settings & Tools** | Configuration & Auto-Discovery | Multi-drive tool auto-detection, path status badges (`Valid`, `Missing`), and LAN IP endpoint summaries. |
+| **Settings & Tools (Full-Bleed)** | Configuration & Auto-Discovery | Multi-drive tool auto-detection, path status badges (`Valid`, `Missing`), and LAN IP endpoint summaries. |
 | **Companion Windows** | Multi-Window Workspaces | Detachable Documentation and AI Assist windows with magnetic flank docking and lockstep dragging. |
 
 ---
@@ -39,6 +41,7 @@ Local LLM Server Manager brings together local AI runtimes into a unified, high-
 - **Interactive Context Calculator**: Visually inspect KV cache footprints against available GPU memory up to 32K tokens before loading models.
 
 ### 2. Creative Multimodal Studio
+- **Sticker Studio**: End-to-end vector and die-cut vinyl sticker pipeline with reference image drop zone, 6 curated style presets (Die-Cut Vinyl, Holographic, Chibi Anime, 80s Retro, Pop Art, Watercolor), auto-cutout subject isolation, adjustable border width (0–24px), and 32-bit transparent PNG clipboard export.
 - **3D Mesh Generation**: Interactive WebGL 3D canvas (`<model-viewer>`) with orbital controls, wireframe toggles, and direct GLB/GLTF export powered by TRELLIS V2 and Hunyuan3D v2.
 - **Video Generation Studio**: Turnkey ComfyUI workflow presets for **Wan 2.2**, **LTX-2.5**, and **HunyuanVideo 1.5** with an integrated desktop video player.
 - **Audio & Speech Synthesis**: Managed Kokoro TTS engine with OpenAI-compatible `POST /v1/audio/speech`, waveform visualizer, and music synthesis via Stable Audio Open 3.0 & YuE.
