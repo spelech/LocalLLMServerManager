@@ -1,22 +1,23 @@
 # Local LLM Server Manager — User Guide Hub
 
-Welcome to the **Local LLM Server Manager (v3.16.0)** User Guide. This document provides a complete guide to operating the dashboard, configuring local AI engines, and using generative studio tools.
+Welcome to the **Local LLM Server Manager (v3.17.0)** User Guide. This document provides a complete guide to operating the dashboard, configuring local AI engines, and using generative studio tools.
 
 ---
 
 ## Workspace Navigation
 
-The desktop application organizes capabilities into dedicated workspaces with docked companion windows:
+The desktop application organizes capabilities into dedicated workspaces using a collapsible Activity Rail (56 px collapsed / 200 px expanded) on the left flank and a compact 34 px Telemetry Ribbon in the titlebar:
 
 ```mermaid
 flowchart TD
     App["Local LLM Server Manager (Port 5246)"]
-    App --> Tab1["📦 Models\nDownloaded, Hugging Face & CivitAI"]
-    App --> Tab2["⚡ Workflows\nImages, Text, Video, 3D Mesh & Audio"]
-    App --> Tab3["🔍 Can I Run It\nHardware Compatibility & Sizing"]
-    App --> Tab4["⚙️ Settings\nDiscovery, Themes, LAN & Feature Packs"]
-    App -.-> CompL["📖 Documentation\n(Left Flank Companion)"]
-    App -.-> CompR["🤖 AI Assist\n(Right Flank Companion)"]
+    App --> Rail["Activity Rail\n(56px collapsed / 200px expanded)"]
+    Rail --> Dom1["⚡ Studio\nSticker Studio, Images, Video, Audio & 3D Mesh"]
+    Rail --> Dom2["📦 Models\nInstalled Models, Hugging Face Hub & CivitAI"]
+    Rail --> Dom3["💻 Hardware Fit\nCan I Run It Sizing & Memory Offloading"]
+    Rail --> Dom4["⚙️ Settings\nAuto-Discovery, Daemon Ports & Feature Packs"]
+    Rail -.-> CompL["📖 Documentation\n(Companion Window / Drawer)"]
+    Rail -.-> CompR["🤖 AI Assist\n(Companion Window / Drawer)"]
 ```
 
 ---
@@ -84,10 +85,28 @@ The **Workflows** workspace provides generation pipelines across five creative m
 
 | Modality | Supported Models | Output Formats | Dedicated Guide |
 | :--- | :--- | :--- | :--- |
+| **Sticker Studio** | SDXL, SD 1.5, FLUX | PNG (32-bit Transparent) | [Sticker Studio Guide](./studio/sticker-studio.md) |
 | **Image Generation** | FLUX.1, SDXL, SD 1.5 | PNG, WebP | [Image Generation Guide](./studio/image-generation.md) |
 | **Video Generation** | Wan 2.2, LTX-Video 2.5, HunyuanVideo | MP4 | [Video Generation Guide](./studio/video-generation.md) |
 | **Audio & Speech** | Kokoro TTS, Stable Audio Open, YuE | WAV, MP3 | [Audio & Music Guide](./studio/audio-and-music.md) |
 | **3D Mesh** | TRELLIS V2, Hunyuan3D v2 | GLB, OBJ | [3D Mesh Guide](./studio/3d-mesh.md) |
+
+### Sticker Studio Walkthrough
+
+The Sticker Studio creates die-cut vinyl stickers from image references or text descriptions:
+
+1. Click **⚡ Studio** in the Activity Rail and select **Sticker Studio**.
+2. Drop a reference image (PNG, JPG, WebP) into the **Input Deck** drop zone, or type a custom prompt.
+3. Select an art style preset chip (**Die-Cut Vinyl**, **Holographic**, **Chibi Anime**, **80s Retro**, **Pop Art**, or **Watercolor**).
+4. Verify that **Auto-Cutout** is checked to remove backgrounds automatically.
+5. Set the **Die-Cut Border Width** slider (0–24 px).
+6. Click **✨ Generate Sticker**.
+7. Monitor progress through the 4-stage pipeline tracker:
+   - `Diffusion Generation` ➔ `Subject Isolation` ➔ `Contour Application` ➔ `Ready`.
+8. Click **📋 Copy PNG** to copy the 32-bit transparent image to the clipboard, or click **💾 Save File** to write to disk.
+
+> [!TIP]
+> Read the complete [Sticker Studio Guide](./studio/sticker-studio.md) for full style token references and VRAM requirements.
 
 ### Real Engine Test Flight
 Before starting complex renders, use the **Test Flight** control panel in the studio header:
@@ -158,6 +177,7 @@ The **Settings** workspace centralizes engine paths, port bindings, and optional
   - [Model Hubs & Downloads](./engines/model-management.md)
 - **Multimodal Studio**:
   - [Studio Overview](./studio/index.md)
+  - [Sticker Studio](./studio/sticker-studio.md)
   - [Image Generation](./studio/image-generation.md)
   - [LoRA Art Styles & CivitAI](./studio/lora-styles.md)
   - [Video Generation](./studio/video-generation.md)

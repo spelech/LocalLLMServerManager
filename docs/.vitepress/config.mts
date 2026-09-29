@@ -61,6 +61,7 @@ export default withMermaid(
           text: 'Multimodal Studio',
           items: [
             { text: 'Studio Overview', link: '/studio/' },
+            { text: 'Sticker Studio', link: '/studio/sticker-studio' },
             { text: 'Image Generation', link: '/studio/image-generation' },
             { text: 'LoRA Art Styles & CivitAI', link: '/studio/lora-styles' },
             { text: 'Video Generation', link: '/studio/video-generation' },
