@@ -47,17 +47,18 @@
         <Grid RowDefinitions="Auto, *, Auto">
             <!-- Top Primary Domain Buttons -->
             <StackPanel Grid.Row="0" Spacing="2">
-                <!-- ⚡ Studio / Workflows -->
+                <!-- Studio / Workflows -->
                 <Button Classes="rail-btn"
                         Classes.active="{Binding IsStudioSelected}"
                         Command="{Binding SelectDomainCommand}"
                         CommandParameter="{x:Static models:NavDomain.Studio}"
-                        ToolTip.Tip="⚡ Studio / Workflows">
+                        ToolTip.Tip="Studio / Workflows">
                     <Grid ColumnDefinitions="44, *">
                         <Border Grid.Column="0" Width="3" Height="20" HorizontalAlignment="Left" CornerRadius="1.5"
                                 Background="{StaticResource PrimaryBrush}"
                                 IsVisible="{Binding IsStudioSelected}"/>
-                        <TextBlock Grid.Column="0" Text="⚡" FontSize="16" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        <PathIcon Grid.Column="0" Data="{StaticResource IconWorkflows}" Width="16" Height="16"
+                                  Foreground="{Binding $parent[Button].Foreground}" HorizontalAlignment="Center" VerticalAlignment="Center"/>
                         <TextBlock Grid.Column="1" Text="Studio" FontSize="13" FontWeight="SemiBold" VerticalAlignment="Center"
                                    Margin="2,0,4,0"
                                    IsVisible="{Binding IsExpanded, RelativeSource={RelativeSource AncestorType=controls:ActivityRailControl}}"
@@ -65,17 +66,18 @@
                     </Grid>
                 </Button>
 
-                <!-- 📦 Models & Hubs -->
+                <!-- Models & Hubs -->
                 <Button Classes="rail-btn"
                         Classes.active="{Binding IsModelsSelected}"
                         Command="{Binding SelectDomainCommand}"
                         CommandParameter="{x:Static models:NavDomain.Models}"
-                        ToolTip.Tip="📦 Models &amp; Hubs">
+                        ToolTip.Tip="Models &amp; Hubs">
                     <Grid ColumnDefinitions="44, *">
                         <Border Grid.Column="0" Width="3" Height="20" HorizontalAlignment="Left" CornerRadius="1.5"
                                 Background="{StaticResource PrimaryBrush}"
                                 IsVisible="{Binding IsModelsSelected}"/>
-                        <TextBlock Grid.Column="0" Text="📦" FontSize="16" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        <PathIcon Grid.Column="0" Data="{StaticResource IconModels}" Width="16" Height="16"
+                                  Foreground="{Binding $parent[Button].Foreground}" HorizontalAlignment="Center" VerticalAlignment="Center"/>
                         <TextBlock Grid.Column="1" Text="Models" FontSize="13" FontWeight="SemiBold" VerticalAlignment="Center"
                                    Margin="2,0,4,0"
                                    IsVisible="{Binding IsExpanded, RelativeSource={RelativeSource AncestorType=controls:ActivityRailControl}}"
@@ -83,17 +85,18 @@
                     </Grid>
                 </Button>
 
-                <!-- 💻 Hardware Fit -->
+                <!-- Hardware Fit -->
                 <Button Classes="rail-btn"
                         Classes.active="{Binding IsHardwareFitSelected}"
                         Command="{Binding SelectDomainCommand}"
                         CommandParameter="{x:Static models:NavDomain.HardwareFit}"
-                        ToolTip.Tip="💻 Hardware Fit">
+                        ToolTip.Tip="Hardware Fit">
                     <Grid ColumnDefinitions="44, *">
                         <Border Grid.Column="0" Width="3" Height="20" HorizontalAlignment="Left" CornerRadius="1.5"
                                 Background="{StaticResource PrimaryBrush}"
                                 IsVisible="{Binding IsHardwareFitSelected}"/>
-                        <TextBlock Grid.Column="0" Text="💻" FontSize="16" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        <PathIcon Grid.Column="0" Data="{StaticResource IconCanIRunIt}" Width="16" Height="16"
+                                  Foreground="{Binding $parent[Button].Foreground}" HorizontalAlignment="Center" VerticalAlignment="Center"/>
                         <TextBlock Grid.Column="1" Text="Fit" FontSize="13" FontWeight="SemiBold" VerticalAlignment="Center"
                                    Margin="2,0,4,0"
                                    IsVisible="{Binding IsExpanded, RelativeSource={RelativeSource AncestorType=controls:ActivityRailControl}}"
@@ -101,17 +104,18 @@
                     </Grid>
                 </Button>
 
-                <!-- ⚙️ Settings & Daemon -->
+                <!-- Settings & Daemon -->
                 <Button Classes="rail-btn"
                         Classes.active="{Binding IsSettingsSelected}"
                         Command="{Binding SelectDomainCommand}"
                         CommandParameter="{x:Static models:NavDomain.Settings}"
-                        ToolTip.Tip="⚙️ Settings &amp; Daemon">
+                        ToolTip.Tip="Settings &amp; Daemon">
                     <Grid ColumnDefinitions="44, *">
                         <Border Grid.Column="0" Width="3" Height="20" HorizontalAlignment="Left" CornerRadius="1.5"
                                 Background="{StaticResource PrimaryBrush}"
                                 IsVisible="{Binding IsSettingsSelected}"/>
-                        <TextBlock Grid.Column="0" Text="⚙️" FontSize="16" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        <PathIcon Grid.Column="0" Data="{StaticResource IconSettings}" Width="16" Height="16"
+                                  Foreground="{Binding $parent[Button].Foreground}" HorizontalAlignment="Center" VerticalAlignment="Center"/>
                         <TextBlock Grid.Column="1" Text="Settings" FontSize="13" FontWeight="SemiBold" VerticalAlignment="Center"
                                    Margin="2,0,4,0"
                                    IsVisible="{Binding IsExpanded, RelativeSource={RelativeSource AncestorType=controls:ActivityRailControl}}"
@@ -127,13 +131,14 @@
                 <!-- Subtle divider line -->
                 <Rectangle Height="1" Fill="{StaticResource GlassBorderBrush}" Margin="6,4" />
 
-                <!-- 📖 Documentation -->
+                <!-- Documentation -->
                 <Button x:Name="NavDocumentationBtn"
                         Classes="rail-btn"
                         Command="{Binding DocumentationCommand}"
-                        ToolTip.Tip="📖 Documentation">
+                        ToolTip.Tip="Documentation">
                     <Grid ColumnDefinitions="44, *">
-                        <TextBlock Grid.Column="0" Text="📖" FontSize="15" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        <PathIcon Grid.Column="0" Data="{StaticResource IconDocumentation}" Width="15" Height="15"
+                                  Foreground="{Binding $parent[Button].Foreground}" HorizontalAlignment="Center" VerticalAlignment="Center"/>
                         <TextBlock Grid.Column="1" Text="Docs" FontSize="13" FontWeight="SemiBold" VerticalAlignment="Center"
                                    Margin="2,0,4,0"
                                    IsVisible="{Binding IsExpanded, RelativeSource={RelativeSource AncestorType=controls:ActivityRailControl}}"
@@ -141,13 +146,14 @@
                     </Grid>
                 </Button>
 
-                <!-- 🤖 AI Assist -->
+                <!-- AI Assist -->
                 <Button x:Name="NavAiAssistBtn"
                         Classes="rail-btn"
                         Command="{Binding AiAssistCommand}"
-                        ToolTip.Tip="🤖 AI Assistant">
+                        ToolTip.Tip="AI Assistant">
                     <Grid ColumnDefinitions="44, *">
-                        <TextBlock Grid.Column="0" Text="🤖" FontSize="15" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        <PathIcon Grid.Column="0" Data="{StaticResource IconAiAssist}" Width="15" Height="15"
+                                  Foreground="{Binding $parent[Button].Foreground}" HorizontalAlignment="Center" VerticalAlignment="Center"/>
                         <TextBlock Grid.Column="1" Text="AI Assist" FontSize="13" FontWeight="SemiBold" VerticalAlignment="Center"
                                    Margin="2,0,4,0"
                                    IsVisible="{Binding IsExpanded, RelativeSource={RelativeSource AncestorType=controls:ActivityRailControl}}"
@@ -155,17 +161,19 @@
                     </Grid>
                 </Button>
 
-                <!-- ◀ / ▶ Expand/Collapse Toggle -->
+                <!-- Expand/Collapse Toggle -->
                 <Button x:Name="ToggleRailBtn"
                         Classes="rail-btn"
                         Command="{Binding ToggleRailExpandedCommand}"
                         ToolTip.Tip="Toggle Navigation Rail">
                     <Grid ColumnDefinitions="44, *">
                         <Grid Grid.Column="0" HorizontalAlignment="Center" VerticalAlignment="Center">
-                            <TextBlock Text="◀" FontSize="13"
-                                       IsVisible="{Binding IsExpanded, RelativeSource={RelativeSource AncestorType=controls:ActivityRailControl}}"/>
-                            <TextBlock Text="▶" FontSize="13"
-                                       IsVisible="{Binding !IsExpanded, RelativeSource={RelativeSource AncestorType=controls:ActivityRailControl}}"/>
+                            <PathIcon Data="{StaticResource IconChevronLeft}" Width="14" Height="14"
+                                      Foreground="{Binding $parent[Button].Foreground}"
+                                      IsVisible="{Binding IsExpanded, RelativeSource={RelativeSource AncestorType=controls:ActivityRailControl}}"/>
+                            <PathIcon Data="{StaticResource IconChevronRight}" Width="14" Height="14"
+                                      Foreground="{Binding $parent[Button].Foreground}"
+                                      IsVisible="{Binding !IsExpanded, RelativeSource={RelativeSource AncestorType=controls:ActivityRailControl}}"/>
                         </Grid>
                         <TextBlock Grid.Column="1" Text="Collapse" FontSize="13" FontWeight="SemiBold" VerticalAlignment="Center"
                                    Margin="2,0,4,0"

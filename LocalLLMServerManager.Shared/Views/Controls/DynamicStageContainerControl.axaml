@@ -70,52 +70,107 @@
         <!-- TAB 1: Studio Workflows (Sticker Studio + Engine Workflows) -->
         <TabItem Header="Studio">
             <Grid RowDefinitions="Auto, *">
-                <!-- Studio Sub-Navigation Bar: Toggle between Sticker Studio and other Generation Workflows -->
+                <!-- Studio Sub-Navigation Bar: Direct Modality Workflows & Sticker Studio -->
                 <Border Grid.Row="0"
                         Background="{StaticResource BgSurfaceBrush}"
                         BorderBrush="{StaticResource GlassBorderBrush}"
                         BorderThickness="0,0,0,1"
                         Padding="14,6">
                     <Grid ColumnDefinitions="Auto, *, Auto">
-                        <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
+                        <!-- Direct flat workflow buttons on the left -->
+                        <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="4" VerticalAlignment="Center">
+                            <!-- Images Workflow Button -->
+                            <Button Classes="workflow-tab-btn"
+                                    Classes.active="{Binding IsImagesWorkflowActive}"
+                                    Command="{Binding SwitchToEngineWorkflowCommand}"
+                                    CommandParameter="Images"
+                                    ToolTip.Tip="Images: Stable Diffusion &amp; Forge SD">
+                                <StackPanel Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
+                                    <PathIcon Data="{StaticResource IconImages}" Width="14" Height="14"
+                                              Foreground="{Binding $parent[Button].Foreground}" VerticalAlignment="Center"/>
+                                    <TextBlock Text="Images" FontSize="12" FontWeight="SemiBold" VerticalAlignment="Center"/>
+                                </StackPanel>
+                            </Button>
+
+                            <!-- Text Workflow Button -->
+                            <Button Classes="workflow-tab-btn"
+                                    Classes.active="{Binding IsTextWorkflowActive}"
+                                    Command="{Binding SwitchToEngineWorkflowCommand}"
+                                    CommandParameter="Text"
+                                    ToolTip.Tip="Text: Ollama Local LLM Reasoning">
+                                <StackPanel Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
+                                    <PathIcon Data="{StaticResource IconText}" Width="14" Height="14"
+                                              Foreground="{Binding $parent[Button].Foreground}" VerticalAlignment="Center"/>
+                                    <TextBlock Text="Text" FontSize="12" FontWeight="SemiBold" VerticalAlignment="Center"/>
+                                </StackPanel>
+                            </Button>
+
+                            <!-- Video Workflow Button -->
+                            <Button Classes="workflow-tab-btn"
+                                    Classes.active="{Binding IsVideoWorkflowActive}"
+                                    Command="{Binding SwitchToEngineWorkflowCommand}"
+                                    CommandParameter="Video"
+                                    ToolTip.Tip="Video: ComfyUI, Wan 2.2 &amp; AnimateDiff">
+                                <StackPanel Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
+                                    <PathIcon Data="{StaticResource IconVideo}" Width="14" Height="14"
+                                              Foreground="{Binding $parent[Button].Foreground}" VerticalAlignment="Center"/>
+                                    <TextBlock Text="Video" FontSize="12" FontWeight="SemiBold" VerticalAlignment="Center"/>
+                                </StackPanel>
+                            </Button>
+
+                            <!-- 3D Mesh Workflow Button -->
+                            <Button Classes="workflow-tab-btn"
+                                    Classes.active="{Binding Is3DMeshWorkflowActive}"
+                                    Command="{Binding SwitchToEngineWorkflowCommand}"
+                                    CommandParameter="3D Mesh"
+                                    ToolTip.Tip="3D Mesh: Hunyuan3D &amp; TripoSR Generation">
+                                <StackPanel Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
+                                    <PathIcon Data="{StaticResource Icon3D}" Width="14" Height="14"
+                                              Foreground="{Binding $parent[Button].Foreground}" VerticalAlignment="Center"/>
+                                    <TextBlock Text="3D Mesh" FontSize="12" FontWeight="SemiBold" VerticalAlignment="Center"/>
+                                </StackPanel>
+                            </Button>
+
+                            <!-- Audio Workflow Button -->
+                            <Button Classes="workflow-tab-btn"
+                                    Classes.active="{Binding IsAudioWorkflowActive}"
+                                    Command="{Binding SwitchToEngineWorkflowCommand}"
+                                    CommandParameter="Audio"
+                                    ToolTip.Tip="Audio: Kokoro Speech &amp; AudioCraft">
+                                <StackPanel Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
+                                    <PathIcon Data="{StaticResource IconAudio}" Width="14" Height="14"
+                                              Foreground="{Binding $parent[Button].Foreground}" VerticalAlignment="Center"/>
+                                    <TextBlock Text="Audio" FontSize="12" FontWeight="SemiBold" VerticalAlignment="Center"/>
+                                </StackPanel>
+                            </Button>
+
+                            <Rectangle Width="1" Height="18" Fill="{StaticResource GlassBorderBrush}" Margin="4,0" VerticalAlignment="Center"/>
+
+                            <!-- Sticker Studio Button -->
                             <Button Classes="workflow-tab-btn"
                                     Classes.active="{Binding IsStickerStudioActive}"
                                     Command="{Binding SwitchToStickerStudioCommand}"
-                                    ToolTip.Tip="Sticker Studio: Reference image to die-cut sticker generation">
+                                    ToolTip.Tip="Sticker Studio: Reference image to die-cut vinyl sticker generation">
                                 <StackPanel Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
-                                    <TextBlock Text="🏷️" FontSize="13" VerticalAlignment="Center"/>
+                                    <PathIcon Data="{StaticResource IconSticker}" Width="14" Height="14"
+                                              Foreground="{Binding $parent[Button].Foreground}" VerticalAlignment="Center"/>
                                     <TextBlock Text="Sticker Studio" FontSize="12" FontWeight="SemiBold" VerticalAlignment="Center"/>
-                                </StackPanel>
-                            </Button>
-                            <Button Classes="workflow-tab-btn"
-                                    Classes.active="{Binding !IsStickerStudioActive}"
-                                    Command="{Binding SwitchToEngineWorkflowsCommand}"
-                                    ToolTip.Tip="Engine Workflows: Sequential image, text, video, 3D, and audio pathways">
-                                <StackPanel Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
-                                    <TextBlock Text="⚡" FontSize="13" VerticalAlignment="Center"/>
-                                    <TextBlock Text="Engine Workflows" FontSize="12" FontWeight="SemiBold" VerticalAlignment="Center"/>
                                 </StackPanel>
                             </Button>
                         </StackPanel>
 
-                        <!-- Modality Quick-Switchers (Visible when Engine Workflows is active) -->
-                        <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="4" VerticalAlignment="Center"
-                                    IsVisible="{Binding !IsStickerStudioActive}">
-                            <Button Content="🖼️ Images" Classes="workflow-sub-btn"
-                                    Command="{Binding SwitchToEngineWorkflowCommand}" CommandParameter="Images"
-                                    FontSize="11"/>
-                            <Button Content="💬 Text" Classes="workflow-sub-btn"
-                                    Command="{Binding SwitchToEngineWorkflowCommand}" CommandParameter="Text"
-                                    FontSize="11"/>
-                            <Button Content="🎬 Video" Classes="workflow-sub-btn"
-                                    Command="{Binding SwitchToEngineWorkflowCommand}" CommandParameter="Video"
-                                    FontSize="11"/>
-                            <Button Content="🧊 3D Mesh" Classes="workflow-sub-btn"
-                                    Command="{Binding SwitchToEngineWorkflowCommand}" CommandParameter="3D Mesh"
-                                    FontSize="11"/>
-                            <Button Content="🎵 Audio" Classes="workflow-sub-btn"
-                                    Command="{Binding SwitchToEngineWorkflowCommand}" CommandParameter="Audio"
-                                    FontSize="11"/>
+                        <!-- Right Actions -->
+                        <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+                            <Button x:Name="StageDiagnosticTestFlightButton"
+                                    Classes="matte-primary"
+                                    Command="{Binding OpenTestFlightCommand}"
+                                    ToolTip.Tip="Run diagnostic test flight across engines"
+                                    Padding="12,4" Height="28">
+                                <StackPanel Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
+                                    <PathIcon Data="{StaticResource IconRocket}" Width="12" Height="12" Foreground="White" VerticalAlignment="Center"/>
+                                    <TextBlock Text="Diagnostic Test Flight" FontSize="11" FontWeight="SemiBold" VerticalAlignment="Center"/>
+                                </StackPanel>
+                            </Button>
                         </StackPanel>
                     </Grid>
                 </Border>

@@ -88,16 +88,21 @@ public class PlaywrightScreenshotGenerator : IClassFixture<AppTestServerFixture>
         await page.ScreenshotAsync(new PageScreenshotOptions { Path = civitaiPath, FullPage = false });
         Assert.True(File.Exists(civitaiPath) && new FileInfo(civitaiPath).Length > 0, "dashboard_civitai.png should exist and be non-empty");
 
-        // 5. Workflows (Activity Rail: Studio ~ 28, 64 -> Engine Workflows button ~ 220, 55 -> 3D Mesh ~ 1140, 55)
+        // 5. Workflows (Activity Rail: Studio ~ 28, 64 -> Direct 3D Mesh button ~ 340, 50)
         string studio3dPath = Path.Combine(outputDir, "dashboard_3d_studio.png");
         await page.Mouse.ClickAsync(28, 64); // Click Studio on Activity Rail
         await page.WaitForTimeoutAsync(1000);
-        await page.Mouse.ClickAsync(220, 55); // Click Engine Workflows
-        await page.WaitForTimeoutAsync(1000);
-        await page.Mouse.ClickAsync(1140, 55); // Click 3D Mesh
+        await page.Mouse.ClickAsync(340, 50); // Click 3D Mesh direct button
         await page.WaitForTimeoutAsync(1200);
         await page.ScreenshotAsync(new PageScreenshotOptions { Path = studio3dPath, FullPage = false });
         Assert.True(File.Exists(studio3dPath) && new FileInfo(studio3dPath).Length > 0, "dashboard_3d_studio.png should exist and be non-empty");
+
+        // 5b. Sticker Studio (Direct Sticker Studio button ~ 520, 50)
+        string stickerPath = Path.Combine(outputDir, "dashboard_sticker_studio.png");
+        await page.Mouse.ClickAsync(520, 50); // Click Sticker Studio button
+        await page.WaitForTimeoutAsync(1200);
+        await page.ScreenshotAsync(new PageScreenshotOptions { Path = stickerPath, FullPage = false });
+        Assert.True(File.Exists(stickerPath) && new FileInfo(stickerPath).Length > 0, "dashboard_sticker_studio.png should exist and be non-empty");
 
         // 6. Can I Run It tab (Activity Rail: Fit ~ 28, 152)
         string canIRunItPath = Path.Combine(outputDir, "dashboard_can_i_run_it.png");

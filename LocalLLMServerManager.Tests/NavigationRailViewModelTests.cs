@@ -7,11 +7,11 @@ namespace LocalLLMServerManager.Tests;
 public class NavigationRailViewModelTests
 {
     [Fact]
-    public void InitialState_IsCollapsed_AndStudioSelected()
+    public void InitialState_IsCollapsed_AndModelsSelected()
     {
         var vm = new NavigationRailViewModel();
         Assert.False(vm.IsExpanded);
-        Assert.Equal(NavDomain.Studio, vm.SelectedDomain);
+        Assert.Equal(NavDomain.Models, vm.SelectedDomain);
     }
 
     [Fact]
@@ -28,8 +28,8 @@ public class NavigationRailViewModelTests
     public void SelectDomain_UpdatesSelectedDomain()
     {
         var vm = new NavigationRailViewModel();
-        vm.SelectDomainCommand.Execute(NavDomain.Models);
-        Assert.Equal(NavDomain.Models, vm.SelectedDomain);
+        vm.SelectDomainCommand.Execute(NavDomain.Studio);
+        Assert.Equal(NavDomain.Studio, vm.SelectedDomain);
     }
 
     [Fact]
@@ -54,8 +54,8 @@ public class NavigationRailViewModelTests
     public void DomainSelectionFlags_ReflectSelectedDomain()
     {
         var vm = new NavigationRailViewModel();
-        Assert.True(vm.IsStudioSelected);
-        Assert.False(vm.IsModelsSelected);
+        Assert.False(vm.IsStudioSelected);
+        Assert.True(vm.IsModelsSelected);
         Assert.False(vm.IsHardwareFitSelected);
         Assert.False(vm.IsSettingsSelected);
 

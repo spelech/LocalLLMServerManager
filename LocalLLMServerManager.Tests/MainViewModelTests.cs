@@ -603,12 +603,15 @@ public class MainViewModelTests : IClassFixture<AppTestServerFixture>
         var vm = new MainViewModel();
         Assert.NotNull(vm.NavigationRail);
         Assert.NotNull(vm.StickerStudio);
-        Assert.Equal(NavDomain.Studio, vm.NavigationRail.SelectedDomain);
-        Assert.Equal(1, vm.SelectedTabIndex);
+        Assert.Equal(NavDomain.Models, vm.NavigationRail.SelectedDomain);
+        Assert.Equal(0, vm.SelectedTabIndex);
+        Assert.False(vm.IsStickerStudioActive);
+        Assert.Equal("Images", vm.SelectedStudioMode);
+        Assert.True(vm.IsImagesWorkflowActive);
 
         // Orchestration: NavDomain changes update SelectedTabIndex
-        vm.NavigationRail.SelectDomain(NavDomain.Models);
-        Assert.Equal(0, vm.SelectedTabIndex);
+        vm.NavigationRail.SelectDomain(NavDomain.Studio);
+        Assert.Equal(1, vm.SelectedTabIndex);
 
         vm.NavigationRail.SelectDomain(NavDomain.HardwareFit);
         Assert.Equal(2, vm.SelectedTabIndex);
@@ -616,12 +619,12 @@ public class MainViewModelTests : IClassFixture<AppTestServerFixture>
         vm.NavigationRail.SelectDomain(NavDomain.Settings);
         Assert.Equal(3, vm.SelectedTabIndex);
 
-        vm.NavigationRail.SelectDomain(NavDomain.Studio);
-        Assert.Equal(1, vm.SelectedTabIndex);
+        vm.NavigationRail.SelectDomain(NavDomain.Models);
+        Assert.Equal(0, vm.SelectedTabIndex);
 
         // SelectedTabIndex changes update NavigationRail.SelectedDomain
-        vm.SelectedTabIndex = 0;
-        Assert.Equal(NavDomain.Models, vm.NavigationRail.SelectedDomain);
+        vm.SelectedTabIndex = 1;
+        Assert.Equal(NavDomain.Studio, vm.NavigationRail.SelectedDomain);
 
         vm.SelectedTabIndex = 2;
         Assert.Equal(NavDomain.HardwareFit, vm.NavigationRail.SelectedDomain);
@@ -629,8 +632,28 @@ public class MainViewModelTests : IClassFixture<AppTestServerFixture>
         vm.SelectedTabIndex = 3;
         Assert.Equal(NavDomain.Settings, vm.NavigationRail.SelectedDomain);
 
-        vm.SelectedTabIndex = 1;
-        Assert.Equal(NavDomain.Studio, vm.NavigationRail.SelectedDomain);
+        vm.SelectedTabIndex = 0;
+        Assert.Equal(NavDomain.Models, vm.NavigationRail.SelectedDomain);
+
+        // Workflow button switching orchestration
+        vm.SwitchToEngineWorkflow("Video");
+        Assert.False(vm.IsStickerStudioActive);
+        Assert.Equal("Video", vm.SelectedStudioMode);
+        Assert.True(vm.IsVideoWorkflowActive);
+        Assert.False(vm.IsImagesWorkflowActive);
+
+        vm.SwitchToEngineWorkflow("Text");
+        Assert.True(vm.IsTextWorkflowActive);
+
+        vm.SwitchToEngineWorkflow("3D Mesh");
+        Assert.True(vm.Is3DMeshWorkflowActive);
+
+        vm.SwitchToEngineWorkflow("Audio");
+        Assert.True(vm.IsAudioWorkflowActive);
+
+        vm.SwitchToStickerStudio();
+        Assert.True(vm.IsStickerStudioActive);
+        Assert.False(vm.IsAudioWorkflowActive);
 
         // Companion event orchestration
         vm.CloseDrawers();
