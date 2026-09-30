@@ -62,14 +62,23 @@ public partial class TelemetryViewModel : ObservableObject
         IsCollapsed = !IsCollapsed;
     }
 
+    public Action<string>? OnManageServiceRequested { get; set; }
+
     [RelayCommand]
     public void ManageService(string serviceName)
     {
+        if (OnManageServiceRequested != null)
+        {
+            OnManageServiceRequested(serviceName);
+            return;
+        }
+
         ManageServiceTarget = serviceName;
         bool isOnline = false;
-        if (serviceName == "Ollama") isOnline = IsOllamaOnline;
-        else if (serviceName == "Forge SD") isOnline = IsForgeOnline;
-        else if (serviceName == "ComfyUI") isOnline = IsComfyOnline;
+        var lower = (serviceName ?? "").ToLowerInvariant();
+        if (lower.Contains("ollama")) isOnline = IsOllamaOnline;
+        else if (lower.Contains("forge")) isOnline = IsForgeOnline;
+        else if (lower.Contains("comfy")) isOnline = IsComfyOnline;
 
         ManageServiceIsStart = !isOnline;
         string action = ManageServiceIsStart ? "start" : "stop";
@@ -87,12 +96,22 @@ public partial class TelemetryViewModel : ObservableObject
     public async Task ConfirmManageServiceAsync()
     {
         IsManageServiceModalOpen = false;
+        var serviceName = ManageServiceTarget ?? "Service";
+        var isStart = ManageServiceIsStart;
+        var action = isStart ? "start" : "stop";
+
+        var lower = serviceName.Trim().ToLowerInvariant();
+        string engineName = "ollama";
+        if (lower.Contains("comfy")) engineName = "comfy";
+        else if (lower.Contains("forge")) engineName = "forge";
+        else if (lower.Contains("audio")) engineName = "audio";
+        else if (lower.Contains("ollama")) engineName = "ollama";
+
+        ToastService.Instance.Show($"{(isStart ? "Starting" : "Stopping")} {serviceName}...", ToastType.Info, 2500);
+
         try
         {
-            var actionEndpoint = ManageServiceIsStart ? "/api/comfy/start" : "/api/comfy/stop";
-            var engineName = ManageServiceTarget.ToLower().Replace(" sd", "");
-            if (ManageServiceTarget == "ComfyUI") engineName = "comfy";
-
+            var actionEndpoint = isStart ? $"/api/{engineName}/start" : $"/api/{engineName}/stop";
             var req = new { engine = engineName };
             var content = new StringContent(
                 System.Text.Json.JsonSerializer.Serialize(req),
@@ -100,9 +119,22 @@ public partial class TelemetryViewModel : ObservableObject
                 "application/json"
             );
             using var http = HttpHelper.CreateClient(ApiBase);
-            await http.PostAsync($"{ApiBase}{actionEndpoint}", content);
+            var response = await http.PostAsync($"{ApiBase}{actionEndpoint}", content);
+            if (response.IsSuccessStatusCode)
+            {
+                ToastService.Instance.Show($"{serviceName} {(isStart ? "started" : "stopped")} successfully.", ToastType.Success);
+            }
+            else
+            {
+                var errorText = await response.Content.ReadAsStringAsync();
+                var msg = string.IsNullOrWhiteSpace(errorText) ? $"Server returned {response.StatusCode}" : errorText;
+                ToastService.Instance.Show($"Failed to {action} {serviceName}: {msg}", ToastType.Error, 6000);
+            }
         }
-        catch { }
+        catch (Exception ex)
+        {
+            ToastService.Instance.Show($"Error while attempting to {action} {serviceName}: {ex.Message}", ToastType.Error, 6000);
+        }
         finally
         {
             await RefreshStatusAsync();

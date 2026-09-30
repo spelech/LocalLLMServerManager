@@ -105,4 +105,42 @@ public class TelemetryViewModelTests
 
         window.Close();
     }
+
+    [Fact]
+    public void ManageService_WhenCallbackConfigured_InvokesCallbackWithServiceName()
+    {
+        var mockTelemetry = new Mock<ITelemetryService>();
+        var vm = new TelemetryViewModel(mockTelemetry.Object);
+        string? requestedService = null;
+        vm.OnManageServiceRequested = name => requestedService = name;
+
+        vm.ManageService("Ollama");
+
+        Assert.Equal("Ollama", requestedService);
+        Assert.False(vm.IsManageServiceModalOpen);
+    }
+
+    [Theory]
+    [InlineData("Ollama", "Offline", true)]
+    [InlineData("Ollama", "Online", false)]
+    [InlineData("Forge SD", "Offline", true)]
+    [InlineData("Forge SD", "Online", false)]
+    [InlineData("ComfyUI", "Offline", true)]
+    [InlineData("ComfyUI", "Online", false)]
+    public void ManageService_WhenNoCallback_ResolvesStartOrStopCorrectly(string service, string initialStatus, bool expectedIsStart)
+    {
+        var mockTelemetry = new Mock<ITelemetryService>();
+        var vm = new TelemetryViewModel(mockTelemetry.Object);
+        if (service == "Ollama") vm.OllamaStatus = initialStatus;
+        else if (service == "Forge SD") vm.ForgeStatus = initialStatus;
+        else if (service == "ComfyUI") vm.ComfyStatus = initialStatus;
+
+        vm.ManageService(service);
+
+        Assert.True(vm.IsManageServiceModalOpen);
+        Assert.Equal(service, vm.ManageServiceTarget);
+        Assert.Equal(expectedIsStart, vm.ManageServiceIsStart);
+        string actionWord = expectedIsStart ? "start" : "stop";
+        Assert.Contains(actionWord, vm.ManageServicePrompt);
+    }
 }

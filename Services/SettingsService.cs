@@ -12,7 +12,55 @@ public class SettingsService : ISettingsService
 
     public string SettingsFilePath()
     {
-        return Path.Combine(AppContext.BaseDirectory, "settings.json");
+        var appDataDir = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "LocalLLMServerManager");
+        var appDataPath = Path.Combine(appDataDir, "settings.json");
+        var baseDirPath = Path.Combine(AppContext.BaseDirectory, "settings.json");
+
+        if (File.Exists(appDataPath))
+        {
+            return appDataPath;
+        }
+
+        bool baseWritable = false;
+        try
+        {
+            if (File.Exists(baseDirPath))
+            {
+                using var fs = File.Open(baseDirPath, FileMode.Open, FileAccess.ReadWrite, FileShare.ReadWrite);
+                baseWritable = true;
+            }
+            else
+            {
+                var testFile = Path.Combine(AppContext.BaseDirectory, $".write_test_{Guid.NewGuid():N}");
+                File.WriteAllText(testFile, "test");
+                File.Delete(testFile);
+                baseWritable = true;
+            }
+        }
+        catch
+        {
+            baseWritable = false;
+        }
+
+        if (baseWritable)
+        {
+            return baseDirPath;
+        }
+
+        try
+        {
+            if (!Directory.Exists(appDataDir))
+            {
+                Directory.CreateDirectory(appDataDir);
+            }
+            if (File.Exists(baseDirPath) && !File.Exists(appDataPath))
+            {
+                File.Copy(baseDirPath, appDataPath);
+            }
+        }
+        catch { }
+
+        return appDataPath;
     }
 
     public AppSettings LoadSettings()

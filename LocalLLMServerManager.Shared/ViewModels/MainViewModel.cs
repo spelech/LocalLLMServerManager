@@ -222,6 +222,7 @@ public partial class MainViewModel : ObservableObject
         _canIRunItService = canIRunItService ?? new CanIRunItService();
         PresetService = studioPresetService ?? new StudioPresetService();
         Telemetry = new TelemetryViewModel(telemetryService) { ApiBase = ApiBase };
+        Telemetry.OnManageServiceRequested = (serviceName) => ToggleServiceInteractive(serviceName);
         HardwareFit = new CanIRunItViewModel(_canIRunItService, telemetryService, httpClient) { ApiBase = ApiBase };
         Ollama = new OllamaLibraryViewModel(ollamaModelService, _canIRunItService, telemetryService)
         {
@@ -385,12 +386,13 @@ public partial class MainViewModel : ObservableObject
     [RelayCommand]
     public void ToggleServiceInteractive(string serviceName)
     {
-        _serviceConfirmTarget = serviceName.ToLowerInvariant();
+        _serviceConfirmTarget = serviceName.Trim();
+        var lower = _serviceConfirmTarget.ToLowerInvariant();
         bool isOnline = false;
         
-        if (_serviceConfirmTarget == "ollama") isOnline = Telemetry.IsOllamaOnline;
-        else if (_serviceConfirmTarget == "forge") isOnline = Telemetry.IsForgeOnline;
-        else if (_serviceConfirmTarget == "comfy") isOnline = Telemetry.IsComfyOnline;
+        if (lower.Contains("ollama")) isOnline = Telemetry.IsOllamaOnline;
+        else if (lower.Contains("forge")) isOnline = Telemetry.IsForgeOnline;
+        else if (lower.Contains("comfy")) isOnline = Telemetry.IsComfyOnline;
 
         string action = isOnline ? "stop" : "start";
         ServiceConfirmMessage = $"Are you sure you want to {action} the {serviceName} engine?";
@@ -1178,17 +1180,48 @@ public partial class MainViewModel : ObservableObject
     [RelayCommand]
     public async Task ToggleEngineAsync(string engineName)
     {
+        var rawName = engineName.Trim();
+        var normalized = rawName.ToLowerInvariant().Replace(" sd", "");
+        if (normalized.Contains("comfy")) normalized = "comfy";
+        else if (normalized.Contains("forge")) normalized = "forge";
+        else if (normalized.Contains("ollama")) normalized = "ollama";
+        else if (normalized.Contains("audio")) normalized = "audio";
+
+        bool isOnline = false;
+        if (normalized == "ollama") isOnline = Telemetry.IsOllamaOnline;
+        else if (normalized == "forge") isOnline = Telemetry.IsForgeOnline;
+        else if (normalized == "comfy") isOnline = Telemetry.IsComfyOnline;
+
+        bool isStart = !isOnline;
+        string actionWord = isStart ? "start" : "stop";
+
+        ToastService.Instance.Show($"{(isStart ? "Starting" : "Stopping")} {rawName}...", ToastType.Info, 2500);
+
         try
         {
+            var endpoint = isStart ? $"/api/{normalized}/start" : $"/api/{normalized}/stop";
             var content = new StringContent(
-                JsonSerializer.Serialize(new { engine = engineName }),
+                JsonSerializer.Serialize(new { engine = normalized }),
                 System.Text.Encoding.UTF8,
                 "application/json"
             );
-            await Http.PostAsync($"{ApiBase}/api/comfy/start", content);
+            var response = await Http.PostAsync($"{ApiBase}{endpoint}", content);
+            if (response.IsSuccessStatusCode)
+            {
+                ToastService.Instance.Show($"{rawName} {(isStart ? "started" : "stopped")} successfully.", ToastType.Success);
+            }
+            else
+            {
+                var errorText = await response.Content.ReadAsStringAsync();
+                var msg = string.IsNullOrWhiteSpace(errorText) ? $"Server returned {response.StatusCode}" : errorText;
+                ToastService.Instance.Show($"Failed to {actionWord} {rawName}: {msg}", ToastType.Error, 6000);
+            }
             await RefreshStatusAsync();
         }
-        catch { }
+        catch (Exception ex)
+        {
+            ToastService.Instance.Show($"Error while attempting to {actionWord} {rawName}: {ex.Message}", ToastType.Error, 6000);
+        }
     }
 
     [RelayCommand]

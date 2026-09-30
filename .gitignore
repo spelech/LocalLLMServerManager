@@ -496,3 +496,6 @@ $RECYCLE.BIN/
 
 # Vim temporary swap files
 *.swp
+
+# Playwright video traces
+docs/images/videos/

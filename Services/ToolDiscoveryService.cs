@@ -307,13 +307,13 @@ public class ToolDiscoveryService : IToolDiscoveryService
     {
         var targetSubdirs = new[]
         {
+            "webui_forge",
             "SD_Forge",
             "sd_forge",
             "SD-Forge",
             "sd-forge",
             "webui_forge_cu121_torch231",
             "stable-diffusion-webui-forge",
-            "webui_forge",
             "Forge",
             "forge",
             "stable-diffusion-webui",
@@ -322,11 +322,11 @@ public class ToolDiscoveryService : IToolDiscoveryService
 
         var runnerNames = new[]
         {
+            "run.bat",
             "webui-user.bat",
             "webui.bat",
             "webui.sh",
             "webui-user.sh",
-            "run.bat",
             "run.sh",
             "start.sh",
             "launch.py",
