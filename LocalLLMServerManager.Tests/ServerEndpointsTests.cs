@@ -1,5 +1,6 @@
 using System;
 using System.IO;
+using System.Net;
 using System.Net.Http;
 using System.Net.Http.Json;
 using System.Text.Json;
@@ -201,28 +202,17 @@ public class ServerEndpointsTests : IClassFixture<AppTestServerFixture>
     }
 
     [Fact]
-    public async Task CivitaiDownloadAndOllamaPull_Endpoints_ReturnStreamingResponse()
+    public async Task CivitaiAndHfDownload_AndOllamaPs_Endpoints_ReturnValidResponses()
     {
-        try
-        {
-            var civitaiResp = await _client.GetAsync("/api/civitai/download?fileUrl=http://127.0.0.1:5299/health&fileName=test.safetensors&modelType=Checkpoint");
-            Assert.NotNull(civitaiResp);
-        }
-        catch { }
+        var civitaiResp = await _client.GetAsync($"/api/civitai/download?fileUrl={AppTestServerFixture.TestBaseUrl}/health&fileName=test.safetensors&modelType=Checkpoint");
+        Assert.NotNull(civitaiResp);
 
-        try
-        {
-            var hfResp = await _client.GetAsync("/api/hf/download?fileUrl=http://127.0.0.1:5299/health&fileName=test.gguf&pipelineTag=text-generation");
-            Assert.NotNull(hfResp);
-        }
-        catch { }
+        var hfResp = await _client.GetAsync($"/api/hf/download?fileUrl={AppTestServerFixture.TestBaseUrl}/health&fileName=test.gguf&pipelineTag=text-generation");
+        Assert.NotNull(hfResp);
 
-        try
-        {
-            var pullResp = await _client.PostAsJsonAsync("/api/ollama/pull", new { model = "test-model" });
-            Assert.NotNull(pullResp);
-        }
-        catch { }
+        var psResp = await _client.GetAsync("/api/ollama/ps");
+        Assert.NotNull(psResp);
+        Assert.True(psResp.IsSuccessStatusCode || psResp.StatusCode == HttpStatusCode.BadGateway || psResp.StatusCode == HttpStatusCode.InternalServerError);
     }
 
 

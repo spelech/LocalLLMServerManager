@@ -246,6 +246,12 @@ public partial class TelemetryViewModel : ObservableObject
 
         if (card == null) return;
 
+        if (OnManageServiceRequested != null)
+        {
+            OnManageServiceRequested.Invoke(card.DisplayName);
+            return;
+        }
+
         bool isOnline = card.IsOnline;
         bool isStarting = !isOnline;
         card.IsStarting = isStarting;
