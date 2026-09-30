@@ -417,4 +417,81 @@ public class FluidStudioAndCopilotUiTests
 
         window.Close();
     }
+
+    [AvaloniaFact]
+    public void EngineStudioTabControl_EndToEndGenerationFromDock_TriggersExpectedWorkflowAcrossAllModalities()
+    {
+        MainViewModel.EnableAutomaticPolling = false;
+        var vm = new MainViewModel();
+        var studio = new EngineStudioTabControl { DataContext = vm };
+        var window = new Window { Content = studio, Width = 1280, Height = 900 };
+        window.Show();
+        Avalonia.Threading.Dispatcher.UIThread.RunJobs();
+
+        var buttons = studio.GetVisualDescendants().OfType<Button>().ToList();
+        var generateBtn = buttons.FirstOrDefault(b => b.Command == vm.GenerateFromDockCommand);
+        Assert.NotNull(generateBtn);
+
+        var promptBox = studio.FindControl<TextBox>("PromptDockInput");
+        Assert.NotNull(promptBox);
+
+        // 1. Image Modality Generation from Dock
+        vm.SelectModality("Image");
+        vm.PromptText = "Cyberpunk neon street, octane render";
+        Avalonia.Threading.Dispatcher.UIThread.RunJobs();
+
+        generateBtn.Command?.Execute(null);
+        Avalonia.Threading.Dispatcher.UIThread.RunJobs();
+        Assert.Equal("Cyberpunk neon street, octane render", vm.ImagePrompt);
+
+        // 2. Text Modality Generation from Dock
+        vm.SelectModality("Text");
+        vm.PromptText = "Explain quantum computing";
+        Avalonia.Threading.Dispatcher.UIThread.RunJobs();
+
+        generateBtn.Command?.Execute(null);
+        Avalonia.Threading.Dispatcher.UIThread.RunJobs();
+        Assert.Equal("Explain quantum computing", vm.OllamaPrompt);
+        Assert.True(vm.IsGeneratingOllamaText || !string.IsNullOrWhiteSpace(vm.OllamaResponseText));
+
+        // 3. Video Modality Generation from Dock
+        vm.SelectModality("Video");
+        vm.PromptText = "Cinematic drone shot flying over waterfalls";
+        Avalonia.Threading.Dispatcher.UIThread.RunJobs();
+
+        generateBtn.Command?.Execute(null);
+        Avalonia.Threading.Dispatcher.UIThread.RunJobs();
+        Assert.Equal("Cinematic drone shot flying over waterfalls", vm.VideoPrompt);
+
+        // 4. 3D Mesh Modality Generation from Dock
+        vm.SelectModality("3D Mesh");
+        vm.PromptText = "Ornate ancient sword with glowing crystal blade";
+        Avalonia.Threading.Dispatcher.UIThread.RunJobs();
+
+        generateBtn.Command?.Execute(null);
+        Avalonia.Threading.Dispatcher.UIThread.RunJobs();
+        Assert.Equal("Ornate ancient sword with glowing crystal blade", vm.Prompt3D);
+
+        // 5. Audio Modality Generation from Dock
+        vm.SelectModality("Audio");
+        vm.PromptText = "Narrate a story about space exploration";
+        Avalonia.Threading.Dispatcher.UIThread.RunJobs();
+
+        generateBtn.Command?.Execute(null);
+        Avalonia.Threading.Dispatcher.UIThread.RunJobs();
+        Assert.Equal("Narrate a story about space exploration", vm.Audio?.Prompt);
+
+        // 6. Diagnostic Test Flight Execution from UI Button
+        var testFlightBtn = studio.FindControl<Button>("DiagnosticTestFlightButton");
+        Assert.NotNull(testFlightBtn);
+        testFlightBtn.Command?.Execute(null);
+        Avalonia.Threading.Dispatcher.UIThread.RunJobs();
+
+        Assert.True(vm.IsTestFlightOpen);
+        var modal = studio.GetVisualDescendants().OfType<TestFlightModalControl>().FirstOrDefault();
+        Assert.NotNull(modal);
+        Assert.True(modal.IsVisible);
+
+        window.Close();
+    }
 }
