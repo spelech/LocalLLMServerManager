@@ -611,6 +611,7 @@ public partial class MainViewModel : ObservableObject
     public bool IsVideoWorkflowActive => !IsStickerStudioActive && SelectedStudioMode == "Video";
     public bool Is3DMeshWorkflowActive => !IsStickerStudioActive && SelectedStudioMode == "3D Mesh";
     public bool IsAudioWorkflowActive => !IsStickerStudioActive && SelectedStudioMode == "Audio";
+    public bool IsStickerModalityActive => IsStickerStudioActive || SelectedStudioMode == "Sticker Studio" || SelectedModality == "Sticker" || SelectedModality == "Sticker Studio";
 
     [ObservableProperty]
     private string _ollamaPrompt = "Explain how local LLM quantization works in plain language.";

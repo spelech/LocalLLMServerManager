@@ -11,67 +11,69 @@
     <UserControl.Styles>
         <!-- Modality Pill Buttons -->
         <Style Selector="Button.modality-pill">
-            <Setter Property="Background" Value="{StaticResource BgSurfaceBrush}" />
-            <Setter Property="Foreground" Value="{StaticResource TextMutedBrush}" />
+            <Setter Property="Background" Value="#0F172A" />
+            <Setter Property="Foreground" Value="#94A3B8" />
             <Setter Property="BorderThickness" Value="1" />
-            <Setter Property="BorderBrush" Value="{StaticResource GlassBorderBrush}" />
-            <Setter Property="CornerRadius" Value="16" />
-            <Setter Property="Height" Value="32" />
+            <Setter Property="BorderBrush" Value="#1E293B" />
+            <Setter Property="CornerRadius" Value="18" />
+            <Setter Property="Height" Value="36" />
             <Setter Property="Padding" Value="14,6" />
             <Setter Property="Cursor" Value="Hand" />
             <Setter Property="FontWeight" Value="SemiBold" />
         </Style>
         <Style Selector="Button.modality-pill /template/ ContentPresenter#PART_ContentPresenter">
-            <Setter Property="CornerRadius" Value="16" />
+            <Setter Property="CornerRadius" Value="18" />
         </Style>
         <Style Selector="Button.modality-pill:pointerover /template/ ContentPresenter#PART_ContentPresenter">
-            <Setter Property="Background" Value="{StaticResource BgCardBrush}" />
-            <Setter Property="BorderBrush" Value="{StaticResource PrimaryBrush}" />
-            <Setter Property="Foreground" Value="{StaticResource TextMainBrush}" />
+            <Setter Property="Background" Value="#1E293B" />
+            <Setter Property="BorderBrush" Value="#388BFD" />
+            <Setter Property="Foreground" Value="#FFFFFF" />
         </Style>
         <Style Selector="Button.modality-pill.active">
-            <Setter Property="Foreground" Value="{StaticResource TextMainBrush}" />
+            <Setter Property="Foreground" Value="#FFFFFF" />
         </Style>
         <Style Selector="Button.modality-pill.active /template/ ContentPresenter#PART_ContentPresenter">
-            <Setter Property="Background" Value="#1A388BFD" />
-            <Setter Property="BorderBrush" Value="{StaticResource PrimaryBrush}" />
-            <Setter Property="Foreground" Value="{StaticResource TextMainBrush}" />
+            <Setter Property="Background" Value="#2563EB" />
+            <Setter Property="BorderBrush" Value="#60A5FA" />
+            <Setter Property="Foreground" Value="#FFFFFF" />
         </Style>
 
         <!-- Prompt Starter Suggestion Chips -->
         <Style Selector="Button.starter-chip">
-            <Setter Property="Background" Value="{StaticResource BgSurfaceBrush}" />
-            <Setter Property="Foreground" Value="{StaticResource TextMutedBrush}" />
+            <Setter Property="Background" Value="#111827" />
+            <Setter Property="Foreground" Value="#CBD5E1" />
             <Setter Property="BorderThickness" Value="1" />
-            <Setter Property="BorderBrush" Value="{StaticResource GlassBorderBrush}" />
-            <Setter Property="CornerRadius" Value="12" />
-            <Setter Property="Padding" Value="10,6" />
+            <Setter Property="BorderBrush" Value="#1F2937" />
+            <Setter Property="CornerRadius" Value="8" />
+            <Setter Property="Padding" Value="12,7" />
             <Setter Property="Cursor" Value="Hand" />
             <Setter Property="FontSize" Value="11" />
+            <Setter Property="FontWeight" Value="Medium" />
         </Style>
         <Style Selector="Button.starter-chip /template/ ContentPresenter#PART_ContentPresenter">
-            <Setter Property="CornerRadius" Value="12" />
+            <Setter Property="CornerRadius" Value="8" />
         </Style>
         <Style Selector="Button.starter-chip:pointerover /template/ ContentPresenter#PART_ContentPresenter">
-            <Setter Property="Background" Value="{StaticResource BgCardBrush}" />
-            <Setter Property="BorderBrush" Value="{StaticResource PrimaryBrush}" />
-            <Setter Property="Foreground" Value="{StaticResource TextMainBrush}" />
+            <Setter Property="Background" Value="#1E293B" />
+            <Setter Property="BorderBrush" Value="#388BFD" />
+            <Setter Property="Foreground" Value="#38BDF8" />
         </Style>
 
         <!-- Aspect Ratio Option Pill -->
         <Style Selector="Button.aspect-pill">
-            <Setter Property="Background" Value="{StaticResource BgSurfaceBrush}" />
-            <Setter Property="Foreground" Value="{StaticResource TextMutedBrush}" />
+            <Setter Property="Background" Value="#0F172A" />
+            <Setter Property="Foreground" Value="#94A3B8" />
             <Setter Property="BorderThickness" Value="1" />
-            <Setter Property="BorderBrush" Value="{StaticResource GlassBorderBrush}" />
+            <Setter Property="BorderBrush" Value="#1E293B" />
             <Setter Property="CornerRadius" Value="6" />
             <Setter Property="Padding" Value="8,4" />
             <Setter Property="Cursor" Value="Hand" />
             <Setter Property="FontSize" Value="11" />
         </Style>
         <Style Selector="Button.aspect-pill:pointerover /template/ ContentPresenter#PART_ContentPresenter">
-            <Setter Property="Background" Value="{StaticResource BgCardBrush}" />
-            <Setter Property="Foreground" Value="{StaticResource TextMainBrush}" />
+            <Setter Property="Background" Value="#1E293B" />
+            <Setter Property="Foreground" Value="#FFFFFF" />
+            <Setter Property="BorderBrush" Value="#388BFD" />
         </Style>
     </UserControl.Styles>
 
@@ -100,10 +102,10 @@
         <!-- ======================================================== -->
         <!-- ROW 1: TOP MODALITY SELECTOR BAR                         -->
         <!-- ======================================================== -->
-        <Border Grid.Row="1" Classes="matte-card" Padding="12,8" Margin="0,0,0,12" Background="{StaticResource BgSurfaceBrush}">
+        <Border Grid.Row="1" Background="#0A0F1D" BorderBrush="#1E2B3E" BorderThickness="1" CornerRadius="10" Padding="12,8" Margin="0,0,0,12" BoxShadow="0 4 16 0 #30000000">
             <Grid ColumnDefinitions="Auto, *, Auto">
                 <!-- Modality Pill Buttons -->
-                <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+                <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
                     <!-- Image Modality Pill -->
                     <Button Classes="modality-pill"
                             Classes.active="{Binding IsImageModalityActive}"
@@ -163,17 +165,29 @@
                             <TextBlock Text="Audio" FontSize="12" VerticalAlignment="Center"/>
                         </StackPanel>
                     </Button>
+
+                    <!-- Sticker Studio Modality Pill -->
+                    <Button Classes="modality-pill"
+                            Classes.active="{Binding IsStickerModalityActive}"
+                            Command="{Binding SelectModalityCommand}"
+                            CommandParameter="Sticker Studio"
+                            ToolTip.Tip="Sticker Studio: Reference image to die-cut vinyl sticker generation">
+                        <StackPanel Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
+                            <TextBlock Text="🏷️" FontSize="13" VerticalAlignment="Center"/>
+                            <TextBlock Text="Stickers" FontSize="12" VerticalAlignment="Center"/>
+                        </StackPanel>
+                    </Button>
                 </StackPanel>
 
-                <!-- Quick Engine Controls & Diagnostic Test Flight -->
+                <!-- Right Context Badges & Diagnostic Action -->
                 <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
-                    <!-- Engine Quick Toggles -->
-                    <Button Content="▶️ Forge" Command="{Binding ToggleEngineCommand}" CommandParameter="forge"
-                            Classes="matte-secondary" Padding="10,4" FontSize="11" ToolTip.Tip="Toggle Stable Diffusion Forge Engine (Port 7860)"/>
-                    <Button Content="▶️ ComfyUI" Command="{Binding ToggleEngineCommand}" CommandParameter="comfy"
-                            Classes="matte-secondary" Padding="10,4" FontSize="11" ToolTip.Tip="Toggle ComfyUI Video &amp; 3D Engine (Port 8188)"/>
-
-                    <Rectangle Width="1" Height="18" Fill="{StaticResource GlassBorderBrush}" VerticalAlignment="Center" Margin="2,0"/>
+                    <!-- Dynamic Active Model Badge -->
+                    <Border Background="#10192A" BorderBrush="#1E2E44" BorderThickness="1" CornerRadius="14" Padding="10,4">
+                        <StackPanel Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
+                            <Ellipse Width="6" Height="6" Fill="{StaticResource OnlineBrush}" VerticalAlignment="Center"/>
+                            <TextBlock Text="{Binding Studio.ActiveModelBadge}" FontSize="11" Foreground="{StaticResource AccentBrush}" FontWeight="SemiBold" VerticalAlignment="Center"/>
+                        </StackPanel>
+                    </Border>
 
                     <!-- Diagnostic Test Flight Action -->
                     <Button x:Name="DiagnosticTestFlightButton"
@@ -197,10 +211,10 @@
                 <!-- 1. IMAGE CANVAS VIEWPORT -->
                 <StackPanel Spacing="12" IsVisible="{Binding IsImageModalityActive}">
                     <!-- Main Canvas Viewport Container -->
-                    <Border Classes="matte-card" MinHeight="360" Background="#070A10" CornerRadius="8" Padding="16" BorderBrush="{StaticResource GlassBorderBrush}">
+                    <Border Background="#0A101D" BorderBrush="#1B283C" BorderThickness="1" CornerRadius="12" Padding="16" BoxShadow="0 4 20 0 #30000000">
                         <Grid RowDefinitions="*, Auto">
                             <!-- Canvas Area / Pan-Zoom Preview -->
-                            <Border Grid.Row="0" MinHeight="260" Background="#0C101A" CornerRadius="6" BorderBrush="{StaticResource GlassBorderBrush}" BorderThickness="1">
+                            <Border Grid.Row="0" MinHeight="260" Background="#050812" CornerRadius="8" BorderBrush="#182335" BorderThickness="1">
                                 <Grid>
                                     <!-- Rendered Image Display (if any) or Zero-State Prompt Suggestions -->
                                     <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center" Spacing="12" Margin="24">
@@ -252,7 +266,7 @@
 
                 <!-- 2. TEXT STREAM VIEWPORT -->
                 <StackPanel Spacing="12" IsVisible="{Binding IsTextModalityActive}">
-                    <Border Classes="matte-card" MinHeight="360" Background="#070A10" CornerRadius="8" Padding="16" BorderBrush="{StaticResource GlassBorderBrush}">
+                    <Border Background="#0A101D" BorderBrush="#1B283C" BorderThickness="1" CornerRadius="12" Padding="16" BoxShadow="0 4 20 0 #30000000">
                         <Grid RowDefinitions="Auto, *, Auto">
                             <!-- Stream Header & Active Model Badge -->
                             <Grid Grid.Row="0" ColumnDefinitions="*, Auto" Margin="0,0,0,10">
@@ -266,13 +280,13 @@
                             </Grid>
 
                             <!-- Stream Content Area / Response Viewer -->
-                            <Border Grid.Row="1" Background="#0C101A" CornerRadius="6" Padding="14" MinHeight="220" BorderBrush="{StaticResource GlassBorderBrush}" BorderThickness="1">
+                            <Border Grid.Row="1" Background="#050812" CornerRadius="8" Padding="14" MinHeight="220" BorderBrush="#182335" BorderThickness="1">
                                 <ScrollViewer MaxHeight="380">
                                     <Panel>
                                         <!-- Active Stream Response -->
                                         <SelectableTextBlock Text="{Binding OllamaResponseText}"
-                                                             IsVisible="{Binding OllamaResponseText, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"
-                                                             TextWrapping="Wrap" FontSize="12" FontFamily="Consolas, monospace" Foreground="{StaticResource TextMainBrush}"/>
+                                                              IsVisible="{Binding OllamaResponseText, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"
+                                                              TextWrapping="Wrap" FontSize="12" FontFamily="Consolas, monospace" Foreground="{StaticResource TextMainBrush}"/>
 
                                         <!-- Zero-State Prompt Suggestions when empty -->
                                         <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center" Spacing="10"
@@ -320,9 +334,9 @@
                         IsVisible="{Binding IsGeneratingVideo}" />
 
                     <!-- Generous Video Player Container -->
-                    <Border Classes="matte-card" MinHeight="360" Background="#070A10" CornerRadius="8" Padding="16" BorderBrush="{StaticResource GlassBorderBrush}">
+                    <Border Background="#0A101D" BorderBrush="#1B283C" BorderThickness="1" CornerRadius="12" Padding="16" BoxShadow="0 4 20 0 #30000000">
                         <Grid RowDefinitions="*, Auto, Auto">
-                            <Border Grid.Row="0" MinHeight="260" Background="#050B14" CornerRadius="6" ClipToBounds="True">
+                            <Border Grid.Row="0" MinHeight="260" Background="#050812" CornerRadius="8" BorderBrush="#182335" BorderThickness="1" ClipToBounds="True">
                                 <Grid>
                                     <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center" Spacing="10">
                                         <TextBlock Text="🎬" FontSize="44" HorizontalAlignment="Center"/>
@@ -382,9 +396,9 @@
 
                 <!-- 4. 3D MESH VIEWPORT -->
                 <StackPanel Spacing="12" IsVisible="{Binding Is3DModalityActive}">
-                    <Border Classes="matte-card" MinHeight="360" Background="#070A10" CornerRadius="8" Padding="16" BorderBrush="{StaticResource GlassBorderBrush}">
+                    <Border Background="#0A101D" BorderBrush="#1B283C" BorderThickness="1" CornerRadius="12" Padding="16" BoxShadow="0 4 20 0 #30000000">
                         <Grid RowDefinitions="*, Auto">
-                            <Border Grid.Row="0" MinHeight="260" Background="#090E18" CornerRadius="6" ClipToBounds="True">
+                            <Border Grid.Row="0" MinHeight="260" Background="#050812" CornerRadius="8" BorderBrush="#182335" BorderThickness="1" ClipToBounds="True">
                                 <Grid>
                                     <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center" Spacing="10">
                                         <TextBlock Text="🧊" FontSize="44" HorizontalAlignment="Center"/>
@@ -430,9 +444,9 @@
 
                 <!-- 5. AUDIO VIEWPORT -->
                 <StackPanel Spacing="12" IsVisible="{Binding IsAudioModalityActive}">
-                    <Border Classes="matte-card" MinHeight="360" Background="#070A10" CornerRadius="8" Padding="16" BorderBrush="{StaticResource GlassBorderBrush}">
+                    <Border Background="#0A101D" BorderBrush="#1B283C" BorderThickness="1" CornerRadius="12" Padding="16" BoxShadow="0 4 20 0 #30000000">
                         <Grid RowDefinitions="*, Auto">
-                            <Border Grid.Row="0" MinHeight="260" Background="#080D1A" CornerRadius="6" ClipToBounds="True">
+                            <Border Grid.Row="0" MinHeight="260" Background="#050812" CornerRadius="8" BorderBrush="#182335" BorderThickness="1" ClipToBounds="True">
                                 <Grid>
                                     <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center" Spacing="10">
                                         <TextBlock Text="🎙️" FontSize="44" HorizontalAlignment="Center"/>
@@ -474,6 +488,11 @@
                         </Grid>
                     </Border>
                 </StackPanel>
+
+                <!-- 6. STICKER STUDIO VIEWPORT -->
+                <StackPanel Spacing="12" IsVisible="{Binding IsStickerModalityActive}">
+                    <controls:StickerStudioControl DataContext="{Binding StickerStudio}"/>
+                </StackPanel>
             </Panel>
         </ScrollViewer>
 
@@ -482,21 +501,21 @@
         <!-- ======================================================== -->
         <StackPanel Grid.Row="3" Spacing="6">
             <!-- PARAMETERS SLIDE-UP POPOVER / FLYOUT PANEL -->
-            <Border Classes="matte-card"
-                    Background="{StaticResource BgSurfaceBrush}"
-                    BorderBrush="{StaticResource PrimaryBrush}"
+            <Border Background="#0C1425"
+                    BorderBrush="#2563EB"
                     BorderThickness="1"
-                    CornerRadius="8"
-                    Padding="14"
+                    CornerRadius="10"
+                    Padding="16,14"
+                    BoxShadow="0 -8 32 0 #60000000"
                     IsVisible="{Binding Studio.IsParametersFlyoutOpen}"
                     Margin="0,0,0,4">
                 <Grid RowDefinitions="Auto, Auto">
                     <!-- Flyout Header -->
-                    <Grid Grid.Row="0" ColumnDefinitions="*, Auto" Margin="0,0,0,10">
+                    <Grid Grid.Row="0" ColumnDefinitions="*, Auto" Margin="0,0,0,12">
                         <StackPanel Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
                             <TextBlock Text="⚙️ Fine-Tuning Generation Parameters" FontSize="13" FontWeight="Bold" Foreground="{StaticResource TextMainBrush}"/>
-                            <Border Classes="matte-pill" Padding="6,2">
-                                <TextBlock Text="{Binding Studio.ActiveAspectPreset}" FontSize="10" Foreground="{StaticResource PrimaryBrush}"/>
+                            <Border Background="#1E293B" CornerRadius="10" Padding="8,2">
+                                <TextBlock Text="{Binding Studio.ActiveAspectPreset, StringFormat='Aspect: {0}'}" FontSize="10" Foreground="{StaticResource PrimaryBrush}" FontWeight="SemiBold"/>
                             </Border>
                         </StackPanel>
                         <Button Grid.Column="1" Content="✕" Command="{Binding Studio.ToggleParametersFlyoutCommand}" Classes="matte-secondary" Padding="8,2" FontSize="10"/>
@@ -505,7 +524,7 @@
                     <!-- Sliders & Inputs -->
                     <Grid Grid.Row="1" ColumnDefinitions="*, *, *, *, *">
                         <!-- Steps -->
-                        <StackPanel Grid.Column="0" Spacing="4" Margin="0,0,8,0">
+                        <StackPanel Grid.Column="0" Spacing="4" Margin="0,0,10,0">
                             <Grid ColumnDefinitions="*, Auto">
                                 <TextBlock Text="Steps" FontSize="11" Foreground="{StaticResource TextMutedBrush}"/>
                                 <TextBlock Grid.Column="1" Text="{Binding StudioSteps}" FontSize="11" FontWeight="Bold" Foreground="{StaticResource AccentBrush}"/>
@@ -514,7 +533,7 @@
                         </StackPanel>
 
                         <!-- CFG Scale -->
-                        <StackPanel Grid.Column="1" Spacing="4" Margin="4,0,8,0">
+                        <StackPanel Grid.Column="1" Spacing="4" Margin="4,0,10,0">
                             <Grid ColumnDefinitions="*, Auto">
                                 <TextBlock Text="CFG Scale" FontSize="11" Foreground="{StaticResource TextMutedBrush}"/>
                                 <TextBlock Grid.Column="1" Text="{Binding StudioCfgScale, StringFormat='{}{0:F1}'}" FontSize="11" FontWeight="Bold" Foreground="{StaticResource AccentBrush}"/>
@@ -523,7 +542,7 @@
                         </StackPanel>
 
                         <!-- Denoise -->
-                        <StackPanel Grid.Column="2" Spacing="4" Margin="4,0,8,0">
+                        <StackPanel Grid.Column="2" Spacing="4" Margin="4,0,10,0">
                             <Grid ColumnDefinitions="*, Auto">
                                 <TextBlock Text="Denoise" FontSize="11" Foreground="{StaticResource TextMutedBrush}"/>
                                 <TextBlock Grid.Column="1" Text="{Binding StudioDenoise, StringFormat='{}{0:F2}'}" FontSize="11" FontWeight="Bold" Foreground="{StaticResource AccentBrush}"/>
@@ -532,7 +551,7 @@
                         </StackPanel>
 
                         <!-- Seed -->
-                        <StackPanel Grid.Column="3" Spacing="4" Margin="4,0,8,0">
+                        <StackPanel Grid.Column="3" Spacing="4" Margin="4,0,10,0">
                             <TextBlock Text="Seed (-1 = Random)" FontSize="11" Foreground="{StaticResource TextMutedBrush}"/>
                             <NumericUpDown Value="{Binding StudioSeed}" Minimum="-1" Maximum="999999999" Height="28"/>
                         </StackPanel>
@@ -552,31 +571,31 @@
             </Border>
 
             <!-- CHAT-STYLE CREATIVE PROMPT DOCK -->
-            <Border Classes="matte-card"
-                    Background="{StaticResource BgSurfaceBrush}"
-                    BorderBrush="{StaticResource GlassBorderBrush}"
+            <Border Background="#090E1A"
+                    BorderBrush="#1F2E44"
                     BorderThickness="1"
-                    CornerRadius="8"
-                    Padding="12,10">
+                    CornerRadius="12"
+                    BoxShadow="0 -4 20 0 #40000000"
+                    Padding="14,10">
                 <Grid RowDefinitions="Auto, Auto">
                     <!-- Multi-Line Autosizing Prompt Textarea -->
                     <TextBox x:Name="PromptDockInput"
                              Text="{Binding PromptText}"
                              AcceptsReturn="True"
                              TextWrapping="Wrap"
-                             MinHeight="44"
+                             MinHeight="46"
                              MaxHeight="120"
                              PlaceholderText="{Binding ActivePromptPlaceholder}"
                              BorderThickness="0"
                              Background="Transparent"
                              FontSize="13"
-                             Foreground="{StaticResource TextMainBrush}"/>
+                             Foreground="#F8FAFC"/>
 
                     <!-- Context Pill Bar -->
                     <Grid Grid.Row="1" ColumnDefinitions="Auto, *, Auto" Margin="0,8,0,0">
                         <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
                             <!-- Dynamic Active Model Badge Pill -->
-                            <Border Classes="matte-pill" Padding="8,4" Background="#1E293B">
+                            <Border Background="#10192A" BorderBrush="#1E2E44" BorderThickness="1" CornerRadius="14" Padding="8,4">
                                 <StackPanel Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
                                     <Ellipse Width="6" Height="6" Fill="{StaticResource OnlineBrush}" VerticalAlignment="Center"/>
                                     <TextBlock Text="{Binding Studio.ActiveModelBadge}" FontSize="11" FontWeight="SemiBold" Foreground="{StaticResource AccentBrush}" VerticalAlignment="Center"/>
@@ -598,16 +617,25 @@
                                     <TextBlock Text="Settings" VerticalAlignment="Center"/>
                                 </StackPanel>
                             </Button>
+
+                            <!-- Quick Aspect Ratio Presets directly in Dock -->
+                            <StackPanel Orientation="Horizontal" Spacing="4" Margin="6,0,0,0" VerticalAlignment="Center">
+                                <Button Classes="aspect-pill" Content="1:1" Command="{Binding SelectAspectPresetCommand}" CommandParameter="1:1" ToolTip.Tip="Square 1:1"/>
+                                <Button Classes="aspect-pill" Content="16:9" Command="{Binding SelectAspectPresetCommand}" CommandParameter="16:9" ToolTip.Tip="Landscape 16:9"/>
+                                <Button Classes="aspect-pill" Content="9:16" Command="{Binding SelectAspectPresetCommand}" CommandParameter="9:16" ToolTip.Tip="Portrait 9:16"/>
+                            </StackPanel>
                         </StackPanel>
 
                         <!-- Prominent Generate Action Button -->
                         <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
                             <Button Command="{Binding GenerateFromDockCommand}"
-                                    Classes="matte-primary"
-                                    Padding="16,8"
+                                    Background="#2563EB"
+                                    Foreground="White"
+                                    CornerRadius="8"
+                                    Padding="20,8"
                                     VerticalAlignment="Center">
                                 <StackPanel Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
-                                    <TextBlock Text="Generate ↵" FontWeight="Bold" FontSize="12" VerticalAlignment="Center"/>
+                                    <TextBlock Text="Generate ↵" FontWeight="Bold" FontSize="12" Foreground="White" VerticalAlignment="Center"/>
                                 </StackPanel>
                             </Button>
                         </StackPanel>

@@ -16,6 +16,7 @@ public partial class EngineStudioViewModel : ObservableObject
     [NotifyPropertyChangedFor(nameof(IsVideoModalityActive))]
     [NotifyPropertyChangedFor(nameof(Is3DModalityActive))]
     [NotifyPropertyChangedFor(nameof(IsAudioModalityActive))]
+    [NotifyPropertyChangedFor(nameof(IsStickerModalityActive))]
     [NotifyPropertyChangedFor(nameof(ActiveModelBadge))]
     [NotifyPropertyChangedFor(nameof(ActivePromptPlaceholder))]
     private string _selectedModality = "Image";
@@ -25,6 +26,7 @@ public partial class EngineStudioViewModel : ObservableObject
     public bool IsVideoModalityActive => SelectedModality == "Video";
     public bool Is3DModalityActive => SelectedModality == "3D Mesh";
     public bool IsAudioModalityActive => SelectedModality == "Audio";
+    public bool IsStickerModalityActive => SelectedModality == "Sticker" || SelectedModality == "Sticker Studio";
 
     [ObservableProperty]
     private bool _isParametersFlyoutOpen;
@@ -48,6 +50,10 @@ public partial class EngineStudioViewModel : ObservableObject
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(ActiveModelBadge))]
     private string _audioModel = "Kokoro TTS (af_heart)";
+
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(ActiveModelBadge))]
+    private string _stickerModel = "Sticker Studio (BirefNet + SDXL)";
 
     [ObservableProperty]
     private string _activeAspectPreset = "16:9";
@@ -86,6 +92,7 @@ public partial class EngineStudioViewModel : ObservableObject
         "Video" => !string.IsNullOrWhiteSpace(VideoModel) ? VideoModel : "Wan 2.2 / LTX-2.5",
         "3D Mesh" => !string.IsNullOrWhiteSpace(MeshModel) ? MeshModel : "TRELLIS V2 (Gaussian Splat)",
         "Audio" => !string.IsNullOrWhiteSpace(AudioModel) ? AudioModel : "Kokoro TTS (af_heart)",
+        "Sticker" or "Sticker Studio" => !string.IsNullOrWhiteSpace(StickerModel) ? StickerModel : "Sticker Studio (BirefNet + SDXL)",
         _ => "SDXL Base 1.0"
     };
 
@@ -96,6 +103,7 @@ public partial class EngineStudioViewModel : ObservableObject
         "Video" => "Describe action and motion for video generation (e.g. 'cinematic drone sweep over mountains')...",
         "3D Mesh" => "Describe a 3D object to sculpt or synthesize (e.g. 'ancient stone relic with glowing runes')...",
         "Audio" => "Describe audio atmosphere or enter speech to synthesize with Kokoro TTS...",
+        "Sticker" or "Sticker Studio" => "Describe a sticker design to generate with transparent background (e.g. 'cute astronaut cat sticker, die-cut vector')...",
         _ => "Describe what you want to create..."
     };
 
@@ -109,6 +117,7 @@ public partial class EngineStudioViewModel : ObservableObject
         OnPropertyChanged(nameof(IsVideoModalityActive));
         OnPropertyChanged(nameof(Is3DModalityActive));
         OnPropertyChanged(nameof(IsAudioModalityActive));
+        OnPropertyChanged(nameof(IsStickerModalityActive));
         OnPropertyChanged(nameof(ActiveModelBadge));
         OnPropertyChanged(nameof(ActivePromptPlaceholder));
     }
@@ -230,17 +239,27 @@ public partial class MainViewModel
     {
         if (string.IsNullOrWhiteSpace(modality)) return;
         SelectedModality = modality;
-        SelectedStudioMode = modality switch
+        if (modality == "Sticker" || modality == "Sticker Studio")
         {
-            "Image" => "Images",
-            _ => modality
-        };
+            IsStickerStudioActive = true;
+            SelectedStudioMode = "Sticker Studio";
+        }
+        else
+        {
+            IsStickerStudioActive = false;
+            SelectedStudioMode = modality switch
+            {
+                "Image" => "Images",
+                _ => modality
+            };
+        }
         Studio.SelectModality(modality);
         OnPropertyChanged(nameof(IsImageModalityActive));
         OnPropertyChanged(nameof(IsTextModalityActive));
         OnPropertyChanged(nameof(IsVideoModalityActive));
         OnPropertyChanged(nameof(Is3DModalityActive));
         OnPropertyChanged(nameof(IsAudioModalityActive));
+        OnPropertyChanged(nameof(IsStickerModalityActive));
         OnPropertyChanged(nameof(ActiveModelBadge));
         OnPropertyChanged(nameof(ActivePromptPlaceholder));
     }
