@@ -549,11 +549,11 @@ public class AvaloniaHeadlessInteractionTests
         vm.CloseTestFlight();
         Assert.False(vm.IsTestFlightOpen);
 
-        // Engine toggles
-        var forgeToggleBtn = buttons.FirstOrDefault(b => b.CommandParameter?.ToString() == "forge");
-        Assert.NotNull(forgeToggleBtn);
-        var comfyToggleBtn = buttons.FirstOrDefault(b => b.CommandParameter?.ToString() == "comfy");
-        Assert.NotNull(comfyToggleBtn);
+        // Modality selectors on top unified bar
+        var imageModalityBtn = buttons.FirstOrDefault(b => b.CommandParameter?.ToString() == "Image");
+        Assert.NotNull(imageModalityBtn);
+        var videoModalityBtn = buttons.FirstOrDefault(b => b.CommandParameter?.ToString() == "Video");
+        Assert.NotNull(videoModalityBtn);
 
         // Studio Preset bar controls
         var presetBar = studio.GetVisualDescendants().OfType<StudioPresetBarControl>().FirstOrDefault();

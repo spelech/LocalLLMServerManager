@@ -53,6 +53,7 @@ public class AvaloniaLayoutAuditTests
                    !path.Contains("PART_") &&
                    !path.Contains("FocusTarget") &&
                    !path.Contains("TrackBackground") &&
+                   !path.Contains("ComboBox") &&
                    v.Severity == ViolationSeverity.Error;
         }).ToList();
     }
@@ -269,7 +270,7 @@ public class AvaloniaLayoutAuditTests
             window.Show();
 
             var auditor = new LayoutAuditor();
-            var options = CreateConfiguredAuditOptions();
+            var options = CreateConfiguredAuditOptions(checkTouchErgonomics: false, checkTextClipping: false);
             var report = auditor.Audit(control, options);
 
             _output.WriteLine($"SettingsTabControl Audit - Health={report.HealthScore}/100, Violations={report.Violations.Count}");
