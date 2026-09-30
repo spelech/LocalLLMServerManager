@@ -134,9 +134,24 @@ public class ServicesAndEngineManagerTests
         }
     }
 
+    [Fact]
+    public async Task AiEngineManager_Ollama_StartStop_HandlesGracefully()
+    {
+        var manager = new AiEngineManager();
+        var logger = NullLogger.Instance;
+
+        bool stopped = await manager.StopOllamaAsync(logger);
+        Assert.True(stopped);
+
+        var stopResult = await manager.StopEngineAsync("ollama");
+        Assert.True(stopResult.Success);
+        Assert.Equal("ollama", stopResult.Engine);
+    }
+
     [Theory]
     [InlineData("forge")]
     [InlineData("comfyui")]
+    [InlineData("ollama")]
     [InlineData("unknown_engine_xyz")]
     public async Task AiEngineManager_StopEngineAsync_DispatchesExpectedEngine(string engineName)
     {

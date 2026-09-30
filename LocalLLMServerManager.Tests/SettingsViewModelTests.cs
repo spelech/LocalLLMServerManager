@@ -682,4 +682,28 @@ public class SettingsViewModelTests
         Assert.NotNull(ip);
         Assert.True(ip.Contains('.') || ip == "127.0.0.1");
     }
+
+    [Fact]
+    public void SelectCategory_SwitchesActiveCategoryProperties()
+    {
+        var vm = new SettingsViewModel();
+        Assert.Equal("Appearance", vm.SelectedCategory);
+        Assert.True(vm.IsAppearanceCategoryActive);
+        Assert.False(vm.IsEnginesCategoryActive);
+        Assert.False(vm.IsFeaturePacksCategoryActive);
+        Assert.False(vm.IsNetworkCategoryActive);
+
+        vm.SelectCategory("Engines");
+        Assert.Equal("Engines", vm.SelectedCategory);
+        Assert.False(vm.IsAppearanceCategoryActive);
+        Assert.True(vm.IsEnginesCategoryActive);
+
+        vm.SelectCategory("FeaturePacks");
+        Assert.Equal("FeaturePacks", vm.SelectedCategory);
+        Assert.True(vm.IsFeaturePacksCategoryActive);
+
+        vm.SelectCategory("Network");
+        Assert.Equal("Network", vm.SelectedCategory);
+        Assert.True(vm.IsNetworkCategoryActive);
+    }
 }

@@ -105,4 +105,106 @@ public class TelemetryViewModelTests
 
         window.Close();
     }
+
+    [Fact]
+    public void ManageService_WhenCallbackConfigured_InvokesCallbackWithServiceName()
+    {
+        var mockTelemetry = new Mock<ITelemetryService>();
+        var vm = new TelemetryViewModel(mockTelemetry.Object);
+        string? requestedService = null;
+        vm.OnManageServiceRequested = name => requestedService = name;
+
+        vm.ManageService("Ollama");
+
+        Assert.Equal("Ollama", requestedService);
+        Assert.False(vm.IsManageServiceModalOpen);
+    }
+
+    [Theory]
+    [InlineData("Ollama", "Offline", true)]
+    [InlineData("Ollama", "Online", false)]
+    [InlineData("Forge SD", "Offline", true)]
+    [InlineData("Forge SD", "Online", false)]
+    [InlineData("ComfyUI", "Offline", true)]
+    [InlineData("ComfyUI", "Online", false)]
+    public void ManageService_WhenNoCallback_ResolvesStartOrStopCorrectly(string service, string initialStatus, bool expectedIsStart)
+    {
+        var mockTelemetry = new Mock<ITelemetryService>();
+        var vm = new TelemetryViewModel(mockTelemetry.Object);
+        if (service == "Ollama") vm.OllamaStatus = initialStatus;
+        else if (service == "Forge SD") vm.ForgeStatus = initialStatus;
+        else if (service == "ComfyUI") vm.ComfyStatus = initialStatus;
+
+        vm.ManageService(service);
+
+        Assert.True(vm.IsManageServiceModalOpen);
+        Assert.Equal(service, vm.ManageServiceTarget);
+        Assert.Equal(expectedIsStart, vm.ManageServiceIsStart);
+        string actionWord = expectedIsStart ? "start" : "stop";
+        Assert.Contains(actionWord, vm.ManageServicePrompt);
+    }
+
+    [Fact]
+    public void TelemetryViewModel_EngineCards_ReflectEngineStatus()
+    {
+        var vm = new TelemetryViewModel();
+        Assert.NotNull(vm.OllamaCard);
+        Assert.NotNull(vm.ComfyUiCard);
+        Assert.NotNull(vm.ForgeCard);
+        Assert.NotNull(vm.KokoroCard);
+
+        vm.OllamaStatus = "Running";
+        vm.OllamaModelName = "qwen2.5-coder:1.5b";
+        Assert.True(vm.OllamaCard.IsOnline);
+        Assert.Equal("qwen2.5-coder:1.5b", vm.OllamaCard.ActiveModel);
+    }
+
+    [Fact]
+    public void TelemetryViewModel_EngineCards_InitialProperties()
+    {
+        var vm = new TelemetryViewModel();
+        Assert.Equal("ollama", vm.OllamaCard.EngineKey);
+        Assert.Equal("Ollama", vm.OllamaCard.DisplayName);
+        Assert.Equal(11434, vm.OllamaCard.Port);
+
+        Assert.Equal("comfyui", vm.ComfyUiCard.EngineKey);
+        Assert.Equal("ComfyUI", vm.ComfyUiCard.DisplayName);
+        Assert.Equal(8188, vm.ComfyUiCard.Port);
+
+        Assert.Equal("forge", vm.ForgeCard.EngineKey);
+        Assert.Equal("SD Forge", vm.ForgeCard.DisplayName);
+        Assert.Equal(7860, vm.ForgeCard.Port);
+
+        Assert.Equal("kokoro", vm.KokoroCard.EngineKey);
+        Assert.Equal("Kokoro TTS", vm.KokoroCard.DisplayName);
+        Assert.Equal(8880, vm.KokoroCard.Port);
+    }
+
+    [Fact]
+    public void TelemetryViewModel_UpdateFromTelemetry_UpdatesCardsProperly()
+    {
+        var vm = new TelemetryViewModel();
+        var data = new LocalLLMServerManager.Shared.Models.TelemetryData
+        {
+            OllamaOnline = true,
+            OllamaModel = "llama3:8b",
+            ComfyOnline = false,
+            ComfyStarting = true,
+            ForgeOnline = true,
+            ForgeModel = "sd_xl_base",
+            KokoroOnline = true,
+            KokoroModel = "af_sky"
+        };
+
+        vm.UpdateFromTelemetry(data);
+
+        Assert.True(vm.OllamaCard.IsOnline);
+        Assert.Equal("llama3:8b", vm.OllamaCard.ActiveModel);
+        Assert.False(vm.ComfyUiCard.IsOnline);
+        Assert.True(vm.ComfyUiCard.IsStarting);
+        Assert.True(vm.ForgeCard.IsOnline);
+        Assert.Equal("sd_xl_base", vm.ForgeCard.ActiveModel);
+        Assert.True(vm.KokoroCard.IsOnline);
+        Assert.Equal("af_sky", vm.KokoroCard.ActiveModel);
+    }
 }

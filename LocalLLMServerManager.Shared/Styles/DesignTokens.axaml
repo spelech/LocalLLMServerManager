@@ -1,18 +1,18 @@
 <ResourceDictionary xmlns="https://github.com/avaloniaui"
                     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
-    <!-- Color Definitions -->
-    <Color x:Key="BgDarkColor">#0d1117</Color>
-    <Color x:Key="BgSurfaceColor">#161b22</Color>
-    <Color x:Key="BgCardColor">#1c2128</Color>
-    <Color x:Key="BorderColor">#30363d</Color>
-    <Color x:Key="PrimaryColor">#388bfd</Color>
-    <Color x:Key="SecondaryColor">#58a6ff</Color>
-    <Color x:Key="AccentColor">#79c0ff</Color>
-    <Color x:Key="TextMainColor">#f0f6fc</Color>
-    <Color x:Key="TextMutedColor">#8b949e</Color>
-    <Color x:Key="OnlineColor">#238636</Color>
-    <Color x:Key="OfflineColor">#da3633</Color>
-    <Color x:Key="WarningColor">#d29922</Color>
+    <!-- Color Definitions (Carbon & Indigo Workstation) -->
+    <Color x:Key="BgDarkColor">#090A0F</Color>
+    <Color x:Key="BgSurfaceColor">#12141C</Color>
+    <Color x:Key="BgCardColor">#181B26</Color>
+    <Color x:Key="BorderColor">#222634</Color>
+    <Color x:Key="PrimaryColor">#6366F1</Color>
+    <Color x:Key="SecondaryColor">#4F46E5</Color>
+    <Color x:Key="AccentColor">#8B5CF6</Color>
+    <Color x:Key="TextMainColor">#F8FAFC</Color>
+    <Color x:Key="TextMutedColor">#94A3B8</Color>
+    <Color x:Key="OnlineColor">#10B981</Color>
+    <Color x:Key="OfflineColor">#EF4444</Color>
+    <Color x:Key="WarningColor">#F59E0B</Color>
 
     <!-- Solid Brushes -->
     <SolidColorBrush x:Key="BgDarkBrush" Color="{StaticResource BgDarkColor}" />
@@ -20,7 +20,7 @@
     <SolidColorBrush x:Key="BgCardBrush" Color="{StaticResource BgCardColor}" />
     <SolidColorBrush x:Key="GlassBorderBrush" Color="{StaticResource BorderColor}" />
     <SolidColorBrush x:Key="BorderColorBrush" Color="{StaticResource BorderColor}" />
-    <SolidColorBrush x:Key="BorderGlowBrush" Color="#388bfd" Opacity="0.4" />
+    <SolidColorBrush x:Key="BorderGlowBrush" Color="#6366F1" Opacity="0.4" />
     <SolidColorBrush x:Key="PrimaryBrush" Color="{StaticResource PrimaryColor}" />
     <SolidColorBrush x:Key="SecondaryBrush" Color="{StaticResource SecondaryColor}" />
     <SolidColorBrush x:Key="AccentBrush" Color="{StaticResource AccentColor}" />

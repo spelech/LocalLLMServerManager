@@ -91,38 +91,53 @@ Generating large video frames or 3D meshes requires substantial GPU memory. The 
 
 ---
 
-## Sequential 4-Step Studio Workflow
+## Fluid Studio Architecture & Creative Prompt Dock
 
-Every studio modality follows the same four-step sequential pathway:
+Multimodal Studio replaces rigid multi-step form boxes with an integrated, fluid creative studio experience:
 
 ```mermaid
-flowchart LR
-    S1["Step 1: Check Engine"] --> S2["Step 2: Choose Preset"]
-    S2 --> S3["Step 3: Set Parameters"]
-    S3 --> S4["Step 4: Launch & Generate"]
+flowchart TD
+    Top["Top Modality Selector Bar\n(🎨 Image | 💬 Text | 🎬 Video | 🧊 3D Mesh | 🎙️ Audio)"]
+    Center["Center Stage Viewport Canvas\n(Interactive Previews • Starter Chips • Style Preset Bar)"]
+    Bottom["Bottom Creative Prompt Dock\n(Multiline Textarea • Model Badge • Attach 📎 • Settings ⚙️ Flyout • Generate ↵)"]
+    Top --> Center
+    Center --> Bottom
 ```
 
-1. **Step 1: Check Engine Status:**
-   * Verify the status indicator pill in the modality header.
-   * Click **Toggle Engine** if the backend engine is offline.
+### 1. Top Modality Selector Bar
+- **Pill Switcher:** Seamlessly toggle active studio modalities:
+  - `🎨 Image`: Stable Diffusion XL & WebUI Forge photorealism and styles.
+  - `💬 Text`: Ollama local LLM high-speed quantized reasoning stream.
+  - `🎬 Video`: Wan 2.2 and LTX-2.5 Diffusion Transformer video synthesis.
+  - `🧊 3D Mesh`: TRELLIS V2 and Hunyuan3D Gaussian Splatting and mesh reconstruction.
+  - `🎙️ Audio`: Kokoro TTS neural voice synthesis and AudioCraft sound effects.
+- **Engine Quick Actions & Test Flight:** Directly launch or toggle backend engines and launch full diagnostic test flights from the header.
 
-2. **Step 2: Choose Preset:**
-   * Select a curated studio preset from the dropdown bar.
-   * Click a starter prompt chip to load proven settings instantly.
+### 2. Center Stage Viewport Canvas
+- **Generous Preview Stage:** View active generation outputs without layout shifting:
+  - **Image:** High-resolution zoom/pan canvas with active model badge and aspect ratio pill.
+  - **Text:** Streaming markdown response viewer with monospace code formatting.
+  - **Video:** Integrated HTML5/Avalonia video player with timeline scrubber and resolution badges.
+  - **3D Mesh:** Interactive 3D asset inspection with 3DGS Gaussian Splat options.
+  - **Audio:** Waveform player with playback scrubber, sample rate badges, and voice profiles.
+- **Style Presets & Starter Chips:** Select proven quality presets and starter prompts directly within the canvas.
 
-3. **Step 3: Configure Parameters:**
-   * Enter your text prompt and negative prompt.
-   * Adjust resolution, seed, frame count, or duration.
-
-4. **Step 4: Launch and Generate:**
-   * Click the primary generation button.
-   * Monitor progress in the 4-stage pipeline tracker.
+### 3. Bottom Creative Prompt Dock & Parameters Flyout
+- **Multiline Textarea:** Auto-sizing prompt editor with modality-aware placeholder suggestions.
+- **Context Pill Bar:** Dynamic active model badge pill (`Studio.ActiveModelBadge`), reference attachment button (`📎`), and parameters toggle (`⚙️ Settings`).
+- **Fine-Tuning Parameters Popover:** Slide-up drawer containing precision sliders for:
+  - **Steps:** 10 to 100 sampling steps.
+  - **CFG Scale:** 1.0 to 20.0 guidance intensity.
+  - **Denoise:** 0.00 to 1.00 latent denoising strength.
+  - **Seed:** Numeric seed (`-1` for randomized variations).
+  - **Aspect Ratio Selector:** Quick aspect ratio pills (`1:1`, `16:9`, `9:16`, `4:3`).
+- **Prominent Generate Action (`Generate ↵`):** Dispatches generation across the active modality pipeline with a single click.
 
 ---
 
 ## 4-Stage Pipeline Progress Tracker
 
-When generation starts, the Studio displays an interactive 4-stage progress tracker:
+When video, audio, or 3D generation starts, the Studio displays an interactive 4-stage progress tracker:
 
 * **Stage 1 (VRAM & Weights):** Allocates GPU memory and loads neural network weights.
 * **Stage 2 (Sampling & Denoising):** Executes iterative diffusion sampling steps with live percentage updates.

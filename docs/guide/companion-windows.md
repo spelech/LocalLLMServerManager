@@ -26,18 +26,20 @@ flowchart LR
 
 ## Pop Out a Companion Window
 
-Follow these steps to detach a tab into a companion window:
+Follow these steps to detach a tab or docked sidebar into an independent companion window:
 
 1. Open the **Local LLM Server Manager** desktop application.
-2. To pop out documentation:
-   - Click the pop-out icon (**⧉ Pop Out**) in the **Documentation** tab header.
-   - The Documentation companion window appears on the left flank of the main window.
-3. To pop out the AI Assistant:
-   - Click the pop-out icon (**⧉ Pop Out**) in the **AI Assistant** tab header.
-   - The AI Assist companion window appears on the right flank of the main window.
+2. To pop out the **Copilot Assistant**:
+   - In the docked right-hand Copilot sidebar (or Activity Rail Copilot toggle), ensure the **Copilot** tab is active.
+   - Click the pop-out icon (**⧉ Pop Out**) in the sidebar header.
+   - The AI Assist companion window appears and snaps magnetically to the right flank of the main window.
+3. To pop out **Documentation**:
+   - Select the **Docs** tab in the docked sidebar, or open the **Documentation** workspace from the activity rail.
+   - Click the **🗗 Pop Out Guide** button in the header toolbar.
+   - The Documentation companion window appears and snaps magnetically to the left flank of the main window.
 
 > [!NOTE]
-> When you pop out a tab, the main window collapses the tab content and displays a banner confirming that the companion window is active.
+> When you pop out a companion window, the corresponding docked section in the main window displays a banner confirming that the external companion window is active, freeing up screen real estate for your studio canvas.
 
 ---
 

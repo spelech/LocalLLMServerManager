@@ -121,6 +121,34 @@ $repos = @(
     "https://github.com/Kijai/ComfyUI-KJNodes.git" # Often useful for mask/video processing
 )
 
+function Find-ComfyPython {
+    param([string]$BasePath, [string]$CustomNodesPath)
+    $candidates = @(
+        (Join-Path $BasePath "python_embeded\python.exe"),
+        (Join-Path (Split-Path $BasePath -Parent) "python_embeded\python.exe"),
+        (Join-Path $BasePath ".venv\Scripts\python.exe"),
+        (Join-Path $BasePath "venv\Scripts\python.exe"),
+        (Join-Path (Split-Path $BasePath -Parent) ".venv\Scripts\python.exe"),
+        (Join-Path (Split-Path $BasePath -Parent) "venv\Scripts\python.exe")
+    )
+    if ($CustomNodesPath) {
+        $parent = Split-Path $CustomNodesPath -Parent
+        $grandParent = Split-Path $parent -Parent
+        if ($grandParent) {
+            $candidates += (Join-Path $grandParent "python_embeded\python.exe")
+            $candidates += (Join-Path $grandParent ".venv\Scripts\python.exe")
+        }
+    }
+    foreach ($cand in $candidates) {
+        if ($cand -and (Test-Path $cand)) {
+            return $cand
+        }
+    }
+    $sysPy = Get-Command python -ErrorAction SilentlyContinue
+    if ($sysPy) { return $sysPy.Source }
+    return $null
+}
+
 Push-Location $customNodesDir
 try {
     foreach ($repo in $repos) {
@@ -145,4 +173,49 @@ try {
 }
 
 Write-Host "All custom nodes cloned/updated successfully!" -ForegroundColor Green
-Write-Host "Note: Some nodes (like ComfyUI-3D-Pack) may require python packages to be installed. You can do this by running their install.py or through ComfyUI-Manager." -ForegroundColor Yellow
+
+# Resolve ComfyUI Python environment and install module dependencies
+$comfyPy = Find-ComfyPython -BasePath $ComfyUiPath -CustomNodesPath $customNodesDir
+if ($comfyPy) {
+    Write-Host "Detected Python environment: $comfyPy" -ForegroundColor Cyan
+    Write-Host "Verifying and installing dependencies for ComfyUI custom nodes..." -ForegroundColor Cyan
+
+    Get-ChildItem -Path $customNodesDir -Directory | ForEach-Object {
+        $nodeDir = $_.FullName
+        $reqFile = Join-Path $nodeDir "requirements.txt"
+        $installPy = Join-Path $nodeDir "install.py"
+
+        if (Test-Path $reqFile) {
+            Write-Host "Installing requirements for $($_.Name)..." -ForegroundColor Yellow
+            try {
+                & $comfyPy -m pip install -r $reqFile --no-warn-script-location --quiet
+            } catch {
+                Write-Warning "Failed installing requirements for $($_.Name): $_"
+            }
+        }
+
+        if (Test-Path $installPy) {
+            Write-Host "Running install.py for $($_.Name)..." -ForegroundColor Yellow
+            try {
+                Push-Location $nodeDir
+                & $comfyPy install.py
+            } catch {
+                Write-Warning "Failed executing install.py for $($_.Name): $_"
+            } finally {
+                Pop-Location
+            }
+        }
+    }
+
+    # Ensure critical packages for 3D and Video workflows are present
+    Write-Host "Ensuring core packages (Cython, pyhocon, diffusers, imageio-ffmpeg, trimesh) are installed..." -ForegroundColor Cyan
+    try {
+        & $comfyPy -m pip install Cython pyhocon diffusers imageio-ffmpeg trimesh --no-warn-script-location --quiet
+        Write-Host "Dependencies successfully verified and installed!" -ForegroundColor Green
+    } catch {
+        Write-Warning "Failed to install some core packages: $_"
+    }
+} else {
+    Write-Warning "Could not detect ComfyUI's Python environment. Dependencies may need to be installed manually."
+}
+

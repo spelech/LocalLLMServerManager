@@ -23,62 +23,47 @@ Select the model family that matches your GPU memory and artistic goals:
 
 ## Generation Procedure
 
-Follow these steps to generate an image:
+Follow these steps to generate an image using the Fluid Studio Canvas and Creative Prompt Dock:
 
 ```mermaid
 flowchart LR
-    E["1. Check Engine"] --> P["2. Select Preset"]
-    P --> C["3. Set Parameters"]
-    C --> G["4. Generate Image"]
+    E["1. Check Engine Card"] --> M["2. Select 🎨 Image"]
+    M --> P["3. Choose Preset"]
+    P --> D["4. Prompt in Dock"]
+    D --> G["5. Click Generate ↵"]
 ```
 
 ### Step 1: Check Backend Engine Status
+1. Check the **SD Forge** card in the Telemetry Header or Ribbon.
+2. Ensure the status dot is green (**Online**).
+3. If stopped, click **▷ Start** on the card to launch the engine on port `7860`.
 
-1. Open the **Workflows** tab in the top navigation bar.
-2. Click **🎨 Images** in the modality selector.
-3. Check the engine status pill in the header.
-4. Verify that the status shows **Online**.
-5. Click **Toggle Forge Engine** if the status shows **Offline**.
+### Step 2: Select Image Modality
+1. Open the **Studio** workspace from the left Activity Rail.
+2. In the top modality selector bar, click **🎨 Image**.
+3. The Center Stage canvas activates the interactive Image Viewport with pan/zoom preview controls.
 
-### Step 2: Choose a Preset or Starter Style
-
-Select a preset from the Studio Preset Bar to configure optimal resolutions automatically:
-
+### Step 3: Choose a Style Preset or Starter Prompt
+Select a preset from the Studio Preset Bar or click a starter prompt chip directly within the canvas:
 * **Standard Square (1024 × 1024):** Default setting for general art and character portraits.
 * **Landscape Wallpaper (1344 × 768):** Wide aspect ratio for environments and desktop backgrounds.
 * **Portrait Photo (768 × 1152):** Vertical aspect ratio for full-body human figures and posters.
 * **Classic SD 1.5 (512 × 512):** Lightweight resolution for legacy models and rapid drafting.
 
-> [!TIP]
-> Click a starter prompt chip above the prompt box. The chip populates proven prompts and selects the matching preset instantly.
+### Step 4: Enter Prompt & Fine-Tune in Dock
+1. **Prompt Textarea:** Describe your subject, lighting, and composition in the autosizing prompt dock.
+2. **Parameters Flyout (`⚙️ Settings`):** Click the settings button to slide open fine-tuning sliders:
+   * **Steps:** 20 to 30 steps for SDXL, 4 to 8 for FLUX schnell.
+   * **CFG Scale:** 5.0 to 7.0 for SDXL, 1.0 for FLUX.
+   * **Denoise:** Adjust denoising strength (default: 0.75).
+   * **Seed:** Numeric seed (`-1` for randomized variations).
+   * **Aspect Ratio:** Click `1:1`, `16:9`, `9:16`, or `4:3` pills.
+3. **Reference Attachment (`📎`):** Optionally attach an image for image-to-image or style conditioning.
 
-### Step 3: Configure Generation Parameters
-
-Set the parameters in the configuration panel:
-
-1. **Workflow Model:** Type or select your checkpoint name (for example, `SDXL Base` or `flux1-dev`).
-2. **Positive Prompt:** Describe all subjects, styles, lighting, and camera angles that you want in the image.
-3. **Negative Prompt:** List unwanted elements such as blur, distortion, or watermark artifacts.
-4. **Resolution (Width × Height):** Set the image dimensions. Keep dimensions aligned to multiples of 64 or 16.
-5. **Sampling Steps:**
-   * Use **4 to 8 steps** for FLUX.1-schnell.
-   * Use **20 to 30 steps** for SDXL and SD 1.5.
-   * Use **25 to 50 steps** for FLUX.1-dev.
-6. **CFG Scale (Guidance Scale):**
-   * Set **1.0** for FLUX models.
-   * Set **5.0 to 7.0** for SDXL models.
-   * Set **7.0 to 8.5** for SD 1.5 models.
-7. **Sampler and Scheduler:** Select an approved sampler algorithm:
-   * `Euler` or `Euler a`: Fast, general-purpose convergence.
-   * `DPM++ 2M Karras`: High detail for photorealistic textures.
-   * `UniPC`: High-speed generation with fewer steps.
-8. **Seed:** Enter a numeric value between `1` and `999999999`. Enter `-1` or leave random to generate new variations.
-
-### Step 4: Launch Generation
-
-1. Click **🎨 Launch Forge Image Studio (Port 7860)** or **Generate Image**.
-2. Observe the 4-stage progress tracker during diffusion execution.
-3. Inspect the completed image in the output gallery.
+### Step 5: Click Generate ↵
+1. Click the prominent **Generate ↵** action button in the dock.
+2. Forge WebUI processes the prompt via GPU diffusion sampling.
+3. Inspect the completed image in the interactive Center Stage canvas.
 
 > [!IMPORTANT]
 > The application automatically saves rendered images to `outputs/images/` with embedded prompt and parameter metadata.

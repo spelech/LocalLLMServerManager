@@ -35,6 +35,25 @@ public partial class SettingsViewModel : ObservableObject
     public bool IsFilterImageActive => SelectedPresetModalityFilter.Equals("Image", StringComparison.OrdinalIgnoreCase);
     public bool IsFilterAudioActive => SelectedPresetModalityFilter.Equals("Audio", StringComparison.OrdinalIgnoreCase);
 
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(IsAppearanceCategoryActive))]
+    [NotifyPropertyChangedFor(nameof(IsEnginesCategoryActive))]
+    [NotifyPropertyChangedFor(nameof(IsFeaturePacksCategoryActive))]
+    [NotifyPropertyChangedFor(nameof(IsNetworkCategoryActive))]
+    private string _selectedCategory = "Appearance";
+
+    public bool IsAppearanceCategoryActive => string.IsNullOrWhiteSpace(SelectedCategory) || string.Equals(SelectedCategory, "Appearance", StringComparison.OrdinalIgnoreCase);
+    public bool IsEnginesCategoryActive => string.Equals(SelectedCategory, "Engines", StringComparison.OrdinalIgnoreCase);
+    public bool IsFeaturePacksCategoryActive => string.Equals(SelectedCategory, "FeaturePacks", StringComparison.OrdinalIgnoreCase);
+    public bool IsNetworkCategoryActive => string.Equals(SelectedCategory, "Network", StringComparison.OrdinalIgnoreCase);
+
+    [RelayCommand]
+    public void SelectCategory(string category)
+    {
+        if (string.IsNullOrWhiteSpace(category)) return;
+        SelectedCategory = category;
+    }
+
     [ObservableProperty] private string _presetsJson = "";
 
     [ObservableProperty] private string _forgeModelsPath = "";

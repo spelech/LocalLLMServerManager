@@ -36,11 +36,11 @@ public static class EngineEndpoints
         {
             var logger = loggerFactory.CreateLogger("EngineEndpoints");
             var settings = settingsService.LoadSettings();
-            var execPath = string.IsNullOrWhiteSpace(settings.ComfyUiExecutablePath) ? @"C:\AI\ComfyUI\run_nvidia_gpu.bat" : settings.ComfyUiExecutablePath;
+            var execPath = AiEngineManager.ResolveComfyExecutable(settings.ComfyUiExecutablePath);
 
-            if (!Program.IsSafePath(execPath) || !System.IO.File.Exists(Program.ResolvePath(execPath, @"C:\AI\ComfyUI\run_nvidia_gpu.bat")))
+            if (!Program.IsSafePath(execPath) || !System.IO.File.Exists(execPath))
             {
-                return Results.BadRequest(new { message = $"Invalid or unsafe executable path: {execPath}" });
+                return Results.BadRequest(new { message = $"Invalid or missing ComfyUI executable path: {execPath}" });
             }
 
             await orchestrator.EnsureVramForComfyUiAsync();
@@ -64,11 +64,11 @@ public static class EngineEndpoints
         {
             var logger = loggerFactory.CreateLogger("EngineEndpoints");
             var settings = settingsService.LoadSettings();
-            var execPath = string.IsNullOrWhiteSpace(settings.ForgeExecutablePath) ? @"C:\AI\webui\webui-user.bat" : settings.ForgeExecutablePath;
+            var execPath = AiEngineManager.ResolveForgeExecutable(settings.ForgeExecutablePath);
 
-            if (!Program.IsSafePath(execPath) || !System.IO.File.Exists(Program.ResolvePath(execPath, @"C:\AI\webui\webui-user.bat")))
+            if (!Program.IsSafePath(execPath) || !System.IO.File.Exists(execPath))
             {
-                return Results.BadRequest(new { message = $"Invalid or unsafe executable path: {execPath}" });
+                return Results.BadRequest(new { message = $"Invalid or missing SD Forge executable path: {execPath}" });
             }
 
             var success = await engineManager.StartForgeAsync(execPath, logger);
@@ -96,13 +96,13 @@ public static class EngineEndpoints
         {
             var logger = loggerFactory.CreateLogger("EngineEndpoints");
             var settings = settingsService.LoadSettings();
-            var execPath = string.IsNullOrWhiteSpace(settings.AudioEngineExecutablePath) ? @"C:\AI\Kokoro-FastAPI\main.py" : settings.AudioEngineExecutablePath;
+            var execPath = AiEngineManager.ResolveAudioExecutable(settings.AudioEngineExecutablePath);
 
             if (!execPath.TrimStart().StartsWith("docker", StringComparison.OrdinalIgnoreCase))
             {
-                if (!Program.IsSafePath(execPath) || !System.IO.File.Exists(Program.ResolvePath(execPath, @"C:\AI\Kokoro-FastAPI\main.py")))
+                if (!Program.IsSafePath(execPath) || !System.IO.File.Exists(execPath))
                 {
-                    return Results.BadRequest(new { message = $"Invalid or unsafe executable path: {execPath}" });
+                    return Results.BadRequest(new { message = $"Invalid or missing Audio Engine executable path: {execPath}" });
                 }
             }
 
@@ -152,5 +152,49 @@ public static class EngineEndpoints
             };
             return Results.Ok(new { voices = defaultVoices, preferred = settings.PreferredAudioVoice });
         });
+
+        app.MapPost("/api/ollama/start", async (IAiEngineManager engineManager, ISettingsService settingsService, ILoggerFactory loggerFactory) =>
+        {
+            var logger = loggerFactory.CreateLogger("EngineEndpoints");
+            var settings = settingsService.LoadSettings();
+            var execPath = AiEngineManager.ResolveOllamaExecutable(settings.OllamaExecutablePath);
+
+            var success = await engineManager.StartOllamaAsync(execPath, logger);
+            if (success)
+            {
+                return Results.Ok(new { message = "Ollama Started", pid = engineManager.OllamaProcess?.Id });
+            }
+            return Results.Problem("Failed to start Ollama process");
+        });
+
+        app.MapPost("/api/ollama/stop", async (IAiEngineManager engineManager, ILoggerFactory loggerFactory) =>
+        {
+            var logger = loggerFactory.CreateLogger("EngineEndpoints");
+            var success = await engineManager.StopOllamaAsync(logger);
+            return Results.Ok(new { message = "Ollama Stopped" });
+        });
+
+        app.MapPost("/api/engine/start", async (EngineToggleRequest req, IAiEngineManager engineManager) =>
+        {
+            var result = await engineManager.StartEngineAsync(req.Engine ?? "");
+            if (result.Success)
+            {
+                return Results.Ok(new { message = result.Message, pid = result.Pid });
+            }
+            return Results.Problem(result.Message);
+        });
+
+        app.MapPost("/api/engine/stop", async (EngineToggleRequest req, IAiEngineManager engineManager) =>
+        {
+            var result = await engineManager.StopEngineAsync(req.Engine ?? "");
+            if (result.Success)
+            {
+                return Results.Ok(new { message = result.Message });
+            }
+            return Results.Problem(result.Message);
+        });
     }
 }
+
+public record EngineToggleRequest(string? Engine);
+

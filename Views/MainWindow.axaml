@@ -61,9 +61,9 @@
                 </StackPanel>
 
                 <!-- Center: Telemetry Ribbon and Drag Region -->
-                <Grid Grid.Column="1">
+                <Grid Grid.Column="1" ClipToBounds="True">
                     <Panel Background="Transparent" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" ZIndex="0"/>
-                    <controls:TelemetryRibbonControl DataContext="{Binding Telemetry}" HorizontalAlignment="Stretch" VerticalAlignment="Center" ZIndex="1"/>
+                    <controls:TelemetryRibbonControl DataContext="{Binding Telemetry}" HorizontalAlignment="Stretch" VerticalAlignment="Center" ZIndex="1" ClipToBounds="True"/>
                 </Grid>
 
                 <!-- Window Control Buttons (Minimize, Maximize/Restore, Close) -->

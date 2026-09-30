@@ -410,7 +410,7 @@ public static class WorkflowEndpoints
                 var dirResults = processedFiles.Where(r => r.dir == dir && r.result != null);
                 foreach (var res in dirResults)
                 {
-                    if (seenIds.Add(res.id))
+                    if (res.result != null && seenIds.Add(res.id))
                     {
                         list.Add(res.result);
                     }

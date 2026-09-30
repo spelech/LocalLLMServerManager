@@ -10,11 +10,13 @@ public class AiEngineManager : IAiEngineManager
     private static Process? _comfyProcess;
     private static Process? _forgeProcess;
     private static Process? _audioProcess;
+    private static Process? _ollamaProcess;
     private static readonly JobObject AiEnginesJob = new();
 
     public Process? ComfyProcess => _comfyProcess;
     public Process? ForgeProcess => _forgeProcess;
     public Process? AudioProcess => _audioProcess;
+    public Process? OllamaProcess => _ollamaProcess;
 
     public bool IsProcessRunning(string name)
     {
@@ -35,7 +37,7 @@ public class AiEngineManager : IAiEngineManager
         {
             if (_comfyProcess != null && !_comfyProcess.HasExited) return Task.FromResult(true);
 
-            var expandedPath = Environment.ExpandEnvironmentVariables(executablePath);
+            var expandedPath = ResolveComfyExecutable(executablePath);
             if (!File.Exists(expandedPath))
             {
                 logger.LogWarning("ComfyUI executable path does not exist: {Path}", expandedPath);
@@ -106,7 +108,7 @@ public class AiEngineManager : IAiEngineManager
         {
             if (_forgeProcess != null && !_forgeProcess.HasExited) return Task.FromResult(true);
 
-            var expandedPath = Environment.ExpandEnvironmentVariables(executablePath);
+            var expandedPath = ResolveForgeExecutable(executablePath);
             if (!File.Exists(expandedPath))
             {
                 logger.LogWarning("SD Forge executable path does not exist: {Path}", expandedPath);
@@ -164,7 +166,7 @@ public class AiEngineManager : IAiEngineManager
         {
             if (_audioProcess != null && !_audioProcess.HasExited) return Task.FromResult(true);
 
-            var expandedPath = Environment.ExpandEnvironmentVariables(executablePath);
+            var expandedPath = ResolveAudioExecutable(executablePath);
             ProcessStartInfo startInfo;
 
             if (expandedPath.TrimStart().StartsWith("docker", StringComparison.OrdinalIgnoreCase))
@@ -265,6 +267,170 @@ public class AiEngineManager : IAiEngineManager
         }
     }
 
+    public Task<bool> StartOllamaAsync(string executablePath, ILogger logger)
+    {
+        try
+        {
+            if (_ollamaProcess != null && !_ollamaProcess.HasExited) return Task.FromResult(true);
+            if (IsProcessRunning("ollama"))
+            {
+                logger.LogInformation("Ollama process is already running");
+                return Task.FromResult(true);
+            }
+
+            var resolvedPath = ResolveOllamaExecutable(executablePath);
+            var startInfo = new ProcessStartInfo
+            {
+                FileName = resolvedPath,
+                Arguments = "serve",
+                UseShellExecute = false,
+                CreateNoWindow = true
+            };
+
+            var workingDir = Path.GetDirectoryName(resolvedPath);
+            if (!string.IsNullOrEmpty(workingDir) && Directory.Exists(workingDir))
+            {
+                startInfo.WorkingDirectory = workingDir;
+            }
+
+            _ollamaProcess = Process.Start(startInfo);
+            if (_ollamaProcess != null && RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+            {
+                AiEnginesJob.AddProcess(_ollamaProcess);
+            }
+
+            logger.LogInformation("Started Ollama server process PID {Pid}", _ollamaProcess?.Id);
+            return Task.FromResult(true);
+        }
+        catch (Exception ex)
+        {
+            logger.LogError(ex, "Failed to start Ollama process");
+            return Task.FromResult(false);
+        }
+    }
+
+    public static string ResolveOllamaExecutable(string? executablePath = null)
+    {
+        if (!string.IsNullOrWhiteSpace(executablePath) && !string.Equals(executablePath.Trim(), "ollama", StringComparison.OrdinalIgnoreCase))
+        {
+            return Environment.ExpandEnvironmentVariables(executablePath);
+        }
+
+        if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+        {
+            var localApp = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
+            var candidate = Path.Combine(localApp, "Programs", "Ollama", "ollama.exe");
+            if (File.Exists(candidate)) return candidate;
+
+            var progFiles = Environment.GetFolderPath(Environment.SpecialFolder.ProgramFiles);
+            var progCandidate = Path.Combine(progFiles, "Ollama", "ollama.exe");
+            if (File.Exists(progCandidate)) return progCandidate;
+        }
+
+        return "ollama";
+    }
+
+    public static string ResolveComfyExecutable(string? executablePath = null)
+    {
+        if (!string.IsNullOrWhiteSpace(executablePath))
+        {
+            return Environment.ExpandEnvironmentVariables(executablePath);
+        }
+
+        try
+        {
+            var discovered = new ToolDiscoveryService().DetectComfyUi();
+            if (discovered.IsInstalled && !string.IsNullOrWhiteSpace(discovered.ExecutablePath) && File.Exists(discovered.ExecutablePath))
+            {
+                return discovered.ExecutablePath;
+            }
+        }
+        catch { }
+
+        return @"C:\AI\ComfyUI\run_nvidia_gpu.bat";
+    }
+
+    public static string ResolveForgeExecutable(string? executablePath = null)
+    {
+        if (!string.IsNullOrWhiteSpace(executablePath))
+        {
+            return Environment.ExpandEnvironmentVariables(executablePath);
+        }
+
+        try
+        {
+            var discovered = new ToolDiscoveryService().DetectForge();
+            if (discovered.IsInstalled && !string.IsNullOrWhiteSpace(discovered.ExecutablePath) && File.Exists(discovered.ExecutablePath))
+            {
+                return discovered.ExecutablePath;
+            }
+        }
+        catch { }
+
+        return @"C:\AI\webui\webui-user.bat";
+    }
+
+    public static string ResolveAudioExecutable(string? executablePath = null)
+    {
+        if (!string.IsNullOrWhiteSpace(executablePath))
+        {
+            return Environment.ExpandEnvironmentVariables(executablePath);
+        }
+
+        try
+        {
+            var discovered = new ToolDiscoveryService().DetectAudioEngine();
+            if (discovered.IsInstalled && !string.IsNullOrWhiteSpace(discovered.ExecutablePath) && File.Exists(discovered.ExecutablePath))
+            {
+                return discovered.ExecutablePath;
+            }
+        }
+        catch { }
+
+        return @"C:\AI\Kokoro-FastAPI\main.py";
+    }
+
+    public Task<bool> StopOllamaAsync(ILogger logger)
+    {
+        try
+        {
+            if (_ollamaProcess != null && !_ollamaProcess.HasExited)
+            {
+                _ollamaProcess.Kill(true);
+                _ollamaProcess = null;
+                logger.LogInformation("Stopped managed Ollama process");
+            }
+
+            var processes = Process.GetProcessesByName("ollama");
+            foreach (var p in processes)
+            {
+                try
+                {
+                    p.Kill(true);
+                }
+                catch { }
+            }
+
+            var appProcesses = Process.GetProcessesByName("ollama_app");
+            foreach (var p in appProcesses)
+            {
+                try
+                {
+                    p.Kill(true);
+                }
+                catch { }
+            }
+
+            _ollamaProcess = null;
+            return Task.FromResult(true);
+        }
+        catch (Exception ex)
+        {
+            logger.LogError(ex, "Failed to stop Ollama process");
+            return Task.FromResult(false);
+        }
+    }
+
     public async Task<EngineOperationResult> StartEngineAsync(string engine)
     {
         var normalized = engine?.Trim().ToLowerInvariant() ?? "";
@@ -273,21 +439,23 @@ public class AiEngineManager : IAiEngineManager
         if (normalized == "forge" || normalized == "sdforge")
         {
             var settings = new SettingsService().LoadSettings();
-            var execPath = string.IsNullOrWhiteSpace(settings.ForgeExecutablePath) ? @"C:\AI\webui\webui-user.bat" : settings.ForgeExecutablePath;
+            var execPath = ResolveForgeExecutable(settings.ForgeExecutablePath);
             var success = await StartForgeAsync(execPath, logger);
             return new EngineOperationResult(success, "forge", success ? "SD Forge Started" : "Failed to start SD Forge", _forgeProcess?.Id);
         }
         else if (normalized == "comfyui" || normalized == "comfy")
         {
             var settings = new SettingsService().LoadSettings();
-            var execPath = string.IsNullOrWhiteSpace(settings.ComfyUiExecutablePath) ? @"C:\AI\ComfyUI\run_nvidia_gpu.bat" : settings.ComfyUiExecutablePath;
+            var execPath = ResolveComfyExecutable(settings.ComfyUiExecutablePath);
             var success = await StartComfyUiAsync(execPath, logger);
             return new EngineOperationResult(success, "comfyui", success ? "ComfyUI Started" : "Failed to start ComfyUI", _comfyProcess?.Id);
         }
         else if (normalized == "ollama")
         {
-            var isRunning = IsProcessRunning("ollama");
-            return new EngineOperationResult(isRunning, "ollama", isRunning ? "Ollama is running" : "Ollama process not detected");
+            var settings = new SettingsService().LoadSettings();
+            var execPath = ResolveOllamaExecutable(settings.OllamaExecutablePath);
+            var success = await StartOllamaAsync(execPath, logger);
+            return new EngineOperationResult(success, "ollama", success ? "Ollama Started" : "Failed to start Ollama", _ollamaProcess?.Id);
         }
         else if (normalized == "audio" || normalized == "kokoro" || normalized == "alltalk" || normalized == "tts")
         {
@@ -314,6 +482,11 @@ public class AiEngineManager : IAiEngineManager
         {
             var success = await StopComfyUiAsync(logger);
             return new EngineOperationResult(success, "comfyui", success ? "ComfyUI Stopped" : "Failed to stop ComfyUI");
+        }
+        else if (normalized == "ollama")
+        {
+            var success = await StopOllamaAsync(logger);
+            return new EngineOperationResult(success, "ollama", success ? "Ollama Stopped" : "Failed to stop Ollama");
         }
         else if (normalized == "audio" || normalized == "kokoro" || normalized == "alltalk" || normalized == "tts")
         {

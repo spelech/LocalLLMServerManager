@@ -77,31 +77,32 @@ flowchart LR
 
 ### Step 1: Verify 3D Engine Status
 
-1. Open the **Workflows** tab in the top navigation bar.
-2. Click **📦 3D Mesh** in the modality selector.
-3. Verify the **ComfyUI** status pill in the header. Ensure the status displays **Online**.
+1. Open the **Studio** tab in the left activity rail or navigation bar.
+2. Click **🧊 3D Mesh** in the top modality selector.
+3. Verify the **ComfyUI** engine status card in the telemetry ribbon or header. Ensure the card indicates **Online**. If stopped, click **▷ Start** directly on the ComfyUI card.
 
 ### Step 2: Choose Generation Mode
 
 Select your input mode:
 
-* Click **📝 Text to 3D** to describe an object with text prompts.
-* Click **🖼️ Image to 3D** to supply a source reference image.
+* **Text to 3D:** Describe your desired object, materials, and form factors directly in the dock textarea.
+* **Image to 3D:** Supply a reference image using the **📎** attachment button in the prompt dock or drag and drop a clean image into the canvas.
 
 ### Step 3: Configure Geometry and Export Options
 
-1. **3D Prompt:** Describe the object, physical materials, and surface textures.
-2. **Export Format:** Select `GLB` or `OBJ` from the format selector.
-3. **Mesh Quality / Poly Count:** Select your desired polygon density:
-   * `Standard`: Balanced poly count optimized for real-time game engines.
-   * `High Detail`: Dense mesh topology optimized for offline rendering and digital sculpting.
+1. **3D Prompt:** Enter descriptive details covering geometry, texture, and materials.
+2. **Settings Popover:** Click **⚙️ Settings** in the dock toolbar to configure generation parameters:
+   * **Export Format:** Select `GLB` (PBR textures embedded) or `OBJ` (with `.mtl`).
+   * **Mesh Quality / Poly Count:**
+     * `Standard`: Balanced poly count optimized for real-time game engines.
+     * `High Detail`: Dense mesh topology optimized for offline rendering and digital sculpting.
 
 ### Step 4: Generate 3D Mesh
 
-1. Click **📦 Step 4: Generate 3D Mesh / Splat**.
-2. Monitor the 4-stage pipeline progress tracker.
+1. Click **Generate ↵** in the bottom Creative Prompt Dock (or press `Ctrl+Enter`).
+2. Monitor the 4-stage pipeline progress tracker on canvas.
 3. Wait for the sparse-structure and texture generation passes to finish.
-4. Inspect the rendered asset in the 3D viewport canvas.
+4. Inspect and interact with the rendered asset in the 360° orbital WebGL canvas.
 
 ---
 

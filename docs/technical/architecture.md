@@ -1,6 +1,6 @@
 # LocalLLMServerManager — System Architecture & Component Design
 
-> **v3.11.0 Architecture Specification & Mermaid Diagrams**
+> **v3.17.0 Architecture Specification & Mermaid Diagrams**
 
 This document provides a visual and structural blueprint of **LocalLLMServerManager**, detailing its component decomposition, MVVM hierarchy, Minimal API route modules, Dependency Injection lifecycle, Model Context Protocol (MCP) Multimodal AI integration, VRAM orchestration flow, Modular Feature Pack management, WebAssembly static asset pipeline, Playwright E2E testing layer, and Docker containerization architecture.
 
@@ -23,7 +23,10 @@ graph TD
         UI_Desktop["Desktop Window (Avalonia UI X11/Wayland/Win32)"]
         UI_Tray["System Tray Notification Icon & Menu"]
         UI_WASM["WebAssembly Browser App (WASM :5246)"]
-        UI_Web["Multimodal Studio (3D WebGL / Video Player / Audio Waveform)"]
+        UI_Rail["Activity Rail Navigation (Studio, Ollama, HF, Civitai, CanIRunIt, Settings)"]
+        UI_Studio["Fluid Studio Canvas (Image, Text, Video, 3D Mesh, Audio Viewports & Prompt Dock)"]
+        UI_Cards["Interactive Engine Status Cards (Ollama, ComfyUI, Forge, Kokoro)"]
+        UI_Copilot["Docked Copilot & Knowledge Sidebar (Collapsible & Pop-Out Capable)"]
     end
 
     subgraph DockerContainer["Docker Container & Service Host Environment"]
@@ -107,21 +110,25 @@ The UI layer is structured into single-responsibility Avalonia `UserControl`s an
 graph TD
     subgraph Views["Avalonia XAML View Layer"]
         MV["MainView.axaml (Coordinator View)"]
-        THC["TelemetryHeaderControl.axaml"]
+        THC["TelemetryHeaderControl.axaml & Ribbon"]
+        ESC["EngineStudioTabControl.axaml (Canvas & Prompt Dock)"]
         OMC["OllamaModelsTabControl.axaml"]
         HFC["HuggingFaceTabControl.axaml"]
         CTC["CivitaiTabControl.axaml"]
-        ESC["EngineStudioTabControl.axaml"]
         STC["SettingsTabControl.axaml"]
+        CSB["CopilotSidebarControl.axaml (Docked Copilot / Docs)"]
     end
 
     subgraph ViewModels["Reactive MVVM ViewModel Layer"]
         MVM["MainViewModel (Root Coordinator)"]
-        TVM["TelemetryViewModel"]
+        TVM["TelemetryViewModel (EngineStatusCardModels)"]
+        EVM["EngineStudioViewModel (Modalities & Dock State)"]
         OVM["OllamaLibraryViewModel"]
         HVM["HuggingFaceSearchViewModel"]
         CVM["CivitaiSearchViewModel"]
         SVM["SettingsViewModel"]
+        AVM["AiAssistantViewModel"]
+        DVM["DocumentationViewModel"]
     end
 
     subgraph SharedServices["Shared UI Services & Interfaces"]
@@ -130,34 +137,41 @@ graph TD
         IHS["IHuggingFaceSearchService -> HuggingFaceSearchService"]
         ICS["ICivitaiSearchService -> CivitaiSearchService"]
         IDS["IToolDiscoveryService -> ToolDiscoveryService"]
+        WSM["WindowSnapManager (Companion Windows)"]
         TS["ToastService (Global Banner Notifications)"]
     end
 
     MV --> THC
+    MV --> ESC
     MV --> OMC
     MV --> HFC
     MV --> CTC
-    MV --> ESC
     MV --> STC
+    MV --> CSB
 
     MVM --> TVM
+    MVM --> EVM
     MVM --> OVM
     MVM --> HVM
     MVM --> CVM
     MVM --> SVM
+    MVM --> AVM
+    MVM --> DVM
 
     THC -.->|DataContext| TVM
+    ESC -.->|DataContext| MVM
     OMC -.->|DataContext| OVM
     HFC -.->|DataContext| HVM
     CTC -.->|DataContext| CVM
-    ESC -.->|DataContext| MVM
     STC -.->|DataContext| SVM
+    CSB -.->|DataContext| MVM
 
     TVM --> ITS
     OVM --> IOS
     HVM --> IHS
     CVM --> ICS
     SVM --> IDS
+    MVM --> WSM
     OVM --> TS
     CVM --> TS
     SVM --> TS

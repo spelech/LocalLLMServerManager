@@ -1,7 +1,7 @@
 export const config = /*json-start*/{
   "mainAssemblyName": "LocalLLMServerManager.Web.dll",
   "resources": {
-    "hash": "sha256-S8anelHv4Qpc+m9RSknBH+uo3OQJuRkqBTZbPKP1+QA=",
+    "hash": "sha256-67rdTkJA/ES09hAHGIosStz+wAMNLIZwXRtcQxB/dj8=",
     "jsModuleNative": [
       {
         "name": "dotnet.native.js"
@@ -66,7 +66,7 @@ export const config = /*json-start*/{
       {
         "virtualPath": "Avalonia.Controls.wasm",
         "name": "Avalonia.Controls.wasm",
-        "hash": "sha256-YMPrgYN9gVi5murEkpH1j86+9sEm7NB/b6nx5yLm3f0="
+        "hash": "sha256-BR9shQ/v5yjbum3JM4lGOTRWeSY3U23cxDigyNsKvmQ="
       },
       {
         "virtualPath": "Avalonia.Dialogs.wasm",
@@ -116,7 +116,7 @@ export const config = /*json-start*/{
       {
         "virtualPath": "CommunityToolkit.Mvvm.wasm",
         "name": "CommunityToolkit.Mvvm.wasm",
-        "hash": "sha256-GEs4Mwl4l97lmp0q1wJ038ZGwo1LVgF+AvXJzj3VKAI="
+        "hash": "sha256-qcE0tRaKhgHYzcVmjOxKqiw9PUyRL6xUc3nzVrbXTYU="
       },
       {
         "virtualPath": "HarfBuzzSharp.wasm",
@@ -131,12 +131,12 @@ export const config = /*json-start*/{
       {
         "virtualPath": "LocalLLMServerManager.Shared.wasm",
         "name": "LocalLLMServerManager.Shared.wasm",
-        "hash": "sha256-WMHbGOXeQAmE3YWUM60oTlezsa6jdy+b1gvcYNrzJKY="
+        "hash": "sha256-O6ZWT0GpI8hmnGA8jN77BDItFS9Aeym/Wj4xDBk3p0s="
       },
       {
         "virtualPath": "LocalLLMServerManager.Web.wasm",
         "name": "LocalLLMServerManager.Web.wasm",
-        "hash": "sha256-a2KDfRXbu0kJxk4swbbd37IUr8gHVbxVAANZ4rQYq4Y="
+        "hash": "sha256-0gdaeIX0Ptz99kFHA0q1/j8MYGytz50wzOcwUfgbanU="
       },
       {
         "virtualPath": "Semi.Avalonia.wasm",
@@ -266,7 +266,7 @@ export const config = /*json-start*/{
       {
         "virtualPath": "System.Text.Json.wasm",
         "name": "System.Text.Json.wasm",
-        "hash": "sha256-XxcoJNT2dnTmvtdY5+KbVc2eRVZOQdE3bZoIHqAZl+g="
+        "hash": "sha256-dmgF5O2ng10GLUY1Y7UQVZE5HeoEexKxbjime/f1kWA="
       },
       {
         "virtualPath": "System.Text.RegularExpressions.wasm",

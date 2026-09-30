@@ -130,6 +130,58 @@ public partial class MainViewModel : ObservableObject
 
     [ObservableProperty] private bool _isAnyDrawerOpen = false;
     [ObservableProperty] private bool _isDesktopHost = false;
+    [ObservableProperty] private bool _isCopilotSidebarOpen = false;
+    [ObservableProperty] private string _selectedCopilotTab = "Assistant";
+
+    public bool IsAssistantTabActive => SelectedCopilotTab == "Assistant";
+    public bool IsDocsTabActive => SelectedCopilotTab == "Docs";
+
+    [RelayCommand]
+    public void ToggleCopilotSidebar(string? tab = null)
+    {
+        if (tab != null && SelectedCopilotTab != tab && IsCopilotSidebarOpen)
+        {
+            SelectedCopilotTab = tab;
+            OnPropertyChanged(nameof(IsAssistantTabActive));
+            OnPropertyChanged(nameof(IsDocsTabActive));
+            UpdateIsAnyDrawerOpen();
+            return;
+        }
+
+        if (tab != null)
+        {
+            SelectedCopilotTab = tab;
+            OnPropertyChanged(nameof(IsAssistantTabActive));
+            OnPropertyChanged(nameof(IsDocsTabActive));
+        }
+
+        IsCopilotSidebarOpen = !IsCopilotSidebarOpen;
+
+        if (IsCopilotSidebarOpen && SelectedCopilotTab == "Assistant" && Assistant.AvailableModelCapabilities.Count <= 1)
+        {
+            _ = Assistant.LoadAvailableModelsAsync();
+        }
+
+        UpdateIsAnyDrawerOpen();
+    }
+
+    [RelayCommand]
+    public void SelectCopilotTab(string tab)
+    {
+        SelectedCopilotTab = tab;
+        OnPropertyChanged(nameof(IsAssistantTabActive));
+        OnPropertyChanged(nameof(IsDocsTabActive));
+        if (!IsCopilotSidebarOpen)
+        {
+            IsCopilotSidebarOpen = true;
+        }
+
+        if (SelectedCopilotTab == "Assistant" && Assistant.AvailableModelCapabilities.Count <= 1)
+        {
+            _ = Assistant.LoadAvailableModelsAsync();
+        }
+        UpdateIsAnyDrawerOpen();
+    }
 
     [RelayCommand]
     public void ToggleDocumentationDrawer()
@@ -140,10 +192,7 @@ public partial class MainViewModel : ObservableObject
             return;
         }
 
-        Assistant.IsDrawerOpen = false;
-        Ollama.IsPullDrawerOpen = false;
-        Documentation.IsDrawerOpen = !Documentation.IsDrawerOpen;
-        UpdateIsAnyDrawerOpen();
+        ToggleCopilotSidebar("Docs");
     }
 
     [RelayCommand]
@@ -155,28 +204,20 @@ public partial class MainViewModel : ObservableObject
             return;
         }
 
-        Documentation.IsDrawerOpen = false;
-        Ollama.IsPullDrawerOpen = false;
-        Assistant.IsDrawerOpen = !Assistant.IsDrawerOpen;
-        if (Assistant.IsDrawerOpen && Assistant.AvailableModelCapabilities.Count <= 1)
-        {
-            _ = Assistant.LoadAvailableModelsAsync();
-        }
-        UpdateIsAnyDrawerOpen();
+        ToggleCopilotSidebar("Assistant");
     }
 
     [RelayCommand]
     public void CloseDrawers()
     {
-        Documentation.IsDrawerOpen = false;
-        Assistant.IsDrawerOpen = false;
+        IsCopilotSidebarOpen = false;
         Ollama.ClosePullDrawer();
         UpdateIsAnyDrawerOpen();
     }
 
     public void UpdateIsAnyDrawerOpen()
     {
-        IsAnyDrawerOpen = Documentation.IsDrawerOpen || Assistant.IsDrawerOpen || Ollama.IsPullDrawerOpen;
+        IsAnyDrawerOpen = IsCopilotSidebarOpen || Ollama.IsPullDrawerOpen;
     }
 
 
@@ -222,6 +263,7 @@ public partial class MainViewModel : ObservableObject
         _canIRunItService = canIRunItService ?? new CanIRunItService();
         PresetService = studioPresetService ?? new StudioPresetService();
         Telemetry = new TelemetryViewModel(telemetryService) { ApiBase = ApiBase };
+        Telemetry.OnManageServiceRequested = (serviceName) => ToggleServiceInteractive(serviceName);
         HardwareFit = new CanIRunItViewModel(_canIRunItService, telemetryService, httpClient) { ApiBase = ApiBase };
         Ollama = new OllamaLibraryViewModel(ollamaModelService, _canIRunItService, telemetryService)
         {
@@ -259,6 +301,11 @@ public partial class MainViewModel : ObservableObject
             ApiBase = ApiBase
         };
         Documentation.OnNavigateToTabRequested = tab => SelectedTabIndex = tab;
+        Documentation.OnAskCopilotRequested = prompt =>
+        {
+            SelectCopilotTab("Assistant");
+            Assistant.InputText = prompt;
+        };
 
         NavigationRail.PropertyChanged += (s, e) =>
         {
@@ -385,12 +432,13 @@ public partial class MainViewModel : ObservableObject
     [RelayCommand]
     public void ToggleServiceInteractive(string serviceName)
     {
-        _serviceConfirmTarget = serviceName.ToLowerInvariant();
+        _serviceConfirmTarget = serviceName.Trim();
+        var lower = _serviceConfirmTarget.ToLowerInvariant();
         bool isOnline = false;
         
-        if (_serviceConfirmTarget == "ollama") isOnline = Telemetry.IsOllamaOnline;
-        else if (_serviceConfirmTarget == "forge") isOnline = Telemetry.IsForgeOnline;
-        else if (_serviceConfirmTarget == "comfy") isOnline = Telemetry.IsComfyOnline;
+        if (lower.Contains("ollama")) isOnline = Telemetry.IsOllamaOnline;
+        else if (lower.Contains("forge")) isOnline = Telemetry.IsForgeOnline;
+        else if (lower.Contains("comfy")) isOnline = Telemetry.IsComfyOnline;
 
         string action = isOnline ? "stop" : "start";
         ServiceConfirmMessage = $"Are you sure you want to {action} the {serviceName} engine?";
@@ -563,6 +611,7 @@ public partial class MainViewModel : ObservableObject
     public bool IsVideoWorkflowActive => !IsStickerStudioActive && SelectedStudioMode == "Video";
     public bool Is3DMeshWorkflowActive => !IsStickerStudioActive && SelectedStudioMode == "3D Mesh";
     public bool IsAudioWorkflowActive => !IsStickerStudioActive && SelectedStudioMode == "Audio";
+    public bool IsStickerModalityActive => IsStickerStudioActive || SelectedStudioMode == "Sticker Studio" || SelectedModality == "Sticker" || SelectedModality == "Sticker Studio";
 
     [ObservableProperty]
     private string _ollamaPrompt = "Explain how local LLM quantization works in plain language.";
@@ -1178,17 +1227,48 @@ public partial class MainViewModel : ObservableObject
     [RelayCommand]
     public async Task ToggleEngineAsync(string engineName)
     {
+        var rawName = engineName.Trim();
+        var normalized = rawName.ToLowerInvariant().Replace(" sd", "");
+        if (normalized.Contains("comfy")) normalized = "comfy";
+        else if (normalized.Contains("forge")) normalized = "forge";
+        else if (normalized.Contains("ollama")) normalized = "ollama";
+        else if (normalized.Contains("audio")) normalized = "audio";
+
+        bool isOnline = false;
+        if (normalized == "ollama") isOnline = Telemetry.IsOllamaOnline;
+        else if (normalized == "forge") isOnline = Telemetry.IsForgeOnline;
+        else if (normalized == "comfy") isOnline = Telemetry.IsComfyOnline;
+
+        bool isStart = !isOnline;
+        string actionWord = isStart ? "start" : "stop";
+
+        ToastService.Instance.Show($"{(isStart ? "Starting" : "Stopping")} {rawName}...", ToastType.Info, 2500);
+
         try
         {
+            var endpoint = isStart ? $"/api/{normalized}/start" : $"/api/{normalized}/stop";
             var content = new StringContent(
-                JsonSerializer.Serialize(new { engine = engineName }),
+                JsonSerializer.Serialize(new { engine = normalized }),
                 System.Text.Encoding.UTF8,
                 "application/json"
             );
-            await Http.PostAsync($"{ApiBase}/api/comfy/start", content);
+            var response = await Http.PostAsync($"{ApiBase}{endpoint}", content);
+            if (response.IsSuccessStatusCode)
+            {
+                ToastService.Instance.Show($"{rawName} {(isStart ? "started" : "stopped")} successfully.", ToastType.Success);
+            }
+            else
+            {
+                var errorText = await response.Content.ReadAsStringAsync();
+                var msg = string.IsNullOrWhiteSpace(errorText) ? $"Server returned {response.StatusCode}" : errorText;
+                ToastService.Instance.Show($"Failed to {actionWord} {rawName}: {msg}", ToastType.Error, 6000);
+            }
             await RefreshStatusAsync();
         }
-        catch { }
+        catch (Exception ex)
+        {
+            ToastService.Instance.Show($"Error while attempting to {actionWord} {rawName}: {ex.Message}", ToastType.Error, 6000);
+        }
     }
 
     [RelayCommand]
