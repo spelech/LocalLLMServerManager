@@ -21,26 +21,33 @@ public class AvaloniaUiTests
     }
 
     [AvaloniaFact]
-    public void App_FullTrayMenuHandlerLifecycle_Reaches100PercentCoverage()
+    public void App_FullTrayMenuHandlerLifecycle_ExecutesSuccessfully()
     {
-        var app = new App();
-        try { app.Initialize(); } catch { }
+        // Test theme switching helper
+        App.SetThemeStyle("semi");
+        Assert.Equal(LocalLLMServerManager.Shared.Services.AppTheme.MatteCarbon, LocalLLMServerManager.Shared.Services.ThemeService.Instance.CurrentTheme);
+        App.SetThemeStyle("fluent");
+        Assert.Equal(LocalLLMServerManager.Shared.Services.AppTheme.OledBlack, LocalLLMServerManager.Shared.Services.ThemeService.Instance.CurrentTheme);
 
+        var app = new App();
         var lifetime = new ClassicDesktopStyleApplicationLifetime();
         app.ApplicationLifetime = lifetime;
 
-        app.OnFrameworkInitializationCompleted();
-
         // Directly exercise tray menu click event handlers
         app.OnOpenDashboardClick(null, EventArgs.Empty);
+        Assert.NotNull(lifetime.MainWindow);
+
         app.OnOpenWebUiClick(null, EventArgs.Empty);
 
         // Exercise null MainWindow branch in OnOpenDashboardClick
         lifetime.MainWindow = null;
         app.OnOpenDashboardClick(null, EventArgs.Empty);
+        Assert.NotNull(lifetime.MainWindow);
 
-        app.ApplicationLifetime = null;
         app.OnExitClick(null, EventArgs.Empty);
+
+        // Restore default theme to maintain test isolation
+        LocalLLMServerManager.Shared.Services.ThemeService.Instance.SetTheme(LocalLLMServerManager.Shared.Services.AppTheme.MatteCarbon);
     }
 
     [Fact]
