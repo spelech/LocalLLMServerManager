@@ -193,6 +193,22 @@ if (Test-Path $forgeExtracted) {
     Rename-Item -Path $forgeExtracted -NewName "SD_Forge" -ErrorAction SilentlyContinue
 }
 
+# Configure SD Forge webui-user.bat for API mode and shared checkpoints
+$forgeBatCandidates = @(
+    (Join-Path $forgeDir "webui\webui-user.bat"),
+    (Join-Path $forgeDir "webui-user.bat")
+)
+foreach ($bat in $forgeBatCandidates) {
+    if (Test-Path $bat) {
+        $content = Get-Content $bat
+        if ($content -notmatch "--api") {
+            $content = $content -replace "set COMMANDLINE_ARGS=.*", "set COMMANDLINE_ARGS=--api --ckpt-dir `"$ModelsDir\checkpoints`""
+            Set-Content -Path $bat -Value $content
+            Write-Host "Configured --api and shared checkpoints in $bat" -ForegroundColor Green
+        }
+    }
+}
+
 Write-Host "Cleaning up archives..." -ForegroundColor Cyan
 if (Test-Path $comfyZip) { Remove-Item $comfyZip -Force -ErrorAction SilentlyContinue }
 if (Test-Path $forgeZip) { Remove-Item $forgeZip -Force -ErrorAction SilentlyContinue }
@@ -235,6 +251,13 @@ if (-not (Test-Path $managerDir)) {
     Write-Host "ComfyUI-Manager already present at $managerDir" -ForegroundColor Yellow
 }
 
+# Install ComfyUI custom nodes (3D, video, utilities) and their Python dependencies
+Write-Host "Installing ComfyUI Custom Nodes and module dependencies..." -ForegroundColor Cyan
+$comfyNodesScript = Join-Path $PSScriptRoot "install_comfy_nodes.ps1"
+if (Test-Path $comfyNodesScript) {
+    & $comfyNodesScript -ComfyUiPath $comfyDir -SettingsJson $SettingsJson
+}
+
 if ($InstallVideoPack) {
     Install-VideoPack -TargetDir $TargetDir -ModelsDir $ModelsDir
 }
@@ -244,3 +267,4 @@ if ($InstallAudioPack) {
 }
 
 Write-Host "Setup Scripts Completed successfully!" -ForegroundColor Green
+
