@@ -30,7 +30,7 @@
 - Produces: `EngineStatusCardModel` (`EngineKey`, `DisplayName`, `IsOnline`, `IsStarting`, `IsError`, `Port`, `ActiveModel`, `MemoryUsage`, `StatusTooltip`).
 - Produces: `TelemetryViewModel.OllamaCard`, `ComfyUiCard`, `ForgeCard`, `KokoroCard`, `ToggleEngineCardCommand`.
 
-- [ ] **Step 1: Write failing unit tests for EngineStatusCardModel and TelemetryViewModel**
+- [x] **Step 1: Write failing unit tests for EngineStatusCardModel and TelemetryViewModel**
 
 In `LocalLLMServerManager.Tests/TelemetryViewModelTests.cs`:
 ```csharp
@@ -50,12 +50,12 @@ public void TelemetryViewModel_EngineCards_ReflectEngineStatus()
 }
 ```
 
-- [ ] **Step 2: Run test to verify it fails**
+- [x] **Step 2: Run test to verify it fails**
 
 Run: `dotnet test LocalLLMServerManager.Tests --filter "FullyQualifiedName~TelemetryViewModel_EngineCards"`
 Expected: FAIL with missing properties/types.
 
-- [ ] **Step 3: Implement EngineStatusCardModel and update TelemetryViewModel**
+- [x] **Step 3: Implement EngineStatusCardModel and update TelemetryViewModel**
 
 Create `LocalLLMServerManager.Shared/Models/EngineStatusCardModel.cs`:
 ```csharp
@@ -78,7 +78,7 @@ public class EngineStatusCardModel
 Update `TelemetryViewModel.cs`:
 Add `OllamaCard`, `ComfyUiCard`, `ForgeCard`, `KokoroCard` properties and sync them in `UpdateFromTelemetry()` and `RefreshStatusAsync()`. Add `ToggleEngineCardCommand` taking `EngineKey` to start/stop the engine via `IAiEngineManager`.
 
-- [ ] **Step 4: Update TelemetryRibbonControl.axaml and TelemetryHeaderControl.axaml**
+- [x] **Step 4: Update TelemetryRibbonControl.axaml and TelemetryHeaderControl.axaml**
 
 Replace the bare toggle switches (`ToggleSwitch`) with interactive pill cards styled with:
 - Status dot (green `#10b981` when online, amber `#f59e0b` when starting, slate `#64748b` when stopped).
@@ -86,16 +86,16 @@ Replace the bare toggle switches (`ToggleSwitch`) with interactive pill cards st
 - Direct action button (`▷ Start` when stopped, `⏹ Stop` when running).
 - ToolTip containing port, memory, and troubleshooting advice.
 
-- [ ] **Step 5: Run tests and verify they pass**
+- [x] **Step 5: Run tests and verify they pass**
 
 Run: `dotnet test LocalLLMServerManager.Tests --filter "FullyQualifiedName~TelemetryViewModel"`
 Expected: PASS.
 
-- [ ] **Step 6: Run lint and typecheck**
+- [x] **Step 6: Run lint and typecheck**
 
 Run: `npm run lint` and `npx tsc --noEmit`
 
-- [ ] **Step 7: Commit**
+- [x] **Step 7: Commit**
 
 ```bash
 git add LocalLLMServerManager.Shared/Models/EngineStatusCardModel.cs LocalLLMServerManager.Shared/ViewModels/TelemetryViewModel.cs LocalLLMServerManager.Shared/Views/Controls/TelemetryRibbonControl.axaml LocalLLMServerManager.Shared/Views/Controls/TelemetryHeaderControl.axaml LocalLLMServerManager.Tests/TelemetryViewModelTests.cs
@@ -116,7 +116,7 @@ git commit -m "feat(ui): add interactive engine status cards to telemetry header
 - Consumes: `DocumentationViewModel`, `AiAssistantViewModel`.
 - Produces: `MainViewModel.IsCopilotSidebarOpen`, `SelectedCopilotTab` ("Assistant" | "Docs"), `ToggleCopilotSidebarCommand`, `SelectCopilotTabCommand`.
 
-- [ ] **Step 1: Write failing unit test for Copilot Sidebar state in MainViewModel**
+- [x] **Step 1: Write failing unit test for Copilot Sidebar state in MainViewModel**
 
 In `LocalLLMServerManager.Tests/MainViewModelTests.cs`:
 ```csharp
@@ -135,12 +135,12 @@ public void MainViewModel_ToggleCopilotSidebar_TogglesState()
 }
 ```
 
-- [ ] **Step 2: Run test to verify it fails**
+- [x] **Step 2: Run test to verify it fails**
 
 Run: `dotnet test LocalLLMServerManager.Tests --filter "FullyQualifiedName~MainViewModel_ToggleCopilotSidebar"`
 Expected: FAIL.
 
-- [ ] **Step 3: Implement Copilot Sidebar properties and commands in MainViewModel**
+- [x] **Step 3: Implement Copilot Sidebar properties and commands in MainViewModel**
 
 In `MainViewModel.cs`:
 - Add `[ObservableProperty] private bool _isCopilotSidebarOpen;`
@@ -148,7 +148,7 @@ In `MainViewModel.cs`:
 - Add `[RelayCommand] private void ToggleCopilotSidebar(string? tab = null)`
 - Add `[RelayCommand] private void SelectCopilotTab(string tab)`
 
-- [ ] **Step 4: Update MainView.axaml with unified right sidebar**
+- [x] **Step 4: Update MainView.axaml with unified right sidebar**
 
 In `MainView.axaml`:
 - Remove separate `DocumentationDrawer` (left drawer) and separate `AiAssistantDrawer` (right drawer).
@@ -180,16 +180,16 @@ In `MainView.axaml`:
   ```
 - Update `ActivityRailControl.axaml` to have a dedicated `Copilot & Docs` button that toggles `ToggleCopilotSidebarCommand`.
 
-- [ ] **Step 5: Run tests and verify they pass**
+- [x] **Step 5: Run tests and verify they pass**
 
 Run: `dotnet test LocalLLMServerManager.Tests --filter "FullyQualifiedName~MainViewModel"`
 Expected: PASS.
 
-- [ ] **Step 6: Run lint and typecheck**
+- [x] **Step 6: Run lint and typecheck**
 
 Run: `npm run lint` and `npx tsc --noEmit`
 
-- [ ] **Step 7: Commit**
+- [x] **Step 7: Commit**
 
 ```bash
 git add LocalLLMServerManager.Shared/ViewModels/MainViewModel.cs LocalLLMServerManager.Shared/Views/MainView.axaml LocalLLMServerManager.Shared/Views/Controls/ActivityRailControl.axaml LocalLLMServerManager.Tests/MainViewModelTests.cs
@@ -210,7 +210,7 @@ git commit -m "feat(ui): unify documentation and assistant into docked copilot s
 - Produces: `DocumentationViewModel.AskCopilotAboutGuideCommand`
 - Consumes: `AiAssistantViewModel.AppendPromptAndSendAsync(string prompt)`
 
-- [ ] **Step 1: Write failing unit test for guide citation in assistant**
+- [x] **Step 1: Write failing unit test for guide citation in assistant**
 
 Create `LocalLLMServerManager.Tests/DocumentationAndAssistantBridgeTests.cs`:
 ```csharp
@@ -227,12 +227,12 @@ public void DocumentationViewModel_AskCopilot_ForwardsTopicToAssistant()
 }
 ```
 
-- [ ] **Step 2: Run test to verify it fails**
+- [x] **Step 2: Run test to verify it fails**
 
 Run: `dotnet test LocalLLMServerManager.Tests --filter "FullyQualifiedName~DocumentationAndAssistantBridgeTests"`
 Expected: FAIL.
 
-- [ ] **Step 3: Implement bridge logic in DocumentationViewModel and AiAssistantViewModel**
+- [x] **Step 3: Implement bridge logic in DocumentationViewModel and AiAssistantViewModel**
 
 In `DocumentationViewModel.cs`:
 - Add `[RelayCommand] private void AskCopilotAboutGuide()`
@@ -243,16 +243,16 @@ In `DocumentationTabControl.axaml`:
   `<Button Content="💬 Ask Copilot About This Guide" Command="{Binding AskCopilotAboutGuideCommand}" Classes="copilot-action-btn"/>`
 - Add search box fuzzy filtering at top of documentation list.
 
-- [ ] **Step 4: Run tests and verify they pass**
+- [x] **Step 4: Run tests and verify they pass**
 
 Run: `dotnet test LocalLLMServerManager.Tests --filter "FullyQualifiedName~DocumentationAndAssistantBridgeTests"`
 Expected: PASS.
 
-- [ ] **Step 5: Run lint and typecheck**
+- [x] **Step 5: Run lint and typecheck**
 
 Run: `npm run lint` and `npx tsc --noEmit`
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add LocalLLMServerManager.Shared/ViewModels/DocumentationViewModel.cs LocalLLMServerManager.Shared/Views/Controls/DocumentationTabControl.axaml LocalLLMServerManager.Tests/DocumentationAndAssistantBridgeTests.cs
@@ -273,7 +273,7 @@ git commit -m "feat(ui): add ask-copilot action to documentation guides"
 - Produces: `EngineStudioViewModel.IsParametersFlyoutOpen`, `ToggleParametersFlyoutCommand`.
 - Produces: `EngineStudioViewModel.ActiveModelBadge`, `ActiveAspectPreset`.
 
-- [ ] **Step 1: Write failing unit test for Studio modality and dock parameters**
+- [x] **Step 1: Write failing unit test for Studio modality and dock parameters**
 
 In `LocalLLMServerManager.Tests/EngineStudioViewModelTests.cs`:
 ```csharp
@@ -291,12 +291,12 @@ public void EngineStudioViewModel_ModalitySwitch_UpdatesDockState()
 }
 ```
 
-- [ ] **Step 2: Run test to verify it fails**
+- [x] **Step 2: Run test to verify it fails**
 
 Run: `dotnet test LocalLLMServerManager.Tests --filter "FullyQualifiedName~EngineStudioViewModel_ModalitySwitch"`
 Expected: FAIL.
 
-- [ ] **Step 3: Update EngineStudioViewModel.cs**
+- [x] **Step 3: Update EngineStudioViewModel.cs**
 
 In `EngineStudioViewModel.cs`:
 - Add `[ObservableProperty] private string _selectedModality = "Image";`
@@ -305,7 +305,7 @@ In `EngineStudioViewModel.cs`:
 - Add `[RelayCommand] private void ToggleParametersFlyout()`
 - Add active model resolution helper syncing with `SettingsService` and active engines.
 
-- [ ] **Step 4: Redesign EngineStudioTabControl.axaml**
+- [x] **Step 4: Redesign EngineStudioTabControl.axaml**
 
 Replace rigid 5-step numbered boxes:
 1. **Top Modality Bar:**
@@ -325,16 +325,16 @@ Replace rigid 5-step numbered boxes:
      - Prominent `Generate ↵` action button with loading spinner state.
    - Collapsible Parameters Popover for steps, CFG, seed, denoise, aspect ratio.
 
-- [ ] **Step 5: Run tests and verify they pass**
+- [x] **Step 5: Run tests and verify they pass**
 
 Run: `dotnet test LocalLLMServerManager.Tests --filter "FullyQualifiedName~EngineStudioViewModel"`
 Expected: PASS.
 
-- [ ] **Step 6: Run lint and typecheck**
+- [x] **Step 6: Run lint and typecheck**
 
 Run: `npm run lint` and `npx tsc --noEmit`
 
-- [ ] **Step 7: Commit**
+- [x] **Step 7: Commit**
 
 ```bash
 git add LocalLLMServerManager.Shared/ViewModels/EngineStudioViewModel.cs LocalLLMServerManager.Shared/Views/Controls/EngineStudioTabControl.axaml LocalLLMServerManager.Tests/EngineStudioViewModelTests.cs
@@ -349,27 +349,27 @@ git commit -m "feat(ui): redesign engine studio with fluid canvas and creative p
 - Modify: `package.json` (if any scripts needed)
 - Test: Full unit and integration test suite
 
-- [ ] **Step 1: Execute fast update build script**
+- [x] **Step 1: Execute fast update build script**
 
 Run: `pwsh scripts/fast_update.ps1 -NoLaunch`
 Verify: Compiles WASM and Windows binaries cleanly and deploys to `C:\Program Files\LocalLLMServerManager`.
 
-- [ ] **Step 2: Run full unit & integration tests**
+- [x] **Step 2: Run full unit & integration tests**
 
 Run: `dotnet test LocalLLMServerManager.Tests`
 Expected: All 800+ tests pass with 0 failures.
 
-- [ ] **Step 3: Run frontend lint & typecheck**
+- [x] **Step 3: Run frontend lint & typecheck**
 
 Run: `npm run lint` and `npx tsc --noEmit`
 Expected: 0 errors.
 
-- [ ] **Step 4: Verify live service health**
+- [x] **Step 4: Verify live service health**
 
 Run: `Invoke-RestMethod http://127.0.0.1:5246/health`
 Expected: Healthy status with all engines reachable.
 
-- [ ] **Step 5: Commit and tag release**
+- [x] **Step 5: Commit and tag release**
 
 ```bash
 git add -A

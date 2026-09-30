@@ -6,9 +6,9 @@
 
     <Grid>
         <!-- Full 3-Card Telemetry Dashboard (when !IsCollapsed) -->
-        <Grid ColumnDefinitions="*, 1.3*, *" Margin="16,14,16,10" IsVisible="{Binding !IsCollapsed}">
-            <!-- CARD 1: Service Health Badges -->
-            <Border Grid.Column="0" Classes="matte-card" Margin="0,0,8,0" Padding="14,10">
+        <Grid ColumnDefinitions="1.2*, 1.1*, *" Margin="16,14,16,10" IsVisible="{Binding !IsCollapsed}">
+            <!-- CARD 1: Service Health Badges / Interactive Engine Status Cards -->
+            <Border Grid.Column="0" Classes="matte-card" Margin="0,0,8,0" Padding="12,10">
                 <StackPanel Spacing="8">
                     <Grid ColumnDefinitions="*, Auto">
                         <TextBlock Grid.Column="0" Text="⚡ Engine Health Status" FontSize="12" FontWeight="SemiBold" Foreground="{StaticResource TextMutedBrush}"/>
@@ -16,34 +16,62 @@
                             <TextBlock Text="Services" FontSize="10" Foreground="{StaticResource TextMutedBrush}" FontWeight="SemiBold"/>
                         </Border>
                     </Grid>
-                    <UniformGrid Columns="3">
-                        <StackPanel HorizontalAlignment="Center" Spacing="3">
-                            <TextBlock Text="Ollama" FontSize="11" Foreground="{StaticResource TextMutedBrush}" HorizontalAlignment="Center"/>
-                            <Button x:Name="OllamaStatusBtn" Classes="matte-pill" Padding="8,3" Command="{Binding ManageServiceCommand}" CommandParameter="Ollama" Background="Transparent" BorderThickness="0">
+                    <UniformGrid Columns="4">
+                        <!-- Ollama Card -->
+                        <Border Classes="matte-pill" Margin="2,0" Padding="6,4" ToolTip.Tip="{Binding OllamaCard.StatusTooltip}">
+                            <StackPanel HorizontalAlignment="Center" Spacing="2">
                                 <StackPanel Orientation="Horizontal" Spacing="4" HorizontalAlignment="Center">
-                                    <Ellipse Width="6" Height="6" Fill="{Binding OllamaStatusColor}" VerticalAlignment="Center"/>
-                                    <TextBlock Text="{Binding OllamaStatus}" FontSize="11" Foreground="{StaticResource TextMainBrush}" FontWeight="Bold"/>
+                                    <Ellipse Width="6" Height="6" Fill="{Binding OllamaCard.StatusColor}" VerticalAlignment="Center"/>
+                                    <TextBlock Text="{Binding OllamaCard.DisplayName}" FontSize="11" Foreground="{StaticResource TextMainBrush}" FontWeight="SemiBold"/>
                                 </StackPanel>
-                            </Button>
-                        </StackPanel>
-                        <StackPanel HorizontalAlignment="Center" Spacing="3">
-                            <TextBlock Text="Forge SD" FontSize="11" Foreground="{StaticResource TextMutedBrush}" HorizontalAlignment="Center"/>
-                            <Button x:Name="ForgeStatusBtn" Classes="matte-pill" Padding="8,3" Command="{Binding ManageServiceCommand}" CommandParameter="Forge SD" Background="Transparent" BorderThickness="0">
+                                <TextBlock Text="{Binding OllamaCard.DisplaySubtitle}" FontSize="9" Foreground="{StaticResource TextMutedBrush}" HorizontalAlignment="Center" MaxWidth="75" TextTrimming="CharacterEllipsis"/>
+                                <Button Classes="matte-secondary" Padding="6,2" Height="20"
+                                        Command="{Binding ToggleEngineCardCommand}" CommandParameter="ollama"
+                                        Content="{Binding OllamaCard.ActionButtonText}" FontSize="9" HorizontalAlignment="Center"/>
+                            </StackPanel>
+                        </Border>
+
+                        <!-- SD Forge Card -->
+                        <Border Classes="matte-pill" Margin="2,0" Padding="6,4" ToolTip.Tip="{Binding ForgeCard.StatusTooltip}">
+                            <StackPanel HorizontalAlignment="Center" Spacing="2">
                                 <StackPanel Orientation="Horizontal" Spacing="4" HorizontalAlignment="Center">
-                                    <Ellipse Width="6" Height="6" Fill="{Binding ForgeStatusColor}" VerticalAlignment="Center"/>
-                                    <TextBlock Text="{Binding ForgeStatus}" FontSize="11" Foreground="{StaticResource TextMainBrush}" FontWeight="Bold"/>
+                                    <Ellipse Width="6" Height="6" Fill="{Binding ForgeCard.StatusColor}" VerticalAlignment="Center"/>
+                                    <TextBlock Text="{Binding ForgeCard.DisplayName}" FontSize="11" Foreground="{StaticResource TextMainBrush}" FontWeight="SemiBold"/>
                                 </StackPanel>
-                            </Button>
-                        </StackPanel>
-                        <StackPanel HorizontalAlignment="Center" Spacing="3">
-                            <TextBlock Text="ComfyUI" FontSize="11" Foreground="{StaticResource TextMutedBrush}" HorizontalAlignment="Center"/>
-                            <Button x:Name="ComfyStatusBtn" Classes="matte-pill" Padding="8,3" Command="{Binding ManageServiceCommand}" CommandParameter="ComfyUI" Background="Transparent" BorderThickness="0">
+                                <TextBlock Text="{Binding ForgeCard.DisplaySubtitle}" FontSize="9" Foreground="{StaticResource TextMutedBrush}" HorizontalAlignment="Center" MaxWidth="75" TextTrimming="CharacterEllipsis"/>
+                                <Button Classes="matte-secondary" Padding="6,2" Height="20"
+                                        Command="{Binding ToggleEngineCardCommand}" CommandParameter="forge"
+                                        Content="{Binding ForgeCard.ActionButtonText}" FontSize="9" HorizontalAlignment="Center"/>
+                            </StackPanel>
+                        </Border>
+
+                        <!-- ComfyUI Card -->
+                        <Border Classes="matte-pill" Margin="2,0" Padding="6,4" ToolTip.Tip="{Binding ComfyUiCard.StatusTooltip}">
+                            <StackPanel HorizontalAlignment="Center" Spacing="2">
                                 <StackPanel Orientation="Horizontal" Spacing="4" HorizontalAlignment="Center">
-                                    <Ellipse Width="6" Height="6" Fill="{Binding ComfyStatusColor}" VerticalAlignment="Center"/>
-                                    <TextBlock Text="{Binding ComfyStatus}" FontSize="11" Foreground="{StaticResource TextMainBrush}" FontWeight="Bold"/>
+                                    <Ellipse Width="6" Height="6" Fill="{Binding ComfyUiCard.StatusColor}" VerticalAlignment="Center"/>
+                                    <TextBlock Text="{Binding ComfyUiCard.DisplayName}" FontSize="11" Foreground="{StaticResource TextMainBrush}" FontWeight="SemiBold"/>
                                 </StackPanel>
-                            </Button>
-                        </StackPanel>
+                                <TextBlock Text="{Binding ComfyUiCard.DisplaySubtitle}" FontSize="9" Foreground="{StaticResource TextMutedBrush}" HorizontalAlignment="Center" MaxWidth="75" TextTrimming="CharacterEllipsis"/>
+                                <Button Classes="matte-secondary" Padding="6,2" Height="20"
+                                        Command="{Binding ToggleEngineCardCommand}" CommandParameter="comfyui"
+                                        Content="{Binding ComfyUiCard.ActionButtonText}" FontSize="9" HorizontalAlignment="Center"/>
+                            </StackPanel>
+                        </Border>
+
+                        <!-- Kokoro TTS Card -->
+                        <Border Classes="matte-pill" Margin="2,0" Padding="6,4" ToolTip.Tip="{Binding KokoroCard.StatusTooltip}">
+                            <StackPanel HorizontalAlignment="Center" Spacing="2">
+                                <StackPanel Orientation="Horizontal" Spacing="4" HorizontalAlignment="Center">
+                                    <Ellipse Width="6" Height="6" Fill="{Binding KokoroCard.StatusColor}" VerticalAlignment="Center"/>
+                                    <TextBlock Text="{Binding KokoroCard.DisplayName}" FontSize="11" Foreground="{StaticResource TextMainBrush}" FontWeight="SemiBold"/>
+                                </StackPanel>
+                                <TextBlock Text="{Binding KokoroCard.DisplaySubtitle}" FontSize="9" Foreground="{StaticResource TextMutedBrush}" HorizontalAlignment="Center" MaxWidth="75" TextTrimming="CharacterEllipsis"/>
+                                <Button Classes="matte-secondary" Padding="6,2" Height="20"
+                                        Command="{Binding ToggleEngineCardCommand}" CommandParameter="kokoro"
+                                        Content="{Binding KokoroCard.ActionButtonText}" FontSize="9" HorizontalAlignment="Center"/>
+                            </StackPanel>
+                        </Border>
                     </UniformGrid>
                 </StackPanel>
             </Border>
@@ -97,26 +125,44 @@
         <!-- Slim 32px Horizontal Status Ribbon (when IsCollapsed) -->
         <Border Classes="matte-card" Height="32" Margin="16,6,16,6" Padding="12,0" IsVisible="{Binding IsCollapsed}">
             <Grid ColumnDefinitions="Auto, *, Auto" VerticalAlignment="Center">
-                <!-- Left: Service indicator dots for Ollama, Forge, and ComfyUI with status colors -->
-                <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="12" VerticalAlignment="Center">
-                    <Button Classes="matte-pill" Padding="6,2" Command="{Binding ManageServiceCommand}" CommandParameter="Ollama" Background="Transparent" BorderThickness="0" ToolTip.Tip="Ollama Service">
-                        <StackPanel Orientation="Horizontal" Spacing="5" VerticalAlignment="Center">
-                            <Ellipse Width="7" Height="7" Fill="{Binding OllamaStatusColor}" VerticalAlignment="Center"/>
-                            <TextBlock Text="Ollama" FontSize="11" Foreground="{StaticResource TextMainBrush}" FontWeight="SemiBold"/>
+                <!-- Left: Service indicator dots for Ollama, Forge SD, ComfyUI, Kokoro TTS -->
+                <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+                    <Border Classes="matte-pill" Padding="6,2" ToolTip.Tip="{Binding OllamaCard.StatusTooltip}">
+                        <StackPanel Orientation="Horizontal" Spacing="4" VerticalAlignment="Center">
+                            <Ellipse Width="6" Height="6" Fill="{Binding OllamaCard.StatusColor}" VerticalAlignment="Center"/>
+                            <TextBlock Text="{Binding OllamaCard.DisplayName}" FontSize="11" Foreground="{StaticResource TextMainBrush}" FontWeight="SemiBold" VerticalAlignment="Center"/>
+                            <Button Classes="matte-secondary" Padding="4,1" Height="18"
+                                    Command="{Binding ToggleEngineCardCommand}" CommandParameter="ollama"
+                                    Content="{Binding OllamaCard.ActionButtonText}" FontSize="9" VerticalAlignment="Center"/>
                         </StackPanel>
-                    </Button>
-                    <Button Classes="matte-pill" Padding="6,2" Command="{Binding ManageServiceCommand}" CommandParameter="Forge SD" Background="Transparent" BorderThickness="0" ToolTip.Tip="Forge SD Service">
-                        <StackPanel Orientation="Horizontal" Spacing="5" VerticalAlignment="Center">
-                            <Ellipse Width="7" Height="7" Fill="{Binding ForgeStatusColor}" VerticalAlignment="Center"/>
-                            <TextBlock Text="Forge SD" FontSize="11" Foreground="{StaticResource TextMainBrush}" FontWeight="SemiBold"/>
+                    </Border>
+                    <Border Classes="matte-pill" Padding="6,2" ToolTip.Tip="{Binding ForgeCard.StatusTooltip}">
+                        <StackPanel Orientation="Horizontal" Spacing="4" VerticalAlignment="Center">
+                            <Ellipse Width="6" Height="6" Fill="{Binding ForgeCard.StatusColor}" VerticalAlignment="Center"/>
+                            <TextBlock Text="{Binding ForgeCard.DisplayName}" FontSize="11" Foreground="{StaticResource TextMainBrush}" FontWeight="SemiBold" VerticalAlignment="Center"/>
+                            <Button Classes="matte-secondary" Padding="4,1" Height="18"
+                                    Command="{Binding ToggleEngineCardCommand}" CommandParameter="forge"
+                                    Content="{Binding ForgeCard.ActionButtonText}" FontSize="9" VerticalAlignment="Center"/>
                         </StackPanel>
-                    </Button>
-                    <Button Classes="matte-pill" Padding="6,2" Command="{Binding ManageServiceCommand}" CommandParameter="ComfyUI" Background="Transparent" BorderThickness="0" ToolTip.Tip="ComfyUI Service">
-                        <StackPanel Orientation="Horizontal" Spacing="5" VerticalAlignment="Center">
-                            <Ellipse Width="7" Height="7" Fill="{Binding ComfyStatusColor}" VerticalAlignment="Center"/>
-                            <TextBlock Text="ComfyUI" FontSize="11" Foreground="{StaticResource TextMainBrush}" FontWeight="SemiBold"/>
+                    </Border>
+                    <Border Classes="matte-pill" Padding="6,2" ToolTip.Tip="{Binding ComfyUiCard.StatusTooltip}">
+                        <StackPanel Orientation="Horizontal" Spacing="4" VerticalAlignment="Center">
+                            <Ellipse Width="6" Height="6" Fill="{Binding ComfyUiCard.StatusColor}" VerticalAlignment="Center"/>
+                            <TextBlock Text="{Binding ComfyUiCard.DisplayName}" FontSize="11" Foreground="{StaticResource TextMainBrush}" FontWeight="SemiBold" VerticalAlignment="Center"/>
+                            <Button Classes="matte-secondary" Padding="4,1" Height="18"
+                                    Command="{Binding ToggleEngineCardCommand}" CommandParameter="comfyui"
+                                    Content="{Binding ComfyUiCard.ActionButtonText}" FontSize="9" VerticalAlignment="Center"/>
                         </StackPanel>
-                    </Button>
+                    </Border>
+                    <Border Classes="matte-pill" Padding="6,2" ToolTip.Tip="{Binding KokoroCard.StatusTooltip}">
+                        <StackPanel Orientation="Horizontal" Spacing="4" VerticalAlignment="Center">
+                            <Ellipse Width="6" Height="6" Fill="{Binding KokoroCard.StatusColor}" VerticalAlignment="Center"/>
+                            <TextBlock Text="{Binding KokoroCard.DisplayName}" FontSize="11" Foreground="{StaticResource TextMainBrush}" FontWeight="SemiBold" VerticalAlignment="Center"/>
+                            <Button Classes="matte-secondary" Padding="4,1" Height="18"
+                                    Command="{Binding ToggleEngineCardCommand}" CommandParameter="kokoro"
+                                    Content="{Binding KokoroCard.ActionButtonText}" FontSize="9" VerticalAlignment="Center"/>
+                        </StackPanel>
+                    </Border>
                 </StackPanel>
 
                 <!-- Center: Compact VRAM allocation pill (VramStatusText) -->

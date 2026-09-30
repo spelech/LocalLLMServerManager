@@ -130,6 +130,64 @@ public partial class MainViewModel : ObservableObject
 
     [ObservableProperty] private bool _isAnyDrawerOpen = false;
     [ObservableProperty] private bool _isDesktopHost = false;
+    [ObservableProperty] private bool _isCopilotSidebarOpen = false;
+    [ObservableProperty] private string _selectedCopilotTab = "Assistant";
+
+    public bool IsAssistantTabActive => SelectedCopilotTab == "Assistant";
+    public bool IsDocsTabActive => SelectedCopilotTab == "Docs";
+
+    [RelayCommand]
+    public void ToggleCopilotSidebar(string? tab = null)
+    {
+        if (tab != null && SelectedCopilotTab != tab && IsCopilotSidebarOpen)
+        {
+            SelectedCopilotTab = tab;
+            OnPropertyChanged(nameof(IsAssistantTabActive));
+            OnPropertyChanged(nameof(IsDocsTabActive));
+            Documentation.IsDrawerOpen = SelectedCopilotTab == "Docs";
+            Assistant.IsDrawerOpen = SelectedCopilotTab == "Assistant";
+            UpdateIsAnyDrawerOpen();
+            return;
+        }
+
+        if (tab != null)
+        {
+            SelectedCopilotTab = tab;
+            OnPropertyChanged(nameof(IsAssistantTabActive));
+            OnPropertyChanged(nameof(IsDocsTabActive));
+        }
+
+        IsCopilotSidebarOpen = !IsCopilotSidebarOpen;
+        Documentation.IsDrawerOpen = IsCopilotSidebarOpen && SelectedCopilotTab == "Docs";
+        Assistant.IsDrawerOpen = IsCopilotSidebarOpen && SelectedCopilotTab == "Assistant";
+
+        if (IsCopilotSidebarOpen && SelectedCopilotTab == "Assistant" && Assistant.AvailableModelCapabilities.Count <= 1)
+        {
+            _ = Assistant.LoadAvailableModelsAsync();
+        }
+
+        UpdateIsAnyDrawerOpen();
+    }
+
+    [RelayCommand]
+    public void SelectCopilotTab(string tab)
+    {
+        SelectedCopilotTab = tab;
+        OnPropertyChanged(nameof(IsAssistantTabActive));
+        OnPropertyChanged(nameof(IsDocsTabActive));
+        if (!IsCopilotSidebarOpen)
+        {
+            IsCopilotSidebarOpen = true;
+        }
+        Documentation.IsDrawerOpen = SelectedCopilotTab == "Docs";
+        Assistant.IsDrawerOpen = SelectedCopilotTab == "Assistant";
+
+        if (SelectedCopilotTab == "Assistant" && Assistant.AvailableModelCapabilities.Count <= 1)
+        {
+            _ = Assistant.LoadAvailableModelsAsync();
+        }
+        UpdateIsAnyDrawerOpen();
+    }
 
     [RelayCommand]
     public void ToggleDocumentationDrawer()
@@ -140,10 +198,7 @@ public partial class MainViewModel : ObservableObject
             return;
         }
 
-        Assistant.IsDrawerOpen = false;
-        Ollama.IsPullDrawerOpen = false;
-        Documentation.IsDrawerOpen = !Documentation.IsDrawerOpen;
-        UpdateIsAnyDrawerOpen();
+        ToggleCopilotSidebar("Docs");
     }
 
     [RelayCommand]
@@ -155,19 +210,13 @@ public partial class MainViewModel : ObservableObject
             return;
         }
 
-        Documentation.IsDrawerOpen = false;
-        Ollama.IsPullDrawerOpen = false;
-        Assistant.IsDrawerOpen = !Assistant.IsDrawerOpen;
-        if (Assistant.IsDrawerOpen && Assistant.AvailableModelCapabilities.Count <= 1)
-        {
-            _ = Assistant.LoadAvailableModelsAsync();
-        }
-        UpdateIsAnyDrawerOpen();
+        ToggleCopilotSidebar("Assistant");
     }
 
     [RelayCommand]
     public void CloseDrawers()
     {
+        IsCopilotSidebarOpen = false;
         Documentation.IsDrawerOpen = false;
         Assistant.IsDrawerOpen = false;
         Ollama.ClosePullDrawer();
@@ -176,7 +225,7 @@ public partial class MainViewModel : ObservableObject
 
     public void UpdateIsAnyDrawerOpen()
     {
-        IsAnyDrawerOpen = Documentation.IsDrawerOpen || Assistant.IsDrawerOpen || Ollama.IsPullDrawerOpen;
+        IsAnyDrawerOpen = IsCopilotSidebarOpen || Documentation.IsDrawerOpen || Assistant.IsDrawerOpen || Ollama.IsPullDrawerOpen;
     }
 
 
@@ -260,6 +309,11 @@ public partial class MainViewModel : ObservableObject
             ApiBase = ApiBase
         };
         Documentation.OnNavigateToTabRequested = tab => SelectedTabIndex = tab;
+        Documentation.OnAskCopilotRequested = prompt =>
+        {
+            SelectCopilotTab("Assistant");
+            Assistant.InputText = prompt;
+        };
 
         NavigationRail.PropertyChanged += (s, e) =>
         {

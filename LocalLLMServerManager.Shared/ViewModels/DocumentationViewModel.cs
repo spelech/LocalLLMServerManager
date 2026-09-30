@@ -56,9 +56,20 @@ public partial class DocumentationViewModel : ObservableObject
 
     public Action<int>? OnNavigateToTabRequested { get; set; }
     public Action? OnPopOutNativeWindowRequested { get; set; }
+    public Action<string>? OnAskCopilotRequested { get; set; }
 
     [ObservableProperty] private bool _isDrawerOpen = false;
     [ObservableProperty] private bool _isDetailActive = false;
+
+    [RelayCommand]
+    public void AskCopilotAboutGuide()
+    {
+        if (SelectedSection != null)
+        {
+            var prompt = $"Can you explain '{SelectedSection.Title}' ({SelectedSection.Summary}) and how I use it in the Studio?";
+            OnAskCopilotRequested?.Invoke(prompt);
+        }
+    }
 
     [RelayCommand]
     public void BackToTopics()

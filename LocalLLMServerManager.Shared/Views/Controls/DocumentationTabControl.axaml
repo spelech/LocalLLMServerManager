@@ -73,6 +73,17 @@
                             <TextBlock Text="{Binding Summary}" FontSize="13" Foreground="{StaticResource TextMutedBrush}" TextWrapping="Wrap" Margin="0,6,0,0"/>
                         </StackPanel>
                         <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8" VerticalAlignment="Top" Margin="8,0,0,0">
+                            <Button Command="{Binding $parent[UserControl].((vm:DocumentationViewModel)DataContext).AskCopilotAboutGuideCommand}"
+                                    Classes="matte-primary"
+                                    Background="#064e3b"
+                                    BorderBrush="#059669"
+                                    Padding="10,4"
+                                    ToolTip.Tip="Ask AI Assistant to explain or walk through this guide">
+                                <StackPanel Orientation="Horizontal" Spacing="4">
+                                    <PathIcon Data="{StaticResource IconAiAssist}" Width="12" Height="12" Foreground="#34d399" VerticalAlignment="Center"/>
+                                    <TextBlock Text="Ask Copilot" Foreground="#34d399" FontSize="11" FontWeight="SemiBold" VerticalAlignment="Center"/>
+                                </StackPanel>
+                            </Button>
                             <Button Command="{Binding $parent[UserControl].((vm:DocumentationViewModel)DataContext).PopOutNativeWindowCommand}"
                                     Classes="matte-primary"
                                     Padding="10,4"
