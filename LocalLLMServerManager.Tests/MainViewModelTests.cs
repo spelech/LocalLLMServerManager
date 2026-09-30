@@ -502,38 +502,40 @@ public class MainViewModelTests : IClassFixture<AppTestServerFixture>
     }
 
     [Fact]
-    public void SlideOutDrawer_ToggleAndClose_MutuallyExclusiveAndUpdatesState()
+    public void CopilotSidebar_ToggleAndClose_SwitchesTabsAndUpdatesState()
     {
         var vm = new MainViewModel();
 
         Assert.False(vm.IsAnyDrawerOpen);
-        Assert.False(vm.Documentation.IsDrawerOpen);
-        Assert.False(vm.Assistant.IsDrawerOpen);
+        Assert.False(vm.IsCopilotSidebarOpen);
 
         // Toggle Documentation Drawer
         vm.ToggleDocumentationDrawer();
-        Assert.True(vm.Documentation.IsDrawerOpen);
-        Assert.False(vm.Assistant.IsDrawerOpen);
+        Assert.True(vm.IsCopilotSidebarOpen);
+        Assert.Equal("Docs", vm.SelectedCopilotTab);
+        Assert.True(vm.IsDocsTabActive);
+        Assert.False(vm.IsAssistantTabActive);
         Assert.True(vm.IsAnyDrawerOpen);
 
-        // Toggle AI Assist Drawer (should close documentation drawer)
+        // Toggle AI Assist Drawer (switches sidebar tab to Assistant)
         vm.ToggleAiAssistDrawer();
-        Assert.False(vm.Documentation.IsDrawerOpen);
-        Assert.True(vm.Assistant.IsDrawerOpen);
+        Assert.True(vm.IsCopilotSidebarOpen);
+        Assert.Equal("Assistant", vm.SelectedCopilotTab);
+        Assert.True(vm.IsAssistantTabActive);
+        Assert.False(vm.IsDocsTabActive);
         Assert.True(vm.IsAnyDrawerOpen);
 
         // Close Drawers
         vm.CloseDrawers();
-        Assert.False(vm.Documentation.IsDrawerOpen);
-        Assert.False(vm.Assistant.IsDrawerOpen);
+        Assert.False(vm.IsCopilotSidebarOpen);
         Assert.False(vm.IsAnyDrawerOpen);
 
         // Toggle Documentation Drawer twice (open then close)
         vm.ToggleDocumentationDrawer();
-        Assert.True(vm.Documentation.IsDrawerOpen);
+        Assert.True(vm.IsCopilotSidebarOpen);
         Assert.True(vm.IsAnyDrawerOpen);
         vm.ToggleDocumentationDrawer();
-        Assert.False(vm.Documentation.IsDrawerOpen);
+        Assert.False(vm.IsCopilotSidebarOpen);
         Assert.False(vm.IsAnyDrawerOpen);
     }
 
@@ -561,19 +563,19 @@ public class MainViewModelTests : IClassFixture<AppTestServerFixture>
     }
 
     [Fact]
-    public void ToggleDrawers_OnWeb_OpensInAppDrawersAndUpdatesState()
+    public void ToggleDrawers_OnWeb_OpensCopilotSidebarAndUpdatesActiveTab()
     {
         var vm = new MainViewModel();
         Assert.False(vm.IsDesktopHost);
 
         vm.ToggleDocumentationDrawerCommand.Execute(null);
-        Assert.True(vm.Documentation.IsDrawerOpen);
-        Assert.False(vm.Assistant.IsDrawerOpen);
+        Assert.True(vm.IsCopilotSidebarOpen);
+        Assert.Equal("Docs", vm.SelectedCopilotTab);
         Assert.True(vm.IsAnyDrawerOpen);
 
         vm.ToggleAiAssistDrawerCommand.Execute(null);
-        Assert.False(vm.Documentation.IsDrawerOpen);
-        Assert.True(vm.Assistant.IsDrawerOpen);
+        Assert.True(vm.IsCopilotSidebarOpen);
+        Assert.Equal("Assistant", vm.SelectedCopilotTab);
         Assert.True(vm.IsAnyDrawerOpen);
     }
 
@@ -588,12 +590,12 @@ public class MainViewModelTests : IClassFixture<AppTestServerFixture>
 
         vm.ToggleDocumentationDrawerCommand.Execute(null);
         Assert.True(docPopOutCalled);
-        Assert.False(vm.Documentation.IsDrawerOpen);
+        Assert.False(vm.IsCopilotSidebarOpen);
         Assert.False(vm.IsAnyDrawerOpen);
 
         vm.ToggleAiAssistDrawerCommand.Execute(null);
         Assert.True(aiPopOutCalled);
-        Assert.False(vm.Assistant.IsDrawerOpen);
+        Assert.False(vm.IsCopilotSidebarOpen);
         Assert.False(vm.IsAnyDrawerOpen);
     }
 
@@ -657,16 +659,15 @@ public class MainViewModelTests : IClassFixture<AppTestServerFixture>
 
         // Companion event orchestration
         vm.CloseDrawers();
-        Assert.False(vm.Documentation.IsDrawerOpen);
-        Assert.False(vm.Assistant.IsDrawerOpen);
+        Assert.False(vm.IsCopilotSidebarOpen);
 
         vm.NavigationRail.DocumentationCommand.Execute(null);
-        Assert.True(vm.Documentation.IsDrawerOpen);
-        Assert.False(vm.Assistant.IsDrawerOpen);
+        Assert.True(vm.IsCopilotSidebarOpen);
+        Assert.Equal("Docs", vm.SelectedCopilotTab);
 
         vm.NavigationRail.AiAssistCommand.Execute(null);
-        Assert.False(vm.Documentation.IsDrawerOpen);
-        Assert.True(vm.Assistant.IsDrawerOpen);
+        Assert.True(vm.IsCopilotSidebarOpen);
+        Assert.Equal("Assistant", vm.SelectedCopilotTab);
     }
 }
 

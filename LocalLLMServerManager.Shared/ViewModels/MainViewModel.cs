@@ -144,8 +144,6 @@ public partial class MainViewModel : ObservableObject
             SelectedCopilotTab = tab;
             OnPropertyChanged(nameof(IsAssistantTabActive));
             OnPropertyChanged(nameof(IsDocsTabActive));
-            Documentation.IsDrawerOpen = SelectedCopilotTab == "Docs";
-            Assistant.IsDrawerOpen = SelectedCopilotTab == "Assistant";
             UpdateIsAnyDrawerOpen();
             return;
         }
@@ -158,8 +156,6 @@ public partial class MainViewModel : ObservableObject
         }
 
         IsCopilotSidebarOpen = !IsCopilotSidebarOpen;
-        Documentation.IsDrawerOpen = IsCopilotSidebarOpen && SelectedCopilotTab == "Docs";
-        Assistant.IsDrawerOpen = IsCopilotSidebarOpen && SelectedCopilotTab == "Assistant";
 
         if (IsCopilotSidebarOpen && SelectedCopilotTab == "Assistant" && Assistant.AvailableModelCapabilities.Count <= 1)
         {
@@ -179,8 +175,6 @@ public partial class MainViewModel : ObservableObject
         {
             IsCopilotSidebarOpen = true;
         }
-        Documentation.IsDrawerOpen = SelectedCopilotTab == "Docs";
-        Assistant.IsDrawerOpen = SelectedCopilotTab == "Assistant";
 
         if (SelectedCopilotTab == "Assistant" && Assistant.AvailableModelCapabilities.Count <= 1)
         {
@@ -217,15 +211,13 @@ public partial class MainViewModel : ObservableObject
     public void CloseDrawers()
     {
         IsCopilotSidebarOpen = false;
-        Documentation.IsDrawerOpen = false;
-        Assistant.IsDrawerOpen = false;
         Ollama.ClosePullDrawer();
         UpdateIsAnyDrawerOpen();
     }
 
     public void UpdateIsAnyDrawerOpen()
     {
-        IsAnyDrawerOpen = IsCopilotSidebarOpen || Documentation.IsDrawerOpen || Assistant.IsDrawerOpen || Ollama.IsPullDrawerOpen;
+        IsAnyDrawerOpen = IsCopilotSidebarOpen || Ollama.IsPullDrawerOpen;
     }
 
 

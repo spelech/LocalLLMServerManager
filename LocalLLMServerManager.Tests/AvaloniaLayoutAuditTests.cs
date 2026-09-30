@@ -89,8 +89,7 @@ public class AvaloniaLayoutAuditTests
             // 3. Web Drawer Active: 1280 x 800 with 320px Web Drawer open
             if (window.DataContext is MainViewModel vm)
             {
-                vm.Documentation.IsDrawerOpen = true;
-                vm.UpdateIsAnyDrawerOpen();
+                vm.ToggleCopilotSidebar("Docs");
             }
 
             var mainView = window.FindControl<MainView>("MainContent") ?? window.GetVisualDescendants().OfType<MainView>().FirstOrDefault();
