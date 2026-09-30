@@ -10,13 +10,14 @@
         </ResourceDictionary>
     </Styles.Resources>
 
-    <!-- Matte Card Style (Flat, High-Contrast Carbon) -->
+    <!-- Matte Card Style (Elevated Carbon & Indigo Workstation) -->
     <Style Selector="Border.matte-card, Border.glass-card">
         <Setter Property="Background" Value="{StaticResource BgCardBrush}" />
         <Setter Property="BorderBrush" Value="{StaticResource GlassBorderBrush}" />
         <Setter Property="BorderThickness" Value="1" />
-        <Setter Property="CornerRadius" Value="8" />
-        <Setter Property="Padding" Value="16" />
+        <Setter Property="CornerRadius" Value="12" />
+        <Setter Property="Padding" Value="18" />
+        <Setter Property="BoxShadow" Value="0 4 24 0 #40000000" />
     </Style>
 
     <!-- Telemetry / Metadata Pill Style -->
@@ -24,30 +25,31 @@
         <Setter Property="Background" Value="{StaticResource BgSurfaceBrush}" />
         <Setter Property="BorderBrush" Value="{StaticResource GlassBorderBrush}" />
         <Setter Property="BorderThickness" Value="1" />
-        <Setter Property="CornerRadius" Value="6" />
-        <Setter Property="Padding" Value="8,4" />
+        <Setter Property="CornerRadius" Value="14" />
+        <Setter Property="Padding" Value="10,5" />
     </Style>
 
     <!-- Primary Matte Solid Button Style -->
     <Style Selector="Button.matte-primary, Button.glass-primary">
-        <Setter Property="Background" Value="{StaticResource PrimaryBrush}" />
+        <Setter Property="Background" Value="{StaticResource SecondaryBrush}" />
         <Setter Property="Foreground" Value="#ffffff" />
         <Setter Property="FontWeight" Value="SemiBold" />
-        <Setter Property="CornerRadius" Value="6" />
+        <Setter Property="CornerRadius" Value="8" />
         <Setter Property="Padding" Value="14,8" />
         <Setter Property="BorderBrush" Value="{StaticResource PrimaryBrush}" />
         <Setter Property="BorderThickness" Value="1" />
+        <Setter Property="Cursor" Value="Hand" />
     </Style>
     <Style Selector="Button.matte-primary /template/ ContentPresenter#PART_ContentPresenter, Button.glass-primary /template/ ContentPresenter#PART_ContentPresenter">
-        <Setter Property="CornerRadius" Value="6" />
+        <Setter Property="CornerRadius" Value="8" />
     </Style>
     <Style Selector="Button.matte-primary:pointerover /template/ ContentPresenter#PART_ContentPresenter, Button.glass-primary:pointerover /template/ ContentPresenter#PART_ContentPresenter">
-        <Setter Property="Background" Value="{StaticResource SecondaryBrush}" />
-        <Setter Property="BorderBrush" Value="{StaticResource SecondaryBrush}" />
+        <Setter Property="Background" Value="{StaticResource PrimaryBrush}" />
+        <Setter Property="BorderBrush" Value="{StaticResource AccentBrush}" />
         <Setter Property="Foreground" Value="#ffffff" />
     </Style>
     <Style Selector="Button.matte-primary:pressed /template/ ContentPresenter#PART_ContentPresenter, Button.glass-primary:pressed /template/ ContentPresenter#PART_ContentPresenter">
-        <Setter Property="Background" Value="{StaticResource PrimaryBrush}" />
+        <Setter Property="Background" Value="{StaticResource SecondaryBrush}" />
         <Setter Property="BorderBrush" Value="{StaticResource PrimaryBrush}" />
         <Setter Property="Opacity" Value="0.85" />
     </Style>
@@ -58,16 +60,17 @@
         <Setter Property="Foreground" Value="{StaticResource TextMainBrush}" />
         <Setter Property="BorderBrush" Value="{StaticResource GlassBorderBrush}" />
         <Setter Property="BorderThickness" Value="1" />
-        <Setter Property="CornerRadius" Value="6" />
+        <Setter Property="CornerRadius" Value="8" />
         <Setter Property="Padding" Value="12,7" />
+        <Setter Property="Cursor" Value="Hand" />
     </Style>
     <Style Selector="Button.matte-secondary /template/ ContentPresenter#PART_ContentPresenter, Button.glass-secondary /template/ ContentPresenter#PART_ContentPresenter">
-        <Setter Property="CornerRadius" Value="6" />
+        <Setter Property="CornerRadius" Value="8" />
     </Style>
     <Style Selector="Button.matte-secondary:pointerover /template/ ContentPresenter#PART_ContentPresenter, Button.glass-secondary:pointerover /template/ ContentPresenter#PART_ContentPresenter">
         <Setter Property="Background" Value="{StaticResource BgCardBrush}" />
         <Setter Property="BorderBrush" Value="{StaticResource PrimaryBrush}" />
-        <Setter Property="Foreground" Value="{StaticResource TextMainBrush}" />
+        <Setter Property="Foreground" Value="#ffffff" />
     </Style>
     <Style Selector="Button.matte-secondary:pressed /template/ ContentPresenter#PART_ContentPresenter, Button.glass-secondary:pressed /template/ ContentPresenter#PART_ContentPresenter">
         <Setter Property="Background" Value="{StaticResource BgSurfaceBrush}" />
@@ -86,16 +89,16 @@
 
     <!-- Matte Input TextBox Style -->
     <Style Selector="TextBox.matte-input, TextBox.glass-input">
-        <Setter Property="Background" Value="{StaticResource BgSurfaceBrush}" />
+        <Setter Property="Background" Value="#0D0E15" />
         <Setter Property="Foreground" Value="{StaticResource TextMainBrush}" />
         <Setter Property="BorderBrush" Value="{StaticResource GlassBorderBrush}" />
         <Setter Property="BorderThickness" Value="1" />
-        <Setter Property="CornerRadius" Value="6" />
+        <Setter Property="CornerRadius" Value="8" />
         <Setter Property="Padding" Value="10,8" />
     </Style>
     <Style Selector="TextBox.matte-input:focus /template/ Border#PART_BorderElement, TextBox.glass-input:focus /template/ Border#PART_BorderElement">
         <Setter Property="BorderBrush" Value="{StaticResource PrimaryBrush}" />
-        <Setter Property="Background" Value="{StaticResource BgCardBrush}" />
+        <Setter Property="Background" Value="{StaticResource BgSurfaceBrush}" />
     </Style>
 
     <!-- Modern Segmented TabControl Style -->

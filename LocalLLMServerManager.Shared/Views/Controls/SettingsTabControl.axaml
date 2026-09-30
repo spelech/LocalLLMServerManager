@@ -6,10 +6,44 @@
              x:DataType="vm:SettingsViewModel">
 
     <UserControl.Styles>
-        <Style Selector="Button.preset-filter-btn">
-            <Setter Property="Background" Value="#1E293B"/>
+        <!-- Sidebar Navigation Buttons -->
+        <Style Selector="Button.settings-nav-btn">
+            <Setter Property="Background" Value="Transparent"/>
             <Setter Property="Foreground" Value="#94A3B8"/>
-            <Setter Property="BorderBrush" Value="#334155"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="BorderBrush" Value="Transparent"/>
+            <Setter Property="CornerRadius" Value="10"/>
+            <Setter Property="Padding" Value="14,10"/>
+            <Setter Property="FontSize" Value="13"/>
+            <Setter Property="FontWeight" Value="Medium"/>
+            <Setter Property="HorizontalAlignment" Value="Stretch"/>
+            <Setter Property="HorizontalContentAlignment" Value="Left"/>
+            <Setter Property="Cursor" Value="Hand"/>
+        </Style>
+        <Style Selector="Button.settings-nav-btn /template/ ContentPresenter#PART_ContentPresenter">
+            <Setter Property="CornerRadius" Value="10"/>
+        </Style>
+        <Style Selector="Button.settings-nav-btn:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+            <Setter Property="Background" Value="#1A1D2A"/>
+            <Setter Property="BorderBrush" Value="#2D3349"/>
+            <Setter Property="Foreground" Value="#F8FAFC"/>
+        </Style>
+        <Style Selector="Button.settings-nav-btn.active">
+            <Setter Property="Foreground" Value="#FFFFFF"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+        </Style>
+        <Style Selector="Button.settings-nav-btn.active /template/ ContentPresenter#PART_ContentPresenter">
+            <Setter Property="Background" Value="#202438"/>
+            <Setter Property="BorderBrush" Value="#6366F1"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="Foreground" Value="#FFFFFF"/>
+        </Style>
+
+        <!-- Preset Filter Buttons -->
+        <Style Selector="Button.preset-filter-btn">
+            <Setter Property="Background" Value="#181B26"/>
+            <Setter Property="Foreground" Value="#94A3B8"/>
+            <Setter Property="BorderBrush" Value="#262B3B"/>
             <Setter Property="BorderThickness" Value="1"/>
             <Setter Property="CornerRadius" Value="14"/>
             <Setter Property="Padding" Value="12,6"/>
@@ -17,414 +51,559 @@
             <Setter Property="FontWeight" Value="Medium"/>
             <Setter Property="Cursor" Value="Hand"/>
         </Style>
-        <Style Selector="Button.preset-filter-btn:pointerover">
-            <Setter Property="Background" Value="#334155"/>
+        <Style Selector="Button.preset-filter-btn /template/ ContentPresenter#PART_ContentPresenter">
+            <Setter Property="CornerRadius" Value="14"/>
         </Style>
-        <Style Selector="Button.preset-filter-btn.active">
-            <Setter Property="Background" Value="#1D4ED8"/>
+        <Style Selector="Button.preset-filter-btn:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+            <Setter Property="Background" Value="#222634"/>
+            <Setter Property="BorderBrush" Value="#6366F1"/>
+        </Style>
+        <Style Selector="Button.preset-filter-btn.active /template/ ContentPresenter#PART_ContentPresenter">
+            <Setter Property="Background" Value="#4F46E5"/>
+            <Setter Property="BorderBrush" Value="#818CF8"/>
+            <Setter Property="BorderThickness" Value="1"/>
             <Setter Property="Foreground" Value="#FFFFFF"/>
-            <Setter Property="BorderBrush" Value="#60A5FA"/>
-            <Setter Property="BorderThickness" Value="1.5"/>
-            <Setter Property="FontWeight" Value="Bold"/>
-        </Style>
-        <Style Selector="Button.preset-filter-btn.active:pointerover">
-            <Setter Property="Background" Value="#2563EB"/>
         </Style>
     </UserControl.Styles>
 
-    <ScrollViewer Margin="0,12,0,0">
-        <StackPanel Spacing="16" Margin="0,0,0,16">
-            <!-- Auto-Discovery Quick Action -->
-            <Border Classes="matte-card" Padding="16">
-                <StackPanel Spacing="12">
+    <!-- Main 2-Column Settings Layout: Sidebar Nav + Content Viewport -->
+    <Grid ColumnDefinitions="250, *" Margin="0,8,0,0">
+
+        <!-- ======================================================== -->
+        <!-- COLUMN 0: SIDEBAR SUB-NAVIGATION                         -->
+        <!-- ======================================================== -->
+        <Border Grid.Column="0" Background="#0C0E17" BorderBrush="#1E2333" BorderThickness="1" CornerRadius="12" Padding="14,16" Margin="0,0,16,0" BoxShadow="0 4 24 0 #30000000">
+            <Grid RowDefinitions="Auto, *, Auto">
+                <!-- Header -->
+                <StackPanel Grid.Row="0" Spacing="4" Margin="0,0,0,16">
                     <StackPanel Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
-                        <TextBlock Text="🔍 AI Ecosystem Auto-Discovery" FontSize="16" FontWeight="Bold" Foreground="{StaticResource TextMainBrush}"/>
+                        <TextBlock Text="⚙️" FontSize="18" VerticalAlignment="Center"/>
+                        <TextBlock Text="Preferences" FontSize="16" FontWeight="Bold" Foreground="{StaticResource TextMainBrush}" VerticalAlignment="Center"/>
                     </StackPanel>
-                    <TextBlock Text="Automatically scan common install directories, drive roots, PATH, and AppData for Ollama, ComfyUI, and Stable Diffusion Forge:" FontSize="13" Foreground="{StaticResource TextMutedBrush}"/>
-
-                    <Button Content="🔍 Auto-Detect Installed Tools" 
-                            Command="{Binding AutoDetectToolsCommand}"
-                            Classes="matte-primary" 
-                            HorizontalAlignment="Left"/>
+                    <TextBlock Text="Configuration &amp; engine tools" FontSize="11" Foreground="{StaticResource TextMutedBrush}"/>
                 </StackPanel>
-            </Border>
 
-            <!-- Theme & Interface Mode Switcher -->
-            <Border Classes="matte-card" Padding="16">
-                <StackPanel Spacing="12">
-                    <TextBlock Text="🎨 Desktop Theme &amp; Web Interface Options" FontSize="16" FontWeight="Bold" Foreground="{StaticResource TextMainBrush}"/>
-                    <TextBlock Text="Select dynamic theme palette or switch framework theme styles:" FontSize="13" Foreground="{StaticResource TextMutedBrush}"/>
-
-                    <StackPanel Spacing="6">
-                        <TextBlock Text="Theme Palette" FontSize="13" Foreground="{StaticResource TextMutedBrush}" FontWeight="Medium"/>
-                        <ComboBox ItemsSource="{Binding AvailableThemes}"
-                                  SelectedItem="{Binding SelectedTheme, Mode=TwoWay}"
-                                  HorizontalAlignment="Left"
-                                  MinWidth="240"/>
-                    </StackPanel>
-
-                    <TextBlock Text="Framework Theme Style:" FontSize="13" Foreground="{StaticResource TextMutedBrush}" Margin="0,4,0,0"/>
-                    <StackPanel Orientation="Horizontal" Spacing="10">
-                        <Button Content="✨ Semi Design Dark Theme" Command="{Binding SwitchThemeStyleCommand}" CommandParameter="semi"
-                                Classes="matte-primary"/>
-                        <Button Content="⚡ Fluent Dark Theme" Command="{Binding SwitchThemeStyleCommand}" CommandParameter="fluent"
-                                Classes="matte-secondary"/>
-                    </StackPanel>
-                </StackPanel>
-            </Border>
-
-            <!-- Remote Access -->
-            <Border Classes="matte-card" Padding="16">
-                <StackPanel Spacing="10">
-                    <TextBlock Text="🌐 Remote &amp; Mobile Access URL" FontSize="16" FontWeight="Bold" Foreground="{StaticResource TextMainBrush}"/>
-                    <TextBlock Text="Connect to this manager from your smartphone, tablet, or laptop:" FontSize="13" Foreground="{StaticResource TextMutedBrush}"/>
-                    <Border Classes="matte-pill" HorizontalAlignment="Left" Padding="10,6">
-                        <SelectableTextBlock Text="{Binding LanAccessUrl}" FontSize="14" FontWeight="Bold" Foreground="{StaticResource SecondaryBrush}"/>
-                    </Border>
-                </StackPanel>
-            </Border>
-
-            <!-- Installed Components & Add-ons -->
-            <Border Classes="matte-card" Padding="16">
-                <StackPanel Spacing="12">
-                    <Grid ColumnDefinitions="*, Auto">
-                        <TextBlock Text="📦 Installed Components &amp; Add-ons" FontSize="16" FontWeight="Bold" Foreground="{StaticResource TextMainBrush}" VerticalAlignment="Center"/>
-                        <Button Grid.Column="1" Content="🔄 Refresh Status" Command="{Binding RefreshComponentStatusesCommand}" Classes="matte-secondary" Padding="10,4"/>
-                    </Grid>
-                    <TextBlock Text="Manage optional feature packs and inspect estimated disk usage:" FontSize="13" Foreground="{StaticResource TextMutedBrush}"/>
-
-                    <!-- Video Pack Card -->
-                    <Border Classes="matte-pill" Padding="12" Margin="0,4">
-                        <Grid ColumnDefinitions="*, Auto">
-                            <StackPanel Grid.Column="0" Spacing="4">
-                                <StackPanel Orientation="Horizontal" Spacing="8">
-                                    <TextBlock Text="🎬 ComfyUI Video Generation Pack" FontSize="14" FontWeight="Bold" Foreground="{StaticResource TextMainBrush}"/>
-                                    <Border Classes="matte-pill" Padding="6,2">
-                                        <TextBlock Text="{Binding VideoPackStatusText}" FontSize="11" Foreground="{StaticResource PrimaryBrush}" FontWeight="Bold"/>
-                                    </Border>
-                                </StackPanel>
-                                <TextBlock Text="DiT Wan 2.2, LTX-2.5 &amp; HunyuanVideo nodes | Estimated disk size: 14.2 GB" FontSize="12" Foreground="{StaticResource TextMutedBrush}"/>
+                <!-- Navigation List -->
+                <StackPanel Grid.Row="1" Spacing="6">
+                    <!-- 1. Appearance & Presets -->
+                    <Button Classes="settings-nav-btn"
+                            Classes.active="{Binding IsAppearanceCategoryActive}"
+                            Command="{Binding SelectCategoryCommand}"
+                            CommandParameter="Appearance">
+                        <Grid ColumnDefinitions="Auto, *">
+                            <TextBlock Grid.Column="0" Text="🎨" FontSize="14" Margin="0,0,10,0" VerticalAlignment="Center"/>
+                            <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                                <TextBlock Text="Appearance" FontSize="13" FontWeight="SemiBold"/>
+                                <TextBlock Text="Themes &amp; presets" FontSize="10" Foreground="{StaticResource TextMutedBrush}"/>
                             </StackPanel>
-                            <Button Grid.Column="1" Content="Toggle / Uninstall" Command="{Binding ToggleVideoPackCommand}" Classes="matte-secondary" VerticalAlignment="Center"/>
                         </Grid>
-                    </Border>
+                    </Button>
 
-                    <!-- Audio Pack Card -->
-                    <Border Classes="matte-pill" Padding="12" Margin="0,4">
-                        <Grid ColumnDefinitions="*, Auto">
-                            <StackPanel Grid.Column="0" Spacing="4">
-                                <StackPanel Orientation="Horizontal" Spacing="8">
-                                    <TextBlock Text="🔊 Kokoro TTS &amp; Audio Engine Pack" FontSize="14" FontWeight="Bold" Foreground="{StaticResource TextMainBrush}"/>
-                                    <Border Classes="matte-pill" Padding="6,2">
-                                        <TextBlock Text="{Binding AudioPackStatusText}" FontSize="11" Foreground="{StaticResource AccentBrush}" FontWeight="Bold"/>
-                                    </Border>
-                                </StackPanel>
-                                <TextBlock Text="FastAPI text-to-speech engine &amp; models | Estimated disk size: 350 MB" FontSize="12" Foreground="{StaticResource TextMutedBrush}"/>
+                    <!-- 2. Engines & Paths -->
+                    <Button Classes="settings-nav-btn"
+                            Classes.active="{Binding IsEnginesCategoryActive}"
+                            Command="{Binding SelectCategoryCommand}"
+                            CommandParameter="Engines">
+                        <Grid ColumnDefinitions="Auto, *">
+                            <TextBlock Grid.Column="0" Text="🔍" FontSize="14" Margin="0,0,10,0" VerticalAlignment="Center"/>
+                            <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                                <TextBlock Text="Engines &amp; Paths" FontSize="13" FontWeight="SemiBold"/>
+                                <TextBlock Text="Detection &amp; binaries" FontSize="10" Foreground="{StaticResource TextMutedBrush}"/>
                             </StackPanel>
-                            <Button Grid.Column="1" Content="Toggle / Uninstall" Command="{Binding ToggleAudioPackCommand}" Classes="matte-secondary" VerticalAlignment="Center"/>
                         </Grid>
-                    </Border>
-                </StackPanel>
-            </Border>
+                    </Button>
 
-            <!-- Studio Presets Manager -->
-            <Border Classes="matte-card" Padding="16">
-                <StackPanel Spacing="12">
-                    <Grid ColumnDefinitions="*, Auto">
-                        <StackPanel Grid.Column="0" Spacing="4">
-                            <TextBlock Text="🎨 Studio Presets Manager" FontSize="16" FontWeight="Bold" Foreground="{StaticResource TextMainBrush}"/>
-                            <TextBlock Text="Manage built-in and user-customized generation presets for Video, Image, and Audio/TTS workflows:" FontSize="13" Foreground="{StaticResource TextMutedBrush}"/>
-                        </StackPanel>
-                        <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
-                            <Button Content="➕ Create New Preset" Command="{Binding CreatePresetCommand}" Classes="matte-primary" Padding="10,6" FontSize="12"/>
-                            <Button Content="🔄 Reset Defaults" Command="{Binding ResetPresetsToDefaultCommand}" Classes="matte-secondary" Padding="10,6" FontSize="12"/>
-                        </StackPanel>
-                    </Grid>
-
-                    <!-- Modality Filter Bar -->
-                    <StackPanel Orientation="Horizontal" Spacing="8" Margin="0,4,0,4">
-                        <Button Command="{Binding FilterPresetsCommand}" CommandParameter="All" Classes="preset-filter-btn" Classes.active="{Binding IsFilterAllActive}">
-                            <StackPanel Orientation="Horizontal" Spacing="4">
-                                <TextBlock Text="✓" IsVisible="{Binding IsFilterAllActive}" FontWeight="Bold"/>
-                                <TextBlock Text="All Presets"/>
+                    <!-- 3. Feature Packs -->
+                    <Button Classes="settings-nav-btn"
+                            Classes.active="{Binding IsFeaturePacksCategoryActive}"
+                            Command="{Binding SelectCategoryCommand}"
+                            CommandParameter="FeaturePacks">
+                        <Grid ColumnDefinitions="Auto, *">
+                            <TextBlock Grid.Column="0" Text="📦" FontSize="14" Margin="0,0,10,0" VerticalAlignment="Center"/>
+                            <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                                <TextBlock Text="Feature Packs" FontSize="13" FontWeight="SemiBold"/>
+                                <TextBlock Text="Video, TTS &amp; models" FontSize="10" Foreground="{StaticResource TextMutedBrush}"/>
                             </StackPanel>
-                        </Button>
-                        <Button Command="{Binding FilterPresetsCommand}" CommandParameter="Video" Classes="preset-filter-btn" Classes.active="{Binding IsFilterVideoActive}">
-                            <StackPanel Orientation="Horizontal" Spacing="4">
-                                <TextBlock Text="✓" IsVisible="{Binding IsFilterVideoActive}" FontWeight="Bold"/>
-                                <TextBlock Text="🎬 Video"/>
+                        </Grid>
+                    </Button>
+
+                    <!-- 4. Network & Remote -->
+                    <Button Classes="settings-nav-btn"
+                            Classes.active="{Binding IsNetworkCategoryActive}"
+                            Command="{Binding SelectCategoryCommand}"
+                            CommandParameter="Network">
+                        <Grid ColumnDefinitions="Auto, *">
+                            <TextBlock Grid.Column="0" Text="🌐" FontSize="14" Margin="0,0,10,0" VerticalAlignment="Center"/>
+                            <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                                <TextBlock Text="Network &amp; Remote" FontSize="13" FontWeight="SemiBold"/>
+                                <TextBlock Text="Mobile pairing &amp; ports" FontSize="10" Foreground="{StaticResource TextMutedBrush}"/>
                             </StackPanel>
-                        </Button>
-                        <Button Command="{Binding FilterPresetsCommand}" CommandParameter="Image" Classes="preset-filter-btn" Classes.active="{Binding IsFilterImageActive}">
-                            <StackPanel Orientation="Horizontal" Spacing="4">
-                                <TextBlock Text="✓" IsVisible="{Binding IsFilterImageActive}" FontWeight="Bold"/>
-                                <TextBlock Text="🎨 Image"/>
-                            </StackPanel>
-                        </Button>
-                        <Button Command="{Binding FilterPresetsCommand}" CommandParameter="Audio" Classes="preset-filter-btn" Classes.active="{Binding IsFilterAudioActive}">
-                            <StackPanel Orientation="Horizontal" Spacing="4">
-                                <TextBlock Text="✓" IsVisible="{Binding IsFilterAudioActive}" FontWeight="Bold"/>
-                                <TextBlock Text="🎵 Audio/TTS"/>
-                            </StackPanel>
-                        </Button>
-                    </StackPanel>
-
-                    <!-- Presets Items List -->
-                    <ItemsControl ItemsSource="{Binding FilteredPresets}">
-                        <ItemsControl.ItemTemplate>
-                            <DataTemplate DataType="models:StudioPreset">
-                                <Border Classes="matte-pill" Padding="12,10" Margin="0,4">
-                                    <Grid ColumnDefinitions="Auto, *, Auto, Auto">
-                                        <!-- Modality Badge -->
-                                        <Border Grid.Column="0" Classes="matte-pill" Padding="8,4" VerticalAlignment="Center" Margin="0,0,12,0" Background="{StaticResource BgSurfaceBrush}">
-                                            <TextBlock Text="{Binding ModalityText}" FontSize="12" FontWeight="Bold" Foreground="{StaticResource SecondaryBrush}"/>
-                                        </Border>
-
-                                        <!-- Name & Description -->
-                                        <StackPanel Grid.Column="1" Spacing="3" VerticalAlignment="Center">
-                                            <StackPanel Orientation="Horizontal" Spacing="8">
-                                                <TextBlock Text="{Binding Name}" FontSize="14" FontWeight="Bold" Foreground="{StaticResource TextMainBrush}"/>
-                                                <Border Classes="matte-pill" Padding="6,2" VerticalAlignment="Center">
-                                                    <TextBlock Text="{Binding BadgeText}" FontSize="11" FontWeight="SemiBold" Foreground="{StaticResource TextMutedBrush}"/>
-                                                </Border>
-                                            </StackPanel>
-                                            <TextBlock Text="{Binding Description}" FontSize="12" Foreground="{StaticResource TextMutedBrush}" TextTrimming="CharacterEllipsis"/>
-                                        </StackPanel>
-
-                                        <!-- Parameters Summary Badge -->
-                                        <Border Grid.Column="2" Classes="matte-pill" Padding="10,4" VerticalAlignment="Center" Margin="12,0">
-                                            <TextBlock Text="{Binding SummaryText}" FontSize="12" FontWeight="Medium" Foreground="{StaticResource AccentBrush}"/>
-                                        </Border>
-
-                                        <!-- Actions -->
-                                        <StackPanel Grid.Column="3" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
-                                            <Button Content="📋 Duplicate"
-                                                    Command="{Binding $parent[UserControl].((vm:SettingsViewModel)DataContext).DuplicatePresetCommand}"
-                                                    CommandParameter="{Binding}"
-                                                    ToolTip.Tip="Duplicate this preset"
-                                                    Classes="matte-secondary" Padding="8,5" FontSize="11"/>
-                                            <Button Content="✏️ Edit"
-                                                    Command="{Binding $parent[UserControl].((vm:SettingsViewModel)DataContext).EditPresetCommand}"
-                                                    CommandParameter="{Binding}"
-                                                    IsEnabled="{Binding IsCustom}"
-                                                    ToolTip.Tip="Edit custom preset"
-                                                    Classes="matte-secondary" Padding="8,5" FontSize="11"/>
-                                            <Button Content="🗑️ Delete"
-                                                    Command="{Binding $parent[UserControl].((vm:SettingsViewModel)DataContext).DeletePresetCommand}"
-                                                    CommandParameter="{Binding}"
-                                                    IsEnabled="{Binding IsCustom}"
-                                                    ToolTip.Tip="Delete custom preset"
-                                                    Classes="matte-secondary" Padding="8,5" FontSize="11"/>
-                                        </StackPanel>
-                                    </Grid>
-                                </Border>
-                            </DataTemplate>
-                        </ItemsControl.ItemTemplate>
-                    </ItemsControl>
-
-                    <!-- Import / Export Section Footer -->
-                    <Border Classes="matte-card" Padding="12" Margin="0,6,0,0" Background="{StaticResource BgSurfaceBrush}">
-                        <StackPanel Spacing="8">
-                            <TextBlock Text="JSON Import &amp; Export" FontSize="13" FontWeight="Bold" Foreground="{StaticResource TextMainBrush}"/>
-                            <TextBox Text="{Binding PresetsJson, Mode=TwoWay}"
-                                     AcceptsReturn="True"
-                                     PlaceholderText="Paste custom presets JSON here to import, or click Export to generate JSON payload..."
-                                     MaxHeight="120"
-                                     Classes="matte-input"
-                                     FontSize="11"
-                                     FontFamily="Consolas,Menlo,monospace"/>
-                            <StackPanel Orientation="Horizontal" Spacing="8">
-                                <Button Content="📤 Export JSON" Command="{Binding ExportPresetsCommand}" Classes="matte-secondary" Padding="10,5" FontSize="12"/>
-                                <Button Content="📥 Import JSON" Command="{Binding ImportPresetsCommand}" CommandParameter="{Binding PresetsJson}" Classes="matte-primary" Padding="10,5" FontSize="12"/>
-                            </StackPanel>
-                        </StackPanel>
-                    </Border>
-                </StackPanel>
-            </Border>
-
-            <!-- Paths and Settings -->
-            <Border Classes="matte-card" Padding="16">
-                <StackPanel Spacing="14">
-                    <TextBlock Text="🛠️ Executable &amp; Directory Paths" FontSize="16" FontWeight="Bold" Foreground="{StaticResource TextMainBrush}"/>
-
-                    <!-- ComfyUI Executable -->
-                    <StackPanel Spacing="4">
-                        <StackPanel Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
-                            <TextBlock Text="ComfyUI Executable Path" FontSize="13" Foreground="{StaticResource TextMutedBrush}" FontWeight="Medium"/>
-                            <Border Classes="matte-pill" Padding="6,2">
-                                <TextBlock Text="{Binding ComfyUiExecutableStatus}" FontSize="11" FontWeight="Bold"/>
-                            </Border>
-                        </StackPanel>
-                        <Grid ColumnDefinitions="*,Auto">
-                            <TextBox Grid.Column="0" Text="{Binding ComfyUiExecutablePath, Mode=TwoWay}" Classes="matte-input"/>
-                            <Button Grid.Column="1" Content="📁 Browse..." Command="{Binding BrowseComfyExecutableCommand}" Margin="8,0,0,0" Classes="matte-secondary"/>
                         </Grid>
-                    </StackPanel>
-
-                    <!-- Forge Executable -->
-                    <StackPanel Spacing="4">
-                        <StackPanel Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
-                            <TextBlock Text="Forge Executable Path" FontSize="13" Foreground="{StaticResource TextMutedBrush}" FontWeight="Medium"/>
-                            <Border Classes="matte-pill" Padding="6,2">
-                                <TextBlock Text="{Binding ForgeExecutableStatus}" FontSize="11" FontWeight="Bold"/>
-                            </Border>
-                        </StackPanel>
-                        <Grid ColumnDefinitions="*,Auto">
-                            <TextBox Grid.Column="0" Text="{Binding ForgeExecutablePath, Mode=TwoWay}" Classes="matte-input"/>
-                            <Button Grid.Column="1" Content="📁 Browse..." Command="{Binding BrowseForgeExecutableCommand}" Margin="8,0,0,0" Classes="matte-secondary"/>
-                        </Grid>
-                    </StackPanel>
-
-                    <!-- Ollama Executable -->
-                    <StackPanel Spacing="4">
-                        <StackPanel Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
-                            <TextBlock Text="Ollama Executable Path" FontSize="13" Foreground="{StaticResource TextMutedBrush}" FontWeight="Medium"/>
-                            <Border Classes="matte-pill" Padding="6,2">
-                                <TextBlock Text="{Binding OllamaStatus}" FontSize="11" FontWeight="Bold"/>
-                            </Border>
-                        </StackPanel>
-                        <Grid ColumnDefinitions="*,Auto">
-                            <TextBox Grid.Column="0" Text="{Binding OllamaExecutablePath, Mode=TwoWay}" Classes="matte-input"/>
-                            <Button Grid.Column="1" Content="📁 Browse..." Command="{Binding BrowseOllamaExecutableCommand}" Margin="8,0,0,0" Classes="matte-secondary"/>
-                        </Grid>
-                    </StackPanel>
-
-                    <!-- Audio Engine Executable -->
-                    <StackPanel Spacing="4">
-                        <StackPanel Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
-                            <TextBlock Text="Audio Engine Executable / Script Path (Kokoro-FastAPI / AllTalk / Docker)" FontSize="13" Foreground="{StaticResource TextMutedBrush}" FontWeight="Medium"/>
-                            <Border Classes="matte-pill" Padding="6,2">
-                                <TextBlock Text="{Binding AudioEngineExecutableStatus}" FontSize="11" FontWeight="Bold"/>
-                            </Border>
-                        </StackPanel>
-                        <Grid ColumnDefinitions="*,Auto">
-                            <TextBox Grid.Column="0" Text="{Binding AudioEngineExecutablePath, Mode=TwoWay}" Classes="matte-input"/>
-                            <Button Grid.Column="1" Content="📁 Browse..." Command="{Binding BrowseAudioEngineExecutableCommand}" Margin="8,0,0,0" Classes="matte-secondary"/>
-                        </Grid>
-                    </StackPanel>
-
-                    <!-- Audio Engine URL & Voice Configuration -->
-                    <Grid ColumnDefinitions="*,*">
-                        <StackPanel Grid.Column="0" Spacing="4" Margin="0,0,8,0">
-                            <TextBlock Text="Audio Engine URL" FontSize="13" Foreground="{StaticResource TextMutedBrush}" FontWeight="Medium"/>
-                            <TextBox Text="{Binding AudioEngineUrl, Mode=TwoWay}" Classes="matte-input"/>
-                        </StackPanel>
-                        <StackPanel Grid.Column="1" Spacing="4" Margin="8,0,0,0">
-                            <TextBlock Text="Preferred Audio Voice" FontSize="13" Foreground="{StaticResource TextMutedBrush}" FontWeight="Medium"/>
-                            <TextBox Text="{Binding PreferredAudioVoice, Mode=TwoWay}" Classes="matte-input"/>
-                        </StackPanel>
-                    </Grid>
-
-                    <Button Content="🔊 Test Voice Synthesizer"
-                            Command="{Binding TestVoiceSynthesizerCommand}"
-                            Classes="matte-secondary" HorizontalAlignment="Left"/>
-
-                    <!-- Forge Models -->
-                    <StackPanel Spacing="4">
-                        <StackPanel Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
-                            <TextBlock Text="Forge Models Directory Path" FontSize="13" Foreground="{StaticResource TextMutedBrush}" FontWeight="Medium"/>
-                            <Border Classes="matte-pill" Padding="6,2">
-                                <TextBlock Text="{Binding ForgeModelsStatus}" FontSize="11" FontWeight="Bold"/>
-                            </Border>
-                        </StackPanel>
-                        <Grid ColumnDefinitions="*,Auto">
-                            <TextBox Grid.Column="0" Text="{Binding ForgeModelsPath, Mode=TwoWay}" Classes="matte-input"/>
-                            <Button Grid.Column="1" Content="📁 Browse..." Command="{Binding BrowseForgeModelsCommand}" Margin="8,0,0,0" Classes="matte-secondary"/>
-                        </Grid>
-                    </StackPanel>
-
-                    <!-- ComfyUI Models -->
-                    <StackPanel Spacing="4">
-                        <StackPanel Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
-                            <TextBlock Text="ComfyUI Models Directory Path" FontSize="13" Foreground="{StaticResource TextMutedBrush}" FontWeight="Medium"/>
-                            <Border Classes="matte-pill" Padding="6,2">
-                                <TextBlock Text="{Binding ComfyModelsStatus}" FontSize="11" FontWeight="Bold"/>
-                            </Border>
-                        </StackPanel>
-                        <Grid ColumnDefinitions="*,Auto">
-                            <TextBox Grid.Column="0" Text="{Binding ComfyModelsPath, Mode=TwoWay}" Classes="matte-input"/>
-                            <Button Grid.Column="1" Content="📁 Browse..." Command="{Binding BrowseComfyModelsCommand}" Margin="8,0,0,0" Classes="matte-secondary"/>
-                        </Grid>
-                    </StackPanel>
-
-                    <!-- 3D Models Output -->
-                    <StackPanel Spacing="4">
-                        <StackPanel Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
-                            <TextBlock Text="3D Models Output Path" FontSize="13" Foreground="{StaticResource TextMutedBrush}" FontWeight="Medium"/>
-                            <Border Classes="matte-pill" Padding="6,2">
-                                <TextBlock Text="{Binding ThreeDModelsStatus}" FontSize="11" FontWeight="Bold"/>
-                            </Border>
-                        </StackPanel>
-                        <Grid ColumnDefinitions="*,Auto">
-                            <TextBox Grid.Column="0" Text="{Binding ThreeDModelsPath, Mode=TwoWay}" Classes="matte-input"/>
-                            <Button Grid.Column="1" Content="📁 Browse..." Command="{Binding BrowseThreeDModelsCommand}" Margin="8,0,0,0" Classes="matte-secondary"/>
-                        </Grid>
-                    </StackPanel>
-
-                    <!-- Workflows Directory -->
-                    <StackPanel Spacing="4">
-                        <StackPanel Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
-                            <TextBlock Text="Workflows Directory Path" FontSize="13" Foreground="{StaticResource TextMutedBrush}" FontWeight="Medium"/>
-                            <Border Classes="matte-pill" Padding="6,2">
-                                <TextBlock Text="{Binding WorkflowsStatus}" FontSize="11" FontWeight="Bold"/>
-                            </Border>
-                        </StackPanel>
-                        <Grid ColumnDefinitions="*,Auto">
-                            <TextBox Grid.Column="0" Text="{Binding WorkflowsPath, Mode=TwoWay}" Classes="matte-input"/>
-                            <Button Grid.Column="1" Content="📁 Browse..." Command="{Binding BrowseWorkflowsCommand}" Margin="8,0,0,0" Classes="matte-secondary"/>
-                        </Grid>
-                    </StackPanel>
-
-                    <!-- AI Assistant LiteLLM Endpoint & API Key -->
-                    <StackPanel Spacing="10" Margin="0,8,0,8">
-                        <TextBlock Text="🤖 AI Assistant Settings" FontSize="14" FontWeight="Bold" Foreground="{StaticResource TextMainBrush}"/>
-                        
-                        <StackPanel Spacing="4">
-                            <TextBlock Text="LiteLLM / OpenAI Proxy Endpoint (Default: http://127.0.0.1:4000/v1)" FontSize="13" Foreground="{StaticResource TextMutedBrush}" FontWeight="Medium"/>
-                            <TextBlock Text="Set to your LiteLLM instance. Do not use Ollama's local URL (11434) here unless using an OpenAI-compatible translation proxy." FontSize="11" Foreground="{StaticResource TextMutedBrush}" TextWrapping="Wrap"/>
-                            <TextBox Text="{Binding AiAssistantEndpoint, Mode=TwoWay}" Classes="matte-input"/>
-                        </StackPanel>
-
-                        <StackPanel Spacing="4">
-                            <TextBlock Text="AI Assistant Model" FontSize="13" Foreground="{StaticResource TextMutedBrush}" FontWeight="Medium"/>
-                            <TextBox Text="{Binding AiAssistantModel, Mode=TwoWay}" Classes="matte-input"/>
-                        </StackPanel>
-
-                        <StackPanel Spacing="4">
-                            <StackPanel Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
-                                <TextBlock Text="API Key" FontSize="13" Foreground="{StaticResource TextMutedBrush}" FontWeight="Medium"/>
-                                <Border Classes="matte-pill" Padding="6,2">
-                                    <TextBlock Text="{Binding ApiKeyStatusText}" FontSize="11" FontWeight="Bold" Foreground="{Binding ApiKeyStatusColor}"/>
-                                </Border>
-                            </StackPanel>
-                            <Grid ColumnDefinitions="*,Auto,Auto">
-                                <TextBox Grid.Column="0" Text="{Binding AiAssistantApiKey, Mode=TwoWay}" PasswordChar="•" Classes="matte-input" IsVisible="{Binding !IsApiKeyVisible}"/>
-                                <TextBox Grid.Column="0" Text="{Binding AiAssistantApiKey, Mode=TwoWay}" Classes="matte-input" IsVisible="{Binding IsApiKeyVisible}"/>
-                                
-                                <Button Grid.Column="1" Content="👁️ Toggle" Command="{Binding ToggleApiKeyVisibilityCommand}" Margin="8,0,0,0" Classes="matte-secondary"/>
-                                <Button Grid.Column="2" Content="🗑️ Clear" Command="{Binding ClearApiKeyCommand}" Margin="8,0,0,0" Classes="matte-secondary"/>
-                            </Grid>
-                        </StackPanel>
-                    </StackPanel>
-
-                    <!-- ComfyUI URL -->
-                    <StackPanel Spacing="4">
-                        <TextBlock Text="ComfyUI URL" FontSize="13" Foreground="{StaticResource TextMutedBrush}" FontWeight="Medium"/>
-                        <TextBox Text="{Binding ComfyUiUrl, Mode=TwoWay}" Classes="matte-input"/>
-                    </StackPanel>
-
-                    <!-- Preferred Image Engine -->
-                    <StackPanel Spacing="4">
-                        <TextBlock Text="Preferred Image Engine" FontSize="13" Foreground="{StaticResource TextMutedBrush}" FontWeight="Medium"/>
-                        <TextBox Text="{Binding PreferredImageEngine, Mode=TwoWay}" Classes="matte-input"/>
-                    </StackPanel>
-
-                    <Button Command="{Binding SaveSettingsCommand}" 
-                            Classes="matte-primary" HorizontalAlignment="Left" Margin="0,8,0,0">
-                        💾 Save Settings
                     </Button>
                 </StackPanel>
-            </Border>
-        </StackPanel>
-    </ScrollViewer>
+
+                <!-- Sidebar Footer Status -->
+                <Border Grid.Row="2" Background="#141724" BorderBrush="#202538" BorderThickness="1" CornerRadius="8" Padding="10,8" Margin="0,16,0,0">
+                    <StackPanel Spacing="3">
+                        <StackPanel Orientation="Horizontal" Spacing="6">
+                            <TextBlock Text="●" Foreground="{StaticResource OnlineBrush}" FontSize="9" VerticalAlignment="Center"/>
+                            <TextBlock Text="System Manager v3.17.0" FontSize="11" FontWeight="SemiBold" Foreground="{StaticResource TextMainBrush}"/>
+                        </StackPanel>
+                        <TextBlock Text="Carbon &amp; Indigo Workstation" FontSize="10" Foreground="{StaticResource TextMutedBrush}"/>
+                    </StackPanel>
+                </Border>
+            </Grid>
+        </Border>
+
+        <!-- ======================================================== -->
+        <!-- COLUMN 1: DETAIL CONTENT VIEWPORT                        -->
+        <!-- ======================================================== -->
+        <ScrollViewer Grid.Column="1">
+            <Panel Margin="0,0,4,16">
+
+                <!-- ==================================================== -->
+                <!-- PANE 1: APPEARANCE & PRESETS                         -->
+                <!-- ==================================================== -->
+                <StackPanel Spacing="16" IsVisible="{Binding IsAppearanceCategoryActive}">
+                    <!-- Theme & Interface Palette -->
+                    <Border Classes="matte-card">
+                        <StackPanel Spacing="12">
+                            <StackPanel Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+                                <TextBlock Text="🎨" FontSize="16" VerticalAlignment="Center"/>
+                                <TextBlock Text="Theme Palette &amp; Framework Styling" FontSize="15" FontWeight="Bold" Foreground="{StaticResource TextMainBrush}" VerticalAlignment="Center"/>
+                            </StackPanel>
+                            <TextBlock Text="Customize workstation colors, surface elevation, and UI framework styles:" FontSize="12" Foreground="{StaticResource TextMutedBrush}"/>
+
+                            <Grid ColumnDefinitions="Auto, *" Margin="0,4,0,0">
+                                <StackPanel Grid.Column="0" Spacing="6" Margin="0,0,24,0">
+                                    <TextBlock Text="Active Palette" FontSize="12" Foreground="{StaticResource TextMutedBrush}" FontWeight="Medium"/>
+                                    <ComboBox ItemsSource="{Binding AvailableThemes}"
+                                              SelectedItem="{Binding SelectedTheme, Mode=TwoWay}"
+                                              HorizontalAlignment="Left"
+                                              MinWidth="240"/>
+                                </StackPanel>
+
+                                <StackPanel Grid.Column="1" Spacing="6">
+                                    <TextBlock Text="Framework Theme Style" FontSize="12" Foreground="{StaticResource TextMutedBrush}" FontWeight="Medium"/>
+                                    <StackPanel Orientation="Horizontal" Spacing="10">
+                                        <Button Content="✨ Semi Design Dark Theme" Command="{Binding SwitchThemeStyleCommand}" CommandParameter="semi"
+                                                Classes="matte-primary"/>
+                                        <Button Content="⚡ Fluent Dark Theme" Command="{Binding SwitchThemeStyleCommand}" CommandParameter="fluent"
+                                                Classes="matte-secondary"/>
+                                    </StackPanel>
+                                </StackPanel>
+                            </Grid>
+                        </StackPanel>
+                    </Border>
+
+                    <!-- Studio Presets Manager -->
+                    <Border Classes="matte-card">
+                        <StackPanel Spacing="14">
+                            <Grid ColumnDefinitions="*, Auto">
+                                <StackPanel Grid.Column="0" Spacing="4">
+                                    <StackPanel Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+                                        <TextBlock Text="🎛️" FontSize="16" VerticalAlignment="Center"/>
+                                        <TextBlock Text="Studio Generation Presets" FontSize="15" FontWeight="Bold" Foreground="{StaticResource TextMainBrush}" VerticalAlignment="Center"/>
+                                    </StackPanel>
+                                    <TextBlock Text="Manage built-in and user-customized generation presets for Video, Image, and Audio workflows:" FontSize="12" Foreground="{StaticResource TextMutedBrush}"/>
+                                </StackPanel>
+                                <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+                                    <Button Content="➕ Create New Preset" Command="{Binding CreatePresetCommand}" Classes="matte-primary" Padding="12,6" FontSize="12"/>
+                                    <Button Content="🔄 Reset Defaults" Command="{Binding ResetPresetsToDefaultCommand}" Classes="matte-secondary" Padding="12,6" FontSize="12"/>
+                                </StackPanel>
+                            </Grid>
+
+                            <!-- Modality Filter Bar -->
+                            <StackPanel Orientation="Horizontal" Spacing="8" Margin="0,2">
+                                <Button Command="{Binding FilterPresetsCommand}" CommandParameter="All" Classes="preset-filter-btn" Classes.active="{Binding IsFilterAllActive}">
+                                    <StackPanel Orientation="Horizontal" Spacing="6">
+                                        <TextBlock Text="✓" IsVisible="{Binding IsFilterAllActive}" FontWeight="Bold"/>
+                                        <TextBlock Text="All Presets"/>
+                                    </StackPanel>
+                                </Button>
+                                <Button Command="{Binding FilterPresetsCommand}" CommandParameter="Video" Classes="preset-filter-btn" Classes.active="{Binding IsFilterVideoActive}">
+                                    <StackPanel Orientation="Horizontal" Spacing="6">
+                                        <TextBlock Text="✓" IsVisible="{Binding IsFilterVideoActive}" FontWeight="Bold"/>
+                                        <TextBlock Text="🎬 Video"/>
+                                    </StackPanel>
+                                </Button>
+                                <Button Command="{Binding FilterPresetsCommand}" CommandParameter="Image" Classes="preset-filter-btn" Classes.active="{Binding IsFilterImageActive}">
+                                    <StackPanel Orientation="Horizontal" Spacing="6">
+                                        <TextBlock Text="✓" IsVisible="{Binding IsFilterImageActive}" FontWeight="Bold"/>
+                                        <TextBlock Text="🎨 Image"/>
+                                    </StackPanel>
+                                </Button>
+                                <Button Command="{Binding FilterPresetsCommand}" CommandParameter="Audio" Classes="preset-filter-btn" Classes.active="{Binding IsFilterAudioActive}">
+                                    <StackPanel Orientation="Horizontal" Spacing="6">
+                                        <TextBlock Text="✓" IsVisible="{Binding IsFilterAudioActive}" FontWeight="Bold"/>
+                                        <TextBlock Text="🎵 Audio/TTS"/>
+                                    </StackPanel>
+                                </Button>
+                            </StackPanel>
+
+                            <!-- Presets Items List -->
+                            <ItemsControl ItemsSource="{Binding FilteredPresets}">
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate DataType="models:StudioPreset">
+                                        <Border Classes="matte-card" Padding="14,10" Margin="0,4" Background="#141724" BorderBrush="#202538">
+                                            <Grid ColumnDefinitions="Auto, *, Auto, Auto">
+                                                <Border Grid.Column="0" Classes="matte-pill" Padding="8,4" VerticalAlignment="Center" Margin="0,0,12,0" Background="#1C2030">
+                                                    <TextBlock Text="{Binding ModalityText}" FontSize="12" FontWeight="Bold" Foreground="{StaticResource SecondaryBrush}"/>
+                                                </Border>
+
+                                                <StackPanel Grid.Column="1" Spacing="3" VerticalAlignment="Center">
+                                                    <StackPanel Orientation="Horizontal" Spacing="8">
+                                                        <TextBlock Text="{Binding Name}" FontSize="14" FontWeight="Bold" Foreground="{StaticResource TextMainBrush}"/>
+                                                        <Border Classes="matte-pill" Padding="6,2" VerticalAlignment="Center">
+                                                            <TextBlock Text="{Binding BadgeText}" FontSize="11" FontWeight="SemiBold" Foreground="{StaticResource TextMutedBrush}"/>
+                                                        </Border>
+                                                    </StackPanel>
+                                                    <TextBlock Text="{Binding Description}" FontSize="12" Foreground="{StaticResource TextMutedBrush}" TextTrimming="CharacterEllipsis"/>
+                                                </StackPanel>
+
+                                                <Border Grid.Column="2" Classes="matte-pill" Padding="10,4" VerticalAlignment="Center" Margin="12,0" Background="#1C2030">
+                                                    <TextBlock Text="{Binding SummaryText}" FontSize="11" FontWeight="Medium" Foreground="{StaticResource AccentBrush}"/>
+                                                </Border>
+
+                                                <StackPanel Grid.Column="3" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+                                                    <Button Content="📋 Duplicate"
+                                                            Command="{Binding $parent[UserControl].((vm:SettingsViewModel)DataContext).DuplicatePresetCommand}"
+                                                            CommandParameter="{Binding}"
+                                                            ToolTip.Tip="Duplicate this preset"
+                                                            Classes="matte-secondary" Padding="8,5" FontSize="11"/>
+                                                    <Button Content="✏️ Edit"
+                                                            Command="{Binding $parent[UserControl].((vm:SettingsViewModel)DataContext).EditPresetCommand}"
+                                                            CommandParameter="{Binding}"
+                                                            IsEnabled="{Binding IsCustom}"
+                                                            ToolTip.Tip="Edit custom preset"
+                                                            Classes="matte-secondary" Padding="8,5" FontSize="11"/>
+                                                    <Button Content="🗑️ Delete"
+                                                            Command="{Binding $parent[UserControl].((vm:SettingsViewModel)DataContext).DeletePresetCommand}"
+                                                            CommandParameter="{Binding}"
+                                                            IsEnabled="{Binding IsCustom}"
+                                                            ToolTip.Tip="Delete custom preset"
+                                                            Classes="matte-secondary" Padding="8,5" FontSize="11"/>
+                                                </StackPanel>
+                                            </Grid>
+                                        </Border>
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+
+                            <!-- Import / Export Section Footer -->
+                            <Border Classes="matte-card" Padding="12" Background="#0E1019" BorderBrush="#1C2132">
+                                <StackPanel Spacing="8">
+                                    <TextBlock Text="JSON Import &amp; Export" FontSize="13" FontWeight="Bold" Foreground="{StaticResource TextMainBrush}"/>
+                                    <TextBox Text="{Binding PresetsJson, Mode=TwoWay}"
+                                             AcceptsReturn="True"
+                                             PlaceholderText="Paste custom presets JSON here to import, or click Export to generate JSON payload..."
+                                             MaxHeight="100"
+                                             Classes="matte-input"
+                                             FontSize="11"
+                                             FontFamily="Consolas,Menlo,monospace"/>
+                                    <StackPanel Orientation="Horizontal" Spacing="8">
+                                        <Button Content="📤 Export JSON" Command="{Binding ExportPresetsCommand}" Classes="matte-secondary" Padding="10,5" FontSize="12"/>
+                                        <Button Content="📥 Import JSON" Command="{Binding ImportPresetsCommand}" CommandParameter="{Binding PresetsJson}" Classes="matte-primary" Padding="10,5" FontSize="12"/>
+                                    </StackPanel>
+                                </StackPanel>
+                            </Border>
+                        </StackPanel>
+                    </Border>
+                </StackPanel>
+
+                <!-- ==================================================== -->
+                <!-- PANE 2: ENGINES & EXECUTABLE PATHS                   -->
+                <!-- ==================================================== -->
+                <StackPanel Spacing="16" IsVisible="{Binding IsEnginesCategoryActive}">
+                    <!-- Auto-Discovery Quick Action -->
+                    <Border Classes="matte-card">
+                        <StackPanel Spacing="12">
+                            <StackPanel Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+                                <TextBlock Text="🔍" FontSize="16" VerticalAlignment="Center"/>
+                                <TextBlock Text="AI Ecosystem Auto-Discovery" FontSize="15" FontWeight="Bold" Foreground="{StaticResource TextMainBrush}" VerticalAlignment="Center"/>
+                            </StackPanel>
+                            <TextBlock Text="Automatically scan common install directories, drive roots, PATH, and AppData for Ollama, ComfyUI, and Stable Diffusion Forge:" FontSize="12" Foreground="{StaticResource TextMutedBrush}"/>
+
+                            <Button Content="🔍 Auto-Detect Installed Tools" 
+                                    Command="{Binding AutoDetectToolsCommand}"
+                                    Classes="matte-primary" 
+                                    HorizontalAlignment="Left"/>
+                        </StackPanel>
+                    </Border>
+
+                    <!-- Executables & Models Directories -->
+                    <Border Classes="matte-card">
+                        <StackPanel Spacing="14">
+                            <TextBlock Text="🛠️ Executable &amp; Directory Paths" FontSize="15" FontWeight="Bold" Foreground="{StaticResource TextMainBrush}"/>
+
+                            <!-- ComfyUI Executable -->
+                            <StackPanel Spacing="4">
+                                <StackPanel Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+                                    <TextBlock Text="ComfyUI Executable Path" FontSize="12" Foreground="{StaticResource TextMutedBrush}" FontWeight="Medium"/>
+                                    <Border Classes="matte-pill" Padding="6,2">
+                                        <TextBlock Text="{Binding ComfyUiExecutableStatus}" FontSize="11" FontWeight="Bold"/>
+                                    </Border>
+                                </StackPanel>
+                                <Grid ColumnDefinitions="*,Auto">
+                                    <TextBox Grid.Column="0" Text="{Binding ComfyUiExecutablePath, Mode=TwoWay}" Classes="matte-input"/>
+                                    <Button Grid.Column="1" Content="📁 Browse..." Command="{Binding BrowseComfyExecutableCommand}" Margin="8,0,0,0" Classes="matte-secondary"/>
+                                </Grid>
+                            </StackPanel>
+
+                            <!-- Forge Executable -->
+                            <StackPanel Spacing="4">
+                                <StackPanel Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+                                    <TextBlock Text="Forge Executable Path" FontSize="12" Foreground="{StaticResource TextMutedBrush}" FontWeight="Medium"/>
+                                    <Border Classes="matte-pill" Padding="6,2">
+                                        <TextBlock Text="{Binding ForgeExecutableStatus}" FontSize="11" FontWeight="Bold"/>
+                                    </Border>
+                                </StackPanel>
+                                <Grid ColumnDefinitions="*,Auto">
+                                    <TextBox Grid.Column="0" Text="{Binding ForgeExecutablePath, Mode=TwoWay}" Classes="matte-input"/>
+                                    <Button Grid.Column="1" Content="📁 Browse..." Command="{Binding BrowseForgeExecutableCommand}" Margin="8,0,0,0" Classes="matte-secondary"/>
+                                </Grid>
+                            </StackPanel>
+
+                            <!-- Ollama Executable -->
+                            <StackPanel Spacing="4">
+                                <StackPanel Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+                                    <TextBlock Text="Ollama Executable Path" FontSize="12" Foreground="{StaticResource TextMutedBrush}" FontWeight="Medium"/>
+                                    <Border Classes="matte-pill" Padding="6,2">
+                                        <TextBlock Text="{Binding OllamaStatus}" FontSize="11" FontWeight="Bold"/>
+                                    </Border>
+                                </StackPanel>
+                                <Grid ColumnDefinitions="*,Auto">
+                                    <TextBox Grid.Column="0" Text="{Binding OllamaExecutablePath, Mode=TwoWay}" Classes="matte-input"/>
+                                    <Button Grid.Column="1" Content="📁 Browse..." Command="{Binding BrowseOllamaExecutableCommand}" Margin="8,0,0,0" Classes="matte-secondary"/>
+                                </Grid>
+                            </StackPanel>
+
+                            <!-- Audio Engine Executable -->
+                            <StackPanel Spacing="4">
+                                <StackPanel Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+                                    <TextBlock Text="Audio Engine Executable / Script Path" FontSize="12" Foreground="{StaticResource TextMutedBrush}" FontWeight="Medium"/>
+                                    <Border Classes="matte-pill" Padding="6,2">
+                                        <TextBlock Text="{Binding AudioEngineExecutableStatus}" FontSize="11" FontWeight="Bold"/>
+                                    </Border>
+                                </StackPanel>
+                                <Grid ColumnDefinitions="*,Auto">
+                                    <TextBox Grid.Column="0" Text="{Binding AudioEngineExecutablePath, Mode=TwoWay}" Classes="matte-input"/>
+                                    <Button Grid.Column="1" Content="📁 Browse..." Command="{Binding BrowseAudioEngineExecutableCommand}" Margin="8,0,0,0" Classes="matte-secondary"/>
+                                </Grid>
+                            </StackPanel>
+
+                            <!-- Forge Models -->
+                            <StackPanel Spacing="4">
+                                <StackPanel Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+                                    <TextBlock Text="Forge Models Directory Path" FontSize="12" Foreground="{StaticResource TextMutedBrush}" FontWeight="Medium"/>
+                                    <Border Classes="matte-pill" Padding="6,2">
+                                        <TextBlock Text="{Binding ForgeModelsStatus}" FontSize="11" FontWeight="Bold"/>
+                                    </Border>
+                                </StackPanel>
+                                <Grid ColumnDefinitions="*,Auto">
+                                    <TextBox Grid.Column="0" Text="{Binding ForgeModelsPath, Mode=TwoWay}" Classes="matte-input"/>
+                                    <Button Grid.Column="1" Content="📁 Browse..." Command="{Binding BrowseForgeModelsCommand}" Margin="8,0,0,0" Classes="matte-secondary"/>
+                                </Grid>
+                            </StackPanel>
+
+                            <!-- ComfyUI Models -->
+                            <StackPanel Spacing="4">
+                                <StackPanel Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+                                    <TextBlock Text="ComfyUI Models Directory Path" FontSize="12" Foreground="{StaticResource TextMutedBrush}" FontWeight="Medium"/>
+                                    <Border Classes="matte-pill" Padding="6,2">
+                                        <TextBlock Text="{Binding ComfyModelsStatus}" FontSize="11" FontWeight="Bold"/>
+                                    </Border>
+                                </StackPanel>
+                                <Grid ColumnDefinitions="*,Auto">
+                                    <TextBox Grid.Column="0" Text="{Binding ComfyModelsPath, Mode=TwoWay}" Classes="matte-input"/>
+                                    <Button Grid.Column="1" Content="📁 Browse..." Command="{Binding BrowseComfyModelsCommand}" Margin="8,0,0,0" Classes="matte-secondary"/>
+                                </Grid>
+                            </StackPanel>
+
+                            <!-- 3D Models Output -->
+                            <StackPanel Spacing="4">
+                                <StackPanel Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+                                    <TextBlock Text="3D Models Output Path" FontSize="12" Foreground="{StaticResource TextMutedBrush}" FontWeight="Medium"/>
+                                    <Border Classes="matte-pill" Padding="6,2">
+                                        <TextBlock Text="{Binding ThreeDModelsStatus}" FontSize="11" FontWeight="Bold"/>
+                                    </Border>
+                                </StackPanel>
+                                <Grid ColumnDefinitions="*,Auto">
+                                    <TextBox Grid.Column="0" Text="{Binding ThreeDModelsPath, Mode=TwoWay}" Classes="matte-input"/>
+                                    <Button Grid.Column="1" Content="📁 Browse..." Command="{Binding BrowseThreeDModelsCommand}" Margin="8,0,0,0" Classes="matte-secondary"/>
+                                </Grid>
+                            </StackPanel>
+
+                            <!-- Workflows Directory -->
+                            <StackPanel Spacing="4">
+                                <StackPanel Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+                                    <TextBlock Text="Workflows Directory Path" FontSize="12" Foreground="{StaticResource TextMutedBrush}" FontWeight="Medium"/>
+                                    <Border Classes="matte-pill" Padding="6,2">
+                                        <TextBlock Text="{Binding WorkflowsStatus}" FontSize="11" FontWeight="Bold"/>
+                                    </Border>
+                                </StackPanel>
+                                <Grid ColumnDefinitions="*,Auto">
+                                    <TextBox Grid.Column="0" Text="{Binding WorkflowsPath, Mode=TwoWay}" Classes="matte-input"/>
+                                    <Button Grid.Column="1" Content="📁 Browse..." Command="{Binding BrowseWorkflowsCommand}" Margin="8,0,0,0" Classes="matte-secondary"/>
+                                </Grid>
+                            </StackPanel>
+
+                            <!-- AI Assistant LiteLLM Endpoint & API Key -->
+                            <Border Classes="matte-card" Padding="14" Background="#141724" BorderBrush="#202538">
+                                <StackPanel Spacing="10">
+                                    <TextBlock Text="🤖 AI Assistant Service Settings" FontSize="14" FontWeight="Bold" Foreground="{StaticResource TextMainBrush}"/>
+                                    
+                                    <StackPanel Spacing="4">
+                                        <TextBlock Text="LiteLLM / OpenAI Proxy Endpoint (Default: http://127.0.0.1:4000/v1)" FontSize="12" Foreground="{StaticResource TextMutedBrush}" FontWeight="Medium"/>
+                                        <TextBox Text="{Binding AiAssistantEndpoint, Mode=TwoWay}" Classes="matte-input"/>
+                                    </StackPanel>
+
+                                    <StackPanel Spacing="4">
+                                        <TextBlock Text="AI Assistant Model" FontSize="12" Foreground="{StaticResource TextMutedBrush}" FontWeight="Medium"/>
+                                        <TextBox Text="{Binding AiAssistantModel, Mode=TwoWay}" Classes="matte-input"/>
+                                    </StackPanel>
+
+                                    <StackPanel Spacing="4">
+                                        <StackPanel Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+                                            <TextBlock Text="API Key" FontSize="12" Foreground="{StaticResource TextMutedBrush}" FontWeight="Medium"/>
+                                            <Border Classes="matte-pill" Padding="6,2">
+                                                <TextBlock Text="{Binding ApiKeyStatusText}" FontSize="11" FontWeight="Bold" Foreground="{Binding ApiKeyStatusColor}"/>
+                                            </Border>
+                                        </StackPanel>
+                                        <Grid ColumnDefinitions="*,Auto,Auto">
+                                            <TextBox Grid.Column="0" Text="{Binding AiAssistantApiKey, Mode=TwoWay}" PasswordChar="•" Classes="matte-input" IsVisible="{Binding !IsApiKeyVisible}"/>
+                                            <TextBox Grid.Column="0" Text="{Binding AiAssistantApiKey, Mode=TwoWay}" Classes="matte-input" IsVisible="{Binding IsApiKeyVisible}"/>
+                                            
+                                            <Button Grid.Column="1" Content="👁️ Toggle" Command="{Binding ToggleApiKeyVisibilityCommand}" Margin="8,0,0,0" Classes="matte-secondary"/>
+                                            <Button Grid.Column="2" Content="🗑️ Clear" Command="{Binding ClearApiKeyCommand}" Margin="8,0,0,0" Classes="matte-secondary"/>
+                                        </Grid>
+                                    </StackPanel>
+                                </StackPanel>
+                            </Border>
+
+                            <!-- Preferred Image Engine & ComfyUI URL -->
+                            <Grid ColumnDefinitions="*,*">
+                                <StackPanel Grid.Column="0" Spacing="4" Margin="0,0,8,0">
+                                    <TextBlock Text="Preferred Image Engine" FontSize="12" Foreground="{StaticResource TextMutedBrush}" FontWeight="Medium"/>
+                                    <TextBox Text="{Binding PreferredImageEngine, Mode=TwoWay}" Classes="matte-input"/>
+                                </StackPanel>
+                                <StackPanel Grid.Column="1" Spacing="4" Margin="8,0,0,0">
+                                    <TextBlock Text="ComfyUI URL" FontSize="12" Foreground="{StaticResource TextMutedBrush}" FontWeight="Medium"/>
+                                    <TextBox Text="{Binding ComfyUiUrl, Mode=TwoWay}" Classes="matte-input"/>
+                                </StackPanel>
+                            </Grid>
+
+                            <Button Command="{Binding SaveSettingsCommand}" 
+                                    Classes="matte-primary" HorizontalAlignment="Left" Margin="0,6,0,0">
+                                💾 Save Settings
+                            </Button>
+                        </StackPanel>
+                    </Border>
+                </StackPanel>
+
+                <!-- ==================================================== -->
+                <!-- PANE 3: FEATURE PACKS & ADD-ONS                      -->
+                <!-- ==================================================== -->
+                <StackPanel Spacing="16" IsVisible="{Binding IsFeaturePacksCategoryActive}">
+                    <Border Classes="matte-card">
+                        <StackPanel Spacing="14">
+                            <Grid ColumnDefinitions="*, Auto">
+                                <StackPanel Grid.Column="0" Spacing="4">
+                                    <StackPanel Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+                                        <TextBlock Text="📦" FontSize="16" VerticalAlignment="Center"/>
+                                        <TextBlock Text="Installed Components &amp; Feature Packs" FontSize="15" FontWeight="Bold" Foreground="{StaticResource TextMainBrush}" VerticalAlignment="Center"/>
+                                    </StackPanel>
+                                    <TextBlock Text="Manage optional feature packs, AI models, and disk allocations:" FontSize="12" Foreground="{StaticResource TextMutedBrush}"/>
+                                </StackPanel>
+                                <Button Grid.Column="1" Content="🔄 Refresh Status" Command="{Binding RefreshComponentStatusesCommand}" Classes="matte-secondary" Padding="12,6"/>
+                            </Grid>
+
+                            <!-- Video Pack Card -->
+                            <Border Classes="matte-card" Padding="14" Background="#141724" BorderBrush="#202538">
+                                <Grid ColumnDefinitions="*, Auto">
+                                    <StackPanel Grid.Column="0" Spacing="4">
+                                        <StackPanel Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+                                            <TextBlock Text="🎬 ComfyUI Video Generation Pack" FontSize="14" FontWeight="Bold" Foreground="{StaticResource TextMainBrush}"/>
+                                            <Border Classes="matte-pill" Padding="6,2">
+                                                <TextBlock Text="{Binding VideoPackStatusText}" FontSize="11" Foreground="{StaticResource PrimaryBrush}" FontWeight="Bold"/>
+                                            </Border>
+                                        </StackPanel>
+                                        <TextBlock Text="DiT Wan 2.2, LTX-2.5 &amp; HunyuanVideo nodes | Estimated disk size: 14.2 GB" FontSize="12" Foreground="{StaticResource TextMutedBrush}"/>
+                                    </StackPanel>
+                                    <Button Grid.Column="1" Content="Toggle / Uninstall" Command="{Binding ToggleVideoPackCommand}" Classes="matte-secondary" VerticalAlignment="Center"/>
+                                </Grid>
+                            </Border>
+
+                            <!-- Audio Pack Card -->
+                            <Border Classes="matte-card" Padding="14" Background="#141724" BorderBrush="#202538">
+                                <Grid ColumnDefinitions="*, Auto">
+                                    <StackPanel Grid.Column="0" Spacing="4">
+                                        <StackPanel Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+                                            <TextBlock Text="🔊 Kokoro TTS &amp; Audio Engine Pack" FontSize="14" FontWeight="Bold" Foreground="{StaticResource TextMainBrush}"/>
+                                            <Border Classes="matte-pill" Padding="6,2">
+                                                <TextBlock Text="{Binding AudioPackStatusText}" FontSize="11" Foreground="{StaticResource AccentBrush}" FontWeight="Bold"/>
+                                            </Border>
+                                        </StackPanel>
+                                        <TextBlock Text="FastAPI text-to-speech engine &amp; voices | Estimated disk size: 350 MB" FontSize="12" Foreground="{StaticResource TextMutedBrush}"/>
+                                    </StackPanel>
+                                    <Button Grid.Column="1" Content="Toggle / Uninstall" Command="{Binding ToggleAudioPackCommand}" Classes="matte-secondary" VerticalAlignment="Center"/>
+                                </Grid>
+                            </Border>
+
+                            <!-- Audio Engine Voice Settings -->
+                            <Border Classes="matte-card" Padding="14" Background="#10131F" BorderBrush="#1C2132">
+                                <StackPanel Spacing="10">
+                                    <TextBlock Text="🎙️ Audio Engine Voice Configuration" FontSize="13" FontWeight="Bold" Foreground="{StaticResource TextMainBrush}"/>
+                                    <Grid ColumnDefinitions="*,*">
+                                        <StackPanel Grid.Column="0" Spacing="4" Margin="0,0,8,0">
+                                            <TextBlock Text="Audio Engine URL" FontSize="12" Foreground="{StaticResource TextMutedBrush}" FontWeight="Medium"/>
+                                            <TextBox Text="{Binding AudioEngineUrl, Mode=TwoWay}" Classes="matte-input"/>
+                                        </StackPanel>
+                                        <StackPanel Grid.Column="1" Spacing="4" Margin="8,0,0,0">
+                                            <TextBlock Text="Preferred Audio Voice" FontSize="12" Foreground="{StaticResource TextMutedBrush}" FontWeight="Medium"/>
+                                            <TextBox Text="{Binding PreferredAudioVoice, Mode=TwoWay}" Classes="matte-input"/>
+                                        </StackPanel>
+                                    </Grid>
+
+                                    <Button Content="🔊 Test Voice Synthesizer"
+                                            Command="{Binding TestVoiceSynthesizerCommand}"
+                                            Classes="matte-secondary" HorizontalAlignment="Left" Margin="0,4,0,0"/>
+                                </StackPanel>
+                            </Border>
+                        </StackPanel>
+                    </Border>
+                </StackPanel>
+
+                <!-- ==================================================== -->
+                <!-- PANE 4: NETWORK & REMOTE ACCESS                      -->
+                <!-- ==================================================== -->
+                <StackPanel Spacing="16" IsVisible="{Binding IsNetworkCategoryActive}">
+                    <Border Classes="matte-card">
+                        <StackPanel Spacing="12">
+                            <StackPanel Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+                                <TextBlock Text="🌐" FontSize="16" VerticalAlignment="Center"/>
+                                <TextBlock Text="Remote &amp; Mobile Access URL" FontSize="15" FontWeight="Bold" Foreground="{StaticResource TextMainBrush}" VerticalAlignment="Center"/>
+                            </StackPanel>
+                            <TextBlock Text="Connect to this manager from your smartphone, tablet, or secondary laptop on your local Wi-Fi / LAN network:" FontSize="12" Foreground="{StaticResource TextMutedBrush}"/>
+
+                            <Border Background="#10131F" BorderBrush="#202538" BorderThickness="1" CornerRadius="8" Padding="14" Margin="0,4,0,0">
+                                <Grid ColumnDefinitions="*, Auto">
+                                    <StackPanel Grid.Column="0" Spacing="4">
+                                        <TextBlock Text="Local Network Dashboard Endpoint:" FontSize="11" Foreground="{StaticResource TextMutedBrush}"/>
+                                        <SelectableTextBlock Text="{Binding LanAccessUrl}" FontSize="15" FontWeight="Bold" Foreground="{StaticResource SecondaryBrush}"/>
+                                    </StackPanel>
+                                    <Border Grid.Column="1" Classes="matte-pill" Padding="8,4" VerticalAlignment="Center">
+                                        <TextBlock Text="Ready for Pairing" FontSize="11" Foreground="{StaticResource OnlineBrush}" FontWeight="SemiBold"/>
+                                    </Border>
+                                </Grid>
+                            </Border>
+
+                            <TextBlock Text="🔒 Connections are served with zero-trust local network credentials. Remote requests stay completely on your LAN without internet transmission."
+                                       FontSize="11" Foreground="{StaticResource TextMutedBrush}" TextWrapping="Wrap"/>
+                        </StackPanel>
+                    </Border>
+                </StackPanel>
+            </Panel>
+        </ScrollViewer>
+    </Grid>
 </UserControl>
