@@ -38,10 +38,11 @@ Local LLM Server Manager is a cross-platform orchestrator for local artificial i
 
 | Layout Section | Primary Function | Active Elements |
 | :--- | :--- | :--- |
-| **Telemetry Header** | Live Hardware Monitoring | GPU name, total/used VRAM bar, service health indicator, and refresh button. |
-| **Primary Navigation** | Workspace Switcher | Tabs for My Models, Hugging Face Hub, CivitAI, Multimodal Studio, AI Assistant, and Settings. |
-| **Main Content Canvas** | Engine Interaction | Model cards, KV cache context calculator, download progress, WebGL canvas, and video player. |
-| **Companion Windows** | Floating Multi-Window | Detachable Documentation and AI Assist windows with magnetic flank docking. |
+| **Telemetry Header & Ribbon** | Live Hardware & Engine Monitoring | GPU name, real-time VRAM allocation bar, interactive engine status cards (Ollama, ComfyUI, SD Forge, Kokoro TTS) with live status dots, tooltips, and click-to-manage toggles. |
+| **Activity Rail** | Workspace Domain Navigation | Primary navigation across Models (Local, Hugging Face, CivitAI), Multimodal Studio, Can I Run It (Hardware Fit), and Settings, plus Copilot and Documentation sidebar launcher buttons. |
+| **Fluid Studio Canvas & Dock** | Creative Generation Center | Modality selector bar (`🎨 Image`, `💬 Text`, `🎬 Video`, `🧊 3D Mesh`, `🎙️ Audio`), generous center stage preview canvas, style preset bar, and bottom creative prompt dock with parameters flyout (`⚙️ Settings`). |
+| **Docked Copilot & Knowledge** | Unified Assistant & Guides Sidebar | Right-side docked sidebar hosting interactive Copilot AI chat (`🤖 Copilot`) and procedural documentation guides (`📖 Knowledge`) with seamless tab switching, magnetic companion pop-out, and contextual prompt transfer. |
+| **Companion Windows** | Floating Multi-Window System | Detachable Documentation and AI Assist windows with magnetic flank docking and lockstep tracking. |
 
 ## Core Capabilities
 

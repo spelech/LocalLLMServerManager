@@ -56,46 +56,43 @@ The Studio Preset Bar provides pre-tuned configurations to avoid manual paramete
 
 ## Step-by-Step Video Generation
 
-Follow these steps to generate a video clip:
+Follow these steps to generate a video clip using the Fluid Studio Canvas and Creative Prompt Dock:
 
 ```mermaid
 flowchart LR
-    E["1. Check Engine"] --> P["2. Select Preset"]
-    P --> M["3. Set Motion"]
-    M --> R["4. Render & Play"]
+    E["1. Check Engine Card"] --> M["2. Select 🎬 Video"]
+    M --> P["3. Choose Preset"]
+    P --> D["4. Prompt in Dock"]
+    D --> G["5. Click Generate ↵"]
 ```
 
 ### Step 1: Verify Engine and Hardware Fit
+1. Check the **ComfyUI** engine card in the Telemetry Header or Ribbon.
+2. Verify that the status dot is green (**Online**). If stopped, click **▷ Start**.
+3. Check the **Hardware Fit** badge for estimated VRAM headroom.
 
-1. Open the **Workflows** tab in the top navigation bar.
-2. Click **🎬 Video** in the modality selector.
-3. Verify the **ComfyUI** status pill in the header. Ensure the pill shows **Online**.
-4. Check the **Hardware Fit** badge.
-   * 🟢 **Ready:** Your GPU has sufficient free memory.
-   * 🟡 **LLM Auto-Unload:** The VRAM Orchestrator will unload Ollama models before video synthesis starts.
-   * 🔴 **Exceeds GPU Limit:** The selected resolution requires more VRAM than your GPU provides. Switch to a lower preset.
+### Step 2: Select Video Modality
+1. Open the **Studio** workspace from the Activity Rail.
+2. In the top modality selector bar, click **🎬 Video**.
+3. Center Stage displays the Interactive Video Player Viewport and 4-Stage Generation Tracker.
 
-### Step 2: Choose Preset and Starter Motion
+### Step 3: Choose Preset & Starter Motion
+Select a preset from the Studio Preset Bar or click a starter motion chip on the canvas:
+* `[🐕 Golden Retriever Beach]`: Fast outdoor motion preset.
+* `[🌆 Cyberpunk Rain 720p]`: Complex atmospheric rain and neon reflections.
+* `[☕ Cozy Cafe Steam]`: Subtle fluid dynamics and gentle lighting.
+* `[🚀 Space Nebula Flyby]`: High-speed cosmic camera motion.
 
-1. Select a preset from the **Video Preset** dropdown menu.
-2. Click one of the starter prompt chips to load a verified motion template:
-   * `[🐕 Golden Retriever Beach]`: Fast outdoor motion preset.
-   * `[🌆 Cyberpunk Rain 720p]`: Complex atmospheric rain and neon reflections.
-   * `[☕ Cozy Cafe Steam]`: Subtle fluid dynamics and gentle lighting.
-   * `[🚀 Space Nebula Flyby]`: High-speed cosmic camera motion.
+### Step 4: Enter Prompt & Fine-Tune in Dock
+1. **Prompt Textarea:** Describe subjects, motion paths, and camera action in the prompt dock.
+2. **Parameters Flyout (`⚙️ Settings`):** Slide open the parameters popover to adjust:
+   * **Steps:** 20 to 40 sampling steps.
+   * **CFG Scale:** 6.0 to 8.0 guidance.
+   * **Denoise & Seed:** Fine-tune motion consistency and variation seed.
+   * **Aspect Ratio:** Select widescreen `16:9` or mobile `9:16`.
 
-### Step 3: Configure Motion and Prompts
-
-1. **Workflow Model:** Select your target engine model (for example, `Wan 2.2 14B` or `LTX-Video 2.5`).
-2. **Resolution:** Specify dimensions (such as `832x480` or `1280x720`).
-3. **Prompt:** Describe the subject, action, motion direction, and environment. Use clear motion verbs.
-4. **Negative Prompt:** Specify unwanted artifacts such as camera shake, distortion, flicker, or static freeze.
-5. **Frame Count:** Set the total number of frames (`16` to `120`, in increments of 8).
-6. **Seed:** Set a numeric seed to reproduce specific movements, or randomize the value.
-
-### Step 4: Launch Generation and Monitor Stages
-
-1. Click **🎬 Step 4: Generate Video**.
+### Step 5: Click Generate ↵ & Monitor Stages
+1. Click the prominent **Generate ↵** button in the prompt dock.
 2. Monitor the **4-Stage Pipeline Tracker**:
    * **Stage 1 (VRAM & Weights):** Loads DiT checkpoint into GPU memory.
    * **Stage 2 (Sampling & Denoising):** Generates latent video frames with progress percentage.

@@ -82,32 +82,28 @@ flowchart LR
 
 ### Step 1: Verify Audio Engine Status
 
-1. Open the **Workflows** tab in the top navigation bar.
-2. Click **🎵 Audio** in the modality selector.
-3. Check the engine status pill in the card header.
-4. Verify that the status shows **Online**.
+1. Open the **Studio** tab in the left activity rail or navigation bar.
+2. Click **🎙️ Audio** in the top modality selector.
+3. Check the **Kokoro TTS** or **ComfyUI** engine status card in the telemetry ribbon or header. Ensure the card shows **Online**. If stopped, click **▷ Start** on the card.
 
 ### Step 2: Choose Preset or Workflow
 
-1. Open the **Workflow** dropdown menu.
-2. Select **Kokoro TTS**, **Stable Audio Open**, or **YuE Song Generator**.
-3. Choose a curated preset from the Studio Preset Bar.
+1. Select a curated preset from the Studio Preset Bar (`🎙️ Natural Storyteller`, `📻 Energetic Broadcaster`, `🌧️ Ambient Soundscape`, or `🎸 Full Song Generator`).
+2. Alternatively, click one of the quick starter prompt chips in the center stage canvas.
 
-### Step 3: Configure Duration and Prompts
+### Step 3: Configure Voice, Duration, and Prompt
 
-1. **Duration (s):** Set the audio duration between `5` and `300` seconds. Use shorter durations for rapid sound effect testing.
-2. **Seed:** Set a numeric seed or leave blank for randomized variations.
-3. **Prompt Text:**
-   * For **Kokoro TTS:** Type or paste the narration script.
+1. **Prompt Text:**
+   * For **Kokoro TTS:** Type or paste your speech narration script into the Creative Prompt Dock textarea.
    * For **Stable Audio:** Describe instruments, environment, acoustic space, and tempo (BPM).
    * For **YuE:** Include genre tags and lyrics labeled with `[Verse]` and `[Chorus]` markers.
-4. **Negative Prompt:** List acoustic flaws to prevent, such as distortion, clipping, or background hiss.
+2. **Settings Popover:** Click **⚙️ Settings** in the dock toolbar to configure voice profile (e.g., `af_heart`, `am_michael`), duration (5 to 300 seconds), and seed.
 
 ### Step 4: Queue Generation and Listen
 
-1. Click **🎵 Step 4: Queue Audio Generation Workflow**.
-2. Observe the 4-stage tracker during audio sampling and VAE decoding.
-3. Click the **Play** button when generation finishes.
+1. Click **Generate ↵** in the bottom Creative Prompt Dock (or press `Ctrl+Enter`).
+2. Observe the real-time pipeline status tracker during audio synthesis.
+3. Use the integrated waveform visualizer and player in the center stage to play, scrub, or download the synthesized audio track.
 
 ---
 
