@@ -35,9 +35,8 @@ $BaseUrl = "http://127.0.0.1:$Port"
 try {
     # 1. Silent Installation to Sandbox
     Write-Host "--> 1. Installing to temporary sandbox: $TempDir..." -ForegroundColor Yellow
-    Stop-Process -Name "LocalLLMServerManager" -Force -ErrorAction SilentlyContinue
-    & "$SetupExePath" /VERYSILENT /SUPPRESSMSGBOXES /LOG="$LogFile" /DIR="$TempDir"
-    Start-Sleep -Seconds 3
+    $InstallProc = Start-Process -FilePath $SetupExePath -ArgumentList "/VERYSILENT", "/SUPPRESSMSGBOXES", "/LOG=""$LogFile""", "/DIR=""$TempDir""" -PassThru
+    $InstallProc.WaitForExit()
 
     $InstalledExe = Join-Path $TempDir "LocalLLMServerManager.exe"
     if (-not (Test-Path $InstalledExe)) {
@@ -132,8 +131,8 @@ finally {
     
     $Uninstaller = Join-Path $TempDir "unins000.exe"
     if (Test-Path $Uninstaller) {
-        & "$Uninstaller" /VERYSILENT /SUPPRESSMSGBOXES
-        Start-Sleep -Seconds 2
+        $UninsProc = Start-Process -FilePath $Uninstaller -ArgumentList "/VERYSILENT", "/SUPPRESSMSGBOXES" -PassThru
+        $UninsProc.WaitForExit()
     }
 
     if (Test-Path $TempDir) {
