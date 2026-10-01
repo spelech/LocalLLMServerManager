@@ -1,15 +1,36 @@
 using System;
+using System.Collections.ObjectModel;
+using System.Linq;
+using System.Threading.Tasks;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using LocalLLMServerManager.Shared.Interfaces;
+using LocalLLMServerManager.Shared.Models;
+using LocalLLMServerManager.Shared.Services;
 
 namespace LocalLLMServerManager.Shared.ViewModels;
 
 /// <summary>
 /// ViewModel managing the fluid creative studio canvas, top modality switching,
-/// creative prompt dock, and fine-tuning parameters flyout.
+/// creative prompt dock, fine-tuning parameters flyout, and dynamic model discovery.
 /// </summary>
 public partial class EngineStudioViewModel : ObservableObject
 {
+    private readonly ILocalModelScannerService _scanner;
+
+    public ObservableCollection<LocalModelItem> ScannedModels { get; } = new();
+    public ObservableCollection<string> AvailableCurrentModels { get; } = new();
+
+    public EngineStudioViewModel() : this(new LocalModelScannerService())
+    {
+    }
+
+    public EngineStudioViewModel(ILocalModelScannerService scanner)
+    {
+        _scanner = scanner;
+        UpdateAvailableModelsForModality();
+    }
+
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(IsImageModalityActive))]
     [NotifyPropertyChangedFor(nameof(IsTextModalityActive))]
@@ -107,11 +128,103 @@ public partial class EngineStudioViewModel : ObservableObject
         _ => "Describe what you want to create..."
     };
 
+    public void UpdateAvailableModelsForModality()
+    {
+        AvailableCurrentModels.Clear();
+        switch (SelectedModality)
+        {
+            case "Image" or "Images":
+                var scannedImages = ScannedModels.Where(m => m.Category == LocalModelCategory.ImageCheckpoint || m.Category == LocalModelCategory.ImageLora).Select(m => m.Name).ToList();
+                foreach (var m in scannedImages) AvailableCurrentModels.Add(m);
+                var imageDefaults = new[] { "SDXL Base 1.0", "Flux.1 [dev]", "Flux.1 [schnell]", "SD 1.5", "Pony Diffusion V6", "Illustrious XL v0.1", "SDXL Turbo" };
+                foreach (var d in imageDefaults)
+                {
+                    if (!AvailableCurrentModels.Contains(d)) AvailableCurrentModels.Add(d);
+                }
+                break;
+            case "Text":
+                var textDefaults = new[] { "llama3.2:latest", "mistral:latest", "deepseek-r1:latest", "qwen2.5:latest", "phi4:latest" };
+                foreach (var d in textDefaults) AvailableCurrentModels.Add(d);
+                break;
+            case "Video":
+                var scannedVideos = ScannedModels.Where(m => m.Category == LocalModelCategory.Video).Select(m => m.Name).ToList();
+                foreach (var m in scannedVideos) AvailableCurrentModels.Add(m);
+                var videoDefaults = new[] { "Wan 2.2 / LTX-2.5", "Wan 2.2 T2V (720p)", "Wan 2.2 I2V (480p)", "LTX-Video 2.5", "HunyuanVideo 1.5", "AnimateDiff SDXL" };
+                foreach (var d in videoDefaults)
+                {
+                    if (!AvailableCurrentModels.Contains(d)) AvailableCurrentModels.Add(d);
+                }
+                break;
+            case "3D Mesh":
+                var scanned3D = ScannedModels.Where(m => m.Category == LocalModelCategory.ThreeD).Select(m => m.Name).ToList();
+                foreach (var m in scanned3D) AvailableCurrentModels.Add(m);
+                var threeDDefaults = new[] { "TRELLIS V2 (Gaussian Splat)", "Hunyuan3D V2", "InstantMesh" };
+                foreach (var d in threeDDefaults)
+                {
+                    if (!AvailableCurrentModels.Contains(d)) AvailableCurrentModels.Add(d);
+                }
+                break;
+            case "Audio":
+                var scannedAudio = ScannedModels.Where(m => m.Category == LocalModelCategory.Audio).Select(m => m.Name).ToList();
+                foreach (var m in scannedAudio) AvailableCurrentModels.Add(m);
+                var audioDefaults = new[] { "Kokoro TTS (af_heart)", "Kokoro TTS (am_adam)", "Kokoro TTS (bf_emma)", "Stable Audio Open", "MusicGen Melody" };
+                foreach (var d in audioDefaults)
+                {
+                    if (!AvailableCurrentModels.Contains(d)) AvailableCurrentModels.Add(d);
+                }
+                break;
+            case "Sticker" or "Sticker Studio":
+                AvailableCurrentModels.Add("Sticker Studio (BirefNet + SDXL)");
+                break;
+        }
+    }
+
+    [RelayCommand]
+    public void SelectModel(string modelName)
+    {
+        if (string.IsNullOrWhiteSpace(modelName)) return;
+
+        switch (SelectedModality)
+        {
+            case "Image" or "Images":
+                ImageModel = modelName;
+                break;
+            case "Text":
+                TextModel = modelName;
+                break;
+            case "Video":
+                VideoModel = modelName;
+                break;
+            case "3D Mesh":
+                MeshModel = modelName;
+                break;
+            case "Audio":
+                AudioModel = modelName;
+                break;
+            case "Sticker" or "Sticker Studio":
+                StickerModel = modelName;
+                break;
+        }
+        OnPropertyChanged(nameof(ActiveModelBadge));
+    }
+
+    public async Task LoadScannedModelsAsync(AppSettings? settings = null, string? baseDirectory = null)
+    {
+        var models = await _scanner.ScanAllModelsAsync(settings, baseDirectory);
+        ScannedModels.Clear();
+        foreach (var m in models)
+        {
+            ScannedModels.Add(m);
+        }
+        UpdateAvailableModelsForModality();
+    }
+
     [RelayCommand]
     public void SelectModality(string modality)
     {
         if (string.IsNullOrWhiteSpace(modality)) return;
         SelectedModality = modality;
+        UpdateAvailableModelsForModality();
         OnPropertyChanged(nameof(IsImageModalityActive));
         OnPropertyChanged(nameof(IsTextModalityActive));
         OnPropertyChanged(nameof(IsVideoModalityActive));
@@ -173,6 +286,147 @@ public partial class MainViewModel
 {
     [ObservableProperty]
     private EngineStudioViewModel _studio = new();
+
+    public ObservableCollection<LocalModelItem> ScannedModels => Studio.ScannedModels;
+    public ObservableCollection<string> AvailableCurrentModels => Studio.AvailableCurrentModels;
+
+    public ObservableCollection<LocalModelItem> ScannedImageModels { get; } = new();
+    public ObservableCollection<LocalModelItem> ScannedVideoModels { get; } = new();
+    public ObservableCollection<LocalModelItem> ScannedAudioModels { get; } = new();
+    public ObservableCollection<LocalModelItem> ScannedThreeDModels { get; } = new();
+
+    [ObservableProperty]
+    private LocalModelCategory _selectedManageModelCategory = LocalModelCategory.Ollama;
+
+    [RelayCommand]
+    public void SelectManageCategory(string categoryStr)
+    {
+        if (Enum.TryParse<LocalModelCategory>(categoryStr, out var cat))
+        {
+            SelectedManageModelCategory = cat;
+            OnPropertyChanged(nameof(IsManageOllamaSelected));
+            OnPropertyChanged(nameof(IsManageImageSelected));
+            OnPropertyChanged(nameof(IsManageVideoSelected));
+            OnPropertyChanged(nameof(IsManageAudioSelected));
+            OnPropertyChanged(nameof(IsManageThreeDSelected));
+        }
+    }
+
+    public bool IsManageOllamaSelected => SelectedManageModelCategory == LocalModelCategory.Ollama;
+    public bool IsManageImageSelected => SelectedManageModelCategory == LocalModelCategory.ImageCheckpoint || SelectedManageModelCategory == LocalModelCategory.ImageLora;
+    public bool IsManageVideoSelected => SelectedManageModelCategory == LocalModelCategory.Video;
+    public bool IsManageAudioSelected => SelectedManageModelCategory == LocalModelCategory.Audio;
+    public bool IsManageThreeDSelected => SelectedManageModelCategory == LocalModelCategory.ThreeD;
+
+    public string SelectedStudioModelText
+    {
+        get => ActiveModelBadge;
+        set
+        {
+            if (!string.IsNullOrWhiteSpace(value) && value != ActiveModelBadge)
+            {
+                SelectStudioModel(value);
+            }
+        }
+    }
+
+    [RelayCommand]
+    public void SelectStudioModel(string modelName)
+    {
+        if (string.IsNullOrWhiteSpace(modelName)) return;
+        Studio.SelectModel(modelName);
+        if (IsImageModalityActive) SelectedImageWorkflow = modelName;
+        else if (IsVideoModalityActive) SelectedVideoWorkflow = modelName;
+        else if (IsAudioModalityActive && Audio != null) Audio.VoiceProfile = modelName;
+        OnPropertyChanged(nameof(ActiveModelBadge));
+        OnPropertyChanged(nameof(SelectedStudioModelText));
+        ToastService.Instance.Show($"Active model set to '{modelName}'", ToastType.Success);
+    }
+
+    [RelayCommand]
+    public void UseModelInStudio(LocalModelItem item)
+    {
+        if (item == null) return;
+        var targetModality = item.Category switch
+        {
+            LocalModelCategory.ImageCheckpoint or LocalModelCategory.ImageLora => "Image",
+            LocalModelCategory.Video => "Video",
+            LocalModelCategory.Audio => "Audio",
+            LocalModelCategory.ThreeD => "3D Mesh",
+            _ => "Image"
+        };
+        SelectModality(targetModality);
+        SelectStudioModel(item.Name);
+        SelectedTabIndex = 1;
+    }
+
+    [RelayCommand]
+    public void RevealModelInExplorer(LocalModelItem item)
+    {
+        if (item == null || string.IsNullOrWhiteSpace(item.FullPath)) return;
+        try
+        {
+            if (System.IO.File.Exists(item.FullPath))
+            {
+                var argument = $"/select,\"{item.FullPath}\"";
+                System.Diagnostics.Process.Start("explorer.exe", argument);
+            }
+            else if (System.IO.Directory.Exists(item.FullPath))
+            {
+                System.Diagnostics.Process.Start("explorer.exe", $"\"{item.FullPath}\"");
+            }
+        }
+        catch { }
+    }
+
+    [RelayCommand]
+    public async Task DeleteLocalModelAsync(LocalModelItem item)
+    {
+        if (item == null || string.IsNullOrWhiteSpace(item.FullPath)) return;
+        try
+        {
+            if (System.IO.File.Exists(item.FullPath))
+            {
+                System.IO.File.Delete(item.FullPath);
+                ToastService.Instance.Show($"Deleted '{item.FileName}'", ToastType.Info);
+                await RefreshScannedModelsAsync();
+            }
+        }
+        catch (Exception ex)
+        {
+            ToastService.Instance.Show($"Failed to delete: {ex.Message}", ToastType.Error);
+        }
+    }
+
+    [RelayCommand]
+    public async Task RefreshScannedModelsAsync()
+    {
+        var appSettings = Settings != null ? new AppSettings(
+            ForgeModelsPath: Settings.ForgeModelsPath,
+            ComfyModelsPath: Settings.ComfyModelsPath,
+            ThreeDModelsPath: Settings.ThreeDModelsPath,
+            WorkflowsPath: Settings.WorkflowsPath
+        ) : null;
+
+        await Studio.LoadScannedModelsAsync(appSettings, AppContext.BaseDirectory);
+
+        ScannedImageModels.Clear();
+        ScannedVideoModels.Clear();
+        ScannedAudioModels.Clear();
+        ScannedThreeDModels.Clear();
+
+        foreach (var m in Studio.ScannedModels)
+        {
+            if (m.Category == LocalModelCategory.ImageCheckpoint || m.Category == LocalModelCategory.ImageLora)
+                ScannedImageModels.Add(m);
+            else if (m.Category == LocalModelCategory.Video)
+                ScannedVideoModels.Add(m);
+            else if (m.Category == LocalModelCategory.Audio)
+                ScannedAudioModels.Add(m);
+            else if (m.Category == LocalModelCategory.ThreeD)
+                ScannedThreeDModels.Add(m);
+        }
+    }
 
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(IsImageModalityActive))]

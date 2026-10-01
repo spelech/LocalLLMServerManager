@@ -341,6 +341,7 @@ public partial class MainViewModel : ObservableObject
         _ = Audio.LoadAudioFilesAsync(ApiBase, Http);
         _ = LoadSettingsAsync();
         _ = Settings.RefreshComponentStatusesAsync(ApiBase, Http);
+        _ = RefreshScannedModelsAsync();
         if (EnableAutomaticPolling)
         {
             _ = StartBackgroundPollingAsync();

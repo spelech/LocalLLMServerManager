@@ -59,6 +59,24 @@
             <Setter Property="Foreground" Value="#38BDF8" />
         </Style>
 
+        <!-- Model Flyout Item Button -->
+        <Style Selector="Button.model-item-btn">
+            <Setter Property="Background" Value="Transparent" />
+            <Setter Property="Foreground" Value="{StaticResource TextMainBrush}" />
+            <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="BorderBrush" Value="Transparent" />
+            <Setter Property="CornerRadius" Value="6" />
+            <Setter Property="Cursor" Value="Hand" />
+        </Style>
+        <Style Selector="Button.model-item-btn /template/ ContentPresenter#PART_ContentPresenter">
+            <Setter Property="CornerRadius" Value="6" />
+        </Style>
+        <Style Selector="Button.model-item-btn:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+            <Setter Property="Background" Value="#1E293B" />
+            <Setter Property="BorderBrush" Value="{StaticResource PrimaryBrush}" />
+            <Setter Property="Foreground" Value="#FFFFFF" />
+        </Style>
+
         <!-- Aspect Ratio Option Pill -->
         <Style Selector="Button.aspect-pill">
             <Setter Property="Background" Value="#0F172A" />
@@ -182,12 +200,41 @@
                 <!-- Right Context Badges & Diagnostic Action -->
                 <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
                     <!-- Dynamic Active Model Badge -->
-                    <Border Background="#10192A" BorderBrush="#1E2E44" BorderThickness="1" CornerRadius="14" Padding="10,4">
+                    <Button Classes="matte-secondary" Padding="8,4" CornerRadius="14" ToolTip.Tip="Click to switch model / workflow">
+                        <Button.Flyout>
+                            <Flyout Placement="Bottom">
+                                <Border Background="#0D1322" BorderBrush="{StaticResource GlassBorderBrush}" BorderThickness="1" CornerRadius="8" Padding="8" MinWidth="260" MaxWidth="340">
+                                    <StackPanel Spacing="6">
+                                        <Grid ColumnDefinitions="*, Auto" Margin="4,2">
+                                            <TextBlock Text="Select Active Model" FontSize="11" FontWeight="Bold" Foreground="{StaticResource TextMainBrush}" VerticalAlignment="Center"/>
+                                            <Button Grid.Column="1" Content="🔄 Scan" Command="{Binding RefreshScannedModelsCommand}" Classes="matte-secondary" Padding="6,2" FontSize="10"/>
+                                        </Grid>
+                                        <Rectangle Height="1" Fill="{StaticResource GlassBorderBrush}"/>
+                                        <ScrollViewer MaxHeight="240">
+                                            <ItemsControl ItemsSource="{Binding AvailableCurrentModels}">
+                                                <ItemsControl.ItemTemplate>
+                                                    <DataTemplate>
+                                                        <Button Classes="model-item-btn"
+                                                                Content="{Binding}"
+                                                                Command="{Binding $parent[UserControl].((vm:MainViewModel)DataContext).SelectStudioModelCommand}"
+                                                                CommandParameter="{Binding}"
+                                                                HorizontalAlignment="Stretch"
+                                                                HorizontalContentAlignment="Left"
+                                                                Padding="8,5" Margin="0,1" FontSize="11"/>
+                                                    </DataTemplate>
+                                                </ItemsControl.ItemTemplate>
+                                            </ItemsControl>
+                                        </ScrollViewer>
+                                    </StackPanel>
+                                </Border>
+                            </Flyout>
+                        </Button.Flyout>
                         <StackPanel Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
                             <Ellipse Width="6" Height="6" Fill="{StaticResource OnlineBrush}" VerticalAlignment="Center"/>
-                            <TextBlock Text="{Binding Studio.ActiveModelBadge}" FontSize="11" Foreground="{StaticResource AccentBrush}" FontWeight="SemiBold" VerticalAlignment="Center"/>
+                            <TextBlock Text="{Binding ActiveModelBadge}" FontSize="11" Foreground="{StaticResource AccentBrush}" FontWeight="SemiBold" VerticalAlignment="Center"/>
+                            <TextBlock Text="▾" FontSize="9" Foreground="{StaticResource TextMutedBrush}" VerticalAlignment="Center" Margin="2,0,0,0"/>
                         </StackPanel>
-                    </Border>
+                    </Button>
 
                     <!-- Diagnostic Test Flight Action -->
                     <Button x:Name="DiagnosticTestFlightButton"
@@ -509,7 +556,7 @@
                     BoxShadow="0 -8 32 0 #60000000"
                     IsVisible="{Binding Studio.IsParametersFlyoutOpen}"
                     Margin="0,0,0,4">
-                <Grid RowDefinitions="Auto, Auto">
+                <Grid RowDefinitions="Auto, Auto, Auto">
                     <!-- Flyout Header -->
                     <Grid Grid.Row="0" ColumnDefinitions="*, Auto" Margin="0,0,0,12">
                         <StackPanel Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
@@ -521,8 +568,22 @@
                         <Button Grid.Column="1" Content="✕" Command="{Binding Studio.ToggleParametersFlyoutCommand}" Classes="matte-secondary" Padding="8,2" FontSize="10"/>
                     </Grid>
 
+                    <!-- Active Model / Checkpoint Selection Row -->
+                    <Border Grid.Row="1" Background="#0C1220" BorderBrush="{StaticResource GlassBorderBrush}" BorderThickness="1" CornerRadius="8" Padding="10,6" Margin="0,0,0,12">
+                        <Grid ColumnDefinitions="Auto, *, Auto">
+                            <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+                                <TextBlock Text="📦 Active Model:" FontSize="12" FontWeight="SemiBold" Foreground="{StaticResource TextMainBrush}" VerticalAlignment="Center"/>
+                                <ComboBox ItemsSource="{Binding AvailableCurrentModels}"
+                                          SelectedItem="{Binding SelectedStudioModelText, Mode=TwoWay}"
+                                          MinWidth="260" MaxDropDownHeight="240"
+                                          FontSize="11"/>
+                            </StackPanel>
+                            <Button Grid.Column="2" Content="🔄 Rescan Local Models" Command="{Binding RefreshScannedModelsCommand}" Classes="matte-secondary" Padding="8,4" FontSize="11"/>
+                        </Grid>
+                    </Border>
+
                     <!-- Sliders & Inputs -->
-                    <Grid Grid.Row="1" ColumnDefinitions="*, *, *, *, *">
+                    <Grid Grid.Row="2" ColumnDefinitions="*, *, *, *, *">
                         <!-- Steps -->
                         <StackPanel Grid.Column="0" Spacing="4" Margin="0,0,10,0">
                             <Grid ColumnDefinitions="*, Auto">
@@ -594,13 +655,42 @@
                     <!-- Context Pill Bar -->
                     <Grid Grid.Row="1" ColumnDefinitions="Auto, *, Auto" Margin="0,8,0,0">
                         <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
-                            <!-- Dynamic Active Model Badge Pill -->
-                            <Border Background="#10192A" BorderBrush="#1E2E44" BorderThickness="1" CornerRadius="14" Padding="8,4">
+                            <!-- Dynamic Interactive Active Model Selector Pill -->
+                            <Button Classes="matte-secondary" Padding="8,4" CornerRadius="14" ToolTip.Tip="Click to switch model / workflow">
+                                <Button.Flyout>
+                                    <Flyout Placement="Top">
+                                        <Border Background="#0D1322" BorderBrush="{StaticResource GlassBorderBrush}" BorderThickness="1" CornerRadius="8" Padding="8" MinWidth="260" MaxWidth="340">
+                                            <StackPanel Spacing="6">
+                                                <Grid ColumnDefinitions="*, Auto" Margin="4,2">
+                                                    <TextBlock Text="Select Active Model" FontSize="11" FontWeight="Bold" Foreground="{StaticResource TextMainBrush}" VerticalAlignment="Center"/>
+                                                    <Button Grid.Column="1" Content="🔄 Scan" Command="{Binding RefreshScannedModelsCommand}" Classes="matte-secondary" Padding="6,2" FontSize="10"/>
+                                                </Grid>
+                                                <Rectangle Height="1" Fill="{StaticResource GlassBorderBrush}"/>
+                                                <ScrollViewer MaxHeight="240">
+                                                    <ItemsControl ItemsSource="{Binding AvailableCurrentModels}">
+                                                        <ItemsControl.ItemTemplate>
+                                                            <DataTemplate>
+                                                                <Button Classes="model-item-btn"
+                                                                        Content="{Binding}"
+                                                                        Command="{Binding $parent[UserControl].((vm:MainViewModel)DataContext).SelectStudioModelCommand}"
+                                                                        CommandParameter="{Binding}"
+                                                                        HorizontalAlignment="Stretch"
+                                                                        HorizontalContentAlignment="Left"
+                                                                        Padding="8,5" Margin="0,1" FontSize="11"/>
+                                                            </DataTemplate>
+                                                        </ItemsControl.ItemTemplate>
+                                                    </ItemsControl>
+                                                </ScrollViewer>
+                                            </StackPanel>
+                                        </Border>
+                                    </Flyout>
+                                </Button.Flyout>
                                 <StackPanel Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
                                     <Ellipse Width="6" Height="6" Fill="{StaticResource OnlineBrush}" VerticalAlignment="Center"/>
-                                    <TextBlock Text="{Binding Studio.ActiveModelBadge}" FontSize="11" FontWeight="SemiBold" Foreground="{StaticResource AccentBrush}" VerticalAlignment="Center"/>
+                                    <TextBlock Text="{Binding ActiveModelBadge}" FontSize="11" FontWeight="SemiBold" Foreground="{StaticResource AccentBrush}" VerticalAlignment="Center"/>
+                                    <TextBlock Text="▾" FontSize="9" Foreground="{StaticResource TextMutedBrush}" VerticalAlignment="Center" Margin="2,0,0,0"/>
                                 </StackPanel>
-                            </Border>
+                            </Button>
 
                             <!-- Attachment Button -->
                             <Button Command="{Binding AttachImageCommand}" Classes="matte-secondary" Padding="8,4" FontSize="11" ToolTip.Tip="Attach reference image">

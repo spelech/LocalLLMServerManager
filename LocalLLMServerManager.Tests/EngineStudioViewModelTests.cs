@@ -71,4 +71,63 @@ public class EngineStudioViewModelTests
         vm.SelectModalityCommand.Execute("Audio");
         Assert.Contains("Kokoro", vm.ActiveModelBadge);
     }
+
+    [Fact]
+    public void EngineStudioViewModel_SelectModel_UpdatesActiveModelAndBadge()
+    {
+        var vm = new EngineStudioViewModel();
+        vm.SelectModalityCommand.Execute("Image");
+        Assert.Equal("SDXL Base 1.0", vm.ImageModel);
+
+        vm.SelectModelCommand.Execute("Flux.1 [dev]");
+        Assert.Equal("Flux.1 [dev]", vm.ImageModel);
+        Assert.Equal("Flux.1 [dev]", vm.ActiveModelBadge);
+
+        vm.SelectModalityCommand.Execute("Video");
+        vm.SelectModelCommand.Execute("LTX-Video 2.5");
+        Assert.Equal("LTX-Video 2.5", vm.VideoModel);
+        Assert.Equal("LTX-Video 2.5", vm.ActiveModelBadge);
+    }
+
+    [Fact]
+    public void EngineStudioViewModel_AvailableCurrentModels_PopulatesPerModality()
+    {
+        var vm = new EngineStudioViewModel();
+        vm.SelectModalityCommand.Execute("Image");
+        Assert.Contains("SDXL Base 1.0", vm.AvailableCurrentModels);
+        Assert.Contains("Flux.1 [dev]", vm.AvailableCurrentModels);
+
+        vm.SelectModalityCommand.Execute("Video");
+        Assert.Contains("Wan 2.2 / LTX-2.5", vm.AvailableCurrentModels);
+        Assert.Contains("LTX-Video 2.5", vm.AvailableCurrentModels);
+
+        vm.SelectModalityCommand.Execute("Text");
+        Assert.Contains("llama3.2:latest", vm.AvailableCurrentModels);
+    }
+
+    [Fact]
+    public void MainViewModel_UseModelInStudio_SwitchesModalityAndModel()
+    {
+        var vm = new MainViewModel();
+        var modelItem = new LocalLLMServerManager.Shared.Models.LocalModelItem(
+            Id: "test_id",
+            Name: "DreamShaper XL",
+            FileName: "dreamshaper.safetensors",
+            FullPath: "C:/fake/path",
+            Category: LocalLLMServerManager.Shared.Models.LocalModelCategory.ImageCheckpoint,
+            Architecture: "SDXL",
+            SizeBytes: 1024,
+            FormattedSize: "1.0 KB",
+            SourceLocation: "Test",
+            CreatedAt: System.DateTime.UtcNow
+        );
+
+        vm.UseModelInStudioCommand.Execute(modelItem);
+
+        Assert.Equal(1, vm.SelectedTabIndex);
+        Assert.Equal("Image", vm.SelectedModality);
+        Assert.Equal("DreamShaper XL", vm.SelectedImageWorkflow);
+        Assert.Equal("DreamShaper XL", vm.Studio.ImageModel);
+        Assert.Equal("DreamShaper XL", vm.ActiveModelBadge);
+    }
 }
