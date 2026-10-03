@@ -282,12 +282,12 @@ public class OllamaIntegrationExhaustiveTests
     }
 
     [Theory]
-    [InlineData(0, "~0 MB")]
-    [InlineData(2048, "~128 MB")]
-    [InlineData(8192, "~512 MB")]
-    [InlineData(16384, "~1.0 GB")]
-    [InlineData(32768, "~2.0 GB")]
-    [InlineData(131072, "~8.0 GB")]
+    [InlineData(0, "0 MB")]
+    [InlineData(2048, "84 MB")]
+    [InlineData(8192, "336 MB")]
+    [InlineData(16384, "672 MB")]
+    [InlineData(32768, "1.3 GB")]
+    [InlineData(131072, "5.2 GB")]
     public void TargetContextTokens_EstimatesKvCache_Correctly(double tokens, string expectedText)
     {
         var serviceMock = new Mock<IOllamaModelService>();

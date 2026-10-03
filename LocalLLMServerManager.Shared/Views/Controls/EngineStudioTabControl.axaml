@@ -77,6 +77,27 @@
             <Setter Property="Foreground" Value="#FFFFFF" />
         </Style>
 
+        <!-- Model Badge Pill Button -->
+        <Style Selector="Button.model-badge-btn">
+            <Setter Property="Background" Value="#0F172A" />
+            <Setter Property="Foreground" Value="{StaticResource TextMainBrush}" />
+            <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="BorderBrush" Value="#1E293B" />
+            <Setter Property="CornerRadius" Value="14" />
+            <Setter Property="Padding" Value="8,4" />
+            <Setter Property="Cursor" Value="Hand" />
+        </Style>
+        <Style Selector="Button.model-badge-btn /template/ ContentPresenter#PART_ContentPresenter">
+            <Setter Property="CornerRadius" Value="14" />
+            <Setter Property="Background" Value="#0F172A" />
+            <Setter Property="BorderBrush" Value="#1E293B" />
+            <Setter Property="BorderThickness" Value="1" />
+        </Style>
+        <Style Selector="Button.model-badge-btn:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+            <Setter Property="Background" Value="#1E293B" />
+            <Setter Property="BorderBrush" Value="#388BFD" />
+        </Style>
+
         <!-- Aspect Ratio Option Pill -->
         <Style Selector="Button.aspect-pill">
             <Setter Property="Background" Value="#0F172A" />
@@ -88,10 +109,26 @@
             <Setter Property="Cursor" Value="Hand" />
             <Setter Property="FontSize" Value="11" />
         </Style>
+        <Style Selector="Button.aspect-pill /template/ ContentPresenter#PART_ContentPresenter">
+            <Setter Property="CornerRadius" Value="6" />
+            <Setter Property="Background" Value="#0F172A" />
+            <Setter Property="BorderBrush" Value="#1E293B" />
+            <Setter Property="BorderThickness" Value="1" />
+        </Style>
         <Style Selector="Button.aspect-pill:pointerover /template/ ContentPresenter#PART_ContentPresenter">
             <Setter Property="Background" Value="#1E293B" />
             <Setter Property="Foreground" Value="#FFFFFF" />
             <Setter Property="BorderBrush" Value="#388BFD" />
+        </Style>
+        <Style Selector="Button.aspect-pill.active">
+            <Setter Property="Foreground" Value="#FFFFFF" />
+            <Setter Property="FontWeight" Value="SemiBold" />
+        </Style>
+        <Style Selector="Button.aspect-pill.active /template/ ContentPresenter#PART_ContentPresenter">
+            <Setter Property="Background" Value="#2563EB" />
+            <Setter Property="Foreground" Value="#FFFFFF" />
+            <Setter Property="BorderBrush" Value="#60A5FA" />
+            <Setter Property="BorderThickness" Value="1" />
         </Style>
     </UserControl.Styles>
 
@@ -200,7 +237,7 @@
                 <!-- Right Context Badges & Diagnostic Action -->
                 <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
                     <!-- Dynamic Active Model Badge -->
-                    <Button Classes="matte-secondary" Padding="8,4" CornerRadius="14" ToolTip.Tip="Click to switch model / workflow">
+                    <Button Classes="model-badge-btn" ToolTip.Tip="Click to switch model / workflow">
                         <Button.Flyout>
                             <Flyout Placement="Bottom">
                                 <Border Background="#0D1322" BorderBrush="{StaticResource GlassBorderBrush}" BorderThickness="1" CornerRadius="8" Padding="8" MinWidth="260" MaxWidth="340">
@@ -354,6 +391,9 @@
                                     <TextBlock Text="💬 Local LLM Reasoning Stream" FontSize="14" FontWeight="Bold" Foreground="{StaticResource TextMainBrush}"/>
                                     <Border Classes="matte-pill" Padding="6,2" Background="#1E293B">
                                         <TextBlock Text="{Binding ActiveModelBadge}" FontSize="10" Foreground="{StaticResource AccentBrush}" FontWeight="Bold"/>
+                                    </Border>
+                                    <Border Classes="matte-pill" Padding="6,2" Background="#064E3B" BorderBrush="#059669" BorderThickness="1">
+                                        <TextBlock Text="{Binding ConfiguredContextTokens, StringFormat='ctx: {0:N0}'}" FontSize="10" Foreground="#34D399" FontWeight="Bold"/>
                                     </Border>
                                 </StackPanel>
                                 <Button Grid.Column="1" Content="📦 Browse Models" Command="{Binding NavigateToModelsTabCommand}" Classes="matte-secondary" Padding="8,4" FontSize="11"/>
@@ -654,10 +694,10 @@
                         <StackPanel Grid.Column="4" Spacing="4" Margin="4,0,0,0">
                             <TextBlock Text="Aspect Ratio" FontSize="11" Foreground="{StaticResource TextMutedBrush}"/>
                             <StackPanel Orientation="Horizontal" Spacing="4">
-                                <Button Classes="aspect-pill" Content="1:1" Command="{Binding SelectAspectPresetCommand}" CommandParameter="1:1"/>
-                                <Button Classes="aspect-pill" Content="16:9" Command="{Binding SelectAspectPresetCommand}" CommandParameter="16:9"/>
-                                <Button Classes="aspect-pill" Content="9:16" Command="{Binding SelectAspectPresetCommand}" CommandParameter="9:16"/>
-                                <Button Classes="aspect-pill" Content="4:3" Command="{Binding SelectAspectPresetCommand}" CommandParameter="4:3"/>
+                                <Button Classes="aspect-pill" Classes.active="{Binding IsAspectSquareActive}" Content="1:1" Command="{Binding SelectAspectPresetCommand}" CommandParameter="1:1"/>
+                                <Button Classes="aspect-pill" Classes.active="{Binding IsAspectLandscapeActive}" Content="16:9" Command="{Binding SelectAspectPresetCommand}" CommandParameter="16:9"/>
+                                <Button Classes="aspect-pill" Classes.active="{Binding IsAspectPortraitActive}" Content="9:16" Command="{Binding SelectAspectPresetCommand}" CommandParameter="9:16"/>
+                                <Button Classes="aspect-pill" Classes.active="{Binding IsAspectStandardActive}" Content="4:3" Command="{Binding SelectAspectPresetCommand}" CommandParameter="4:3"/>
                             </StackPanel>
                         </StackPanel>
                     </Grid>
@@ -689,7 +729,7 @@
                     <Grid Grid.Row="1" ColumnDefinitions="Auto, *, Auto" Margin="0,8,0,0">
                         <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
                             <!-- Dynamic Interactive Active Model Selector Pill -->
-                            <Button Classes="matte-secondary" Padding="8,4" CornerRadius="14" ToolTip.Tip="Click to switch model / workflow">
+                            <Button Classes="model-badge-btn" ToolTip.Tip="Click to switch model / workflow">
                                 <Button.Flyout>
                                     <Flyout Placement="Top">
                                         <Border Background="#0D1322" BorderBrush="{StaticResource GlassBorderBrush}" BorderThickness="1" CornerRadius="8" Padding="8" MinWidth="260" MaxWidth="340">
@@ -751,14 +791,33 @@
 
                             <!-- Quick Aspect Ratio Presets directly in Dock -->
                             <StackPanel Orientation="Horizontal" Spacing="4" Margin="6,0,0,0" VerticalAlignment="Center">
-                                <Button Classes="aspect-pill" Content="1:1" Command="{Binding SelectAspectPresetCommand}" CommandParameter="1:1" ToolTip.Tip="Square 1:1"/>
-                                <Button Classes="aspect-pill" Content="16:9" Command="{Binding SelectAspectPresetCommand}" CommandParameter="16:9" ToolTip.Tip="Landscape 16:9"/>
-                                <Button Classes="aspect-pill" Content="9:16" Command="{Binding SelectAspectPresetCommand}" CommandParameter="9:16" ToolTip.Tip="Portrait 9:16"/>
+                                <Button Classes="aspect-pill" Classes.active="{Binding IsAspectSquareActive}" Content="1:1" Command="{Binding SelectAspectPresetCommand}" CommandParameter="1:1" ToolTip.Tip="Square 1:1"/>
+                                <Button Classes="aspect-pill" Classes.active="{Binding IsAspectLandscapeActive}" Content="16:9" Command="{Binding SelectAspectPresetCommand}" CommandParameter="16:9" ToolTip.Tip="Landscape 16:9"/>
+                                <Button Classes="aspect-pill" Classes.active="{Binding IsAspectPortraitActive}" Content="9:16" Command="{Binding SelectAspectPresetCommand}" CommandParameter="9:16" ToolTip.Tip="Portrait 9:16"/>
                             </StackPanel>
                         </StackPanel>
 
-                        <!-- Prominent Generate Action Button -->
+                        <!-- Prominent Generate Action Button & Live Progress Feedback -->
                         <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+                            <!-- Live Generation Status Pill -->
+                            <Border IsVisible="{Binding IsGeneratingAnyStudio}"
+                                    Background="#0F172A"
+                                    BorderBrush="#38BDF8"
+                                    BorderThickness="1"
+                                    CornerRadius="8"
+                                    Padding="10,5"
+                                    VerticalAlignment="Center">
+                                <StackPanel Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+                                    <ProgressBar Width="70" Height="6" Minimum="0" Maximum="1" Value="{Binding StudioImageGenerationProgress}"
+                                                 VerticalAlignment="Center" Foreground="#38BDF8" Background="#1E293B"/>
+                                    <TextBlock Text="{Binding StudioImageGenerationStatus}"
+                                               FontSize="11"
+                                               FontWeight="Medium"
+                                               Foreground="#93C5FD"
+                                               VerticalAlignment="Center"/>
+                                </StackPanel>
+                            </Border>
+
                             <Button Command="{Binding GenerateFromDockCommand}"
                                     IsEnabled="{Binding !IsGeneratingAnyStudio}"
                                     Background="#2563EB"

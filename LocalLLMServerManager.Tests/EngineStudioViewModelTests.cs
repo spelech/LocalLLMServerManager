@@ -250,6 +250,36 @@ public class EngineStudioViewModelTests
         await vm.SaveStudioImageAsync();
     }
 
+    [Fact]
+    public void AspectPreset_HighlightingProperties_ToggleCorrectly()
+    {
+        var vm = new MainViewModel();
+
+        vm.SelectAspectPreset("1:1");
+        Assert.True(vm.IsAspectSquareActive);
+        Assert.False(vm.IsAspectLandscapeActive);
+        Assert.False(vm.IsAspectPortraitActive);
+        Assert.False(vm.IsAspectStandardActive);
+
+        vm.SelectAspectPreset("16:9");
+        Assert.False(vm.IsAspectSquareActive);
+        Assert.True(vm.IsAspectLandscapeActive);
+        Assert.False(vm.IsAspectPortraitActive);
+        Assert.False(vm.IsAspectStandardActive);
+
+        vm.SelectAspectPreset("9:16");
+        Assert.False(vm.IsAspectSquareActive);
+        Assert.False(vm.IsAspectLandscapeActive);
+        Assert.True(vm.IsAspectPortraitActive);
+        Assert.False(vm.IsAspectStandardActive);
+
+        vm.SelectAspectPreset("4:3");
+        Assert.False(vm.IsAspectSquareActive);
+        Assert.False(vm.IsAspectLandscapeActive);
+        Assert.False(vm.IsAspectPortraitActive);
+        Assert.True(vm.IsAspectStandardActive);
+    }
+
     private class TestHttpHandler : System.Net.Http.HttpMessageHandler
     {
         private readonly System.Func<System.Net.Http.HttpRequestMessage, System.Net.Http.HttpResponseMessage> _func;

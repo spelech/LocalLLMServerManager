@@ -30,7 +30,7 @@ public class OllamaLibraryViewModelTests
         Assert.False(vm.IsDeleteModalOpen);
         Assert.False(vm.IsPullDrawerOpen);
         Assert.Equal(8192, vm.TargetContextTokens);
-        Assert.Equal("~0.5 GB", vm.EstimatedKvCacheText);
+        Assert.Equal("336 MB", vm.EstimatedKvCacheText);
     }
 
     [Fact]

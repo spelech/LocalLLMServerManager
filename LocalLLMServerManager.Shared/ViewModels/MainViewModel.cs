@@ -18,7 +18,8 @@ public record OllamaModelItem(
     string CapabilityColor,
     bool IsLoaded,
     QuickFitBadge? FitBadge = null,
-    long SizeBytes = 0
+    long SizeBytes = 0,
+    bool IsSelected = false
 );
 
 public record HuggingFaceRepoItem(
@@ -307,6 +308,15 @@ public partial class MainViewModel : ObservableObject
             Assistant.InputText = prompt;
         };
 
+        Ollama.OnApplyModelContextRequested = (modelName, tokens) =>
+        {
+            ConfiguredContextTokens = tokens;
+            SelectModality("Text");
+            SelectedStudioMode = "Text";
+            SelectedTabIndex = 1;
+            SelectStudioModel(modelName);
+        };
+
         NavigationRail.PropertyChanged += (s, e) =>
         {
             if (e.PropertyName == nameof(NavigationRail.SelectedDomain))
@@ -499,6 +509,9 @@ public partial class MainViewModel : ObservableObject
 
     [ObservableProperty]
     private int _imageHeight = 1024;
+
+    [ObservableProperty]
+    private int _configuredContextTokens = 8192;
 
     [ObservableProperty]
     private long _imageSeed = 42890;
@@ -1298,11 +1311,16 @@ public partial class MainViewModel : ObservableObject
         OllamaResponseText = "Generating response from local LLM...";
         try
         {
-            var modelName = Ollama.InstalledModels.FirstOrDefault()?.Name ?? "llama3.2:latest";
+            var modelName = Ollama.SelectedInstalledModel?.Name ?? Ollama.InstalledModels.FirstOrDefault()?.Name ?? "llama3.2:latest";
+            int numCtx = ConfiguredContextTokens > 0 ? ConfiguredContextTokens : (int)Ollama.TargetContextTokens;
             var req = new
             {
                 prompt = OllamaPrompt,
-                model = modelName
+                model = modelName,
+                options = new
+                {
+                    num_ctx = numCtx
+                }
             };
             var content = new StringContent(
                 JsonSerializer.Serialize(req),

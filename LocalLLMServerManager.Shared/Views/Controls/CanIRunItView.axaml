@@ -75,45 +75,47 @@
             </Border>
 
             <!-- 2. Modality Segmented Selector Bar Header -->
-            <Grid ColumnDefinitions="*, Auto">
-                <StackPanel Spacing="2">
-                    <TextBlock Text="⚡ Can I Run It — Hardware Compatibility &amp; Performance Estimator" FontSize="16" FontWeight="Bold" Foreground="{StaticResource TextMainBrush}"/>
-                    <TextBlock Text="Evaluate model sizing, VRAM fit, layer offloading, and throughput estimates based on live hardware" FontSize="12" Foreground="{StaticResource TextMutedBrush}"/>
-                </StackPanel>
+            <Grid RowDefinitions="Auto, Auto" Margin="0,0,0,4">
+                <Grid Grid.Row="0" ColumnDefinitions="*, Auto" Margin="0,0,0,8">
+                    <StackPanel Spacing="2">
+                        <TextBlock Text="⚡ Can I Run It — Hardware Compatibility &amp; Performance" FontSize="16" FontWeight="Bold" Foreground="{StaticResource TextMainBrush}" TextTrimming="CharacterEllipsis"/>
+                        <TextBlock Text="Evaluate model sizing, VRAM fit, layer offloading, and throughput estimates based on live hardware" FontSize="12" Foreground="{StaticResource TextMutedBrush}" TextTrimming="CharacterEllipsis"/>
+                    </StackPanel>
+                </Grid>
 
-                <!-- Modality Buttons -->
-                <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="6">
-                    <Button Command="{Binding SelectLlmModalityCommand}" Classes="modality-nav-btn" Classes.active="{Binding IsLlmModality}">
+                <!-- Modality Buttons WrapPanel so they never collide or clip text -->
+                <WrapPanel Grid.Row="1" Orientation="Horizontal" Margin="0,2,0,0">
+                    <Button Command="{Binding SelectLlmModalityCommand}" Classes="modality-nav-btn" Classes.active="{Binding IsLlmModality}" Margin="0,0,6,6">
                         <StackPanel Orientation="Horizontal" Spacing="5">
                             <TextBlock Text="✓" IsVisible="{Binding IsLlmModality}" FontWeight="Bold"/>
                             <TextBlock Text="🦙 Text LLMs"/>
                         </StackPanel>
                     </Button>
-                    <Button Command="{Binding SelectImageModalityCommand}" Classes="modality-nav-btn" Classes.active="{Binding IsImageModality}">
+                    <Button Command="{Binding SelectImageModalityCommand}" Classes="modality-nav-btn" Classes.active="{Binding IsImageModality}" Margin="0,0,6,6">
                         <StackPanel Orientation="Horizontal" Spacing="5">
                             <TextBlock Text="✓" IsVisible="{Binding IsImageModality}" FontWeight="Bold"/>
                             <TextBlock Text="🎨 Image Generation"/>
                         </StackPanel>
                     </Button>
-                    <Button Command="{Binding SelectVideoModalityCommand}" Classes="modality-nav-btn" Classes.active="{Binding IsVideoModality}">
+                    <Button Command="{Binding SelectVideoModalityCommand}" Classes="modality-nav-btn" Classes.active="{Binding IsVideoModality}" Margin="0,0,6,6">
                         <StackPanel Orientation="Horizontal" Spacing="5">
                             <TextBlock Text="✓" IsVisible="{Binding IsVideoModality}" FontWeight="Bold"/>
                             <TextBlock Text="🎬 Video Generation"/>
                         </StackPanel>
                     </Button>
-                    <Button Command="{Binding SelectAudioModalityCommand}" Classes="modality-nav-btn" Classes.active="{Binding IsAudioModality}">
+                    <Button Command="{Binding SelectAudioModalityCommand}" Classes="modality-nav-btn" Classes.active="{Binding IsAudioModality}" Margin="0,0,6,6">
                         <StackPanel Orientation="Horizontal" Spacing="5">
                             <TextBlock Text="✓" IsVisible="{Binding IsAudioModality}" FontWeight="Bold"/>
                             <TextBlock Text="🎙️ Audio &amp; Speech"/>
                         </StackPanel>
                     </Button>
-                    <Button Command="{Binding SelectThreeDModalityCommand}" Classes="modality-nav-btn" Classes.active="{Binding IsThreeDModality}">
+                    <Button Command="{Binding SelectThreeDModalityCommand}" Classes="modality-nav-btn" Classes.active="{Binding IsThreeDModality}" Margin="0,0,6,6">
                         <StackPanel Orientation="Horizontal" Spacing="5">
                             <TextBlock Text="✓" IsVisible="{Binding IsThreeDModality}" FontWeight="Bold"/>
                             <TextBlock Text="🧊 3D Generation"/>
                         </StackPanel>
                     </Button>
-                </StackPanel>
+                </WrapPanel>
             </Grid>
 
             <!-- 3. Main Two-Column Workload & Verdict Layout -->

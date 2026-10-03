@@ -23,7 +23,7 @@ public partial class ActivityRailControl : UserControl
     public ActivityRailControl()
     {
         InitializeComponent();
-        Width = 56;
+        Width = 60;
     }
 
     private void InitializeComponent()
@@ -37,7 +37,7 @@ public partial class ActivityRailControl : UserControl
         if (change.Property == IsExpandedProperty)
         {
             var expanded = change.GetNewValue<bool>();
-            Width = expanded ? 200 : 56;
+            Width = expanded ? 200 : 60;
             if (_boundNavVm != null && _boundNavVm.IsExpanded != expanded)
             {
                 _boundNavVm.IsExpanded = expanded;

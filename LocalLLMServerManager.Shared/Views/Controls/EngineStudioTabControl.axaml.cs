@@ -97,13 +97,16 @@ public partial class EngineStudioTabControl : UserControl
 
         try
         {
+            var picturesFolder = await topLevel.StorageProvider.TryGetWellKnownFolderAsync(WellKnownFolder.Pictures);
             var options = new FilePickerOpenOptions
             {
                 Title = "Select Reference Image",
                 AllowMultiple = false,
+                SuggestedStartLocation = picturesFolder,
                 FileTypeFilter = new List<FilePickerFileType>
                 {
-                    new("Images (*.png;*.jpg;*.jpeg;*.webp)") { Patterns = new[] { "*.png", "*.jpg", "*.jpeg", "*.webp" } }
+                    FilePickerFileTypes.ImageAll,
+                    new("All Files (*.*)") { Patterns = new[] { "*.*" } }
                 }
             };
 

@@ -45,6 +45,16 @@ public partial class AiAssistWindow : Window
         UpdateSnapVisuals();
     }
 
+    private void OnDockToAppClicked(object? sender, RoutedEventArgs e)
+    {
+        if (Owner is MainWindow mainWin && mainWin.DataContext is MainViewModel mainVm)
+        {
+            mainVm.IsCopilotSidebarOpen = true;
+            mainVm.SelectCopilotTab("Assistant");
+        }
+        Close();
+    }
+
     public void UpdateSnapVisuals()
     {
         bool isSnapped = WindowSnapManager.Instance.IsSnapped(this);
@@ -56,6 +66,9 @@ public partial class AiAssistWindow : Window
         }
         if (snapBtn != null)
         {
+            ToolTip.SetTip(snapBtn, isSnapped 
+                ? "Currently attached flush to Main Window. Click to detach." 
+                : "Currently floating. Click to snap flush to Main Window.");
             if (isSnapped)
             {
                 if (!snapBtn.Classes.Contains("snapped")) snapBtn.Classes.Add("snapped");

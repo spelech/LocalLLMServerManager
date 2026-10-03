@@ -2,6 +2,8 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Net.Http;
+using System.Text.Json;
 using System.Threading.Tasks;
 using LocalLLMServerManager.Shared.Interfaces;
 using LocalLLMServerManager.Shared.Models;
@@ -21,29 +23,33 @@ public class LocalModelScannerService : ILocalModelScannerService
         }
     }
 
-    public Task<IReadOnlyList<LocalModelItem>> ScanAllModelsAsync(AppSettings? settings = null, string? baseDirectory = null)
+    public async Task<IReadOnlyList<LocalModelItem>> ScanAllModelsAsync(AppSettings? settings = null, string? baseDirectory = null)
     {
-        return Task.Run<IReadOnlyList<LocalModelItem>>(() =>
+        var baseDir = !string.IsNullOrWhiteSpace(baseDirectory) ? baseDirectory : AppContext.BaseDirectory;
+        var results = new List<LocalModelItem>();
+        var scannedPaths = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
+        // 1. Image Checkpoints (Directory scan)
+        var checkpointDirs = new List<(string Path, string Label)>
         {
-            var baseDir = !string.IsNullOrWhiteSpace(baseDirectory) ? baseDirectory : AppContext.BaseDirectory;
-            var results = new List<LocalModelItem>();
-            var scannedPaths = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            (Path.Combine(baseDir, "models", "checkpoints"), "Local Checkpoints"),
+            (Path.Combine(baseDir, "ComfyUI", "models", "checkpoints"), "ComfyUI Checkpoints"),
+            (@"D:\AI\models\checkpoints", "Local AI Checkpoints"),
+            (@"C:\AI\models\checkpoints", "Local AI Checkpoints"),
+            (@"D:\models\checkpoints", "Local Checkpoints"),
+            (@"C:\models\checkpoints", "Local Checkpoints")
+        };
+        if (!string.IsNullOrWhiteSpace(settings?.ForgeModelsPath))
+        {
+            checkpointDirs.Add((settings.ForgeModelsPath, "Forge Checkpoints"));
+        }
+        if (!string.IsNullOrWhiteSpace(settings?.ComfyModelsPath))
+        {
+            checkpointDirs.Add((settings.ComfyModelsPath, "ComfyUI Checkpoints"));
+        }
 
-            // 1. Image Checkpoints
-            var checkpointDirs = new List<(string Path, string Label)>
-            {
-                (Path.Combine(baseDir, "models", "checkpoints"), "Local Checkpoints"),
-                (Path.Combine(baseDir, "ComfyUI", "models", "checkpoints"), "ComfyUI Checkpoints")
-            };
-            if (!string.IsNullOrWhiteSpace(settings?.ForgeModelsPath))
-            {
-                checkpointDirs.Add((settings.ForgeModelsPath, "Forge Checkpoints"));
-            }
-            if (!string.IsNullOrWhiteSpace(settings?.ComfyModelsPath))
-            {
-                checkpointDirs.Add((settings.ComfyModelsPath, "ComfyUI Checkpoints"));
-            }
-
+        await Task.Run(() =>
+        {
             foreach (var (dir, label) in checkpointDirs)
             {
                 ScanDirectoryFiles(dir, label, LocalModelCategory.ImageCheckpoint, new[] { ".safetensors", ".ckpt" }, results, scannedPaths);
@@ -53,7 +59,9 @@ public class LocalModelScannerService : ILocalModelScannerService
             var loraDirs = new List<(string Path, string Label)>
             {
                 (Path.Combine(baseDir, "models", "Lora"), "Local LoRAs"),
-                (Path.Combine(baseDir, "ComfyUI", "models", "loras"), "ComfyUI LoRAs")
+                (Path.Combine(baseDir, "ComfyUI", "models", "loras"), "ComfyUI LoRAs"),
+                (@"D:\AI\models\Lora", "Local LoRAs"),
+                (@"C:\AI\models\Lora", "Local LoRAs")
             };
             foreach (var (dir, label) in loraDirs)
             {
@@ -103,21 +111,119 @@ public class LocalModelScannerService : ILocalModelScannerService
             }
             foreach (var (dir, label) in threeDDirs)
             {
-                // In root Workflows, only match 3D files like trellis, hunyuan3d
                 ScanDirectoryFiles(dir, label, LocalModelCategory.ThreeD, new[] { ".safetensors", ".json" }, results, scannedPaths, fileFilter: f =>
                 {
                     var lower = Path.GetFileName(f).ToLowerInvariant();
                     return lower.Contains("3d") || lower.Contains("trellis") || lower.Contains("hunyuan3d");
                 });
             }
+        });
 
-            lock (_lock)
+        // 6. Live WebUI Forge Checkpoints & LoRAs API Discovery
+        try
+        {
+            using var http = new HttpClient { Timeout = TimeSpan.FromSeconds(2) };
+            var forgeModelsResp = await http.GetAsync("http://127.0.0.1:7860/sdapi/v1/sd-models");
+            if (forgeModelsResp.IsSuccessStatusCode)
             {
-                _cachedModels = results.OrderBy(m => m.Name).ToList();
+                var json = await forgeModelsResp.Content.ReadAsStringAsync();
+                using var doc = JsonDocument.Parse(json);
+                if (doc.RootElement.ValueKind == JsonValueKind.Array)
+                {
+                    foreach (var elem in doc.RootElement.EnumerateArray())
+                    {
+                        var title = elem.TryGetProperty("title", out var tp) ? tp.GetString() : null;
+                        var modelName = elem.TryGetProperty("model_name", out var mnp) ? mnp.GetString() : null;
+                        var filename = elem.TryGetProperty("filename", out var fnp) ? fnp.GetString() : null;
+
+                        var name = !string.IsNullOrWhiteSpace(modelName) ? modelName : (!string.IsNullOrWhiteSpace(title) ? title : "Forge Checkpoint");
+                        var fullPath = !string.IsNullOrWhiteSpace(filename) ? filename : name;
+
+                        if (!scannedPaths.Add(fullPath)) continue;
+
+                        long sizeBytes = 0;
+                        if (!string.IsNullOrWhiteSpace(filename) && File.Exists(filename))
+                        {
+                            try { sizeBytes = new FileInfo(filename).Length; } catch { }
+                        }
+
+                        var isVideo = name.Contains("svd", StringComparison.OrdinalIgnoreCase);
+                        var cat = isVideo ? LocalModelCategory.Video : LocalModelCategory.ImageCheckpoint;
+
+                        results.Add(new LocalModelItem(
+                            Id: fullPath,
+                            Name: CleanDisplayName(name),
+                            FileName: Path.GetFileName(fullPath),
+                            FullPath: fullPath,
+                            Category: cat,
+                            Architecture: DetectArchitecture(name, cat),
+                            SizeBytes: sizeBytes,
+                            FormattedSize: sizeBytes > 0 ? FormatBytes(sizeBytes) : "Forge Live",
+                            SourceLocation: "WebUI Forge (Active API)",
+                            CreatedAt: DateTime.Now
+                        ));
+
+                        if (!string.IsNullOrWhiteSpace(filename) && File.Exists(filename))
+                        {
+                            var dir = Path.GetDirectoryName(filename);
+                            if (!string.IsNullOrWhiteSpace(dir) && Directory.Exists(dir))
+                            {
+                                ScanDirectoryFiles(dir, "Forge Discovered Directory", LocalModelCategory.ImageCheckpoint, new[] { ".safetensors", ".ckpt" }, results, scannedPaths);
+                            }
+                        }
+                    }
+                }
             }
 
-            return _cachedModels;
-        });
+            var forgeLorasResp = await http.GetAsync("http://127.0.0.1:7860/sdapi/v1/loras");
+            if (forgeLorasResp.IsSuccessStatusCode)
+            {
+                var json = await forgeLorasResp.Content.ReadAsStringAsync();
+                using var doc = JsonDocument.Parse(json);
+                if (doc.RootElement.ValueKind == JsonValueKind.Array)
+                {
+                    foreach (var elem in doc.RootElement.EnumerateArray())
+                    {
+                        var name = elem.TryGetProperty("name", out var np) ? np.GetString() : null;
+                        var path = elem.TryGetProperty("path", out var pp) ? pp.GetString() : null;
+                        if (string.IsNullOrWhiteSpace(name)) continue;
+
+                        var fullPath = !string.IsNullOrWhiteSpace(path) ? path : name;
+                        if (!scannedPaths.Add(fullPath)) continue;
+
+                        long sizeBytes = 0;
+                        if (!string.IsNullOrWhiteSpace(path) && File.Exists(path))
+                        {
+                            try { sizeBytes = new FileInfo(path).Length; } catch { }
+                        }
+
+                        results.Add(new LocalModelItem(
+                            Id: fullPath,
+                            Name: CleanDisplayName(name),
+                            FileName: Path.GetFileName(fullPath),
+                            FullPath: fullPath,
+                            Category: LocalModelCategory.ImageLora,
+                            Architecture: "LoRA",
+                            SizeBytes: sizeBytes,
+                            FormattedSize: sizeBytes > 0 ? FormatBytes(sizeBytes) : "Forge LoRA",
+                            SourceLocation: "WebUI Forge (Active API)",
+                            CreatedAt: DateTime.Now
+                        ));
+                    }
+                }
+            }
+        }
+        catch
+        {
+            // Forge is either offline or unreachable, ignore safely
+        }
+
+        lock (_lock)
+        {
+            _cachedModels = results.OrderBy(m => m.Name).ToList();
+        }
+
+        return _cachedModels;
     }
 
     private static void ScanDirectoryFiles(

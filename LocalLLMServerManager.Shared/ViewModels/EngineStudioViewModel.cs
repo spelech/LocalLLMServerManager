@@ -82,7 +82,16 @@ public partial class EngineStudioViewModel : ObservableObject
     private string _stickerModel = "Sticker Studio (BirefNet + SDXL)";
 
     [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(IsAspectSquareActive))]
+    [NotifyPropertyChangedFor(nameof(IsAspectLandscapeActive))]
+    [NotifyPropertyChangedFor(nameof(IsAspectPortraitActive))]
+    [NotifyPropertyChangedFor(nameof(IsAspectStandardActive))]
     private string _activeAspectPreset = "16:9";
+
+    public bool IsAspectSquareActive => ActiveAspectPreset == "1:1";
+    public bool IsAspectLandscapeActive => ActiveAspectPreset == "16:9";
+    public bool IsAspectPortraitActive => ActiveAspectPreset == "9:16";
+    public bool IsAspectStandardActive => ActiveAspectPreset == "4:3";
 
     [ObservableProperty]
     private int _steps = 30;
@@ -431,6 +440,16 @@ public partial class MainViewModel
             else if (m.Category == LocalModelCategory.ThreeD)
                 ScannedThreeDModels.Add(m);
         }
+
+        var totalFound = Studio.ScannedModels.Count;
+        if (totalFound > 0)
+        {
+            ToastService.Instance.Show($"Scan complete: discovered {totalFound} local models & workflows.", ToastType.Success);
+        }
+        else
+        {
+            ToastService.Instance.Show("Scan complete: no model checkpoints found in local paths or active engines.", ToastType.Info);
+        }
     }
 
     [ObservableProperty]
@@ -453,7 +472,16 @@ public partial class MainViewModel
     private bool _isParametersFlyoutOpen;
 
     [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(IsAspectSquareActive))]
+    [NotifyPropertyChangedFor(nameof(IsAspectLandscapeActive))]
+    [NotifyPropertyChangedFor(nameof(IsAspectPortraitActive))]
+    [NotifyPropertyChangedFor(nameof(IsAspectStandardActive))]
     private string _activeAspectPreset = "16:9";
+
+    public bool IsAspectSquareActive => ActiveAspectPreset == "1:1";
+    public bool IsAspectLandscapeActive => ActiveAspectPreset == "16:9";
+    public bool IsAspectPortraitActive => ActiveAspectPreset == "9:16";
+    public bool IsAspectStandardActive => ActiveAspectPreset == "4:3";
 
     [ObservableProperty]
     private int _studioSteps = 30;
@@ -545,6 +573,9 @@ public partial class MainViewModel
     private string _studioImageGenerationStatus = "Ready";
 
     [ObservableProperty]
+    private double _studioImageGenerationProgress = 0.0;
+
+    [ObservableProperty]
     private byte[]? _attachedImageBytes;
 
     [ObservableProperty]
@@ -634,6 +665,10 @@ public partial class MainViewModel
         {
             ActiveAspectPreset = preset;
             Studio.ActiveAspectPreset = preset;
+            OnPropertyChanged(nameof(IsAspectSquareActive));
+            OnPropertyChanged(nameof(IsAspectLandscapeActive));
+            OnPropertyChanged(nameof(IsAspectPortraitActive));
+            OnPropertyChanged(nameof(IsAspectStandardActive));
         }
     }
 
@@ -664,6 +699,7 @@ public partial class MainViewModel
         }
 
         IsGeneratingStudioImage = true;
+        StudioImageGenerationProgress = 0.0;
         StudioImageGenerationStatus = "Preparing inference parameters...";
 
         var (width, height) = ActiveAspectPreset switch
@@ -724,9 +760,55 @@ public partial class MainViewModel
 
         StudioImageGenerationStatus = $"Dispatching {width}x{height} request to Forge ({forgeBase})...";
 
+        using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(180));
+        using var pollCts = CancellationTokenSource.CreateLinkedTokenSource(cts.Token);
+
+        var progressTask = Task.Run(async () =>
+        {
+            using var progClient = new HttpClient { Timeout = TimeSpan.FromSeconds(2) };
+            while (!pollCts.Token.IsCancellationRequested)
+            {
+                try
+                {
+                    await Task.Delay(350, pollCts.Token);
+                    var progResp = await progClient.GetAsync($"{forgeBase}/sdapi/v1/progress", pollCts.Token);
+                    if (progResp.IsSuccessStatusCode)
+                    {
+                        var progJson = await progResp.Content.ReadAsStringAsync(pollCts.Token);
+                        using var progDoc = JsonDocument.Parse(progJson);
+                        var root = progDoc.RootElement;
+                        var prog = root.TryGetProperty("progress", out var pVal) ? pVal.GetDouble() : 0.0;
+                        int step = 0;
+                        int totalSteps = 0;
+                        if (root.TryGetProperty("state", out var stateObj) && stateObj.ValueKind == JsonValueKind.Object)
+                        {
+                            if (stateObj.TryGetProperty("sampling_step", out var stepVal)) step = stepVal.GetInt32();
+                            if (stateObj.TryGetProperty("sampling_steps", out var stepsVal)) totalSteps = stepsVal.GetInt32();
+                        }
+
+                        var clampedProg = Math.Clamp(prog, 0.0, 1.0);
+                        StudioImageGenerationProgress = clampedProg;
+                        if (totalSteps > 0 && step > 0)
+                        {
+                            StudioImageGenerationStatus = $"Sampling step {step}/{totalSteps} ({Math.Round(clampedProg * 100)}%)...";
+                        }
+                        else if (clampedProg > 0.01)
+                        {
+                            StudioImageGenerationStatus = $"Generating: {Math.Round(clampedProg * 100)}%...";
+                        }
+                        else
+                        {
+                            StudioImageGenerationStatus = "Forge preparing model & allocating VRAM...";
+                        }
+                    }
+                }
+                catch (OperationCanceledException) { break; }
+                catch { }
+            }
+        }, pollCts.Token);
+
         try
         {
-            using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(120));
             var json = JsonSerializer.Serialize(payload, new JsonSerializerOptions { DefaultIgnoreCondition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull });
             using var content = new StringContent(json, Encoding.UTF8, "application/json");
 
@@ -745,6 +827,7 @@ public partial class MainViewModel
                     {
                         var bytes = Convert.FromBase64String(base64);
                         StudioGeneratedImageBytes = bytes;
+                        StudioImageGenerationProgress = 1.0;
                         StudioImageGenerationStatus = "Generation complete!";
                         ToastService.Instance.Show("Image generated successfully!", ToastType.Success);
                         return;
@@ -760,7 +843,7 @@ public partial class MainViewModel
         }
         catch (TaskCanceledException)
         {
-            StudioImageGenerationStatus = "Generation timed out after 120s.";
+            StudioImageGenerationStatus = "Generation timed out after 180s.";
             ToastService.Instance.Show("Generation timed out. Forge engine may be overloaded or hung.", ToastType.Error);
         }
         catch (HttpRequestException)
@@ -775,6 +858,8 @@ public partial class MainViewModel
         }
         finally
         {
+            pollCts.Cancel();
+            try { await progressTask; } catch { }
             IsGeneratingStudioImage = false;
         }
     }
@@ -784,6 +869,7 @@ public partial class MainViewModel
     {
         if (IsImageModalityActive)
         {
+            if (!string.IsNullOrWhiteSpace(PromptText)) ImagePrompt = PromptText;
             await GenerateStudioImageAsync();
         }
         else if (IsTextModalityActive)

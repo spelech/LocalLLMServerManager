@@ -52,6 +52,16 @@ public partial class DocumentationWindow : Window
         UpdateSnapVisuals();
     }
 
+    private void OnDockToAppClicked(object? sender, RoutedEventArgs e)
+    {
+        if (Owner is MainWindow mainWin && mainWin.DataContext is MainViewModel mainVm)
+        {
+            mainVm.IsCopilotSidebarOpen = true;
+            mainVm.SelectCopilotTab("Docs");
+        }
+        Close();
+    }
+
     public void UpdateSnapVisuals()
     {
         bool isSnapped = WindowSnapManager.Instance.IsSnapped(this);
@@ -63,6 +73,9 @@ public partial class DocumentationWindow : Window
         }
         if (snapBtn != null)
         {
+            ToolTip.SetTip(snapBtn, isSnapped 
+                ? "Currently attached flush to Main Window. Click to detach." 
+                : "Currently floating. Click to snap flush to Main Window.");
             if (isSnapped)
             {
                 if (!snapBtn.Classes.Contains("snapped")) snapBtn.Classes.Add("snapped");
