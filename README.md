@@ -1,6 +1,6 @@
 # Local LLM Server Manager
 
-> **v3.17.0** — The unified orchestrator for local AI. Manage Large Language Models (**Ollama**), Image Generation (**Stable Diffusion Forge & ComfyUI**), **3D Mesh Generation**, **Video Generation**, and **Audio & Speech Synthesis (Kokoro TTS)** from a single desktop dashboard, background daemon, and Model Context Protocol (MCP) server.
+> **v4.0.0** — The unified orchestrator for local AI. Manage Large Language Models (**Ollama**), Image Generation (**Stable Diffusion Forge & ComfyUI**), **3D Mesh Generation**, **Video Generation**, and **Audio & Speech Synthesis (Kokoro TTS)** from a single desktop dashboard, background daemon, and Model Context Protocol (MCP) server.
 > 
 > Designed with the **`L³M²`** Matte Carbon design system, real-time GPU VRAM telemetry, automated memory management, and magnetic multi-window support on Windows and Linux.
 
@@ -47,8 +47,8 @@ Local LLM Server Manager brings together local AI runtimes into a unified, high-
 - **Audio & Speech Synthesis**: Managed Kokoro TTS engine with OpenAI-compatible `POST /v1/audio/speech`, waveform visualizer, and music synthesis via Stable Audio Open 3.0 & YuE.
 
 ### 3. Model Context Protocol (MCP) AI Integration
-- **Stateless HTTP/SSE Endpoint (`/mcp`)**: Official 2026-07-28 specification implementation connecting Claude Desktop, Cursor, Antigravity, and autonomous agents directly to local hardware.
-- **11 Native AI Tools**: Telemetry (`get_gpu_vram`), service health (`check_health`), model management (`list_models`, `pull_model`, `unload_vram`), process management (`start_engine`, `stop_engine`), tool auto-discovery, and multimodal generation.
+- **Stateless HTTP/SSE Endpoint (`/mcp`)**: Official specification implementation connecting Claude Desktop, Cursor, Antigravity, and autonomous agents directly to local hardware.
+- **14 Native AI Tools**: Telemetry (`get_gpu_vram`), service health (`check_health`), model management (`list_models`, `pull_model`, `unload_vram`), process management (`start_engine`, `stop_engine`), tool auto-discovery (`detect_tools`), multimodal generation (`generate_video`, `synthesize_speech`, `generate_audio`), hub search (`search_huggingface`, `search_civitai`), and cross-modal studio pipeline execution (`run_studio_workflow`).
 
 ### 4. Seamless Model Discovery
 - **Hugging Face Hub Discovery**: Search GGUF LLMs, Text-to-Video, Image-to-Video, TTS, and Audio models with instant category filtering and progress-streamed downloads.
@@ -247,10 +247,10 @@ services:
 ### Running with Docker CLI
 ```bash
 # Build Docker image
-docker build -t localllmservermanager:v3.5.0 .
+docker build -t localllmservermanager:v4.0.0 .
 
 # Run container exposing port 5246
-docker run -d -p 5246:5246 --name localllmservermanager localllmservermanager:v3.5.0
+docker run -d -p 5246:5246 --name localllmservermanager localllmservermanager:v4.0.0
 
 # Or start using Docker Compose
 docker-compose up -d

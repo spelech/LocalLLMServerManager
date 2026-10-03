@@ -147,7 +147,7 @@
                     <StackPanel Spacing="3" ClipToBounds="True">
                         <WrapPanel Orientation="Horizontal">
                             <TextBlock Text="● " Foreground="{StaticResource OnlineBrush}" FontSize="9" VerticalAlignment="Center"/>
-                            <TextBlock Text="Manager v3.18.0" FontSize="11" FontWeight="SemiBold" Foreground="{StaticResource TextMainBrush}" TextTrimming="CharacterEllipsis"/>
+                            <TextBlock Text="Manager v4.0.0" FontSize="11" FontWeight="SemiBold" Foreground="{StaticResource TextMainBrush}" TextTrimming="CharacterEllipsis"/>
                         </WrapPanel>
                         <TextBlock Text="Carbon &amp; Indigo" FontSize="10" Foreground="{StaticResource TextMutedBrush}" TextTrimming="CharacterEllipsis"/>
                     </StackPanel>

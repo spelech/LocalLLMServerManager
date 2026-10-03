@@ -25,7 +25,7 @@ features:
     details: Create images, 3D meshes, videos, and synthesized speech with interactive WebGL, audio waveform, and video player controls.
   - icon: 🤖
     title: MCP Integration
-    details: Connect external AI coding assistants directly to your local hardware with eleven official Model Context Protocol tools.
+    details: Connect external AI coding assistants directly to your local hardware with fourteen official Model Context Protocol tools.
 ---
 
 ## Overview

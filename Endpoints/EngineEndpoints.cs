@@ -198,5 +198,4 @@ public static class EngineEndpoints
     }
 }
 
-public record EngineToggleRequest(string? Engine);
 
