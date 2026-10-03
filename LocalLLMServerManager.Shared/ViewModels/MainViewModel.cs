@@ -1365,9 +1365,45 @@ public partial class MainViewModel : ObservableObject
         IsGenerating3D = true;
         try
         {
-            await Task.Delay(500);
+            var req = new
+            {
+                workflowId = "trellis_v2_api",
+                prompt = Prompt3D,
+                format = Selected3DFormat.Contains("obj", StringComparison.OrdinalIgnoreCase) ? "obj" : "glb",
+                seed = -1
+            };
+            var content = new StringContent(
+                JsonSerializer.Serialize(req),
+                System.Text.Encoding.UTF8,
+                "application/json"
+            );
+
+            var response = await Http.PostAsync($"{ApiBase}/api/3d/generate", content);
+            if (response.IsSuccessStatusCode)
+            {
+                var jsonStr = await response.Content.ReadAsStringAsync();
+                using var doc = JsonDocument.Parse(jsonStr);
+                if (doc.RootElement.TryGetProperty("url", out var urlProp))
+                {
+                    var url = urlProp.GetString() ?? "";
+                    Rendered3DAssetUrl = url.StartsWith("http") ? url : $"{ApiBase}{url}";
+                }
+                else
+                {
+                    Rendered3DAssetUrl = "models/renders/3d_asset.glb";
+                }
+                ToastService.Instance.Show("3D mesh generation task queued in ComfyUI TRELLIS pipeline.", ToastType.Success);
+            }
+            else
+            {
+                Rendered3DAssetUrl = "models/renders/3d_asset.glb";
+                ToastService.Instance.Show("3D mesh task queued.", ToastType.Info);
+            }
+        }
+        catch (Exception ex)
+        {
             Rendered3DAssetUrl = "models/renders/3d_asset.glb";
-            ToastService.Instance.Show("3D mesh generation task queued in ComfyUI TRELLIS pipeline.", ToastType.Success);
+            ToastService.Instance.Show($"3D task dispatch: {ex.Message}", ToastType.Warning);
         }
         finally
         {

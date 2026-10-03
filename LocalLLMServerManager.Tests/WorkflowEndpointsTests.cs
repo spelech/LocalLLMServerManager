@@ -134,4 +134,95 @@ public class WorkflowEndpointsTests : IClassFixture<AppTestServerFixture>
             }
         }
     }
+
+    [Fact]
+    public async Task Get3DWorkflows_ReturnsPresetList()
+    {
+        var response = await _client.GetAsync("/api/3d/workflows");
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+
+        var json = await response.Content.ReadFromJsonAsync<JsonElement>();
+        Assert.Equal(JsonValueKind.Array, json.ValueKind);
+
+        var found3DWorkflow = false;
+        foreach (var item in json.EnumerateArray())
+        {
+            if (item.TryGetProperty("id", out var idProp))
+            {
+                var id = idProp.GetString() ?? "";
+                if (id.Contains("trellis") || id.Contains("hunyuan3d") || id.Contains("3d"))
+                {
+                    found3DWorkflow = true;
+                    break;
+                }
+            }
+        }
+
+        Assert.True(found3DWorkflow, "3D workflow presets should be returned by /api/3d/workflows");
+    }
+
+    [Fact]
+    public async Task Generate3D_QueuesPrompt_AndReturnsResponse()
+    {
+        var request = new ThreeDGenerateRequest(
+            WorkflowId: "trellis_v2_api",
+            Prompt: "A high-detail cybernetic skull 3d asset",
+            NegativePrompt: "flat, low poly",
+            Format: "glb",
+            Seed: 55555
+        );
+
+        var response = await _client.PostAsJsonAsync("/api/3d/generate", request);
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+
+        var json = await response.Content.ReadFromJsonAsync<JsonElement>();
+        Assert.True(json.TryGetProperty("promptId", out var promptIdProp));
+        Assert.False(string.IsNullOrWhiteSpace(promptIdProp.GetString()));
+
+        Assert.True(json.TryGetProperty("status", out var statusProp));
+        Assert.Equal("queued", statusProp.GetString());
+
+        Assert.True(json.TryGetProperty("url", out var urlProp));
+        Assert.EndsWith(".glb", urlProp.GetString() ?? "");
+    }
+
+    [Fact]
+    public async Task Get3DFiles_Returns3DOutputsList()
+    {
+        var outputDir = Path.Combine(AppContext.BaseDirectory, "wwwroot", "output_3d");
+        Directory.CreateDirectory(outputDir);
+
+        var dummyGlb = Path.Combine(outputDir, $"test_output_{Guid.NewGuid():N}.glb");
+        await File.WriteAllTextAsync(dummyGlb, "dummy 3d glb content");
+
+        try
+        {
+            var response = await _client.GetAsync("/api/3d/files");
+            Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+
+            var json = await response.Content.ReadFromJsonAsync<JsonElement>();
+            Assert.Equal(JsonValueKind.Array, json.ValueKind);
+
+            var foundDummy = false;
+            foreach (var item in json.EnumerateArray())
+            {
+                if (item.TryGetProperty("filename", out var fnProp) && fnProp.GetString() == Path.GetFileName(dummyGlb))
+                {
+                    foundDummy = true;
+                    Assert.True(item.TryGetProperty("url", out var urlProp));
+                    Assert.Equal($"/output_3d/{Path.GetFileName(dummyGlb)}", urlProp.GetString());
+                    break;
+                }
+            }
+
+            Assert.True(foundDummy, "Dummy 3D glb file should be returned in 3D files list");
+        }
+        finally
+        {
+            if (File.Exists(dummyGlb))
+            {
+                File.Delete(dummyGlb);
+            }
+        }
+    }
 }
