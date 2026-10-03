@@ -1,6 +1,11 @@
 using System;
 using System.Collections.ObjectModel;
+using System.IO;
 using System.Linq;
+using System.Net.Http;
+using System.Text;
+using System.Text.Json;
+using System.Threading;
 using System.Threading.Tasks;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
@@ -525,10 +530,101 @@ public partial class MainViewModel
         Studio.IsParametersFlyoutOpen = IsParametersFlyoutOpen;
     }
 
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(HasStudioGeneratedImage))]
+    [NotifyPropertyChangedFor(nameof(ShowImageCanvasZeroState))]
+    private byte[]? _studioGeneratedImageBytes;
+
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(IsGeneratingAnyStudio))]
+    [NotifyPropertyChangedFor(nameof(StudioGenerateButtonText))]
+    [NotifyPropertyChangedFor(nameof(ShowImageCanvasZeroState))]
+    private bool _isGeneratingStudioImage;
+
+    [ObservableProperty]
+    private string _studioImageGenerationStatus = "Ready";
+
+    [ObservableProperty]
+    private byte[]? _attachedImageBytes;
+
+    [ObservableProperty]
+    private bool _hasAttachedImage;
+
+    public bool HasStudioGeneratedImage => StudioGeneratedImageBytes != null && StudioGeneratedImageBytes.Length > 0;
+    public bool ShowImageCanvasZeroState => !HasStudioGeneratedImage && !IsGeneratingStudioImage;
+
+    public bool IsGeneratingAnyStudio =>
+        IsGeneratingStudioImage ||
+        IsGeneratingOllamaText ||
+        IsGeneratingVideo ||
+        IsGenerating3D ||
+        (Audio != null && Audio.IsGenerating) ||
+        (StickerStudio != null && StickerStudio.IsGenerating);
+
+    public string StudioGenerateButtonText => IsGeneratingAnyStudio ? "Generating..." : "Generate ↵";
+
+    public event Func<byte[], Task>? CopyStudioImageRequested;
+    public event Func<byte[], Task<string?>>? SaveStudioImageRequested;
+    public event Func<Task<byte[]?>>? PickImageRequested;
+
     [RelayCommand]
-    public void AttachImage()
+    public async Task CopyStudioImageAsync()
     {
-        Studio.AttachImage();
+        if (StudioGeneratedImageBytes != null && CopyStudioImageRequested != null)
+        {
+            await CopyStudioImageRequested(StudioGeneratedImageBytes);
+            ToastService.Instance.Show("Image copied to clipboard!", ToastType.Success);
+        }
+    }
+
+    [RelayCommand]
+    public async Task SaveStudioImageAsync()
+    {
+        if (StudioGeneratedImageBytes != null && SaveStudioImageRequested != null)
+        {
+            var path = await SaveStudioImageRequested(StudioGeneratedImageBytes);
+            if (!string.IsNullOrEmpty(path))
+            {
+                ToastService.Instance.Show($"Saved image to {Path.GetFileName(path)}", ToastType.Success);
+            }
+        }
+    }
+
+    [RelayCommand]
+    public void ClearStudioImage()
+    {
+        StudioGeneratedImageBytes = null;
+        StudioImageGenerationStatus = "Ready";
+    }
+
+    [RelayCommand]
+    public async Task AttachImageAsync()
+    {
+        if (PickImageRequested != null)
+        {
+            var bytes = await PickImageRequested();
+            if (bytes != null && bytes.Length > 0)
+            {
+                AttachedImageBytes = bytes;
+                HasAttachedImage = true;
+                Studio.HasAttachedImage = true;
+                ToastService.Instance.Show("Reference image attached.", ToastType.Info);
+            }
+        }
+        else
+        {
+            Studio.AttachImage();
+            HasAttachedImage = Studio.HasAttachedImage;
+        }
+    }
+
+    [RelayCommand]
+    public void RemoveAttachedImage()
+    {
+        AttachedImageBytes = null;
+        HasAttachedImage = false;
+        Studio.HasAttachedImage = false;
+        ToastService.Instance.Show("Reference image removed.", ToastType.Info);
     }
 
     [RelayCommand]
@@ -555,32 +651,165 @@ public partial class MainViewModel
     }
 
     [RelayCommand]
-    public void GenerateFromDock()
+    public async Task GenerateStudioImageAsync()
+    {
+        if (IsGeneratingStudioImage) return;
+
+        var prompt = !string.IsNullOrWhiteSpace(PromptText) ? PromptText : ImagePrompt;
+        if (string.IsNullOrWhiteSpace(prompt))
+        {
+            prompt = "A majestic dragon perched on a mountain peak at sunrise, detailed fantasy concept art, octane render";
+            PromptText = prompt;
+            ImagePrompt = prompt;
+        }
+
+        IsGeneratingStudioImage = true;
+        StudioImageGenerationStatus = "Preparing inference parameters...";
+
+        var (width, height) = ActiveAspectPreset switch
+        {
+            "1:1" => (1024, 1024),
+            "16:9" => (1344, 768),
+            "9:16" => (768, 1344),
+            "4:3" => (1152, 864),
+            _ => (1024, 1024)
+        };
+
+        var forgeBase = "http://127.0.0.1:7860";
+        bool isImg2Img = HasAttachedImage && AttachedImageBytes != null && AttachedImageBytes.Length > 0;
+        var endpoint = isImg2Img ? $"{forgeBase}/sdapi/v1/img2img" : $"{forgeBase}/sdapi/v1/txt2img";
+
+        var steps = StudioSteps > 0 ? StudioSteps : 25;
+        var cfg = StudioCfgScale > 0 ? StudioCfgScale : 7.0;
+        var seed = StudioSeed;
+
+        var selectedModel = ActiveModelBadge;
+        string? checkpointOverride = null;
+        if (!string.IsNullOrWhiteSpace(selectedModel) && !selectedModel.StartsWith("SDXL Base") && selectedModel.EndsWith(".safetensors", StringComparison.OrdinalIgnoreCase))
+        {
+            checkpointOverride = selectedModel;
+        }
+
+        object payload;
+        if (isImg2Img)
+        {
+            payload = new
+            {
+                prompt = prompt,
+                negative_prompt = NegativePromptText ?? "",
+                init_images = new[] { Convert.ToBase64String(AttachedImageBytes!) },
+                denoising_strength = StudioDenoise > 0 ? StudioDenoise : 0.7,
+                steps = steps,
+                cfg_scale = cfg,
+                seed = seed,
+                width = width,
+                height = height,
+                override_settings = checkpointOverride != null ? new { sd_model_checkpoint = checkpointOverride } : null
+            };
+        }
+        else
+        {
+            payload = new
+            {
+                prompt = prompt,
+                negative_prompt = NegativePromptText ?? "",
+                steps = steps,
+                cfg_scale = cfg,
+                seed = seed,
+                width = width,
+                height = height,
+                override_settings = checkpointOverride != null ? new { sd_model_checkpoint = checkpointOverride } : null
+            };
+        }
+
+        StudioImageGenerationStatus = $"Dispatching {width}x{height} request to Forge ({forgeBase})...";
+
+        try
+        {
+            using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(120));
+            var json = JsonSerializer.Serialize(payload, new JsonSerializerOptions { DefaultIgnoreCondition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull });
+            using var content = new StringContent(json, Encoding.UTF8, "application/json");
+
+            var response = await Http.PostAsync(endpoint, content, cts.Token);
+            if (response.IsSuccessStatusCode)
+            {
+                StudioImageGenerationStatus = "Decoding generated image...";
+                var respStr = await response.Content.ReadAsStringAsync(cts.Token);
+                using var doc = JsonDocument.Parse(respStr);
+                if (doc.RootElement.TryGetProperty("images", out var imagesElem) &&
+                    imagesElem.ValueKind == JsonValueKind.Array &&
+                    imagesElem.GetArrayLength() > 0)
+                {
+                    var base64 = imagesElem[0].GetString();
+                    if (!string.IsNullOrEmpty(base64))
+                    {
+                        var bytes = Convert.FromBase64String(base64);
+                        StudioGeneratedImageBytes = bytes;
+                        StudioImageGenerationStatus = "Generation complete!";
+                        ToastService.Instance.Show("Image generated successfully!", ToastType.Success);
+                        return;
+                    }
+                }
+                throw new Exception("No image data found in Forge API response.");
+            }
+            else
+            {
+                var err = await response.Content.ReadAsStringAsync(cts.Token);
+                throw new Exception($"HTTP {(int)response.StatusCode}: {err}");
+            }
+        }
+        catch (TaskCanceledException)
+        {
+            StudioImageGenerationStatus = "Generation timed out after 120s.";
+            ToastService.Instance.Show("Generation timed out. Forge engine may be overloaded or hung.", ToastType.Error);
+        }
+        catch (HttpRequestException)
+        {
+            StudioImageGenerationStatus = $"Forge engine offline or unreachable at {forgeBase}.";
+            ToastService.Instance.Show($"Cannot reach Forge at {forgeBase}. Is Forge running?", ToastType.Warning);
+        }
+        catch (Exception ex)
+        {
+            StudioImageGenerationStatus = $"Generation failed: {ex.Message}";
+            ToastService.Instance.Show($"Generation failed: {ex.Message}", ToastType.Error);
+        }
+        finally
+        {
+            IsGeneratingStudioImage = false;
+        }
+    }
+
+    [RelayCommand]
+    public async Task GenerateFromDockAsync()
     {
         if (IsImageModalityActive)
         {
-            if (!string.IsNullOrWhiteSpace(PromptText)) ImagePrompt = PromptText;
-            OpenForgeWebUiCommand.Execute(null);
+            await GenerateStudioImageAsync();
         }
         else if (IsTextModalityActive)
         {
             if (!string.IsNullOrWhiteSpace(PromptText)) OllamaPrompt = PromptText;
-            GenerateOllamaTextCommand.Execute(null);
+            await GenerateOllamaTextAsync();
         }
         else if (IsVideoModalityActive)
         {
             if (!string.IsNullOrWhiteSpace(PromptText)) VideoPrompt = PromptText;
-            GenerateVideoCommand.Execute(null);
-        }
-        else if (Is3DModalityActive)
-        {
-            if (!string.IsNullOrWhiteSpace(PromptText)) Prompt3D = PromptText;
-            Generate3DCommand.Execute(null);
+            await GenerateVideoAsync();
         }
         else if (IsAudioModalityActive && Audio != null)
         {
             if (!string.IsNullOrWhiteSpace(PromptText)) Audio.Prompt = PromptText;
-            Audio.GenerateAudioCommand.Execute(null);
+            await GenerateAudioAsync();
+        }
+        else if (IsStickerModalityActive && StickerStudio != null)
+        {
+            if (!string.IsNullOrWhiteSpace(PromptText)) StickerStudio.CustomPrompt = PromptText;
+            await StickerStudio.GenerateStickerCommand.ExecuteAsync(null);
+        }
+        else if (Is3DModalityActive)
+        {
+            if (!string.IsNullOrWhiteSpace(PromptText)) Prompt3D = PromptText;
+            await Generate3DAsync();
         }
     }
 }

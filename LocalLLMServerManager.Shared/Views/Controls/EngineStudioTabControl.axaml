@@ -263,8 +263,41 @@
                             <!-- Canvas Area / Pan-Zoom Preview -->
                             <Border Grid.Row="0" MinHeight="260" Background="#050812" CornerRadius="8" BorderBrush="#182335" BorderThickness="1">
                                 <Grid>
-                                    <!-- Rendered Image Display (if any) or Zero-State Prompt Suggestions -->
-                                    <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center" Spacing="12" Margin="24">
+                                    <!-- A: Real Rendered Image Display (when HasStudioGeneratedImage) -->
+                                    <Grid IsVisible="{Binding HasStudioGeneratedImage}">
+                                        <Border CornerRadius="8" ClipToBounds="True" Background="#02040A" HorizontalAlignment="Center" VerticalAlignment="Center" Margin="8">
+                                            <Image Source="{Binding StudioGeneratedImageBytes, Converter={x:Static controls:ImageSourceConverter.Instance}}"
+                                                   Stretch="Uniform" MaxHeight="520"/>
+                                        </Border>
+
+                                        <!-- Floating Action Bar for generated image -->
+                                        <Border VerticalAlignment="Bottom" HorizontalAlignment="Center" Margin="0,0,0,16"
+                                                Background="#E00A0F1D" BorderBrush="{StaticResource GlassBorderBrush}" BorderThickness="1"
+                                                CornerRadius="20" Padding="8,4" BoxShadow="0 4 16 0 #80000000">
+                                            <StackPanel Orientation="Horizontal" Spacing="8">
+                                                <Button Content="💾 Save PNG" Command="{Binding SaveStudioImageCommand}"
+                                                        Classes="matte-primary" FontSize="11" Padding="10,4"/>
+                                                <Button Content="📋 Copy" Command="{Binding CopyStudioImageCommand}"
+                                                        Classes="matte-secondary" FontSize="11" Padding="8,4"/>
+                                                <Button Content="🗑️ Clear" Command="{Binding ClearStudioImageCommand}"
+                                                        Classes="matte-secondary" FontSize="11" Padding="8,4"/>
+                                            </StackPanel>
+                                        </Border>
+                                    </Grid>
+
+                                    <!-- B: Loading State (when IsGeneratingStudioImage) -->
+                                    <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center" Spacing="12" Margin="24"
+                                                IsVisible="{Binding IsGeneratingStudioImage}">
+                                        <ProgressBar Width="260" Height="6" IsIndeterminate="True"/>
+                                        <TextBlock Text="{Binding StudioImageGenerationStatus}" FontSize="13" FontWeight="SemiBold"
+                                                   Foreground="{StaticResource AccentBrush}" HorizontalAlignment="Center"/>
+                                        <TextBlock Text="Running local Stable Diffusion pipeline..." FontSize="11"
+                                                   Foreground="{StaticResource TextMutedBrush}" HorizontalAlignment="Center"/>
+                                    </StackPanel>
+
+                                    <!-- C: Zero-State Prompt Suggestions (when ShowImageCanvasZeroState) -->
+                                    <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center" Spacing="12" Margin="24"
+                                                IsVisible="{Binding ShowImageCanvasZeroState}">
                                         <TextBlock Text="🎨" FontSize="44" HorizontalAlignment="Center"/>
                                         <TextBlock Text="Interactive Image Canvas" FontSize="16" FontWeight="Bold" Foreground="{StaticResource TextMainBrush}" HorizontalAlignment="Center"/>
                                         <TextBlock Text="Ready for prompt generation via Stable Diffusion &amp; WebUI Forge." FontSize="12" Foreground="{StaticResource TextMutedBrush}" HorizontalAlignment="Center"/>
@@ -700,6 +733,14 @@
                                 </StackPanel>
                             </Button>
 
+                            <!-- Attachment Indicator Pill -->
+                            <Border IsVisible="{Binding HasAttachedImage}" Background="#1E293B" BorderBrush="{StaticResource PrimaryBrush}" BorderThickness="1" CornerRadius="12" Padding="6,2" VerticalAlignment="Center">
+                                <StackPanel Orientation="Horizontal" Spacing="4">
+                                    <TextBlock Text="🖼️ Image Attached" FontSize="10" Foreground="{StaticResource PrimaryBrush}" VerticalAlignment="Center"/>
+                                    <Button Content="✕" Command="{Binding RemoveAttachedImageCommand}" Classes="matte-secondary" Padding="4,1" FontSize="9" VerticalAlignment="Center" ToolTip.Tip="Remove reference image"/>
+                                </StackPanel>
+                            </Border>
+
                             <!-- Parameters Toggle Button -->
                             <Button Command="{Binding Studio.ToggleParametersFlyoutCommand}" Classes="matte-secondary" Padding="8,4" FontSize="11" ToolTip.Tip="Open fine-tuning sliders">
                                 <StackPanel Orientation="Horizontal" Spacing="4" VerticalAlignment="Center">
@@ -719,13 +760,14 @@
                         <!-- Prominent Generate Action Button -->
                         <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
                             <Button Command="{Binding GenerateFromDockCommand}"
+                                    IsEnabled="{Binding !IsGeneratingAnyStudio}"
                                     Background="#2563EB"
                                     Foreground="White"
                                     CornerRadius="8"
                                     Padding="20,8"
                                     VerticalAlignment="Center">
                                 <StackPanel Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
-                                    <TextBlock Text="Generate ↵" FontWeight="Bold" FontSize="12" Foreground="White" VerticalAlignment="Center"/>
+                                    <TextBlock Text="{Binding StudioGenerateButtonText}" FontWeight="Bold" FontSize="12" Foreground="White" VerticalAlignment="Center"/>
                                 </StackPanel>
                             </Button>
                         </StackPanel>
