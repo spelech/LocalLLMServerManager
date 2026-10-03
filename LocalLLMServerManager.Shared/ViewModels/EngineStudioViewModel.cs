@@ -45,6 +45,7 @@ public partial class EngineStudioViewModel : ObservableObject
     [NotifyPropertyChangedFor(nameof(IsStickerModalityActive))]
     [NotifyPropertyChangedFor(nameof(ActiveModelBadge))]
     [NotifyPropertyChangedFor(nameof(ActivePromptPlaceholder))]
+    [NotifyPropertyChangedFor(nameof(ShowForgeOfflineWarning))]
     private string _selectedModality = "Image";
 
     public bool IsImageModalityActive => SelectedModality == "Image" || SelectedModality == "Images";
@@ -53,6 +54,12 @@ public partial class EngineStudioViewModel : ObservableObject
     public bool Is3DModalityActive => SelectedModality == "3D Mesh";
     public bool IsAudioModalityActive => SelectedModality == "Audio";
     public bool IsStickerModalityActive => SelectedModality == "Sticker" || SelectedModality == "Sticker Studio";
+
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(ShowForgeOfflineWarning))]
+    private bool _isForgeOnline = false;
+
+    public bool ShowForgeOfflineWarning => IsImageModalityActive && !IsForgeOnline && !IsGenerating;
 
     [ObservableProperty]
     private bool _isParametersFlyoutOpen;
@@ -567,7 +574,22 @@ public partial class MainViewModel
     [NotifyPropertyChangedFor(nameof(IsGeneratingAnyStudio))]
     [NotifyPropertyChangedFor(nameof(StudioGenerateButtonText))]
     [NotifyPropertyChangedFor(nameof(ShowImageCanvasZeroState))]
+    [NotifyPropertyChangedFor(nameof(ShowForgeOfflineWarning))]
     private bool _isGeneratingStudioImage;
+
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(ShowForgeOfflineWarning))]
+    private bool _isForgeOnline = false;
+
+    public bool ShowForgeOfflineWarning => IsImageModalityActive && !IsForgeOnline && !IsGeneratingStudioImage;
+
+    [RelayCommand]
+    public async Task StartForgeEngineAsync()
+    {
+        await ToggleEngineAsync("forge");
+        IsForgeOnline = Telemetry.IsForgeOnline;
+        Studio.IsForgeOnline = Telemetry.IsForgeOnline;
+    }
 
     [ObservableProperty]
     private string _studioImageGenerationStatus = "Ready";
@@ -765,13 +787,12 @@ public partial class MainViewModel
 
         var progressTask = Task.Run(async () =>
         {
-            using var progClient = new HttpClient { Timeout = TimeSpan.FromSeconds(2) };
             while (!pollCts.Token.IsCancellationRequested)
             {
                 try
                 {
                     await Task.Delay(350, pollCts.Token);
-                    var progResp = await progClient.GetAsync($"{forgeBase}/sdapi/v1/progress", pollCts.Token);
+                    var progResp = await Http.GetAsync($"{forgeBase}/sdapi/v1/progress", pollCts.Token);
                     if (progResp.IsSuccessStatusCode)
                     {
                         var progJson = await progResp.Content.ReadAsStringAsync(pollCts.Token);
@@ -829,6 +850,8 @@ public partial class MainViewModel
                         StudioGeneratedImageBytes = bytes;
                         StudioImageGenerationProgress = 1.0;
                         StudioImageGenerationStatus = "Generation complete!";
+                        IsForgeOnline = true;
+                        Studio.IsForgeOnline = true;
                         ToastService.Instance.Show("Image generated successfully!", ToastType.Success);
                         return;
                     }
@@ -848,6 +871,8 @@ public partial class MainViewModel
         }
         catch (HttpRequestException)
         {
+            IsForgeOnline = false;
+            Studio.IsForgeOnline = false;
             StudioImageGenerationStatus = $"Forge engine offline or unreachable at {forgeBase}.";
             ToastService.Instance.Show($"Cannot reach Forge at {forgeBase}. Is Forge running?", ToastType.Warning);
         }

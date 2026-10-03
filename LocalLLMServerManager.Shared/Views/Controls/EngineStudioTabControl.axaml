@@ -339,6 +339,22 @@
                                         <TextBlock Text="Interactive Image Canvas" FontSize="16" FontWeight="Bold" Foreground="{StaticResource TextMainBrush}" HorizontalAlignment="Center"/>
                                         <TextBlock Text="Ready for prompt generation via Stable Diffusion &amp; WebUI Forge." FontSize="12" Foreground="{StaticResource TextMutedBrush}" HorizontalAlignment="Center"/>
 
+                                        <!-- Proactive Forge Offline Warning Banner with 1-Click Start Button -->
+                                        <Border IsVisible="{Binding ShowForgeOfflineWarning}"
+                                                Background="#22EF4444" BorderBrush="#EF4444" BorderThickness="1"
+                                                CornerRadius="8" Padding="14,10" MaxWidth="640" HorizontalAlignment="Center" Margin="0,4,0,4">
+                                            <Grid ColumnDefinitions="Auto,*,Auto" VerticalAlignment="Center">
+                                                <TextBlock Grid.Column="0" Text="⚠️" FontSize="20" VerticalAlignment="Center" Margin="0,0,10,0"/>
+                                                <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="2">
+                                                    <TextBlock Text="Stable Diffusion Forge is Offline (Port 7860)" FontWeight="Bold" FontSize="12" Foreground="#FCA5A5"/>
+                                                    <TextBlock Text="The local image inference engine is not running. Generations will fail until started." FontSize="10" Foreground="#CBD5E1"/>
+                                                </StackPanel>
+                                                <Button Grid.Column="2" Content="⚡ Start Forge Engine" Command="{Binding StartForgeEngineCommand}"
+                                                        Classes="matte-primary" Background="#EF4444" Foreground="White" FontWeight="Bold"
+                                                        FontSize="11" Padding="12,6" VerticalAlignment="Center" Margin="10,0,0,0"/>
+                                            </Grid>
+                                        </Border>
+
                                         <!-- Zero-State Prompt Suggestion Chips -->
                                         <TextBlock Text="Prompt Starter Ideas:" FontSize="11" FontWeight="SemiBold" Foreground="{StaticResource AccentBrush}" HorizontalAlignment="Center" Margin="0,6,0,0"/>
                                         <WrapPanel HorizontalAlignment="Center" MaxWidth="720">
@@ -799,6 +815,33 @@
 
                         <!-- Prominent Generate Action Button & Live Progress Feedback -->
                         <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+                            <!-- Proactive Forge Offline Dock Warning Badge with 1-Click Start -->
+                            <Border IsVisible="{Binding ShowForgeOfflineWarning}"
+                                    Background="#22EF4444"
+                                    BorderBrush="#EF4444"
+                                    BorderThickness="1"
+                                    CornerRadius="8"
+                                    Padding="8,4"
+                                    VerticalAlignment="Center">
+                                <StackPanel Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
+                                    <TextBlock Text="⚠️ Forge Offline"
+                                               FontSize="11"
+                                               FontWeight="SemiBold"
+                                               Foreground="#F87171"
+                                               VerticalAlignment="Center"/>
+                                    <Button Content="Start Forge"
+                                            Command="{Binding StartForgeEngineCommand}"
+                                            Classes="matte-primary"
+                                            Background="#DC2626"
+                                            Foreground="White"
+                                            FontSize="10"
+                                            FontWeight="Bold"
+                                            Padding="8,3"
+                                            CornerRadius="4"
+                                            VerticalAlignment="Center"/>
+                                </StackPanel>
+                            </Border>
+
                             <!-- Live Generation Status Pill -->
                             <Border IsVisible="{Binding IsGeneratingAnyStudio}"
                                     Background="#0F172A"

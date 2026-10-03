@@ -1155,6 +1155,8 @@ public partial class MainViewModel : ObservableObject
         await Ollama.LoadInstalledModelsAsync(ApiBase, Http);
         if (Telemetry != null)
         {
+            IsForgeOnline = Telemetry.IsForgeOnline;
+            if (Studio != null) Studio.IsForgeOnline = Telemetry.IsForgeOnline;
             double vramMb = Telemetry.VramTotalGb * 1024.0;
             double freeVramMb = Math.Max(0, (Telemetry.VramTotalGb - Telemetry.VramUsedGb) * 1024.0);
             double ramMb = HardwareFit?.TotalRamMb ?? 32768.0;
