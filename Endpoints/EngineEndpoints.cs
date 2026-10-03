@@ -121,37 +121,7 @@ public static class EngineEndpoints
             return Results.Ok(new { message = "Audio Engine Stopped" });
         });
 
-        app.MapGet("/api/audio/voices", async (ISettingsService settingsService, System.Net.Http.IHttpClientFactory clientFactory) =>
-        {
-            var settings = settingsService.LoadSettings();
-            var baseUrl = (string.IsNullOrWhiteSpace(settings.AudioEngineUrl) ? "http://127.0.0.1:8880" : settings.AudioEngineUrl).TrimEnd('/');
-
-            try
-            {
-                var client = clientFactory.CreateClient();
-                using var cts = new System.Threading.CancellationTokenSource(TimeSpan.FromSeconds(3));
-
-                var response = await client.GetAsync($"{baseUrl}/v1/audio/voices", cts.Token);
-                if (!response.IsSuccessStatusCode)
-                {
-                    response = await client.GetAsync($"{baseUrl}/voices", cts.Token);
-                }
-
-                if (response.IsSuccessStatusCode)
-                {
-                    var json = await response.Content.ReadAsStringAsync(cts.Token);
-                    return Results.Content(json, "application/json");
-                }
-            }
-            catch { }
-
-            var defaultVoices = new[]
-            {
-                "af_heart", "af_bella", "af_nicole", "af_sarah", "af_sky",
-                "am_adam", "am_michael", "bf_emma", "bf_isabella", "bm_george", "bm_fable"
-            };
-            return Results.Ok(new { voices = defaultVoices, preferred = settings.PreferredAudioVoice });
-        });
+        app.MapGet("/api/audio/voices", HandleGetVoicesAsync);
 
         app.MapPost("/api/ollama/start", async (IAiEngineManager engineManager, ISettingsService settingsService, ILoggerFactory loggerFactory) =>
         {
@@ -194,7 +164,38 @@ public static class EngineEndpoints
             return Results.Problem(result.Message);
         });
     }
+
+    public static async Task<IResult> HandleGetVoicesAsync(ISettingsService settingsService, System.Net.Http.IHttpClientFactory clientFactory)
+    {
+        var settings = settingsService.LoadSettings();
+        var baseUrl = (string.IsNullOrWhiteSpace(settings.AudioEngineUrl) ? "http://127.0.0.1:8880" : settings.AudioEngineUrl).TrimEnd('/');
+
+        try
+        {
+            var client = clientFactory.CreateClient();
+            using var cts = new System.Threading.CancellationTokenSource(TimeSpan.FromSeconds(3));
+
+            var response = await client.GetAsync($"{baseUrl}/v1/audio/voices", cts.Token);
+            if (!response.IsSuccessStatusCode)
+            {
+                response = await client.GetAsync($"{baseUrl}/voices", cts.Token);
+            }
+
+            if (response.IsSuccessStatusCode)
+            {
+                var json = await response.Content.ReadAsStringAsync(cts.Token);
+                return Results.Content(json, "application/json");
+            }
+        }
+        catch { }
+
+        var defaultVoices = new[]
+        {
+            "af_heart", "af_bella", "af_nicole", "af_sarah", "af_sky",
+            "am_adam", "am_michael", "bf_emma", "bf_isabella", "bm_george", "bm_fable"
+        };
+        return Results.Ok(new { voices = defaultVoices, preferred = settings.PreferredAudioVoice });
+    }
 }
 
-public record EngineToggleRequest(string? Engine);
 

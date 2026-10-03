@@ -32,7 +32,8 @@
 
   <ItemGroup>
     <ProjectReference Include="..\LocalLLMServerManager.csproj" />
-    <ProjectReference Include="..\..\Avalonia.LayoutInspector\src\Avalonia.LayoutInspector\Avalonia.LayoutInspector.csproj" />
+    <ProjectReference Include="..\..\Avalonia.LayoutInspector\src\Avalonia.LayoutInspector\Avalonia.LayoutInspector.csproj" Condition="Exists('..\..\Avalonia.LayoutInspector\src\Avalonia.LayoutInspector\Avalonia.LayoutInspector.csproj')" />
+    <ProjectReference Include="..\..\..\..\Avalonia.LayoutInspector\src\Avalonia.LayoutInspector\Avalonia.LayoutInspector.csproj" Condition="Exists('..\..\..\..\Avalonia.LayoutInspector\src\Avalonia.LayoutInspector\Avalonia.LayoutInspector.csproj')" />
   </ItemGroup>
 
   <ItemGroup>

@@ -7,6 +7,7 @@ using System.Text.Json.Nodes;
 using System.Threading.Tasks;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using Avalonia.Input.Platform;
 using LocalLLMServerManager.Shared.Interfaces;
 using LocalLLMServerManager.Shared.Models;
 using LocalLLMServerManager.Shared.Services;
@@ -22,6 +23,17 @@ public partial class OllamaLibraryViewModel : ObservableObject
     public ObservableCollection<OllamaModelItem> InstalledModels { get; } = new();
     public ObservableCollection<OllamaModelItem> FilteredInstalledModels { get; } = new();
     [ObservableProperty] private OllamaModelItem? _selectedInstalledModel;
+
+    [ObservableProperty] private string _calcModelName = "llama3.2:latest (3B, Q4_K_M)";
+    [ObservableProperty] private string _calcModelWeightText = "~2.2 GB";
+    [ObservableProperty] private string _calcTotalVramNeededText = "~3.3 GB / 16.0 GB";
+    [ObservableProperty] private double _calcVramUsageRatio = 0.20;
+    [ObservableProperty] private string _calcFitVerdictText = "🟢 Full VRAM (28/28 layers on GPU)";
+    [ObservableProperty] private string _calcFitVerdictColor = "#10B981";
+    [ObservableProperty] private string _calcRecommendationMessage = "";
+    [ObservableProperty] private string _selectedKvPrecision = "FP16";
+    [ObservableProperty] private FitVerdict _calcFitVerdict = FitVerdict.FullVram;
+    [ObservableProperty] private LlmFitResult? _currentFitResult;
 
     [ObservableProperty] private bool _isFullVramActive = true;
     [ObservableProperty] private bool _isPartialOffloadActive = true;
@@ -49,6 +61,7 @@ public partial class OllamaLibraryViewModel : ObservableObject
     [ObservableProperty] private double _totalRamMb = 32768.0;
 
     public Action<string, string>? OnInspectModelRequested { get; set; }
+    public Action<string, int>? OnApplyModelContextRequested { get; set; }
 
     public OllamaLibraryViewModel(IOllamaModelService ollamaModelService)
         : this(ollamaModelService, new CanIRunItService(), null)
@@ -64,6 +77,7 @@ public partial class OllamaLibraryViewModel : ObservableObject
         _canIRunItService = canIRunItService ?? new CanIRunItService();
         _telemetryService = telemetryService;
         InstalledModels.CollectionChanged += (s, e) => ApplyFilter();
+        RecalculateKvCache();
     }
 
     public void UpdateHardwareTelemetry(double totalVramMb, double totalRamMb)
@@ -72,6 +86,7 @@ public partial class OllamaLibraryViewModel : ObservableObject
         if (totalRamMb > 0) TotalRamMb = totalRamMb;
 
         RecomputeBadges();
+        RecalculateKvCache();
     }
 
     public void RecomputeBadges()
@@ -158,11 +173,134 @@ public partial class OllamaLibraryViewModel : ObservableObject
         }
     }
 
-    partial void OnTargetContextTokensChanged(double value)
+    public bool IsFp16Selected => SelectedKvPrecision == "FP16";
+    public bool IsQ8Selected => SelectedKvPrecision == "Q8_0";
+    public bool IsQ4Selected => SelectedKvPrecision == "Q4_0";
+
+    partial void OnTargetContextTokensChanged(double value) => RecalculateKvCache();
+    partial void OnSelectedInstalledModelChanged(OllamaModelItem? value) => RecalculateKvCache();
+    partial void OnSelectedKvPrecisionChanged(string value)
     {
-        double estimatedBytes = value * 65536.0;
-        double mb = estimatedBytes / (1024.0 * 1024.0);
-        EstimatedKvCacheText = mb >= 1024 ? $"~{(mb / 1024.0):F1} GB" : $"~{mb:F0} MB";
+        OnPropertyChanged(nameof(IsFp16Selected));
+        OnPropertyChanged(nameof(IsQ8Selected));
+        OnPropertyChanged(nameof(IsQ4Selected));
+        RecalculateKvCache();
+    }
+
+    public void RecalculateKvCache()
+    {
+        var model = SelectedInstalledModel ?? InstalledModels.FirstOrDefault();
+        string modelName = model?.Name ?? "llama3.2:latest";
+        double paramsB = CanIRunItService.ExtractParamBillions(modelName);
+        string quant = CanIRunItService.ExtractQuantization(modelName);
+
+        var req = new LlmFitRequest(
+            ParametersBillions: paramsB,
+            Quantization: quant,
+            ContextLength: (int)TargetContextTokens,
+            KvPrecision: SelectedKvPrecision,
+            AvailableVramMb: (long)TotalVramMb,
+            AvailableRamMb: (long)TotalRamMb
+        );
+
+        var fit = _canIRunItService.EvaluateLlmFit(req);
+        CurrentFitResult = fit;
+        CalcFitVerdict = fit.FitVerdict;
+        CalcModelName = $"{modelName} ({paramsB:G2}B, {quant})";
+
+        double weightGb = fit.ModelWeightMb / 1024.0;
+        CalcModelWeightText = weightGb >= 1.0 ? $"{weightGb:F1} GB" : $"{fit.ModelWeightMb:N0} MB";
+
+        double kvGb = fit.KvCacheMb / 1024.0;
+        EstimatedKvCacheText = kvGb >= 1.0 ? $"{kvGb:F1} GB" : $"{fit.KvCacheMb:N0} MB";
+
+        long totalNeededMb = fit.ModelWeightMb + fit.KvCacheMb + fit.OverheadMb;
+        double totalGb = totalNeededMb / 1024.0;
+        double vramGb = TotalVramMb / 1024.0;
+        CalcTotalVramNeededText = $"{totalGb:F1} GB / {vramGb:F1} GB";
+        CalcVramUsageRatio = TotalVramMb > 0 ? Math.Min(1.0, (double)totalNeededMb / TotalVramMb) : 0.0;
+
+        CalcFitVerdictText = fit.FitVerdict switch
+        {
+            FitVerdict.FullVram => $"🟢 Full VRAM ({fit.GpuLayers}/{fit.TotalLayers} layers on GPU • ~{fit.EstimatedTokPerSec:F0} tok/s)",
+            FitVerdict.PartialOffload => $"🟡 Partial Offload ({fit.GpuLayers} GPU / {fit.CpuLayers} CPU layers • ~{fit.EstimatedTokPerSec:F1} tok/s)",
+            FitVerdict.CpuOnly => "🟠 CPU Only (VRAM Insufficient)",
+            FitVerdict.OutOfMemory => "🔴 System Out of Memory",
+            _ => "Unknown"
+        };
+
+        CalcFitVerdictColor = fit.FitVerdict switch
+        {
+            FitVerdict.FullVram => "#10B981",
+            FitVerdict.PartialOffload => "#F59E0B",
+            FitVerdict.CpuOnly => "#F97316",
+            FitVerdict.OutOfMemory => "#EF4444",
+            _ => "#94A3B8"
+        };
+
+        CalcRecommendationMessage = fit.RecommendationMessage;
+    }
+
+    [RelayCommand]
+    public void SelectModel(OllamaModelItem? model)
+    {
+        if (model == null) return;
+        SelectedInstalledModel = model;
+        for (int i = 0; i < InstalledModels.Count; i++)
+        {
+            var m = InstalledModels[i];
+            InstalledModels[i] = m with { IsSelected = (m.Name == model.Name) };
+        }
+        ApplyFilter();
+        RecalculateKvCache();
+    }
+
+    [RelayCommand]
+    public void SetContextPreset(string? preset)
+    {
+        if (string.IsNullOrWhiteSpace(preset)) return;
+        var p = preset.Trim().ToUpperInvariant();
+        if (p.EndsWith("K") && double.TryParse(p[..^1], out double k))
+        {
+            TargetContextTokens = k * 1024;
+        }
+        else if (double.TryParse(p, out double num))
+        {
+            TargetContextTokens = num;
+        }
+    }
+
+    [RelayCommand]
+    public void SetKvPrecision(string? precision)
+    {
+        if (string.IsNullOrWhiteSpace(precision)) return;
+        SelectedKvPrecision = precision.Trim().ToUpperInvariant();
+        RecalculateKvCache();
+    }
+
+    [RelayCommand]
+    public void UseModelWithContextInStudio()
+    {
+        var modelName = SelectedInstalledModel?.Name ?? InstalledModels.FirstOrDefault()?.Name ?? "llama3.2:latest";
+        int tokens = (int)TargetContextTokens;
+        OnApplyModelContextRequested?.Invoke(modelName, tokens);
+        ToastService.Instance.Show($"Loaded '{modelName}' with {tokens:N0} tokens into Studio.", ToastType.Success);
+    }
+
+    [RelayCommand]
+    public async Task CopyModelfileParameterAsync()
+    {
+        string text = $"PARAMETER num_ctx {(int)TargetContextTokens}";
+        try
+        {
+            if (Avalonia.Application.Current?.ApplicationLifetime is Avalonia.Controls.ApplicationLifetimes.IClassicDesktopStyleApplicationLifetime desktop &&
+                desktop.MainWindow?.Clipboard != null)
+            {
+                await desktop.MainWindow.Clipboard.SetTextAsync(text);
+            }
+        }
+        catch { }
+        ToastService.Instance.Show($"Copied to clipboard: '{text}'", ToastType.Success);
     }
 
     private readonly System.Threading.SemaphoreSlim _loadLock = new(1, 1);
@@ -179,7 +317,15 @@ public partial class OllamaLibraryViewModel : ObservableObject
                 var badge = _canIRunItService.EvaluateQuickFit(m.Name, m.SizeBytes > 0 ? m.SizeBytes : null, "LLM", (long)TotalVramMb, (long)TotalRamMb);
                 InstalledModels.Add(m with { FitBadge = badge });
             }
-            ApplyFilter();
+            if (SelectedInstalledModel == null && InstalledModels.Count > 0)
+            {
+                SelectModel(InstalledModels[0]);
+            }
+            else
+            {
+                ApplyFilter();
+                RecalculateKvCache();
+            }
         }
         finally
         {

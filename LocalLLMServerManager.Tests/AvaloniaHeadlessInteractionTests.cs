@@ -37,7 +37,7 @@ public class AvaloniaHeadlessInteractionTests
         var versionTextBlock = textBlocks.FirstOrDefault(t => t.Text != null && t.Text.Contains("LocalLLMServerManager v"));
 
         Assert.NotNull(versionTextBlock);
-        Assert.Contains("v3.18.0", versionTextBlock.Text);
+        Assert.Contains("v4.0.0", versionTextBlock.Text);
 
         window.Close();
     }
@@ -795,6 +795,92 @@ public class AvaloniaHeadlessInteractionTests
         Avalonia.Threading.Dispatcher.UIThread.RunJobs();
 
         Assert.False(pullDrawer.IsVisible);
+
+        window.Close();
+    }
+
+    [AvaloniaFact]
+    public void OllamaLibrary_ModelSelection_And_KvCacheCalculation()
+    {
+        var vm = new OllamaLibraryViewModel(new OllamaModelService());
+        vm.UpdateHardwareTelemetry(16384, 32768);
+
+        var model1 = new OllamaModelItem("llama3.2:3b", "2.0 GB", "LLM", "#3B82F6", false, null, 2_000_000_000L);
+        var model2 = new OllamaModelItem("llama3.1:70b-instruct-q4_k_m", "40.0 GB", "LLM", "#3B82F6", false, null, 42_000_000_000L);
+        vm.InstalledModels.Add(model1);
+        vm.InstalledModels.Add(model2);
+
+        // Select model1
+        vm.SelectModel(model1);
+        Assert.NotNull(vm.SelectedInstalledModel);
+        Assert.Equal("llama3.2:3b", vm.SelectedInstalledModel.Name);
+        Assert.True(vm.InstalledModels[0].IsSelected);
+        Assert.False(vm.InstalledModels[1].IsSelected);
+
+        // Set context preset to 16K
+        vm.SetContextPreset("16K");
+        Assert.Equal(16384, vm.TargetContextTokens);
+        Assert.Equal(FitVerdict.FullVram, vm.CalcFitVerdict);
+        Assert.True(vm.CalcVramUsageRatio > 0 && vm.CalcVramUsageRatio < 1.0);
+
+        // Set KV precision to Q4_0
+        vm.SetKvPrecision("Q4_0");
+        Assert.True(vm.IsQ4Selected);
+        Assert.False(vm.IsFp16Selected);
+        Assert.NotNull(vm.CurrentFitResult);
+
+        // Select 70B model - should trigger offload or OOM on 16GB VRAM
+        vm.SelectModel(model2);
+        Assert.Equal("llama3.1:70b-instruct-q4_k_m", vm.SelectedInstalledModel.Name);
+        Assert.NotEqual(FitVerdict.FullVram, vm.CalcFitVerdict);
+    }
+
+    [AvaloniaFact]
+    public void OllamaLibrary_UseModelWithContextInStudio_WiresToMainViewModel()
+    {
+        var mainVm = new MainViewModel();
+        mainVm.Ollama.UpdateHardwareTelemetry(16384, 32768);
+
+        var model = new OllamaModelItem("qwen2.5:14b", "8.5 GB", "LLM", "#3B82F6", false, null, 9_000_000_000L);
+        mainVm.Ollama.InstalledModels.Add(model);
+        mainVm.Ollama.SelectModel(model);
+        mainVm.Ollama.SetContextPreset("32K");
+
+        // Execute UseModelWithContextInStudio
+        mainVm.Ollama.UseModelWithContextInStudio();
+
+        // Verify MainViewModel transitioned to Studio Text mode with configured context
+        Assert.Equal(1, mainVm.SelectedTabIndex);
+        Assert.Equal("Text", mainVm.SelectedStudioMode);
+        Assert.Equal(32768, mainVm.ConfiguredContextTokens);
+        Assert.Equal("qwen2.5:14b", mainVm.ActiveModelBadge);
+    }
+
+    [AvaloniaFact]
+    public void OllamaModelsTabControl_RendersVisualTree_AndBindsInteractiveKvCacheSizer()
+    {
+        var vm = new OllamaLibraryViewModel(new OllamaModelService());
+        var model = new OllamaModelItem("mistral:7b", "4.1 GB", "LLM", "#3B82F6", false, null, 4_400_000_000L);
+        vm.InstalledModels.Add(model);
+        vm.SelectModel(model);
+
+        var view = new OllamaModelsTabControl { DataContext = vm };
+        var window = new Window { Content = view, Width = 1024, Height = 768 };
+        window.Show();
+
+        // 1. Verify Sizer Card & Title
+        var textBlocks = view.GetVisualDescendants().OfType<TextBlock>().ToList();
+        Assert.Contains(textBlocks, t => t.Text != null && t.Text.Contains("Interactive KV Cache & VRAM Sizer"));
+
+        // 2. Verify Preset Buttons exist
+        var buttons = view.GetVisualDescendants().OfType<Button>().ToList();
+        Assert.Contains(buttons, b => b.Content is string s && s == "8K");
+        Assert.Contains(buttons, b => b.Content is string s && s == "32K");
+        Assert.Contains(buttons, b => b.Content is string s && s == "FP16");
+
+        // 3. Verify Use in Studio Button exists
+        var useInStudioBtn = buttons.FirstOrDefault(b => b.Command == vm.UseModelWithContextInStudioCommand);
+        Assert.NotNull(useInStudioBtn);
 
         window.Close();
     }

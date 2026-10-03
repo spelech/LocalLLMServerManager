@@ -11,61 +11,6 @@ using LocalLLMServerManager.Shared.Services;
 
 namespace LocalLLMServerManager.Shared.ViewModels;
 
-public record OllamaModelItem(
-    string Name,
-    string FormatSize,
-    string CapabilityTag,
-    string CapabilityColor,
-    bool IsLoaded,
-    QuickFitBadge? FitBadge = null,
-    long SizeBytes = 0
-);
-
-public record HuggingFaceRepoItem(
-    string Id,
-    string Author,
-    int Likes,
-    string Downloads,
-    string PipelineTag = "",
-    QuickFitBadge? FitBadge = null
-);
-
-public record HfFileQuantItem(
-    string Filename,
-    string Quantization,
-    string FormatSize,
-    long SizeBytes,
-    QuickFitBadge? FitBadge = null
-)
-{
-    public bool IsGguf => (Filename ?? "").EndsWith(".gguf", StringComparison.OrdinalIgnoreCase);
-}
-
-
-public record CivitaiModelItem(
-    int Id,
-    string Name,
-    string Type,
-    string ThumbnailUrl,
-    string DownloadUrl,
-    string FileName,
-    double Rating,
-    int DownloadCount,
-    QuickFitBadge? FitBadge = null,
-    long SizeBytes = 0
-);
-
-public record VideoAssetItem(
-    string Filename,
-    string Url,
-    string Duration,
-    string Resolution,
-    int Fps,
-    long Seed,
-    long SizeBytes,
-    DateTime CreatedAt
-);
-
 public partial class MainViewModel : ObservableObject
 {
     public static string BrowserOrigin { get; set; } = "";
@@ -307,6 +252,15 @@ public partial class MainViewModel : ObservableObject
             Assistant.InputText = prompt;
         };
 
+        Ollama.OnApplyModelContextRequested = (modelName, tokens) =>
+        {
+            ConfiguredContextTokens = tokens;
+            SelectModality("Text");
+            SelectedStudioMode = "Text";
+            SelectedTabIndex = 1;
+            SelectStudioModel(modelName);
+        };
+
         NavigationRail.PropertyChanged += (s, e) =>
         {
             if (e.PropertyName == nameof(NavigationRail.SelectedDomain))
@@ -341,6 +295,7 @@ public partial class MainViewModel : ObservableObject
         _ = Audio.LoadAudioFilesAsync(ApiBase, Http);
         _ = LoadSettingsAsync();
         _ = Settings.RefreshComponentStatusesAsync(ApiBase, Http);
+        _ = RefreshScannedModelsAsync();
         if (EnableAutomaticPolling)
         {
             _ = StartBackgroundPollingAsync();
@@ -498,6 +453,9 @@ public partial class MainViewModel : ObservableObject
 
     [ObservableProperty]
     private int _imageHeight = 1024;
+
+    [ObservableProperty]
+    private int _configuredContextTokens = 8192;
 
     [ObservableProperty]
     private long _imageSeed = 42890;
@@ -1141,6 +1099,8 @@ public partial class MainViewModel : ObservableObject
         await Ollama.LoadInstalledModelsAsync(ApiBase, Http);
         if (Telemetry != null)
         {
+            IsForgeOnline = Telemetry.IsForgeOnline;
+            if (Studio != null) Studio.IsForgeOnline = Telemetry.IsForgeOnline;
             double vramMb = Telemetry.VramTotalGb * 1024.0;
             double freeVramMb = Math.Max(0, (Telemetry.VramTotalGb - Telemetry.VramUsedGb) * 1024.0);
             double ramMb = HardwareFit?.TotalRamMb ?? 32768.0;
@@ -1290,257 +1250,10 @@ public partial class MainViewModel : ObservableObject
     }
 
     [RelayCommand]
-    public async Task GenerateOllamaTextAsync()
-    {
-        if (IsGeneratingOllamaText) return;
-        IsGeneratingOllamaText = true;
-        OllamaResponseText = "Generating response from local LLM...";
-        try
-        {
-            var modelName = Ollama.InstalledModels.FirstOrDefault()?.Name ?? "llama3.2:latest";
-            var req = new
-            {
-                prompt = OllamaPrompt,
-                model = modelName
-            };
-            var content = new StringContent(
-                JsonSerializer.Serialize(req),
-                System.Text.Encoding.UTF8,
-                "application/json"
-            );
-            var res = await Http.PostAsync($"{ApiBase}/api/generate", content);
-            if (res.IsSuccessStatusCode)
-            {
-                var json = await res.Content.ReadAsStringAsync();
-                using var doc = JsonDocument.Parse(json);
-                if (doc.RootElement.TryGetProperty("response", out var resp))
-                {
-                    OllamaResponseText = resp.GetString() ?? "";
-                }
-                else
-                {
-                    OllamaResponseText = json;
-                }
-            }
-            else
-            {
-                OllamaResponseText = $"[Local Inference Result]\nModel: {modelName}\nStatus: Online\nPrompt: {OllamaPrompt}\n\nQuantized response generated successfully.";
-            }
-        }
-        catch (Exception ex)
-        {
-            OllamaResponseText = $"[Local Model Output]\nPrompt: {OllamaPrompt}\n\nModel response received.\nDetails: {ex.Message}";
-        }
-        finally
-        {
-            IsGeneratingOllamaText = false;
-        }
-    }
-
-    [RelayCommand]
-    public async Task Generate3DAsync()
-    {
-        if (IsGenerating3D) return;
-        IsGenerating3D = true;
-        try
-        {
-            await Task.Delay(500);
-            Rendered3DAssetUrl = "models/renders/3d_asset.glb";
-            ToastService.Instance.Show("3D mesh generation task queued in ComfyUI TRELLIS pipeline.", ToastType.Success);
-        }
-        finally
-        {
-            IsGenerating3D = false;
-        }
-    }
-
-    [RelayCommand]
     public async Task LoadSettingsAsync() => await Settings.LoadSettingsAsync(ApiBase, Http);
 
     [RelayCommand]
     public async Task SaveSettingsAsync() => await Settings.SaveSettingsAsync(ApiBase, Http);
-
-    [RelayCommand]
-    public async Task GenerateAudioAsync()
-    {
-        await Audio.GenerateAudioAsync(new ParamContext(ApiBase, Http));
-    }
-
-    [RelayCommand]
-    public async Task GenerateVideoAsync()
-    {
-        if (IsGeneratingVideo) return;
-
-        IsGeneratingVideo = true;
-        GenerationStage = 1;
-        GenerationStageTitle = "1. VRAM & Model Prep";
-        GenerationStageSubtext = "Allocating GPU memory and loading video checkpoint...";
-        Stage1Status = "Active";
-        Stage2Status = "Pending";
-        Stage3Status = "Pending";
-        Stage4Status = "Pending";
-        VideoGenerationProgress = 15;
-        LiveLogOutput = $"[Stage 1] Initializing video workflow '{SelectedVideoWorkflow}' at {VideoResolution} ({VideoFrameCount} frames)...\n";
-        LogsText = LiveLogOutput;
-
-        try
-        {
-            var req = new
-            {
-                Prompt = VideoPrompt,
-                NegativePrompt = VideoNegativePrompt,
-                Workflow = SelectedVideoWorkflow,
-                Resolution = VideoResolution,
-                FrameCount = VideoFrameCount,
-                Seed = VideoSeed
-            };
-
-            var content = new StringContent(
-                JsonSerializer.Serialize(req),
-                System.Text.Encoding.UTF8,
-                "application/json"
-            );
-
-            Stage1Status = "Complete";
-            GenerationStage = 2;
-            GenerationStageTitle = "2. Denoising & Sampling";
-            GenerationStageSubtext = "Sampling DiT diffusion latents across frames...";
-            Stage2Status = "Active";
-            VideoGenerationProgress = 40;
-            LiveLogOutput += $"[Stage 2] Denoising {VideoFrameCount} frames...\n";
-            LogsText = LiveLogOutput;
-
-            var response = await Http.PostAsync($"{ApiBase}/api/video/generate", content);
-
-            Stage2Status = "Complete";
-            GenerationStage = 3;
-            GenerationStageTitle = "3. Encoding & Assembly";
-            GenerationStageSubtext = "Decoding latents with VAE and encoding MP4 video...";
-            Stage3Status = "Active";
-            VideoGenerationProgress = 80;
-            LiveLogOutput += "[Stage 3] VAE decoding and MP4 assembly...\n";
-            LogsText = LiveLogOutput;
-
-            if (response.IsSuccessStatusCode)
-            {
-                var jsonStr = await response.Content.ReadAsStringAsync();
-                using var doc = JsonDocument.Parse(jsonStr);
-                var root = doc.RootElement;
-
-                var url = root.GetProperty("url").GetString() ?? "";
-                var duration = root.TryGetProperty("duration", out var durProp) ? durProp.GetString() ?? "3.0s" : "3.0s";
-                var resolution = root.TryGetProperty("resolution", out var resProp) ? resProp.GetString() ?? "832x480" : "832x480";
-                var fps = root.TryGetProperty("fps", out var fpsProp) ? fpsProp.GetInt32() : 16;
-                var seed = root.TryGetProperty("seed", out var seedProp) ? seedProp.GetInt64() : VideoSeed;
-                var filename = root.TryGetProperty("filename", out var fnProp) ? fnProp.GetString() ?? "video.mp4" : "video.mp4";
-
-                RenderedVideoUrl = url.StartsWith("http") ? url : $"{ApiBase}{url}";
-                VideoDurationText = duration;
-                VideoResolutionBadge = resolution;
-                VideoFpsBadge = $"{fps} fps";
-                VideoSeedBadge = seed.ToString();
-
-                var item = new VideoAssetItem(filename, RenderedVideoUrl, duration, resolution, fps, seed, 1024 * 1024, DateTime.UtcNow);
-                GeneratedVideosList.Insert(0, item);
-
-                Stage3Status = "Complete";
-                GenerationStage = 4;
-                GenerationStageTitle = "4. Ready";
-                GenerationStageSubtext = "Video rendered successfully and ready for playback.";
-                Stage4Status = "Complete";
-                VideoGenerationProgress = 100;
-                LiveLogOutput += "[Stage 4] Video generation complete!\n";
-                LogsText = LiveLogOutput;
-
-                ToastService.Instance.Show("Video generated successfully!", ToastType.Success);
-            }
-            else
-            {
-                GenerationStage = 0;
-                GenerationStageTitle = "Error";
-                GenerationStageSubtext = "Failed to generate video.";
-                ToastService.Instance.Show("Failed to generate video.", ToastType.Error);
-            }
-        }
-        catch (Exception ex)
-        {
-            GenerationStage = 0;
-            GenerationStageTitle = "Error";
-            GenerationStageSubtext = ex.Message;
-            ToastService.Instance.Show($"Video Generation Error: {ex.Message}", ToastType.Error);
-        }
-        finally
-        {
-            IsGeneratingVideo = false;
-        }
-    }
-
-    [RelayCommand]
-    public async Task LoadGeneratedVideosAsync()
-    {
-        try
-        {
-            var response = await Http.GetAsync($"{ApiBase}/api/video/files");
-            if (response.IsSuccessStatusCode)
-            {
-                var jsonStr = await response.Content.ReadAsStringAsync();
-                using var doc = JsonDocument.Parse(jsonStr);
-                GeneratedVideosList.Clear();
-
-                foreach (var el in doc.RootElement.EnumerateArray())
-                {
-                    var filename = el.GetProperty("filename").GetString() ?? "";
-                    var url = el.GetProperty("url").GetString() ?? "";
-                    var fullUrl = url.StartsWith("http") ? url : $"{ApiBase}{url}";
-                    var duration = el.TryGetProperty("duration", out var dur) ? dur.GetString() ?? "3.0s" : "3.0s";
-                    var resolution = el.TryGetProperty("resolution", out var res) ? res.GetString() ?? "832x480" : "832x480";
-                    var fps = el.TryGetProperty("fps", out var fpsProp) ? fpsProp.GetInt32() : 16;
-                    var seed = el.TryGetProperty("seed", out var seedProp) ? seedProp.GetInt64() : 42890L;
-                    var sizeBytes = el.TryGetProperty("sizeBytes", out var size) ? size.GetInt64() : 0L;
-                    var createdAt = el.TryGetProperty("createdAt", out var dt) ? dt.GetDateTime() : DateTime.UtcNow;
-
-                    GeneratedVideosList.Add(new VideoAssetItem(filename, fullUrl, duration, resolution, fps, seed, sizeBytes, createdAt));
-                }
-
-                if (GeneratedVideosList.Count > 0 && string.IsNullOrEmpty(RenderedVideoUrl))
-                {
-                    SelectVideo(GeneratedVideosList[0]);
-                }
-            }
-        }
-        catch { }
-    }
-
-    [RelayCommand]
-    public void SelectVideo(VideoAssetItem item)
-    {
-        if (item == null) return;
-        RenderedVideoUrl = item.Url;
-        VideoDurationText = item.Duration;
-        VideoResolutionBadge = item.Resolution;
-        VideoFpsBadge = $"{item.Fps} fps";
-        VideoSeedBadge = item.Seed.ToString();
-    }
-
-    [RelayCommand]
-    public void DownloadVideo()
-    {
-        if (!string.IsNullOrWhiteSpace(RenderedVideoUrl))
-        {
-            BrowserLauncher.OpenUrl(RenderedVideoUrl);
-        }
-    }
-
-    [RelayCommand]
-    public void ToggleVideoPlay()
-    {
-        IsVideoPlaying = !IsVideoPlaying;
-    }
-
-    [RelayCommand]
-    public void ToggleVideoLoop()
-    {
-        IsVideoLooping = !IsVideoLooping;
-    }
 }
+
 

@@ -16,15 +16,18 @@
             <Setter Property="Foreground" Value="{StaticResource TextMutedBrush}" />
             <Setter Property="BorderThickness" Value="1" />
             <Setter Property="BorderBrush" Value="Transparent" />
-            <Setter Property="CornerRadius" Value="6" />
+            <Setter Property="CornerRadius" Value="8" />
             <Setter Property="Height" Value="40" />
             <Setter Property="HorizontalAlignment" Value="Stretch" />
+            <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+            <Setter Property="VerticalContentAlignment" Value="Center" />
             <Setter Property="Padding" Value="0" />
             <Setter Property="Margin" Value="4,2" />
             <Setter Property="Cursor" Value="Hand" />
         </Style>
         <Style Selector="Button.rail-btn /template/ ContentPresenter#PART_ContentPresenter">
-            <Setter Property="CornerRadius" Value="6" />
+            <Setter Property="CornerRadius" Value="8" />
+            <Setter Property="Padding" Value="0" />
         </Style>
         <Style Selector="Button.rail-btn:pointerover /template/ ContentPresenter#PART_ContentPresenter">
             <Setter Property="Background" Value="{StaticResource BgCardBrush}" />
@@ -32,12 +35,19 @@
             <Setter Property="Foreground" Value="{StaticResource TextMainBrush}" />
         </Style>
         <Style Selector="Button.rail-btn.active">
-            <Setter Property="Foreground" Value="{StaticResource TextMainBrush}" />
+            <Setter Property="Foreground" Value="#FFFFFF" />
+            <Setter Property="FontWeight" Value="SemiBold" />
         </Style>
         <Style Selector="Button.rail-btn.active /template/ ContentPresenter#PART_ContentPresenter">
-            <Setter Property="Background" Value="#1A388BFD" />
+            <Setter Property="Background" Value="#252C42" />
             <Setter Property="BorderBrush" Value="{StaticResource PrimaryBrush}" />
-            <Setter Property="Foreground" Value="{StaticResource TextMainBrush}" />
+            <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="Foreground" Value="#FFFFFF" />
+        </Style>
+        <Style Selector="Button.rail-btn.active:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+            <Setter Property="Background" Value="#2E3752" />
+            <Setter Property="BorderBrush" Value="{StaticResource PrimaryBrush}" />
+            <Setter Property="Foreground" Value="#FFFFFF" />
         </Style>
     </UserControl.Styles>
 
@@ -53,13 +63,11 @@
                         Command="{Binding SelectDomainCommand}"
                         CommandParameter="{x:Static models:NavDomain.Studio}"
                         ToolTip.Tip="Studio / Workflows">
-                    <Grid ColumnDefinitions="44, *">
-                        <Border Grid.Column="0" Width="3" Height="20" HorizontalAlignment="Left" CornerRadius="1.5"
-                                Background="{StaticResource PrimaryBrush}"
-                                IsVisible="{Binding IsStudioSelected}"/>
+                    <Grid ColumnDefinitions="48, *">
                         <PathIcon Grid.Column="0" Data="{StaticResource IconWorkflows}" Width="16" Height="16"
                                   Foreground="{Binding $parent[Button].Foreground}" HorizontalAlignment="Center" VerticalAlignment="Center"/>
                         <TextBlock Grid.Column="1" Text="Studio" FontSize="13" FontWeight="SemiBold" VerticalAlignment="Center"
+                                   HorizontalAlignment="Left"
                                    Margin="2,0,4,0"
                                    IsVisible="{Binding IsExpanded, RelativeSource={RelativeSource AncestorType=controls:ActivityRailControl}}"
                                    TextTrimming="CharacterEllipsis"/>
@@ -72,13 +80,11 @@
                         Command="{Binding SelectDomainCommand}"
                         CommandParameter="{x:Static models:NavDomain.Models}"
                         ToolTip.Tip="Models &amp; Hubs">
-                    <Grid ColumnDefinitions="44, *">
-                        <Border Grid.Column="0" Width="3" Height="20" HorizontalAlignment="Left" CornerRadius="1.5"
-                                Background="{StaticResource PrimaryBrush}"
-                                IsVisible="{Binding IsModelsSelected}"/>
+                    <Grid ColumnDefinitions="48, *">
                         <PathIcon Grid.Column="0" Data="{StaticResource IconModels}" Width="16" Height="16"
                                   Foreground="{Binding $parent[Button].Foreground}" HorizontalAlignment="Center" VerticalAlignment="Center"/>
                         <TextBlock Grid.Column="1" Text="Models" FontSize="13" FontWeight="SemiBold" VerticalAlignment="Center"
+                                   HorizontalAlignment="Left"
                                    Margin="2,0,4,0"
                                    IsVisible="{Binding IsExpanded, RelativeSource={RelativeSource AncestorType=controls:ActivityRailControl}}"
                                    TextTrimming="CharacterEllipsis"/>
@@ -91,13 +97,11 @@
                         Command="{Binding SelectDomainCommand}"
                         CommandParameter="{x:Static models:NavDomain.HardwareFit}"
                         ToolTip.Tip="Hardware Fit">
-                    <Grid ColumnDefinitions="44, *">
-                        <Border Grid.Column="0" Width="3" Height="20" HorizontalAlignment="Left" CornerRadius="1.5"
-                                Background="{StaticResource PrimaryBrush}"
-                                IsVisible="{Binding IsHardwareFitSelected}"/>
+                    <Grid ColumnDefinitions="48, *">
                         <PathIcon Grid.Column="0" Data="{StaticResource IconCanIRunIt}" Width="16" Height="16"
                                   Foreground="{Binding $parent[Button].Foreground}" HorizontalAlignment="Center" VerticalAlignment="Center"/>
                         <TextBlock Grid.Column="1" Text="Fit" FontSize="13" FontWeight="SemiBold" VerticalAlignment="Center"
+                                   HorizontalAlignment="Left"
                                    Margin="2,0,4,0"
                                    IsVisible="{Binding IsExpanded, RelativeSource={RelativeSource AncestorType=controls:ActivityRailControl}}"
                                    TextTrimming="CharacterEllipsis"/>
@@ -110,13 +114,11 @@
                         Command="{Binding SelectDomainCommand}"
                         CommandParameter="{x:Static models:NavDomain.Settings}"
                         ToolTip.Tip="Settings &amp; Daemon">
-                    <Grid ColumnDefinitions="44, *">
-                        <Border Grid.Column="0" Width="3" Height="20" HorizontalAlignment="Left" CornerRadius="1.5"
-                                Background="{StaticResource PrimaryBrush}"
-                                IsVisible="{Binding IsSettingsSelected}"/>
+                    <Grid ColumnDefinitions="48, *">
                         <PathIcon Grid.Column="0" Data="{StaticResource IconSettings}" Width="16" Height="16"
                                   Foreground="{Binding $parent[Button].Foreground}" HorizontalAlignment="Center" VerticalAlignment="Center"/>
                         <TextBlock Grid.Column="1" Text="Settings" FontSize="13" FontWeight="SemiBold" VerticalAlignment="Center"
+                                   HorizontalAlignment="Left"
                                    Margin="2,0,4,0"
                                    IsVisible="{Binding IsExpanded, RelativeSource={RelativeSource AncestorType=controls:ActivityRailControl}}"
                                    TextTrimming="CharacterEllipsis"/>
@@ -136,10 +138,11 @@
                         Classes="rail-btn"
                         Command="{Binding DocumentationCommand}"
                         ToolTip.Tip="Documentation">
-                    <Grid ColumnDefinitions="44, *">
+                    <Grid ColumnDefinitions="48, *">
                         <PathIcon Grid.Column="0" Data="{StaticResource IconDocumentation}" Width="15" Height="15"
                                   Foreground="{Binding $parent[Button].Foreground}" HorizontalAlignment="Center" VerticalAlignment="Center"/>
                         <TextBlock Grid.Column="1" Text="Docs" FontSize="13" FontWeight="SemiBold" VerticalAlignment="Center"
+                                   HorizontalAlignment="Left"
                                    Margin="2,0,4,0"
                                    IsVisible="{Binding IsExpanded, RelativeSource={RelativeSource AncestorType=controls:ActivityRailControl}}"
                                    TextTrimming="CharacterEllipsis"/>
@@ -151,10 +154,11 @@
                         Classes="rail-btn"
                         Command="{Binding AiAssistCommand}"
                         ToolTip.Tip="AI Assistant">
-                    <Grid ColumnDefinitions="44, *">
+                    <Grid ColumnDefinitions="48, *">
                         <PathIcon Grid.Column="0" Data="{StaticResource IconAiAssist}" Width="15" Height="15"
                                   Foreground="{Binding $parent[Button].Foreground}" HorizontalAlignment="Center" VerticalAlignment="Center"/>
                         <TextBlock Grid.Column="1" Text="AI Assist" FontSize="13" FontWeight="SemiBold" VerticalAlignment="Center"
+                                   HorizontalAlignment="Left"
                                    Margin="2,0,4,0"
                                    IsVisible="{Binding IsExpanded, RelativeSource={RelativeSource AncestorType=controls:ActivityRailControl}}"
                                    TextTrimming="CharacterEllipsis"/>
@@ -166,7 +170,7 @@
                         Classes="rail-btn"
                         Command="{Binding ToggleRailExpandedCommand}"
                         ToolTip.Tip="Toggle Navigation Rail">
-                    <Grid ColumnDefinitions="44, *">
+                    <Grid ColumnDefinitions="48, *">
                         <Grid Grid.Column="0" HorizontalAlignment="Center" VerticalAlignment="Center">
                             <PathIcon Data="{StaticResource IconChevronLeft}" Width="14" Height="14"
                                       Foreground="{Binding $parent[Button].Foreground}"
@@ -176,6 +180,7 @@
                                       IsVisible="{Binding !IsExpanded, RelativeSource={RelativeSource AncestorType=controls:ActivityRailControl}}"/>
                         </Grid>
                         <TextBlock Grid.Column="1" Text="Collapse" FontSize="13" FontWeight="SemiBold" VerticalAlignment="Center"
+                                   HorizontalAlignment="Left"
                                    Margin="2,0,4,0"
                                    IsVisible="{Binding IsExpanded, RelativeSource={RelativeSource AncestorType=controls:ActivityRailControl}}"
                                    TextTrimming="CharacterEllipsis"/>

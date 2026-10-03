@@ -25,6 +25,12 @@
 
                 <!-- Window Controls -->
                 <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center" Margin="0,0,6,0">
+                    <Button x:Name="DockToAppButton" Click="OnDockToAppClicked" Classes="window-control" Margin="0,0,6,0" Padding="8,4" ToolTip.Tip="Dock back into main application window">
+                        <StackPanel Orientation="Horizontal" Spacing="4" VerticalAlignment="Center">
+                            <TextBlock Text="⇲" FontSize="11" VerticalAlignment="Center"/>
+                            <TextBlock Text="Dock" FontSize="11" FontWeight="Medium" VerticalAlignment="Center"/>
+                        </StackPanel>
+                    </Button>
                     <Button x:Name="SnapToggleButton" Click="OnSnapToggleClicked" Classes="magnet-snap-btn snapped" Margin="0,0,8,0" ToolTip.Tip="Toggle Magnetic Snapping to Main Window">
                         <StackPanel Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
                             <TextBlock Text="🧲" FontSize="11" VerticalAlignment="Center"/>

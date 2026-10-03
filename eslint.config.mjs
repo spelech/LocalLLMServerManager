@@ -16,6 +16,7 @@ export default tseslint.config(
       'wwwroot/_framework/**',
       '**/wwwroot/_framework/**',
       '**/.superpowers/**',
+      '**/.worktrees/**',
       '**/screenshots/**',
       '**/scripts/**',
       '**/docs/**',

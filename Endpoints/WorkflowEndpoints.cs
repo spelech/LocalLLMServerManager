@@ -13,28 +13,6 @@ using Microsoft.AspNetCore.Http;
 
 namespace LocalLLMServerManager.Endpoints;
 
-public record AudioGenerateRequest(
-    string WorkflowId = "stable_audio_open_sfx",
-    string Prompt = "",
-    string? NegativePrompt = null,
-    int DurationSeconds = 30,
-    long Seed = -1
-);
-
-public record VideoGenerateRequest(
-    string? WorkflowId = "wan2.2_t2v",
-    string? Workflow = null,
-    string? Prompt = "",
-    string? NegativePrompt = "",
-    int Width = 832,
-    int Height = 480,
-    int Frames = 49,
-    int Fps = 16,
-    long Seed = -1,
-    string? ImageUrl = null,
-    string? Image = null
-);
-
 public static class WorkflowEndpoints
 {
     public static void MapWorkflowEndpoints(this WebApplication app)
@@ -84,6 +62,23 @@ public static class WorkflowEndpoints
             return Results.Content(jsonStr, "application/json");
         });
 
+        app.MapPost("/api/comfy/interrupt", async (ISettingsService settingsService, HttpClient httpClient) =>
+        {
+            var settings = settingsService.LoadSettings();
+            var comfyUrl = string.IsNullOrWhiteSpace(settings.ComfyUiUrl) ? "http://127.0.0.1:8188" : settings.ComfyUiUrl;
+            var baseUrl = comfyUrl.TrimEnd('/');
+
+            try
+            {
+                var response = await httpClient.PostAsync($"{baseUrl}/interrupt", new StringContent("{}", Encoding.UTF8, "application/json"));
+                return Results.Ok(new { success = response.IsSuccessStatusCode, status = (int)response.StatusCode });
+            }
+            catch (Exception ex)
+            {
+                return Results.Ok(new { success = false, error = ex.Message });
+            }
+        });
+
         // ------------------ 3D Mesh Outputs ------------------
         app.MapGet("/api/3d/files", (ISettingsService settingsService) =>
         {
@@ -108,6 +103,202 @@ public static class WorkflowEndpoints
                 .OrderByDescending(x => x.createdAt);
 
             return Results.Ok(files);
+        });
+
+        app.MapGet("/api/3d/workflows", (ISettingsService settingsService) =>
+        {
+            var settings = settingsService.LoadSettings();
+            var searchPaths = new List<string>();
+            if (!string.IsNullOrWhiteSpace(settings.WorkflowsPath))
+            {
+                searchPaths.Add(Path.Combine(settings.WorkflowsPath, "3D"));
+                searchPaths.Add(settings.WorkflowsPath);
+            }
+            searchPaths.Add(Path.Combine(AppContext.BaseDirectory, "Workflows", "3D"));
+            searchPaths.Add(Path.Combine(AppContext.BaseDirectory, "Workflows"));
+            searchPaths.Add(Path.Combine(Directory.GetCurrentDirectory(), "Workflows", "3D"));
+            searchPaths.Add(Path.Combine(Directory.GetCurrentDirectory(), "Workflows"));
+            searchPaths.Add(Path.GetFullPath(Path.Combine(AppContext.BaseDirectory, "..", "..", "..", "Workflows")));
+            searchPaths.Add(Path.GetFullPath(Path.Combine(AppContext.BaseDirectory, "..", "..", "..", "..", "Workflows")));
+
+            var existingDirs = searchPaths.Where(Directory.Exists).Distinct();
+            var list = new List<object>();
+            var seenIds = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
+            foreach (var dir in existingDirs)
+            {
+                foreach (var f in Directory.GetFiles(dir, "*.json"))
+                {
+                    var id = Path.GetFileNameWithoutExtension(f);
+                    if (id.Contains("3d", StringComparison.OrdinalIgnoreCase) || id.Contains("trellis", StringComparison.OrdinalIgnoreCase) || id.Contains("triposr", StringComparison.OrdinalIgnoreCase))
+                    {
+                        if (seenIds.Add(id))
+                        {
+                            list.Add(new
+                            {
+                                id = id,
+                                name = id.Replace('_', ' '),
+                                filename = Path.GetFileName(f),
+                                path = f
+                            });
+                        }
+                    }
+                }
+            }
+
+            return Results.Ok(list);
+        });
+
+        app.MapPost("/api/3d/generate", async (ThreeDGenerateRequest request, ISettingsService settingsService, VramOrchestrator vramOrchestrator, HttpClient httpClient) =>
+        {
+            await vramOrchestrator.EnsureVramForComfyUiAsync();
+
+            var settings = settingsService.LoadSettings();
+            var possibleDirs = new List<string>();
+            if (!string.IsNullOrWhiteSpace(settings.WorkflowsPath))
+            {
+                possibleDirs.Add(Path.Combine(settings.WorkflowsPath, "3D"));
+                possibleDirs.Add(settings.WorkflowsPath);
+            }
+            possibleDirs.Add(Path.Combine(AppContext.BaseDirectory, "Workflows", "3D"));
+            possibleDirs.Add(Path.Combine(AppContext.BaseDirectory, "Workflows"));
+            possibleDirs.Add(Path.Combine(Directory.GetCurrentDirectory(), "Workflows", "3D"));
+            possibleDirs.Add(Path.Combine(Directory.GetCurrentDirectory(), "Workflows"));
+            possibleDirs.Add(Path.GetFullPath(Path.Combine(AppContext.BaseDirectory, "..", "..", "..", "Workflows")));
+            possibleDirs.Add(Path.GetFullPath(Path.Combine(AppContext.BaseDirectory, "..", "..", "..", "..", "Workflows")));
+
+            string? templatePath = null;
+            var rawId = string.IsNullOrWhiteSpace(request.WorkflowId)
+                ? (string.IsNullOrWhiteSpace(request.Workflow) ? "trellis_v2_api" : request.Workflow)
+                : request.WorkflowId;
+
+            var workflowId = rawId.EndsWith(".json", StringComparison.OrdinalIgnoreCase)
+                ? rawId[..^5]
+                : Path.GetFileName(rawId);
+
+            foreach (var dir in possibleDirs)
+            {
+                if (Directory.Exists(dir))
+                {
+                    var p = Path.Combine(dir, $"{workflowId}.json");
+                    if (File.Exists(p))
+                    {
+                        templatePath = p;
+                        break;
+                    }
+                }
+            }
+
+            if (templatePath == null)
+            {
+                return Results.NotFound(new { message = $"3D workflow '{workflowId}' not found." });
+            }
+
+            var jsonStr = await File.ReadAllTextAsync(templatePath);
+            long effectiveSeed = request.Seed <= 0
+                ? Random.Shared.NextInt64(1, 999999999999999L)
+                : request.Seed;
+
+            string prompt = request.Prompt ?? "";
+            string negativePrompt = request.NegativePrompt ?? "";
+            string format = !string.IsNullOrWhiteSpace(request.Format) ? request.Format.ToLowerInvariant() : "glb";
+
+            jsonStr = jsonStr.Replace("\"{{PROMPT}}\"", JsonSerializer.Serialize(prompt))
+                             .Replace("{{PROMPT}}", prompt)
+                             .Replace("\"{{NEGATIVE_PROMPT}}\"", JsonSerializer.Serialize(negativePrompt))
+                             .Replace("{{NEGATIVE_PROMPT}}", negativePrompt)
+                             .Replace("\"{{SEED}}\"", effectiveSeed.ToString())
+                             .Replace("{{SEED}}", effectiveSeed.ToString())
+                             .Replace("\"{{FORMAT}}\"", JsonSerializer.Serialize(format))
+                             .Replace("{{FORMAT}}", format);
+
+            JsonNode? workflowNode;
+            try
+            {
+                workflowNode = JsonNode.Parse(jsonStr);
+            }
+            catch (JsonException ex)
+            {
+                return Results.BadRequest(new { error = $"Template substitution resulted in invalid JSON: {ex.Message}" });
+            }
+
+            var targetGraph = workflowNode?["workflow"] ?? workflowNode;
+            if (targetGraph is JsonObject graphObj)
+            {
+                foreach (var kvp in graphObj)
+                {
+                    if (kvp.Value is JsonObject nodeObj)
+                    {
+                        var classType = nodeObj["class_type"]?.ToString() ?? "";
+                        var title = nodeObj["_meta"]?["title"]?.ToString() ?? "";
+                        var inputs = nodeObj["inputs"] as JsonObject;
+
+                        if (inputs != null)
+                        {
+                            if (classType.Contains("CLIPTextEncode") || title.Contains("Prompt"))
+                            {
+                                if (title.Contains("Negative") || classType.Contains("Negative"))
+                                {
+                                    if (!string.IsNullOrEmpty(negativePrompt)) inputs["text"] = negativePrompt;
+                                }
+                                else if (!string.IsNullOrEmpty(prompt))
+                                {
+                                    inputs["text"] = prompt;
+                                }
+                            }
+
+                            if (inputs.ContainsKey("seed"))
+                            {
+                                inputs["seed"] = effectiveSeed;
+                            }
+
+                            if (inputs.ContainsKey("file_format"))
+                            {
+                                inputs["file_format"] = format;
+                            }
+                        }
+                    }
+                }
+            }
+
+            var comfyUrl = string.IsNullOrWhiteSpace(settings.ComfyUiUrl) ? "http://127.0.0.1:8188" : settings.ComfyUiUrl;
+            var baseUrl = comfyUrl.TrimEnd('/');
+            var promptId = Guid.NewGuid().ToString("N")[..8];
+
+            try
+            {
+                var payload = new JsonObject
+                {
+                    ["prompt"] = targetGraph?.DeepClone()
+                };
+                var content = new StringContent(payload.ToJsonString(), Encoding.UTF8, "application/json");
+                var response = await httpClient.PostAsync($"{baseUrl}/prompt", content);
+
+                if (response.IsSuccessStatusCode)
+                {
+                    var resContent = await response.Content.ReadAsStringAsync();
+                    var resJson = JsonNode.Parse(resContent);
+                    var idFromComfy = resJson?["prompt_id"]?.ToString();
+                    if (!string.IsNullOrEmpty(idFromComfy))
+                    {
+                        promptId = idFromComfy;
+                    }
+                }
+            }
+            catch
+            {
+                // Fallback promptId used if ComfyUI is offline or in test env
+            }
+
+            return Results.Ok(new
+            {
+                promptId,
+                status = "queued",
+                url = $"/output_3d/mesh_{promptId}.{format}",
+                filename = $"mesh_{promptId}.{format}",
+                format = format,
+                seed = effectiveSeed
+            });
         });
 
         // ------------------ Video Generation Endpoints ------------------

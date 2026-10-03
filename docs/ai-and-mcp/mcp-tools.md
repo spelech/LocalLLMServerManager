@@ -29,18 +29,23 @@ External agents like Claude Desktop, Cursor, and command-line scripts can connec
 
 ## Supported Built-in Tools
 
-Local LLM Server Manager provides eight primary tool suites for native execution and external MCP consumption:
+Local LLM Server Manager provides 14 native tools for direct programmatic control and external MCP consumption:
 
 | Tool Identifier | Category | Primary Function |
 | :--- | :--- | :--- |
-| `get_gpu_vram_telemetry` | Telemetry | Reads real-time GPU allocation, total memory, used memory, and GPU name. |
-| `calculate_hardware_fit` | Diagnostics | Evaluates memory fit across LLM, diffusion, and video models. |
-| `check_services_health` | Operations | Verifies online status and latency for Ollama, Forge, ComfyUI, and Kokoro. |
-| `start_ai_engine` / `stop_ai_engine` | Lifecycle | Launches or shuts down backend engine processes. |
+| `get_gpu_vram` | Telemetry | Reads real-time GPU allocation, total memory, used memory, and GPU name via NVML CUDA. |
+| `check_health` | Operations | Verifies online status and latency for Ollama, Forge, ComfyUI, and Kokoro backend ports. |
+| `list_models` | Catalog | Lists installed LLM models, quantization formats, and memory/disk footprint. |
+| `pull_model` | Catalog | Triggers a model pull from the Ollama library or Hugging Face repository. |
 | `unload_vram` | Memory | Flushes active models from GPU memory to prevent memory collisions. |
-| `get_app_settings` / `update_app_setting` | Settings | Inspects and updates application configuration keys securely. |
-| `list_installed_models` / `pull_model` | Catalog | Lists installed LLM models and pulls new weights from remote repositories. |
-| `generate_image` / `generate_video` / `synthesize_speech` | Generation | Dispatches creative generation jobs to Forge, ComfyUI, or Kokoro TTS. |
+| `start_engine` / `stop_engine` | Lifecycle | Launches or shuts down backend engine processes (`forge`, `comfyui`, `ollama`). |
+| `detect_tools` | Discovery | Scans system drives and PATH for installed Ollama, ComfyUI, and SD Forge directories. |
+| `generate_video` | Generation | Generates video from text prompt or image using ComfyUI DiT pipelines (Wan 2.2, LTX-2.5). |
+| `synthesize_speech` | Generation | Synthesizes speech audio from text using local Kokoro / AllTalk TTS engine. |
+| `generate_audio` | Generation | Generates sound effects or ambient musical loops from a prompt. |
+| `search_huggingface` | Discovery | Searches Hugging Face Hub repositories for models and download quantizations (GGUF, Safetensors). |
+| `search_civitai` | Discovery | Searches Civitai Hub for Stable Diffusion checkpoints, FLUX models, and LoRAs. |
+| `run_studio_workflow` | Orchestration | Executes an automated studio generation workflow across modalities (text, image, audio, video, 3d). |
 
 ---
 

@@ -19,7 +19,7 @@ public class MainWindowUiTests
 
         Assert.Equal("NVIDIA GeForce RTX 4090", vm.GpuName);
         Assert.Equal(16384, vm.TargetContextTokens);
-        Assert.Equal("~1.0 GB", vm.EstimatedKvCacheText);
+        Assert.Equal("672 MB", vm.EstimatedKvCacheText);
     }
 
     [AvaloniaFact]

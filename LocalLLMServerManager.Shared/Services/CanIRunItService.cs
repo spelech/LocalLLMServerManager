@@ -699,7 +699,7 @@ public class CanIRunItService : ICanIRunItService
         );
     }
 
-    private static double ExtractParamBillions(string modelName)
+    public static double ExtractParamBillions(string modelName)
     {
         if (string.IsNullOrWhiteSpace(modelName))
             return 8.0;
@@ -735,7 +735,7 @@ public class CanIRunItService : ICanIRunItService
         return 8.0;
     }
 
-    private static string ExtractQuantization(string modelName)
+    public static string ExtractQuantization(string modelName)
     {
         if (string.IsNullOrWhiteSpace(modelName))
             return "Q4_K_M";

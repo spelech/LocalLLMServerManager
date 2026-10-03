@@ -1,0 +1,333 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:LocalLLMServerManager.Shared.ViewModels"
+             xmlns:models="using:LocalLLMServerManager.Shared.Models"
+             xmlns:controls="using:LocalLLMServerManager.Shared.Views.Controls"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             mc:Ignorable="d" d:DesignWidth="1100" d:DesignHeight="800"
+             x:Class="LocalLLMServerManager.Shared.Views.Controls.LocalModelsManagerControl"
+             x:DataType="vm:MainViewModel">
+
+    <UserControl.Styles>
+        <Style Selector="Button.category-pill">
+            <Setter Property="Background" Value="#0F172A" />
+            <Setter Property="Foreground" Value="{StaticResource TextMutedBrush}" />
+            <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="BorderBrush" Value="#1E293B" />
+            <Setter Property="CornerRadius" Value="16" />
+            <Setter Property="Height" Value="34" />
+            <Setter Property="Padding" Value="14,6" />
+            <Setter Property="Cursor" Value="Hand" />
+            <Setter Property="FontSize" Value="12" />
+            <Setter Property="FontWeight" Value="SemiBold" />
+        </Style>
+        <Style Selector="Button.category-pill /template/ ContentPresenter#PART_ContentPresenter">
+            <Setter Property="CornerRadius" Value="16" />
+        </Style>
+        <Style Selector="Button.category-pill:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+            <Setter Property="Background" Value="#1E293B" />
+            <Setter Property="BorderBrush" Value="{StaticResource PrimaryBrush}" />
+            <Setter Property="Foreground" Value="#FFFFFF" />
+        </Style>
+        <Style Selector="Button.category-pill.active /template/ ContentPresenter#PART_ContentPresenter">
+            <Setter Property="Background" Value="#252C42" />
+            <Setter Property="BorderBrush" Value="{StaticResource PrimaryBrush}" />
+            <Setter Property="Foreground" Value="#FFFFFF" />
+        </Style>
+
+        <Style Selector="Border.model-card">
+            <Setter Property="Background" Value="#0D1322" />
+            <Setter Property="BorderBrush" Value="{StaticResource GlassBorderBrush}" />
+            <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="CornerRadius" Value="8" />
+            <Setter Property="Padding" Value="12,10" />
+            <Setter Property="Margin" Value="0,0,0,6" />
+        </Style>
+        <Style Selector="Border.model-card:pointerover">
+            <Setter Property="Background" Value="#121A2D" />
+            <Setter Property="BorderBrush" Value="{StaticResource PrimaryBrush}" />
+        </Style>
+    </UserControl.Styles>
+
+    <Grid RowDefinitions="Auto, *">
+        <!-- TOP CATEGORY FILTER & RESCAN TOOLBAR -->
+        <Border Grid.Row="0" Background="{StaticResource BgSurfaceBrush}" BorderBrush="{StaticResource GlassBorderBrush}" BorderThickness="1" CornerRadius="10" Padding="12,8" Margin="0,0,0,12">
+            <Grid ColumnDefinitions="Auto, *, Auto">
+                <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
+                    <Button Classes="category-pill" Classes.active="{Binding IsManageOllamaSelected}"
+                            Command="{Binding SelectManageCategoryCommand}" CommandParameter="Ollama">
+                        <StackPanel Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
+                            <TextBlock Text="🦙" FontSize="13" VerticalAlignment="Center"/>
+                            <TextBlock Text="Ollama LLMs" VerticalAlignment="Center"/>
+                        </StackPanel>
+                    </Button>
+
+                    <Button Classes="category-pill" Classes.active="{Binding IsManageImageSelected}"
+                            Command="{Binding SelectManageCategoryCommand}" CommandParameter="ImageCheckpoint">
+                        <StackPanel Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
+                            <TextBlock Text="🎨" FontSize="13" VerticalAlignment="Center"/>
+                            <TextBlock Text="Image Checkpoints &amp; LoRAs" VerticalAlignment="Center"/>
+                            <Border Background="#1E293B" CornerRadius="10" Padding="6,1" Margin="2,0,0,0">
+                                <TextBlock Text="{Binding ScannedImageModels.Count}" FontSize="10" Foreground="{StaticResource PrimaryBrush}" FontWeight="Bold"/>
+                            </Border>
+                        </StackPanel>
+                    </Button>
+
+                    <Button Classes="category-pill" Classes.active="{Binding IsManageVideoSelected}"
+                            Command="{Binding SelectManageCategoryCommand}" CommandParameter="Video">
+                        <StackPanel Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
+                            <TextBlock Text="🎬" FontSize="13" VerticalAlignment="Center"/>
+                            <TextBlock Text="Video Models" VerticalAlignment="Center"/>
+                            <Border Background="#1E293B" CornerRadius="10" Padding="6,1" Margin="2,0,0,0">
+                                <TextBlock Text="{Binding ScannedVideoModels.Count}" FontSize="10" Foreground="{StaticResource PrimaryBrush}" FontWeight="Bold"/>
+                            </Border>
+                        </StackPanel>
+                    </Button>
+
+                    <Button Classes="category-pill" Classes.active="{Binding IsManageAudioSelected}"
+                            Command="{Binding SelectManageCategoryCommand}" CommandParameter="Audio">
+                        <StackPanel Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
+                            <TextBlock Text="🎙️" FontSize="13" VerticalAlignment="Center"/>
+                            <TextBlock Text="Audio &amp; Voices" VerticalAlignment="Center"/>
+                            <Border Background="#1E293B" CornerRadius="10" Padding="6,1" Margin="2,0,0,0">
+                                <TextBlock Text="{Binding ScannedAudioModels.Count}" FontSize="10" Foreground="{StaticResource PrimaryBrush}" FontWeight="Bold"/>
+                            </Border>
+                        </StackPanel>
+                    </Button>
+
+                    <Button Classes="category-pill" Classes.active="{Binding IsManageThreeDSelected}"
+                            Command="{Binding SelectManageCategoryCommand}" CommandParameter="ThreeD">
+                        <StackPanel Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
+                            <TextBlock Text="📦" FontSize="13" VerticalAlignment="Center"/>
+                            <TextBlock Text="3D Models" VerticalAlignment="Center"/>
+                            <Border Background="#1E293B" CornerRadius="10" Padding="6,1" Margin="2,0,0,0">
+                                <TextBlock Text="{Binding ScannedThreeDModels.Count}" FontSize="10" Foreground="{StaticResource PrimaryBrush}" FontWeight="Bold"/>
+                            </Border>
+                        </StackPanel>
+                    </Button>
+                </StackPanel>
+
+                <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+                    <Button Content="🔄 Rescan Local Folders" Command="{Binding RefreshScannedModelsCommand}" Classes="matte-secondary" Padding="12,6" FontSize="11" ToolTip.Tip="Rescan local models, LoRAs, and configured directories"/>
+                </StackPanel>
+            </Grid>
+        </Border>
+
+        <!-- VIEWPORT CONTENT HOST -->
+        <Panel Grid.Row="1">
+            <!-- 1. OLLAMA LLM MANAGER -->
+            <Panel IsVisible="{Binding IsManageOllamaSelected}">
+                <controls:OllamaModelsTabControl DataContext="{Binding Ollama}"/>
+            </Panel>
+
+            <!-- 2. IMAGE CHECKPOINTS & LORAS -->
+            <ScrollViewer IsVisible="{Binding IsManageImageSelected}">
+                <StackPanel Spacing="8">
+                    <!-- Zero-State when no image models are found -->
+                    <Border Background="#090E1A" BorderBrush="{StaticResource GlassBorderBrush}" BorderThickness="1" CornerRadius="12" Padding="24"
+                            IsVisible="{Binding !ScannedImageModels.Count}">
+                        <StackPanel Spacing="10" HorizontalAlignment="Center">
+                            <TextBlock Text="🎨" FontSize="44" HorizontalAlignment="Center"/>
+                            <TextBlock Text="No Local Diffusion Models Found" FontSize="16" FontWeight="Bold" Foreground="{StaticResource TextMainBrush}" HorizontalAlignment="Center"/>
+                            <TextBlock Text="Place .safetensors or .ckpt files in 'models/checkpoints' or 'models/Lora', or configure Forge/ComfyUI directories in Settings." FontSize="12" Foreground="{StaticResource TextMutedBrush}" HorizontalAlignment="Center" TextAlignment="Center" MaxWidth="600"/>
+                        </StackPanel>
+                    </Border>
+
+                    <!-- List of Scanned Image Models -->
+                    <ItemsControl ItemsSource="{Binding ScannedImageModels}">
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate x:DataType="models:LocalModelItem">
+                                <Border Classes="model-card">
+                                    <Grid ColumnDefinitions="Auto, *, Auto">
+                                        <!-- Modality Icon -->
+                                        <Border Grid.Column="0" Width="36" Height="36" CornerRadius="8" Background="#141C2E" Margin="0,0,12,0" VerticalAlignment="Center">
+                                            <TextBlock Text="🎨" FontSize="18" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                        </Border>
+
+                                        <!-- Model Details -->
+                                        <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="3">
+                                            <StackPanel Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+                                                <TextBlock Text="{Binding Name}" FontSize="13" FontWeight="Bold" Foreground="{StaticResource TextMainBrush}"/>
+                                                <Border Background="#1E293B" CornerRadius="4" Padding="6,2">
+                                                    <TextBlock Text="{Binding Architecture}" FontSize="10" Foreground="{StaticResource AccentBrush}" FontWeight="SemiBold"/>
+                                                </Border>
+                                                <Border Background="#0F172A" CornerRadius="4" Padding="6,2">
+                                                    <TextBlock Text="{Binding FormattedSize}" FontSize="10" Foreground="{StaticResource PrimaryBrush}" FontWeight="Medium"/>
+                                                </Border>
+                                            </StackPanel>
+                                            <StackPanel Orientation="Horizontal" Spacing="8">
+                                                <TextBlock Text="{Binding SourceLocation}" FontSize="11" Foreground="{StaticResource TextMutedBrush}"/>
+                                                <TextBlock Text="•" FontSize="11" Foreground="{StaticResource TextMutedBrush}"/>
+                                                <TextBlock Text="{Binding FileName}" FontSize="11" Foreground="{StaticResource TextMutedBrush}" TextTrimming="CharacterEllipsis" MaxWidth="380"/>
+                                            </StackPanel>
+                                        </StackPanel>
+
+                                        <!-- Action Buttons -->
+                                        <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
+                                            <Button Content="🎨 Use in Studio" Classes="matte-primary" Padding="12,5" FontSize="11"
+                                                    Command="{Binding $parent[UserControl].((vm:MainViewModel)DataContext).UseModelInStudioCommand}"
+                                                    CommandParameter="{Binding}"/>
+                                            <Button Content="📂 Reveal" Classes="matte-secondary" Padding="8,5" FontSize="11"
+                                                    Command="{Binding $parent[UserControl].((vm:MainViewModel)DataContext).RevealModelInExplorerCommand}"
+                                                    CommandParameter="{Binding}"
+                                                    ToolTip.Tip="Show file in File Explorer"/>
+                                            <Button Content="🗑️" Classes="matte-secondary" Padding="8,5" FontSize="11"
+                                                    Command="{Binding $parent[UserControl].((vm:MainViewModel)DataContext).DeleteLocalModelCommand}"
+                                                    CommandParameter="{Binding}"
+                                                    ToolTip.Tip="Delete model file"/>
+                                        </StackPanel>
+                                    </Grid>
+                                </Border>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                </StackPanel>
+            </ScrollViewer>
+
+            <!-- 3. VIDEO MODELS & WORKFLOWS -->
+            <ScrollViewer IsVisible="{Binding IsManageVideoSelected}">
+                <StackPanel Spacing="8">
+                    <Border Background="#090E1A" BorderBrush="{StaticResource GlassBorderBrush}" BorderThickness="1" CornerRadius="12" Padding="24"
+                            IsVisible="{Binding !ScannedVideoModels.Count}">
+                        <StackPanel Spacing="10" HorizontalAlignment="Center">
+                            <TextBlock Text="🎬" FontSize="44" HorizontalAlignment="Center"/>
+                            <TextBlock Text="No Video Models Found" FontSize="16" FontWeight="Bold" Foreground="{StaticResource TextMainBrush}" HorizontalAlignment="Center"/>
+                            <TextBlock Text="Place video diffusion models in 'ComfyUI/models/diffusion_models' or workflows in 'Workflows/Video'." FontSize="12" Foreground="{StaticResource TextMutedBrush}" HorizontalAlignment="Center"/>
+                        </StackPanel>
+                    </Border>
+
+                    <ItemsControl ItemsSource="{Binding ScannedVideoModels}">
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate x:DataType="models:LocalModelItem">
+                                <Border Classes="model-card">
+                                    <Grid ColumnDefinitions="Auto, *, Auto">
+                                        <Border Grid.Column="0" Width="36" Height="36" CornerRadius="8" Background="#141C2E" Margin="0,0,12,0" VerticalAlignment="Center">
+                                            <TextBlock Text="🎬" FontSize="18" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                        </Border>
+                                        <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="3">
+                                            <StackPanel Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+                                                <TextBlock Text="{Binding Name}" FontSize="13" FontWeight="Bold" Foreground="{StaticResource TextMainBrush}"/>
+                                                <Border Background="#1E293B" CornerRadius="4" Padding="6,2">
+                                                    <TextBlock Text="{Binding Architecture}" FontSize="10" Foreground="{StaticResource AccentBrush}" FontWeight="SemiBold"/>
+                                                </Border>
+                                                <Border Background="#0F172A" CornerRadius="4" Padding="6,2">
+                                                    <TextBlock Text="{Binding FormattedSize}" FontSize="10" Foreground="{StaticResource PrimaryBrush}" FontWeight="Medium"/>
+                                                </Border>
+                                            </StackPanel>
+                                            <TextBlock Text="{Binding SourceLocation}" FontSize="11" Foreground="{StaticResource TextMutedBrush}"/>
+                                        </StackPanel>
+                                        <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
+                                            <Button Content="🎬 Use in Studio" Classes="matte-primary" Padding="12,5" FontSize="11"
+                                                    Command="{Binding $parent[UserControl].((vm:MainViewModel)DataContext).UseModelInStudioCommand}"
+                                                    CommandParameter="{Binding}"/>
+                                            <Button Content="📂 Reveal" Classes="matte-secondary" Padding="8,5" FontSize="11"
+                                                    Command="{Binding $parent[UserControl].((vm:MainViewModel)DataContext).RevealModelInExplorerCommand}"
+                                                    CommandParameter="{Binding}"/>
+                                        </StackPanel>
+                                    </Grid>
+                                </Border>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                </StackPanel>
+            </ScrollViewer>
+
+            <!-- 4. AUDIO & VOICES -->
+            <ScrollViewer IsVisible="{Binding IsManageAudioSelected}">
+                <StackPanel Spacing="8">
+                    <Border Background="#090E1A" BorderBrush="{StaticResource GlassBorderBrush}" BorderThickness="1" CornerRadius="12" Padding="24"
+                            IsVisible="{Binding !ScannedAudioModels.Count}">
+                        <StackPanel Spacing="10" HorizontalAlignment="Center">
+                            <TextBlock Text="🎙️" FontSize="44" HorizontalAlignment="Center"/>
+                            <TextBlock Text="No Audio Models Found" FontSize="16" FontWeight="Bold" Foreground="{StaticResource TextMainBrush}" HorizontalAlignment="Center"/>
+                            <TextBlock Text="Place audio models or voices in 'models/tts', 'audio/stt', or 'Workflows/Audio'." FontSize="12" Foreground="{StaticResource TextMutedBrush}" HorizontalAlignment="Center"/>
+                        </StackPanel>
+                    </Border>
+
+                    <ItemsControl ItemsSource="{Binding ScannedAudioModels}">
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate x:DataType="models:LocalModelItem">
+                                <Border Classes="model-card">
+                                    <Grid ColumnDefinitions="Auto, *, Auto">
+                                        <Border Grid.Column="0" Width="36" Height="36" CornerRadius="8" Background="#141C2E" Margin="0,0,12,0" VerticalAlignment="Center">
+                                            <TextBlock Text="🎙️" FontSize="18" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                        </Border>
+                                        <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="3">
+                                            <StackPanel Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+                                                <TextBlock Text="{Binding Name}" FontSize="13" FontWeight="Bold" Foreground="{StaticResource TextMainBrush}"/>
+                                                <Border Background="#1E293B" CornerRadius="4" Padding="6,2">
+                                                    <TextBlock Text="{Binding Architecture}" FontSize="10" Foreground="{StaticResource AccentBrush}" FontWeight="SemiBold"/>
+                                                </Border>
+                                                <Border Background="#0F172A" CornerRadius="4" Padding="6,2">
+                                                    <TextBlock Text="{Binding FormattedSize}" FontSize="10" Foreground="{StaticResource PrimaryBrush}" FontWeight="Medium"/>
+                                                </Border>
+                                            </StackPanel>
+                                            <TextBlock Text="{Binding SourceLocation}" FontSize="11" Foreground="{StaticResource TextMutedBrush}"/>
+                                        </StackPanel>
+                                        <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
+                                            <Button Content="🎙️ Use in Studio" Classes="matte-primary" Padding="12,5" FontSize="11"
+                                                    Command="{Binding $parent[UserControl].((vm:MainViewModel)DataContext).UseModelInStudioCommand}"
+                                                    CommandParameter="{Binding}"/>
+                                            <Button Content="📂 Reveal" Classes="matte-secondary" Padding="8,5" FontSize="11"
+                                                    Command="{Binding $parent[UserControl].((vm:MainViewModel)DataContext).RevealModelInExplorerCommand}"
+                                                    CommandParameter="{Binding}"/>
+                                        </StackPanel>
+                                    </Grid>
+                                </Border>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                </StackPanel>
+            </ScrollViewer>
+
+            <!-- 5. 3D MODELS -->
+            <ScrollViewer IsVisible="{Binding IsManageThreeDSelected}">
+                <StackPanel Spacing="8">
+                    <Border Background="#090E1A" BorderBrush="{StaticResource GlassBorderBrush}" BorderThickness="1" CornerRadius="12" Padding="24"
+                            IsVisible="{Binding !ScannedThreeDModels.Count}">
+                        <StackPanel Spacing="10" HorizontalAlignment="Center">
+                            <TextBlock Text="📦" FontSize="44" HorizontalAlignment="Center"/>
+                            <TextBlock Text="No 3D Pipelines Found" FontSize="16" FontWeight="Bold" Foreground="{StaticResource TextMainBrush}" HorizontalAlignment="Center"/>
+                            <TextBlock Text="Place 3D models or workflows in 'models/3d' or 'Workflows'." FontSize="12" Foreground="{StaticResource TextMutedBrush}" HorizontalAlignment="Center"/>
+                        </StackPanel>
+                    </Border>
+
+                    <ItemsControl ItemsSource="{Binding ScannedThreeDModels}">
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate x:DataType="models:LocalModelItem">
+                                <Border Classes="model-card">
+                                    <Grid ColumnDefinitions="Auto, *, Auto">
+                                        <Border Grid.Column="0" Width="36" Height="36" CornerRadius="8" Background="#141C2E" Margin="0,0,12,0" VerticalAlignment="Center">
+                                            <TextBlock Text="📦" FontSize="18" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                        </Border>
+                                        <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="3">
+                                            <StackPanel Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+                                                <TextBlock Text="{Binding Name}" FontSize="13" FontWeight="Bold" Foreground="{StaticResource TextMainBrush}"/>
+                                                <Border Background="#1E293B" CornerRadius="4" Padding="6,2">
+                                                    <TextBlock Text="{Binding Architecture}" FontSize="10" Foreground="{StaticResource AccentBrush}" FontWeight="SemiBold"/>
+                                                </Border>
+                                                <Border Background="#0F172A" CornerRadius="4" Padding="6,2">
+                                                    <TextBlock Text="{Binding FormattedSize}" FontSize="10" Foreground="{StaticResource PrimaryBrush}" FontWeight="Medium"/>
+                                                </Border>
+                                            </StackPanel>
+                                            <TextBlock Text="{Binding SourceLocation}" FontSize="11" Foreground="{StaticResource TextMutedBrush}"/>
+                                        </StackPanel>
+                                        <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
+                                            <Button Content="📦 Use in Studio" Classes="matte-primary" Padding="12,5" FontSize="11"
+                                                    Command="{Binding $parent[UserControl].((vm:MainViewModel)DataContext).UseModelInStudioCommand}"
+                                                    CommandParameter="{Binding}"/>
+                                            <Button Content="📂 Reveal" Classes="matte-secondary" Padding="8,5" FontSize="11"
+                                                    Command="{Binding $parent[UserControl].((vm:MainViewModel)DataContext).RevealModelInExplorerCommand}"
+                                                    CommandParameter="{Binding}"/>
+                                        </StackPanel>
+                                    </Grid>
+                                </Border>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                </StackPanel>
+            </ScrollViewer>
+        </Panel>
+    </Grid>
+</UserControl>

@@ -7,7 +7,7 @@
 
     <Grid>
         <TabControl SelectedIndex="{Binding SelectedModelsTabIndex}" Background="Transparent">
-            <!-- SUBTAB 1: Installed Ollama Models & KV Cache -->
+            <!-- SUBTAB 1: Installed & Downloaded Models Manager -->
             <TabItem>
                 <TabItem.Header>
                     <StackPanel Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
@@ -15,7 +15,7 @@
                         <TextBlock Text="Downloaded &amp; Manage" VerticalAlignment="Center"/>
                     </StackPanel>
                 </TabItem.Header>
-                <controls:OllamaModelsTabControl DataContext="{Binding Ollama}"/>
+                <controls:LocalModelsManagerControl DataContext="{Binding}"/>
             </TabItem>
 
             <!-- SUBTAB 2: Hugging Face GGUF & Multimodal Hub -->

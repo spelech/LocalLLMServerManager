@@ -76,13 +76,13 @@
                     <!-- Endpoint URL -->
                     <StackPanel MinWidth="260" Width="360" Spacing="4" Margin="0,0,12,10">
                         <TextBlock Text="OpenAI-Compatible Endpoint URL" FontSize="11" Foreground="{StaticResource TextMutedBrush}" FontWeight="SemiBold"/>
-                        <TextBox Text="{Binding Endpoint}" Watermark="http://127.0.0.1:4000/v1" FontSize="12"/>
+                        <TextBox Text="{Binding Endpoint}" PlaceholderText="http://127.0.0.1:4000/v1" FontSize="12"/>
                     </StackPanel>
 
                     <!-- API Key -->
                     <StackPanel MinWidth="260" Width="360" Spacing="4" Margin="0,0,12,10">
                         <TextBlock Text="API Key (Optional for local LiteLLM)" FontSize="11" Foreground="{StaticResource TextMutedBrush}" FontWeight="SemiBold"/>
-                        <TextBox Text="{Binding ApiKey}" PasswordChar="*" Watermark="sk-..." FontSize="12"/>
+                        <TextBox Text="{Binding ApiKey}" PasswordChar="*" PlaceholderText="sk-..." FontSize="12"/>
                     </StackPanel>
 
                     <!-- Model Name / Selection -->
@@ -283,9 +283,12 @@
                 <TextBox x:Name="PromptTextBox"
                          KeyDown="OnPromptTextBoxKeyDown"
                          Text="{Binding InputText}"
-                         Watermark="Ask anything or command the application (e.g., 'What is my current VRAM usage?' or 'Generate an image with Flux')..."
+                         PlaceholderText="Ask anything or command the application (e.g., 'What is my current VRAM usage?' or 'Generate an image with Flux')..."
                          AcceptsReturn="True"
-                         MaxHeight="120"
+                         TextWrapping="Wrap"
+                         MinHeight="60"
+                         MaxHeight="140"
+                         ScrollViewer.HorizontalScrollBarVisibility="Disabled"
                          FontSize="12"
                          HorizontalAlignment="Stretch"/>
 

@@ -12,6 +12,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using LocalLLMServerManager.Services;
 using LocalLLMServerManager.Shared.Interfaces;
+using LocalLLMServerManager.Shared.Models;
 using LocalLLMServerManager.Shared.ViewModels;
 using Microsoft.Extensions.DependencyInjection;
 using ModelContextProtocol.Server;
@@ -37,7 +38,11 @@ public class McpServerIntegrationTests : IClassFixture<AppTestServerFixture>
         _client = fixture.CreateClient();
     }
 
-    private LocalLlmMcpTools CreateTools(HttpMessageHandler? handler = null)
+    private LocalLlmMcpTools CreateTools(
+        HttpMessageHandler? handler = null,
+        IHuggingFaceSearchService? hfService = null,
+        ICivitaiSearchService? civitaiService = null,
+        ISettingsService? settingsService = null)
     {
         var httpHandler = handler ?? new MockHttpMessageHandler(HttpStatusCode.OK, "{}");
         var client = new HttpClient(httpHandler);
@@ -48,7 +53,10 @@ public class McpServerIntegrationTests : IClassFixture<AppTestServerFixture>
             _mockEngine.Object,
             _mockOllama.Object,
             _mockDiscovery.Object,
-            _mockHttpFactory.Object
+            _mockHttpFactory.Object,
+            hfService,
+            civitaiService,
+            settingsService
         );
     }
 
@@ -426,7 +434,7 @@ public class McpServerIntegrationTests : IClassFixture<AppTestServerFixture>
         // Class-level attribute
         Assert.NotNull(toolType.GetCustomAttribute<McpServerToolTypeAttribute>());
 
-        // 11 Expected Tool Methods
+        // 14 Expected Tool Methods
         var expectedMethods = new[]
         {
             "GetGpuVramAsync",
@@ -439,7 +447,10 @@ public class McpServerIntegrationTests : IClassFixture<AppTestServerFixture>
             "DetectToolsAsync",
             "GenerateVideoAsync",
             "SynthesizeSpeechAsync",
-            "GenerateAudioAsync"
+            "GenerateAudioAsync",
+            "SearchHuggingFaceAsync",
+            "SearchCivitaiAsync",
+            "RunStudioWorkflowAsync"
         };
 
         foreach (var methodName in expectedMethods)
@@ -477,6 +488,198 @@ public class McpServerIntegrationTests : IClassFixture<AppTestServerFixture>
         var generateAudioMethod = toolType.GetMethod("GenerateAudioAsync");
         var audioPromptParam = generateAudioMethod?.GetParameters().FirstOrDefault(p => p.Name == "prompt");
         Assert.NotNull(audioPromptParam?.GetCustomAttribute<DescriptionAttribute>());
+
+        var searchHfMethod = toolType.GetMethod("SearchHuggingFaceAsync");
+        var hfQueryParam = searchHfMethod?.GetParameters().FirstOrDefault(p => p.Name == "query");
+        Assert.NotNull(hfQueryParam?.GetCustomAttribute<DescriptionAttribute>());
+
+        var searchCivitaiMethod = toolType.GetMethod("SearchCivitaiAsync");
+        var civitaiQueryParam = searchCivitaiMethod?.GetParameters().FirstOrDefault(p => p.Name == "query");
+        Assert.NotNull(civitaiQueryParam?.GetCustomAttribute<DescriptionAttribute>());
+
+        var runWorkflowMethod = toolType.GetMethod("RunStudioWorkflowAsync");
+        var workflowPromptParam = runWorkflowMethod?.GetParameters().FirstOrDefault(p => p.Name == "prompt");
+        Assert.NotNull(workflowPromptParam?.GetCustomAttribute<DescriptionAttribute>());
+    }
+
+    [Fact]
+    public async Task SearchHuggingFace_ValidQuery_ReturnsJsonResults()
+    {
+        var mockHf = new Mock<IHuggingFaceSearchService>();
+        mockHf.Setup(h => h.SearchModelsAsync("qwen2.5", null, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new List<HuggingFaceRepoItem>
+            {
+                new("Qwen/Qwen2.5-Coder-7B-Instruct", "Qwen", 12500, "3400", "text-generation")
+            });
+
+        var tools = CreateTools(hfService: mockHf.Object);
+        var result = await tools.SearchHuggingFaceAsync("qwen2.5");
+
+        Assert.NotNull(result);
+        Assert.Contains("true", result.ToLowerInvariant());
+        Assert.Contains("Qwen2.5-Coder-7B-Instruct", result);
+        Assert.Contains("text-generation", result);
+    }
+
+    [Theory]
+    [InlineData("")]
+    [InlineData("   ")]
+    [InlineData(null)]
+    public async Task SearchHuggingFace_NullOrEmptyQuery_ReturnsError(string? query)
+    {
+        var tools = CreateTools();
+        var result = await tools.SearchHuggingFaceAsync(query!);
+
+        Assert.NotNull(result);
+        Assert.Contains("false", result.ToLowerInvariant());
+        Assert.Contains("query is required", result);
+    }
+
+    [Fact]
+    public async Task SearchHuggingFace_WhenServiceThrows_ReturnsErrorGracefully()
+    {
+        var mockHf = new Mock<IHuggingFaceSearchService>();
+        mockHf.Setup(h => h.SearchModelsAsync(It.IsAny<string>(), It.IsAny<string?>(), It.IsAny<CancellationToken>()))
+            .ThrowsAsync(new HttpRequestException("HuggingFace rate limit reached"));
+
+        var tools = CreateTools(hfService: mockHf.Object);
+        var result = await tools.SearchHuggingFaceAsync("deepseek");
+
+        Assert.NotNull(result);
+        Assert.Contains("false", result.ToLowerInvariant());
+        Assert.Contains("HuggingFace rate limit reached", result);
+    }
+
+    [Fact]
+    public async Task SearchCivitai_ValidQuery_ReturnsJsonResults()
+    {
+        var mockCivitai = new Mock<ICivitaiSearchService>();
+        mockCivitai.Setup(c => c.SearchModelsAsync(It.IsAny<string>(), "juggernaut", "Checkpoint", "Highest Rated", It.IsAny<HttpClient>()))
+            .ReturnsAsync(new List<CivitaiModelItem>
+            {
+                new(12345, "Juggernaut XL", "Checkpoint", "https://image.url", "https://download.url", "juggernaut.safetensors", 4.9, 45000, null, 6500000000L)
+            });
+
+        var tools = CreateTools(civitaiService: mockCivitai.Object);
+        var result = await tools.SearchCivitaiAsync("juggernaut");
+
+        Assert.NotNull(result);
+        Assert.Contains("true", result.ToLowerInvariant());
+        Assert.Contains("Juggernaut XL", result);
+        Assert.Contains("Checkpoint", result);
+    }
+
+    [Theory]
+    [InlineData("")]
+    [InlineData("   ")]
+    [InlineData(null)]
+    public async Task SearchCivitai_NullOrEmptyQuery_ReturnsError(string? query)
+    {
+        var tools = CreateTools();
+        var result = await tools.SearchCivitaiAsync(query!);
+
+        Assert.NotNull(result);
+        Assert.Contains("false", result.ToLowerInvariant());
+        Assert.Contains("query is required", result);
+    }
+
+    [Fact]
+    public async Task SearchCivitai_WhenServiceThrows_ReturnsErrorGracefully()
+    {
+        var mockCivitai = new Mock<ICivitaiSearchService>();
+        mockCivitai.Setup(c => c.SearchModelsAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<HttpClient>()))
+            .ThrowsAsync(new HttpRequestException("Civitai API down"));
+
+        var tools = CreateTools(civitaiService: mockCivitai.Object);
+        var result = await tools.SearchCivitaiAsync("flux");
+
+        Assert.NotNull(result);
+        Assert.Contains("false", result.ToLowerInvariant());
+        Assert.Contains("Civitai API down", result);
+    }
+
+    [Fact]
+    public async Task RunStudioWorkflow_TextModality_CallsOllamaAndReturnsResponse()
+    {
+        var handler = new MockHttpMessageHandler(HttpStatusCode.OK, "{\"response\":\"Hello from LLM!\"}");
+        var tools = CreateTools(handler);
+
+        var result = await tools.RunStudioWorkflowAsync("text", "Write a python script");
+
+        Assert.NotNull(result);
+        Assert.Contains("true", result.ToLowerInvariant());
+        Assert.Contains("text", result);
+        Assert.Contains("Hello from LLM!", result);
+    }
+
+    [Fact]
+    public async Task RunStudioWorkflow_ImageModality_CallsSdForgeAndReturnsImagesCount()
+    {
+        var handler = new MockHttpMessageHandler(HttpStatusCode.OK, "{\"images\":[\"base64data...\"]}");
+        var tools = CreateTools(handler);
+
+        var result = await tools.RunStudioWorkflowAsync("image", "A cinematic portrait of a cybernetic owl");
+
+        Assert.NotNull(result);
+        Assert.Contains("true", result.ToLowerInvariant());
+        Assert.Contains("image", result);
+        Assert.Contains("imagesCount", result);
+        Assert.Contains("1", result);
+    }
+
+    [Fact]
+    public async Task RunStudioWorkflow_VideoModality_CallsVideoEndpoint()
+    {
+        var handler = new MockHttpMessageHandler(HttpStatusCode.OK, "{\"status\":\"queued\",\"jobId\":\"vid_123\"}");
+        var tools = CreateTools(handler);
+
+        var result = await tools.RunStudioWorkflowAsync("video", "Drone shot through neon canyon");
+
+        Assert.NotNull(result);
+        Assert.Contains("true", result.ToLowerInvariant());
+        Assert.Contains("video", result);
+        Assert.Contains("vid_123", result);
+    }
+
+    [Fact]
+    public async Task RunStudioWorkflow_AudioModality_CallsAudioEndpoint()
+    {
+        var handler = new MockHttpMessageHandler(HttpStatusCode.OK, "{\"status\":\"generating\",\"audioId\":\"aud_456\"}");
+        var tools = CreateTools(handler);
+
+        var result = await tools.RunStudioWorkflowAsync("audio", "Lo-fi hip hop beat with piano");
+
+        Assert.NotNull(result);
+        Assert.Contains("true", result.ToLowerInvariant());
+        Assert.Contains("audio", result);
+        Assert.Contains("aud_456", result);
+    }
+
+    [Theory]
+    [InlineData("")]
+    [InlineData("   ")]
+    [InlineData(null)]
+    public async Task RunStudioWorkflow_NullOrEmptyPrompt_ReturnsError(string? prompt)
+    {
+        var tools = CreateTools();
+        var result = await tools.RunStudioWorkflowAsync("image", prompt!);
+
+        Assert.NotNull(result);
+        Assert.Contains("false", result.ToLowerInvariant());
+        Assert.Contains("prompt is required", result);
+    }
+
+    [Fact]
+    public async Task RunStudioWorkflow_WhenHttpFails_ReturnsFailureGracefully()
+    {
+        var throwingHandler = new ThrowingHttpMessageHandler(new HttpRequestException("Backend unreachable"));
+        var tools = CreateTools(throwingHandler);
+
+        var result = await tools.RunStudioWorkflowAsync("image", "A beautiful sunset");
+
+        Assert.NotNull(result);
+        Assert.Contains("false", result.ToLowerInvariant());
+        Assert.Contains("Backend unreachable", result);
     }
 
     [Fact]

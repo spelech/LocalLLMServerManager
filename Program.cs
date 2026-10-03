@@ -180,6 +180,8 @@ public class Program
         builder.Services.AddSingleton<IPromptManagementService, PromptManagementService>();
         builder.Services.AddSingleton<IAiAppTools, AiAppTools>();
         builder.Services.AddSingleton<IAiAssistantService, AiAssistantService>();
+        builder.Services.AddSingleton<IHuggingFaceSearchService, HuggingFaceSearchService>();
+        builder.Services.AddSingleton<ICivitaiSearchService, CivitaiSearchService>();
         builder.Services.AddSingleton<IUiDiagnosticLogger>(UiDiagnosticLogger.Instance);
 
         // Register MCP Server
