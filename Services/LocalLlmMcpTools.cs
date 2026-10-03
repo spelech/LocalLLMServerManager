@@ -1,11 +1,14 @@
 using System;
 using System.ComponentModel;
 using System.Net.Http;
+using System.Net.Http.Json;
 using System.Text.Json;
+using System.Text.Json.Nodes;
 using System.Threading.Tasks;
 using ModelContextProtocol.Server;
 using LocalLLMServerManager.Services;
 using LocalLLMServerManager.Shared.Interfaces;
+using LocalLLMServerManager.Shared.Services;
 using LocalLLMServerManager.Shared.ViewModels;
 
 namespace LocalLLMServerManager.Services;
@@ -18,19 +21,28 @@ public sealed class LocalLlmMcpTools
     private readonly IOllamaModelService _ollamaModelService;
     private readonly IToolDiscoveryService _toolDiscoveryService;
     private readonly IHttpClientFactory _httpClientFactory;
+    private readonly IHuggingFaceSearchService _hfSearchService;
+    private readonly ICivitaiSearchService _civitaiSearchService;
+    private readonly ISettingsService _settingsService;
 
     public LocalLlmMcpTools(
         IGpuTelemetryProvider telemetryProvider,
         IAiEngineManager engineManager,
         IOllamaModelService ollamaModelService,
         IToolDiscoveryService toolDiscoveryService,
-        IHttpClientFactory httpClientFactory)
+        IHttpClientFactory httpClientFactory,
+        IHuggingFaceSearchService? hfSearchService = null,
+        ICivitaiSearchService? civitaiSearchService = null,
+        ISettingsService? settingsService = null)
     {
         _telemetryProvider = telemetryProvider;
         _engineManager = engineManager;
         _ollamaModelService = ollamaModelService;
         _toolDiscoveryService = toolDiscoveryService;
         _httpClientFactory = httpClientFactory;
+        _hfSearchService = hfSearchService ?? new HuggingFaceSearchService();
+        _civitaiSearchService = civitaiSearchService ?? new CivitaiSearchService();
+        _settingsService = settingsService ?? new SettingsService();
     }
 
     [McpServerTool, Description("Get real-time GPU VRAM allocation, total memory, used memory, and GPU hardware name via NVML CUDA.")]
@@ -226,6 +238,140 @@ public sealed class LocalLlmMcpTools
                 statusCode = (int)response.StatusCode
             };
             return JsonSerializer.Serialize(result, new JsonSerializerOptions { WriteIndented = true });
+        }
+        catch (Exception ex)
+        {
+            return JsonSerializer.Serialize(new { success = false, error = ex.Message });
+        }
+    }
+
+    [McpServerTool, Description("Search Hugging Face Hub repositories for models and download quantizations (GGUF, Safetensors).")]
+    public async Task<string> SearchHuggingFaceAsync(
+        [Description("Search query or model name, e.g. 'qwen2.5-coder', 'deepseek', or 'flux'")] string query,
+        [Description("Optional pipeline filter, e.g. 'text-generation', 'text-to-image', 'text-to-audio', 'text-to-video', or 'image-to-3d'")] string? pipelineTag = null)
+    {
+        if (string.IsNullOrWhiteSpace(query))
+            return JsonSerializer.Serialize(new { success = false, error = "query is required" });
+
+        try
+        {
+            var results = await _hfSearchService.SearchModelsAsync(query, pipelineTag);
+            return JsonSerializer.Serialize(new { success = true, count = results.Count, models = results }, new JsonSerializerOptions { WriteIndented = true });
+        }
+        catch (Exception ex)
+        {
+            return JsonSerializer.Serialize(new { success = false, error = ex.Message });
+        }
+    }
+
+    [McpServerTool, Description("Search Civitai Hub for Stable Diffusion checkpoints, FLUX models, and LoRAs with direct download links.")]
+    public async Task<string> SearchCivitaiAsync(
+        [Description("Search query, e.g. 'juggernaut', 'realistic', 'flux', or 'anime'")] string query,
+        [Description("Model type filter: 'Checkpoint', 'LORA', or 'All'")] string type = "Checkpoint",
+        [Description("Sort order: 'Highest Rated', 'Most Downloaded', 'Newest'")] string sort = "Highest Rated")
+    {
+        if (string.IsNullOrWhiteSpace(query))
+            return JsonSerializer.Serialize(new { success = false, error = "query is required" });
+
+        try
+        {
+            using var client = _httpClientFactory.CreateClient();
+            var apiBase = "http://127.0.0.1:5246";
+            var typeParam = string.IsNullOrWhiteSpace(type) || type.Equals("All", StringComparison.OrdinalIgnoreCase) ? "" : type;
+            var results = await _civitaiSearchService.SearchModelsAsync(apiBase, query, typeParam, sort, client);
+            return JsonSerializer.Serialize(new { success = true, count = results.Count, models = results }, new JsonSerializerOptions { WriteIndented = true });
+        }
+        catch (Exception ex)
+        {
+            return JsonSerializer.Serialize(new { success = false, error = ex.Message });
+        }
+    }
+
+    [McpServerTool, Description("Execute an automated studio generation workflow across modalities (text, image, audio, video, 3d).")]
+    public async Task<string> RunStudioWorkflowAsync(
+        [Description("Target workflow modality or preset ID ('text', 'image', 'audio', 'video', '3d', or specific workflow ID like 'wan2.2_t2v')")] string workflow,
+        [Description("Text prompt describing content to generate")] string prompt,
+        [Description("Optional negative prompt")] string? negativePrompt = null,
+        [Description("Inference steps (default: 25)")] int steps = 25,
+        [Description("Guidance / CFG scale (default: 7.0)")] double cfg = 7.0,
+        [Description("Denoising strength for img2img / refiners (default: 0.7)")] double denoise = 0.7,
+        [Description("Random seed (-1 for random)")] long seed = -1,
+        [Description("Output width in pixels")] int width = 1024,
+        [Description("Output height in pixels")] int height = 1024)
+    {
+        if (string.IsNullOrWhiteSpace(prompt))
+            return JsonSerializer.Serialize(new { success = false, error = "prompt is required" });
+
+        var w = (workflow ?? "image").Trim().ToLowerInvariant();
+        try
+        {
+            using var client = _httpClientFactory.CreateClient();
+            client.Timeout = TimeSpan.FromSeconds(180);
+
+            if (w.Contains("text") || w.Contains("llm") || w.Contains("ollama"))
+            {
+                var payload = new { prompt, model = "llama3.2:latest", stream = false };
+                var resp = await client.PostAsJsonAsync("http://127.0.0.1:11434/api/generate", payload);
+                if (resp.IsSuccessStatusCode)
+                {
+                    var textResp = await resp.Content.ReadAsStringAsync();
+                    return JsonSerializer.Serialize(new { success = true, modality = "text", response = textResp });
+                }
+                return JsonSerializer.Serialize(new { success = false, error = $"Ollama returned HTTP {(int)resp.StatusCode}" });
+            }
+            else if (w.Contains("video") || w.Contains("wan") || w.Contains("ltx"))
+            {
+                var payload = new
+                {
+                    WorkflowId = w.Contains("wan") || w == "video" ? "wan2.2_t2v" : w,
+                    Prompt = prompt,
+                    NegativePrompt = negativePrompt ?? "",
+                    Width = width,
+                    Height = height,
+                    Frames = 49,
+                    Seed = seed
+                };
+                var resp = await client.PostAsJsonAsync("http://127.0.0.1:5246/api/video/generate", payload);
+                var content = await resp.Content.ReadAsStringAsync();
+                return JsonSerializer.Serialize(new { success = resp.IsSuccessStatusCode, modality = "video", data = JsonNode.Parse(content) });
+            }
+            else if (w.Contains("audio") || w.Contains("sound") || w.Contains("music"))
+            {
+                var payload = new
+                {
+                    WorkflowId = "stable_audio_open_sfx",
+                    Prompt = prompt,
+                    NegativePrompt = negativePrompt,
+                    DurationSeconds = Math.Max(5, (int)(steps * 0.6)),
+                    Seed = seed
+                };
+                var resp = await client.PostAsJsonAsync("http://127.0.0.1:5246/api/audio/generate", payload);
+                var content = await resp.Content.ReadAsStringAsync();
+                return JsonSerializer.Serialize(new { success = resp.IsSuccessStatusCode, modality = "audio", data = JsonNode.Parse(content) });
+            }
+            else
+            {
+                // Default to Image via SD Forge / Comfy
+                var payload = new
+                {
+                    prompt,
+                    negative_prompt = negativePrompt ?? "",
+                    steps = steps > 0 ? steps : 25,
+                    cfg_scale = cfg > 0 ? cfg : 7.0,
+                    seed = seed,
+                    width,
+                    height
+                };
+                var resp = await client.PostAsJsonAsync("http://127.0.0.1:7860/sdapi/v1/txt2img", payload);
+                if (resp.IsSuccessStatusCode)
+                {
+                    var respStr = await resp.Content.ReadAsStringAsync();
+                    using var doc = JsonDocument.Parse(respStr);
+                    var hasImages = doc.RootElement.TryGetProperty("images", out var imgElem) && imgElem.GetArrayLength() > 0;
+                    return JsonSerializer.Serialize(new { success = true, modality = "image", imagesCount = hasImages ? imgElem.GetArrayLength() : 0 });
+                }
+                return JsonSerializer.Serialize(new { success = false, error = $"SD Forge returned HTTP {(int)resp.StatusCode}" });
+            }
         }
         catch (Exception ex)
         {

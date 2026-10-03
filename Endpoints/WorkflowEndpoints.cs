@@ -84,6 +84,23 @@ public static class WorkflowEndpoints
             return Results.Content(jsonStr, "application/json");
         });
 
+        app.MapPost("/api/comfy/interrupt", async (ISettingsService settingsService, HttpClient httpClient) =>
+        {
+            var settings = settingsService.LoadSettings();
+            var comfyUrl = string.IsNullOrWhiteSpace(settings.ComfyUiUrl) ? "http://127.0.0.1:8188" : settings.ComfyUiUrl;
+            var baseUrl = comfyUrl.TrimEnd('/');
+
+            try
+            {
+                var response = await httpClient.PostAsync($"{baseUrl}/interrupt", new StringContent("{}", Encoding.UTF8, "application/json"));
+                return Results.Ok(new { success = response.IsSuccessStatusCode, status = (int)response.StatusCode });
+            }
+            catch (Exception ex)
+            {
+                return Results.Ok(new { success = false, error = ex.Message });
+            }
+        });
+
         // ------------------ 3D Mesh Outputs ------------------
         app.MapGet("/api/3d/files", (ISettingsService settingsService) =>
         {
