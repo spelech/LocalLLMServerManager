@@ -778,5 +778,14 @@ public class SettingsViewModelTests
         Assert.Equal(10, parsed.ModelCacheIdleTimeoutMinutes);
         Assert.Equal(45, parsed.EngineHibernationTimeoutMinutes);
         Assert.Equal(80, parsed.RamPressureThresholdPercent);
+
+        // Verify 0 = disabled round-trips cleanly
+        vm.ModelCacheIdleTimeoutMinutes = 0;
+        vm.EngineHibernationTimeoutMinutes = 0;
+        await vm.SaveSettingsAsync("http://127.0.0.1:5246", http);
+        parsed = JsonSerializer.Deserialize<AppSettings>(savedPayload, new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
+        Assert.NotNull(parsed);
+        Assert.Equal(0, parsed.ModelCacheIdleTimeoutMinutes);
+        Assert.Equal(0, parsed.EngineHibernationTimeoutMinutes);
     }
 }

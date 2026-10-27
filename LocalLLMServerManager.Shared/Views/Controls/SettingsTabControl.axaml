@@ -507,18 +507,18 @@
                                         <StackPanel Grid.Column="0" Spacing="4" Margin="0,0,8,0">
                                             <TextBlock Text="Model Idle Timeout (min)" FontSize="12" Foreground="{StaticResource TextMutedBrush}" FontWeight="Medium"/>
                                             <NumericUpDown Value="{Binding ModelCacheIdleTimeoutMinutes, Mode=TwoWay}"
-                                                           Minimum="1" Maximum="1440" Increment="1"
+                                                           Minimum="0" Maximum="1440" Increment="1"
                                                            FormatString="0"/>
-                                            <TextBlock Text="Tier 1: Weight cache unload" FontSize="10" Foreground="{StaticResource TextMutedBrush}"/>
+                                            <TextBlock Text="Tier 1: Weight cache unload (0 = off)" FontSize="10" Foreground="{StaticResource TextMutedBrush}"/>
                                         </StackPanel>
 
                                         <!-- Tier 2: Engine Hibernation Timeout -->
                                         <StackPanel Grid.Column="1" Spacing="4" Margin="4,0,4,0">
                                             <TextBlock Text="Engine Hibernation (min)" FontSize="12" Foreground="{StaticResource TextMutedBrush}" FontWeight="Medium"/>
                                             <NumericUpDown Value="{Binding EngineHibernationTimeoutMinutes, Mode=TwoWay}"
-                                                           Minimum="1" Maximum="1440" Increment="1"
+                                                           Minimum="0" Maximum="1440" Increment="1"
                                                            FormatString="0"/>
-                                            <TextBlock Text="Tier 2: Process termination" FontSize="10" Foreground="{StaticResource TextMutedBrush}"/>
+                                            <TextBlock Text="Tier 2: Process termination (0 = off)" FontSize="10" Foreground="{StaticResource TextMutedBrush}"/>
                                         </StackPanel>
 
                                         <!-- RAM Pressure Threshold -->
