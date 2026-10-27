@@ -73,6 +73,17 @@ public partial class SettingsViewModel : ObservableObject
     [ObservableProperty] private string _audioEngineUrl = "http://127.0.0.1:8880";
     [ObservableProperty] private string _preferredAudioVoice = "af_heart";
 
+    [ObservableProperty] private int _modelCacheIdleTimeoutMinutes = 15;
+    [ObservableProperty] private int _engineHibernationTimeoutMinutes = 30;
+    [ObservableProperty] private int _ramPressureThresholdPercent = 75;
+
+    [ObservableProperty] private string _audioPath = "";
+    [ObservableProperty] private string _videoModelsPath = "";
+    [ObservableProperty] private string _videoOutputPath = "";
+    [ObservableProperty] private bool _aiAssistantEnabled;
+    [ObservableProperty] private string _aiAssistantCustomSystemPrompt = "";
+    [ObservableProperty] private string _aiAssistantPromptsDirectory = "";
+
     [ObservableProperty] private string _aiAssistantEndpoint = "http://127.0.0.1:4000/v1";
     [ObservableProperty] private string _aiAssistantApiKey = "";
     [ObservableProperty] private string _aiAssistantModel = "google/gemini-2.5-flash";
@@ -885,6 +896,16 @@ public partial class SettingsViewModel : ObservableObject
                     AiAssistantApiKey = settings.AiAssistantApiKey ?? "";
                     AiAssistantModel = settings.AiAssistantModel ?? "google/gemini-2.5-flash";
 
+                    AudioPath = settings.AudioPath ?? "";
+                    VideoModelsPath = settings.VideoModelsPath ?? "";
+                    VideoOutputPath = settings.VideoOutputPath ?? "";
+                    AiAssistantEnabled = settings.AiAssistantEnabled;
+                    AiAssistantCustomSystemPrompt = settings.AiAssistantCustomSystemPrompt ?? "";
+                    AiAssistantPromptsDirectory = settings.AiAssistantPromptsDirectory ?? "";
+                    ModelCacheIdleTimeoutMinutes = settings.ModelCacheIdleTimeoutMinutes;
+                    EngineHibernationTimeoutMinutes = settings.EngineHibernationTimeoutMinutes;
+                    RamPressureThresholdPercent = settings.RamPressureThresholdPercent;
+
                     if (settings.CustomPresets != null && settings.CustomPresets.Count > 0)
                     {
                         foreach (var preset in settings.CustomPresets)
@@ -936,15 +957,24 @@ public partial class SettingsViewModel : ObservableObject
                 ServiceName: this.ServiceName,
                 PublishOutputPath: this.PublishOutputPath,
                 ComfyModelsPath: this.ComfyModelsPath,
+                AudioPath: this.AudioPath,
                 LanAccessUrl: this.LanAccessUrl,
                 SelectedThemeStyle: this.SelectedThemeStyle,
                 AudioEngineExecutablePath: this.AudioEngineExecutablePath,
                 AudioEngineUrl: this.AudioEngineUrl,
                 PreferredAudioVoice: this.PreferredAudioVoice,
+                VideoModelsPath: this.VideoModelsPath,
+                VideoOutputPath: this.VideoOutputPath,
                 CustomPresets: customPresets,
+                AiAssistantEnabled: this.AiAssistantEnabled,
                 AiAssistantEndpoint: this.AiAssistantEndpoint,
                 AiAssistantApiKey: this.AiAssistantApiKey,
-                AiAssistantModel: this.AiAssistantModel
+                AiAssistantModel: this.AiAssistantModel,
+                AiAssistantCustomSystemPrompt: this.AiAssistantCustomSystemPrompt,
+                AiAssistantPromptsDirectory: this.AiAssistantPromptsDirectory,
+                ModelCacheIdleTimeoutMinutes: this.ModelCacheIdleTimeoutMinutes,
+                EngineHibernationTimeoutMinutes: this.EngineHibernationTimeoutMinutes,
+                RamPressureThresholdPercent: this.RamPressureThresholdPercent
             );
 
             var content = new StringContent(

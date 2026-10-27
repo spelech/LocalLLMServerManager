@@ -7,7 +7,15 @@ public record GpuTelemetryInfo(
     double UsedVramGb,
     double TotalVramGb,
     double FreeVramGb,
-    int Percent
+    int Percent,
+    double UsedRamGb = 0.0,
+    double TotalRamGb = 32.0,
+    int RamPercent = 0,
+    double ProcessWorkingSetMb = 0.0,
+    double NonPagedPoolMb = 0.0,
+    int ModelCacheIdleTimeoutMinutes = 15,
+    int EngineHibernationTimeoutMinutes = 30,
+    int RamPressureThresholdPercent = 75
 );
 
 public interface ITelemetryService

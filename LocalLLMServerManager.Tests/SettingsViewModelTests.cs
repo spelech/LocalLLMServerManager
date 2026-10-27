@@ -706,4 +706,77 @@ public class SettingsViewModelTests
         Assert.Equal("Network", vm.SelectedCategory);
         Assert.True(vm.IsNetworkCategoryActive);
     }
+
+    [Fact]
+    public async Task MemoryCacheLifetimeSettings_HaveDefaults_AndRoundTripViaLoadAndSave()
+    {
+        var vm = new SettingsViewModel();
+        Assert.Equal(15, vm.ModelCacheIdleTimeoutMinutes);
+        Assert.Equal(30, vm.EngineHibernationTimeoutMinutes);
+        Assert.Equal(75, vm.RamPressureThresholdPercent);
+
+        var loadedSettings = new AppSettings(
+            ModelCacheIdleTimeoutMinutes: 10,
+            EngineHibernationTimeoutMinutes: 45,
+            RamPressureThresholdPercent: 80
+        );
+
+        string? savedPayload = null;
+        var mockHandler = new Mock<HttpMessageHandler>();
+        mockHandler.Protected()
+            .Setup<Task<HttpResponseMessage>>(
+                "SendAsync",
+                ItExpr.Is<HttpRequestMessage>(r => r.Method == HttpMethod.Get && r.RequestUri!.ToString().Contains("/api/settings")),
+                ItExpr.IsAny<CancellationToken>()
+            )
+            .ReturnsAsync(new HttpResponseMessage
+            {
+                StatusCode = HttpStatusCode.OK,
+                Content = new StringContent(JsonSerializer.Serialize(loadedSettings), Encoding.UTF8, "application/json")
+            });
+
+        mockHandler.Protected()
+            .Setup<Task<HttpResponseMessage>>(
+                "SendAsync",
+                ItExpr.Is<HttpRequestMessage>(r => r.Method == HttpMethod.Get && r.RequestUri!.ToString().Contains("/api/components")),
+                ItExpr.IsAny<CancellationToken>()
+            )
+            .ReturnsAsync(new HttpResponseMessage
+            {
+                StatusCode = HttpStatusCode.OK,
+                Content = new StringContent("[]", Encoding.UTF8, "application/json")
+            });
+
+        mockHandler.Protected()
+            .Setup<Task<HttpResponseMessage>>(
+                "SendAsync",
+                ItExpr.Is<HttpRequestMessage>(r => r.Method == HttpMethod.Post && r.RequestUri!.ToString().Contains("/api/settings")),
+                ItExpr.IsAny<CancellationToken>()
+            )
+            .ReturnsAsync(new HttpResponseMessage
+            {
+                StatusCode = HttpStatusCode.OK,
+                Content = new StringContent("{}", Encoding.UTF8, "application/json")
+            })
+            .Callback<HttpRequestMessage, CancellationToken>((req, _) =>
+            {
+                savedPayload = req.Content?.ReadAsStringAsync().GetAwaiter().GetResult();
+            });
+
+        var http = new HttpClient(mockHandler.Object);
+        await vm.LoadSettingsAsync("http://127.0.0.1:5246", http);
+
+        Assert.Equal(10, vm.ModelCacheIdleTimeoutMinutes);
+        Assert.Equal(45, vm.EngineHibernationTimeoutMinutes);
+        Assert.Equal(80, vm.RamPressureThresholdPercent);
+
+        await vm.SaveSettingsAsync("http://127.0.0.1:5246", http);
+
+        Assert.NotNull(savedPayload);
+        var parsed = JsonSerializer.Deserialize<AppSettings>(savedPayload, new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
+        Assert.NotNull(parsed);
+        Assert.Equal(10, parsed.ModelCacheIdleTimeoutMinutes);
+        Assert.Equal(45, parsed.EngineHibernationTimeoutMinutes);
+        Assert.Equal(80, parsed.RamPressureThresholdPercent);
+    }
 }
