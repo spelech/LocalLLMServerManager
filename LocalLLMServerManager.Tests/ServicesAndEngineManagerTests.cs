@@ -280,6 +280,15 @@ public class ServicesAndEngineManagerTests : IClassFixture<AppTestServerFixture>
         Assert.Contains("forge", result.HibernatedEngines);
         Assert.Contains("audio", result.HibernatedEngines);
         Assert.Contains("RAM pressure", result.Reason);
+        Assert.Equal(3, engineManager.StoppedEngines.Count);
+
+        // Second consecutive call without new activity -> does not re-evict or re-stop
+        var result2 = await orchestrator.EvaluateCacheLifetimesAsync();
+        Assert.False(result2.OllamaUnloaded);
+        Assert.False(result2.ComfyVramFreed);
+        Assert.Empty(result2.HibernatedEngines);
+        Assert.Equal("No eviction needed", result2.Reason);
+        Assert.Equal(3, engineManager.StoppedEngines.Count);
     }
 
     [Fact]

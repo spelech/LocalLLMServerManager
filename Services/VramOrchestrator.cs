@@ -232,14 +232,14 @@ public class VramOrchestrator
             var twoMinutes = TimeSpan.FromMinutes(2);
 
             var ollamaIdle = now - (_lastActivityUtc.TryGetValue("ollama", out var oLast) ? oLast : now);
-            if (ollamaIdle >= twoMinutes)
+            if (ollamaIdle >= twoMinutes && (!_tier1Evicted.TryGetValue("ollama", out var oEvicted) || !oEvicted))
             {
                 ollamaUnloaded = await UnloadOllamaModelsAsync($"RAM pressure ({ramUsedPct}% >= {ramPressureThreshold}%)", cancellationToken);
                 _tier1Evicted["ollama"] = true;
             }
 
             var comfyIdle = now - (_lastActivityUtc.TryGetValue("comfy", out var cLast) ? cLast : now);
-            if (comfyIdle >= twoMinutes)
+            if (comfyIdle >= twoMinutes && (!_tier1Evicted.TryGetValue("comfy", out var cEvicted) || !cEvicted))
             {
                 comfyVramFreed = await FreeComfyUiVramAsync(comfyUrl, cancellationToken);
                 _tier1Evicted["comfy"] = true;
@@ -247,7 +247,7 @@ public class VramOrchestrator
 
             if (_engineManager != null)
             {
-                if (comfyIdle >= twoMinutes)
+                if (comfyIdle >= twoMinutes && (!_tier2Hibernated.TryGetValue("comfy", out var cHib) || !cHib))
                 {
                     await _engineManager.StopComfyUiAsync(_logger);
                     hibernatedEngines.Add("comfy");
@@ -255,7 +255,7 @@ public class VramOrchestrator
                 }
 
                 var forgeIdle = now - (_lastActivityUtc.TryGetValue("forge", out var fLast) ? fLast : now);
-                if (forgeIdle >= twoMinutes)
+                if (forgeIdle >= twoMinutes && (!_tier2Hibernated.TryGetValue("forge", out var fHib) || !fHib))
                 {
                     await _engineManager.StopForgeAsync(_logger);
                     hibernatedEngines.Add("forge");
@@ -263,7 +263,7 @@ public class VramOrchestrator
                 }
 
                 var audioIdle = now - (_lastActivityUtc.TryGetValue("audio", out var aLast) ? aLast : now);
-                if (audioIdle >= twoMinutes)
+                if (audioIdle >= twoMinutes && (!_tier2Hibernated.TryGetValue("audio", out var aHib) || !aHib))
                 {
                     await _engineManager.StopAudioEngineAsync(_logger);
                     hibernatedEngines.Add("audio");
@@ -271,7 +271,9 @@ public class VramOrchestrator
                 }
             }
 
-            var reason = $"RAM pressure relief ({ramUsedPct}% >= {ramPressureThreshold}%)";
+            var reason = (ollamaUnloaded || comfyVramFreed || hibernatedEngines.Count > 0)
+                ? $"RAM pressure relief ({ramUsedPct}% >= {ramPressureThreshold}%)"
+                : "No eviction needed";
             return new CacheEvictionResult(ollamaUnloaded, comfyVramFreed, hibernatedEngines, reason);
         }
 
