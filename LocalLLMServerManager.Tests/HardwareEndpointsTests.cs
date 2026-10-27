@@ -284,5 +284,26 @@ public class HardwareEndpointsTests : IClassFixture<AppTestServerFixture>
         Assert.NotNull(result);
         Assert.Equal(48, result.TotalLayers);
     }
-}
+    [Fact]
+    public void AppSettings_DefaultMemoryCacheSettings_AreConfigured()
+    {
+        var settings = new AppSettings();
+        Assert.Equal(15, settings.ModelCacheIdleTimeoutMinutes);
+        Assert.Equal(30, settings.EngineHibernationTimeoutMinutes);
+        Assert.Equal(75, settings.RamPressureThresholdPercent);
+    }
 
+    [Fact]
+    public void GpuTelemetryProvider_GetSystemMemoryInfo_ReturnsValidHostMetrics()
+    {
+        var provider = new LocalLLMServerManager.Services.GpuTelemetryProvider();
+        var snapshot = provider.GetSystemMemoryInfo();
+
+        Assert.True(snapshot.TotalRamBytes > 0);
+        Assert.True(snapshot.UsedRamBytes > 0);
+        Assert.True(snapshot.AvailableRamBytes >= 0);
+        Assert.InRange(snapshot.RamUsedPercent, 1, 100);
+        Assert.True(snapshot.ProcessWorkingSetBytes > 0);
+        Assert.True(snapshot.NonPagedPoolBytes >= 0);
+    }
+}
