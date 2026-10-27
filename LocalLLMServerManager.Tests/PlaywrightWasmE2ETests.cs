@@ -287,6 +287,13 @@ public class PlaywrightWasmE2ETests : IClassFixture<AppTestServerFixture>
                     "async () => { const res = await fetch('/api/memory/purge', { method: 'POST' }); return await res.json(); }"
                 );
                 Assert.Equal("purged", purgeData.GetProperty("status").GetString());
+
+                // Simulate UI interaction for Purge Memory icon button in top-right titlebar ribbon
+                await page.Mouse.ClickAsync(1240, 17);
+                await page.WaitForTimeoutAsync(500);
+
+                // Verify app continues running cleanly without console errors after purge click
+                Assert.True(consoleErrors.IsEmpty, $"Console errors after clicking Purge button on {name}:\n" + string.Join("\n", consoleErrors));
             }
         }
     }
