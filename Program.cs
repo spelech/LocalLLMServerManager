@@ -168,7 +168,9 @@ public class Program
         builder.Logging.AddFilter("System.Net.Http.HttpClient", LogLevel.Warning);
 
         builder.Services.AddHttpClient();
+        builder.Services.AddSingleton(TimeProvider.System);
         builder.Services.AddSingleton<VramOrchestrator>();
+        builder.Services.AddHostedService<MemoryLifecycleWatchdog>();
         builder.Services.AddSingleton<IAiEngineManager, AiEngineManager>();
         builder.Services.AddSingleton<IGitUpdateService, GitUpdateService>();
         builder.Services.AddSingleton<IToolDiscoveryService, ToolDiscoveryService>();
@@ -255,12 +257,18 @@ public class Program
                                  path.StartsWith("/v1/images", StringComparison.OrdinalIgnoreCase);
             var isComfyRequest = path.StartsWith("/comfyapi", StringComparison.OrdinalIgnoreCase) ||
                                  path.StartsWith("/api/comfy/prompt", StringComparison.OrdinalIgnoreCase);
+            var isOllamaRequest = path.StartsWith("/api/generate", StringComparison.OrdinalIgnoreCase) ||
+                                  path.StartsWith("/api/chat", StringComparison.OrdinalIgnoreCase) ||
+                                  path.StartsWith("/v1/chat", StringComparison.OrdinalIgnoreCase);
+            var isAudioRequest = path.StartsWith("/v1/audio", StringComparison.OrdinalIgnoreCase) ||
+                                 path.StartsWith("/api/audio", StringComparison.OrdinalIgnoreCase);
 
             var orchestrator = context.RequestServices.GetRequiredService<VramOrchestrator>();
             var settingsService = context.RequestServices.GetRequiredService<ISettingsService>();
 
             if (isForgeRequest)
             {
+                orchestrator.RecordActivity("forge");
                 await orchestrator.EnsureVramForImageGenerationAsync();
 
                 if (!await orchestrator.IsForgeHealthyAsync())
@@ -276,6 +284,7 @@ public class Program
             }
             else if (isComfyRequest)
             {
+                orchestrator.RecordActivity("comfy");
                 await orchestrator.EnsureVramForComfyUiAsync();
 
                 var settings = settingsService.LoadSettings();
@@ -290,6 +299,14 @@ public class Program
                         await Task.Delay(2000);
                     }
                 }
+            }
+            else if (isOllamaRequest)
+            {
+                orchestrator.RecordActivity("ollama");
+            }
+            else if (isAudioRequest)
+            {
+                orchestrator.RecordActivity("audio");
             }
 
             await next();

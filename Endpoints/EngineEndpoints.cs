@@ -1,4 +1,5 @@
 using LocalLLMServerManager.Services;
+using LocalLLMServerManager.Shared.Interfaces;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Logging;
@@ -9,15 +10,24 @@ public static class EngineEndpoints
 {
     public static void MapEngineEndpoints(this WebApplication app)
     {
-        app.MapGet("/api/gpu/vram", (IGpuTelemetryProvider telemetryProvider) =>
+        app.MapGet("/api/gpu/vram", (IGpuTelemetryProvider telemetryProvider, ISettingsService settingsService) =>
         {
-            var (gpuName, vramBytes, usedVramBytes) = telemetryProvider.GetGpuInfo();
+            return Results.Ok(BuildMemoryTelemetryResponse(telemetryProvider, settingsService));
+        });
+
+        app.MapGet("/api/hardware/memory", (IGpuTelemetryProvider telemetryProvider, ISettingsService settingsService) =>
+        {
+            return Results.Ok(BuildMemoryTelemetryResponse(telemetryProvider, settingsService));
+        });
+
+        app.MapPost("/api/memory/purge", async (VramOrchestrator orchestrator, IGpuTelemetryProvider telemetryProvider, ISettingsService settingsService, CancellationToken ct) =>
+        {
+            var eviction = await orchestrator.PurgeAllCachesAsync(stopIdleEngines: true, ct);
             return Results.Ok(new
             {
-                GpuName = gpuName,
-                VramBytes = vramBytes,
-                UsedVramBytes = usedVramBytes,
-                VramGB = Math.Round((double)vramBytes / (1024 * 1024 * 1024), 2)
+                status = "purged",
+                eviction,
+                memory = BuildMemoryTelemetryResponse(telemetryProvider, settingsService)
             });
         });
 
@@ -43,6 +53,7 @@ public static class EngineEndpoints
                 return Results.BadRequest(new { message = $"Invalid or missing ComfyUI executable path: {execPath}" });
             }
 
+            orchestrator.RecordActivity("comfy");
             await orchestrator.EnsureVramForComfyUiAsync();
             var success = await engineManager.StartComfyUiAsync(execPath, logger);
 
@@ -60,7 +71,7 @@ public static class EngineEndpoints
             return Results.Ok(new { message = "ComfyUI Stopped" });
         });
 
-        app.MapPost("/api/forge/start", async (IAiEngineManager engineManager, ISettingsService settingsService, ILoggerFactory loggerFactory) =>
+        app.MapPost("/api/forge/start", async (VramOrchestrator orchestrator, IAiEngineManager engineManager, ISettingsService settingsService, ILoggerFactory loggerFactory) =>
         {
             var logger = loggerFactory.CreateLogger("EngineEndpoints");
             var settings = settingsService.LoadSettings();
@@ -71,6 +82,7 @@ public static class EngineEndpoints
                 return Results.BadRequest(new { message = $"Invalid or missing SD Forge executable path: {execPath}" });
             }
 
+            orchestrator.RecordActivity("forge");
             var success = await engineManager.StartForgeAsync(execPath, logger);
             if (success)
             {
@@ -88,11 +100,12 @@ public static class EngineEndpoints
 
         app.MapPost("/api/comfy/free", async (VramOrchestrator orchestrator) =>
         {
+            orchestrator.RecordActivity("comfy");
             await orchestrator.FreeComfyUiVramAsync();
             return Results.Ok(new { message = "ComfyUI VRAM freed" });
         });
 
-        app.MapPost("/api/audio/start", async (IAiEngineManager engineManager, ISettingsService settingsService, ILoggerFactory loggerFactory) =>
+        app.MapPost("/api/audio/start", async (VramOrchestrator orchestrator, IAiEngineManager engineManager, ISettingsService settingsService, ILoggerFactory loggerFactory) =>
         {
             var logger = loggerFactory.CreateLogger("EngineEndpoints");
             var settings = settingsService.LoadSettings();
@@ -106,6 +119,7 @@ public static class EngineEndpoints
                 }
             }
 
+            orchestrator.RecordActivity("audio");
             var success = await engineManager.StartAudioEngineAsync(execPath, logger);
             if (success)
             {
@@ -123,12 +137,13 @@ public static class EngineEndpoints
 
         app.MapGet("/api/audio/voices", HandleGetVoicesAsync);
 
-        app.MapPost("/api/ollama/start", async (IAiEngineManager engineManager, ISettingsService settingsService, ILoggerFactory loggerFactory) =>
+        app.MapPost("/api/ollama/start", async (VramOrchestrator orchestrator, IAiEngineManager engineManager, ISettingsService settingsService, ILoggerFactory loggerFactory) =>
         {
             var logger = loggerFactory.CreateLogger("EngineEndpoints");
             var settings = settingsService.LoadSettings();
             var execPath = AiEngineManager.ResolveOllamaExecutable(settings.OllamaExecutablePath);
 
+            orchestrator.RecordActivity("ollama");
             var success = await engineManager.StartOllamaAsync(execPath, logger);
             if (success)
             {
@@ -144,8 +159,9 @@ public static class EngineEndpoints
             return Results.Ok(new { message = "Ollama Stopped" });
         });
 
-        app.MapPost("/api/engine/start", async (EngineToggleRequest req, IAiEngineManager engineManager) =>
+        app.MapPost("/api/engine/start", async (EngineToggleRequest req, VramOrchestrator orchestrator, IAiEngineManager engineManager) =>
         {
+            orchestrator.RecordActivity(req.Engine ?? "");
             var result = await engineManager.StartEngineAsync(req.Engine ?? "");
             if (result.Success)
             {
@@ -163,6 +179,44 @@ public static class EngineEndpoints
             }
             return Results.Problem(result.Message);
         });
+    }
+
+    public static object BuildMemoryTelemetryResponse(IGpuTelemetryProvider telemetryProvider, ISettingsService settingsService)
+    {
+        var (gpuName, vramBytes, usedVramBytes) = telemetryProvider.GetGpuInfo();
+        var sysMem = telemetryProvider.GetSystemMemoryInfo();
+        var settings = settingsService.LoadSettings();
+        double totalVramGb = Math.Round((double)vramBytes / (1024.0 * 1024.0 * 1024.0), 2);
+        double usedVramGb = Math.Round((double)usedVramBytes / (1024.0 * 1024.0 * 1024.0), 2);
+        double freeVramGb = Math.Max(0.0, Math.Round(totalVramGb - usedVramGb, 2));
+        int usedVramPct = vramBytes > 0 ? (int)Math.Clamp(Math.Round((double)usedVramBytes / vramBytes * 100.0), 0, 100) : 0;
+        double totalRamGb = Math.Round((double)sysMem.TotalRamBytes / (1024.0 * 1024.0 * 1024.0), 2);
+        double usedRamGb = Math.Round((double)sysMem.UsedRamBytes / (1024.0 * 1024.0 * 1024.0), 2);
+        double processWsMb = Math.Round((double)sysMem.ProcessWorkingSetBytes / (1024.0 * 1024.0), 1);
+        double nonPagedMb = Math.Round((double)sysMem.NonPagedPoolBytes / (1024.0 * 1024.0), 1);
+
+        return new
+        {
+            GpuName = gpuName,
+            VramBytes = vramBytes,
+            UsedVramBytes = usedVramBytes,
+            VramGB = totalVramGb,
+            TotalVramGb = totalVramGb,
+            UsedVramGb = usedVramGb,
+            FreeVramGb = freeVramGb,
+            UsedPercent = usedVramPct,
+            TotalRamBytes = sysMem.TotalRamBytes,
+            UsedRamBytes = sysMem.UsedRamBytes,
+            AvailableRamBytes = sysMem.AvailableRamBytes,
+            TotalRamGb = totalRamGb,
+            UsedRamGb = usedRamGb,
+            RamUsedPercent = sysMem.RamUsedPercent,
+            ProcessWorkingSetMb = processWsMb,
+            NonPagedPoolMb = nonPagedMb,
+            ModelCacheIdleTimeoutMinutes = settings.ModelCacheIdleTimeoutMinutes,
+            EngineHibernationTimeoutMinutes = settings.EngineHibernationTimeoutMinutes,
+            RamPressureThresholdPercent = settings.RamPressureThresholdPercent
+        };
     }
 
     public static async Task<IResult> HandleGetVoicesAsync(ISettingsService settingsService, System.Net.Http.IHttpClientFactory clientFactory)
@@ -197,5 +251,3 @@ public static class EngineEndpoints
         return Results.Ok(new { voices = defaultVoices, preferred = settings.PreferredAudioVoice });
     }
 }
-
-
