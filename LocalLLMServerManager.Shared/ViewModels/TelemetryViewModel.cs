@@ -488,7 +488,8 @@ public partial class TelemetryViewModel : ObservableObject
     [RelayCommand]
     public async Task RefreshStatusAsync()
     {
-        await RefreshStatusAsync(ApiBase, "http://127.0.0.1:8188", HttpHelper.CreateClient(ApiBase));
+        using var http = HttpHelper.CreateClient(ApiBase);
+        await RefreshStatusAsync(ApiBase, "http://127.0.0.1:8188", http);
     }
 
     public async Task RefreshStatusAsync(string apiBase, string comfyUrl, HttpClient http)
@@ -556,7 +557,8 @@ public partial class TelemetryViewModel : ObservableObject
     [RelayCommand]
     public async Task PurgeMemoryAsync()
     {
-        await PurgeMemoryAsync(ApiBase, HttpHelper.CreateClient(ApiBase));
+        using var http = HttpHelper.CreateClient(ApiBase);
+        await PurgeMemoryAsync(ApiBase, http);
     }
 
     public async Task PurgeMemoryAsync(string apiBase, HttpClient http)

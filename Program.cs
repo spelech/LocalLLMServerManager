@@ -309,7 +309,17 @@ public class Program
                 orchestrator.RecordActivity("audio");
             }
 
-            await next();
+            try
+            {
+                await next();
+            }
+            finally
+            {
+                if (isForgeRequest) orchestrator.RecordActivity("forge");
+                else if (isComfyRequest) orchestrator.RecordActivity("comfy");
+                else if (isOllamaRequest) orchestrator.RecordActivity("ollama");
+                else if (isAudioRequest) orchestrator.RecordActivity("audio");
+            }
         });
 
         app.MapHealthEndpoints();

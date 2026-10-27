@@ -11,20 +11,23 @@ public sealed class MemoryLifecycleWatchdog : BackgroundService
     private readonly VramOrchestrator _orchestrator;
     private readonly ILogger<MemoryLifecycleWatchdog> _logger;
     private readonly TimeSpan _checkInterval;
+    private readonly TimeProvider _timeProvider;
 
     public MemoryLifecycleWatchdog(
         VramOrchestrator orchestrator,
         ILogger<MemoryLifecycleWatchdog> logger,
-        TimeSpan? checkInterval = null)
+        TimeSpan? checkInterval = null,
+        TimeProvider? timeProvider = null)
     {
         _orchestrator = orchestrator;
         _logger = logger;
         _checkInterval = checkInterval ?? TimeSpan.FromSeconds(30);
+        _timeProvider = timeProvider ?? TimeProvider.System;
     }
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
-        using var timer = new PeriodicTimer(_checkInterval);
+        using var timer = new PeriodicTimer(_checkInterval, _timeProvider);
         try
         {
             while (await timer.WaitForNextTickAsync(stoppingToken))
