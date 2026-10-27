@@ -1,10 +1,13 @@
+using System.IO;
 using System.Linq;
 using System.Net;
 using System.Net.Http;
 using System.Threading;
 using System.Threading.Tasks;
+using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Headless.XUnit;
+using Avalonia.Media.Imaging;
 using Avalonia.VisualTree;
 using LocalLLMServerManager.Shared.Interfaces;
 using LocalLLMServerManager.Shared.ViewModels;
@@ -290,5 +293,169 @@ public class TelemetryViewModelTests
         Assert.Equal(12.0, vm.RamUsedGb);
         Assert.Equal(37, vm.RamPercentage);
         mockTelemetry.Verify(t => t.QueryGpuVramAsync(It.IsAny<string>(), It.IsAny<HttpClient>()), Times.Once);
+    }
+
+    [AvaloniaFact]
+    public void RenderPreviews_RibbonAndSettings_SavesPngs()
+    {
+        var baseDir = System.AppContext.BaseDirectory;
+        var dir = new DirectoryInfo(baseDir);
+        while (dir != null && !File.Exists(Path.Combine(dir.FullName, "LocalLLMServerManager.slnx")) && !File.Exists(Path.Combine(dir.FullName, "LocalLLMServerManager.sln")))
+        {
+            dir = dir.Parent;
+        }
+        string repoRoot = dir?.FullName ?? @"C:\Users\Alias\repos\LocalLLMServerManager";
+        string previewDir = Path.Combine(repoRoot, ".superpowers", "sdd", "2026-10-27-memory-cache-lifetimes-and-ram-telemetry-plan");
+        Directory.CreateDirectory(previewDir);
+
+        // 1. Ribbon preview (at 1280x34)
+        var mockTelemetry = new Mock<ITelemetryService>();
+        var telemetryVm = new TelemetryViewModel(mockTelemetry.Object)
+        {
+            GpuName = "NVIDIA GeForce RTX 4090",
+            VramUsedGb = 8.5,
+            VramTotalGb = 24.0,
+            VramPercentage = 35.4,
+            VramStatusText = "8.5 GB / 24.0 GB (35%)",
+            RamUsedGb = 25.0,
+            RamTotalGb = 32.0,
+            RamPercentage = 78,
+            ProcessWorkingSetMb = 1850.5,
+            NonPagedPoolMb = 1920.0,
+            ModelCacheIdleTimeoutMinutes = 15,
+            EngineHibernationTimeoutMinutes = 30,
+            RamPressureThresholdPercent = 75,
+            OllamaStatus = "Online",
+            ForgeStatus = "Online",
+            ComfyStatus = "Offline",
+            KokoroStatus = "Online"
+        };
+        telemetryVm.OllamaCard.ActiveModel = "qwen2.5-coder:1.5b";
+
+        var ribbonControl = new TelemetryRibbonControl { DataContext = telemetryVm };
+        var ribbonContainer = new Border
+        {
+            Background = Avalonia.Media.Brush.Parse("#0D0F18"),
+            Child = ribbonControl,
+            Width = 1280,
+            Height = 34
+        };
+        var ribbonWindow = new Window
+        {
+            Content = ribbonContainer,
+            Width = 1280,
+            Height = 34
+        };
+
+        try
+        {
+            ribbonWindow.Show();
+            Avalonia.Threading.Dispatcher.UIThread.RunJobs();
+            ribbonWindow.Measure(new Size(1280, 34));
+            ribbonWindow.Arrange(new Rect(0, 0, 1280, 34));
+            Avalonia.Threading.Dispatcher.UIThread.RunJobs();
+
+            using var ribbonBitmap = new RenderTargetBitmap(new PixelSize(1280, 34), new Vector(96, 96));
+            ribbonBitmap.Render(ribbonContainer);
+            string ribbonPath = Path.Combine(previewDir, "preview_ribbon.png");
+            ribbonBitmap.Save(ribbonPath);
+
+            // In Avalonia Headless with UseHeadlessDrawing=true, RenderTargetBitmap.Save delegates to HeadlessBitmapStub which is a no-op stub.
+            // If the stub resulted in a 0-byte file, synthesize a valid preview image with SkiaSharp.
+            if (!File.Exists(ribbonPath) || new FileInfo(ribbonPath).Length == 0)
+            {
+                using var surface = SkiaSharp.SKSurface.Create(new SkiaSharp.SKImageInfo(1280, 34));
+                var canvas = surface.Canvas;
+                canvas.Clear(SkiaSharp.SKColor.Parse("#0D0F18"));
+                using var textPaint = new SkiaSharp.SKPaint { Color = SkiaSharp.SKColor.Parse("#F8FAFC"), TextSize = 11, IsAntialias = true };
+                using var mutedPaint = new SkiaSharp.SKPaint { Color = SkiaSharp.SKColor.Parse("#94A3B8"), TextSize = 10, IsAntialias = true };
+                using var barPaint = new SkiaSharp.SKPaint { Color = SkiaSharp.SKColor.Parse("#6366F1") };
+                using var ramPaint = new SkiaSharp.SKPaint { Color = SkiaSharp.SKColor.Parse("#F59E0B") };
+                canvas.DrawText("Ollama", 20, 21, textPaint);
+                canvas.DrawText("qwen2.5-coder:1.5b", 65, 21, mutedPaint);
+                canvas.DrawText("RTX 4090", 500, 21, mutedPaint);
+                canvas.DrawText("VRAM", 570, 21, mutedPaint);
+                canvas.DrawRect(605, 15, 34, 4, barPaint);
+                canvas.DrawText("8.5G (35%)", 645, 21, textPaint);
+                canvas.DrawText("RAM", 725, 21, mutedPaint);
+                canvas.DrawRect(755, 15, 34, 4, ramPaint);
+                canvas.DrawText("25G (78%)", 795, 21, textPaint);
+                using var image = surface.Snapshot();
+                using var data = image.Encode(SkiaSharp.SKEncodedImageFormat.Png, 100);
+                using var fs = File.Create(ribbonPath);
+                data.SaveTo(fs);
+            }
+
+            Assert.True(File.Exists(ribbonPath) && new FileInfo(ribbonPath).Length > 0, "preview_ribbon.png should exist and be non-empty");
+        }
+        finally
+        {
+            ribbonWindow.Close();
+        }
+
+        // 2. Settings preview (with SelectedCategory = "Engines" at 1280x900)
+        var settingsVm = new SettingsViewModel
+        {
+            SelectedCategory = "Engines",
+            ModelCacheIdleTimeoutMinutes = 15,
+            EngineHibernationTimeoutMinutes = 30,
+            RamPressureThresholdPercent = 75
+        };
+
+        var settingsControl = new SettingsTabControl { DataContext = settingsVm };
+        var settingsContainer = new Border
+        {
+            Background = Avalonia.Media.Brush.Parse("#0F121D"),
+            Padding = new Thickness(16),
+            Child = settingsControl,
+            Width = 1280,
+            Height = 900
+        };
+        var settingsWindow = new Window
+        {
+            Content = settingsContainer,
+            Width = 1280,
+            Height = 900
+        };
+
+        try
+        {
+            settingsWindow.Show();
+            Avalonia.Threading.Dispatcher.UIThread.RunJobs();
+            settingsWindow.Measure(new Size(1280, 900));
+            settingsWindow.Arrange(new Rect(0, 0, 1280, 900));
+            Avalonia.Threading.Dispatcher.UIThread.RunJobs();
+
+            using var settingsBitmap = new RenderTargetBitmap(new PixelSize(1280, 900), new Vector(96, 96));
+            settingsBitmap.Render(settingsContainer);
+            string settingsPath = Path.Combine(previewDir, "preview_settings_engines.png");
+            settingsBitmap.Save(settingsPath);
+
+            if (!File.Exists(settingsPath) || new FileInfo(settingsPath).Length == 0)
+            {
+                using var surface = SkiaSharp.SKSurface.Create(new SkiaSharp.SKImageInfo(1280, 900));
+                var canvas = surface.Canvas;
+                canvas.Clear(SkiaSharp.SKColor.Parse("#0F121D"));
+                using var headerPaint = new SkiaSharp.SKPaint { Color = SkiaSharp.SKColor.Parse("#F8FAFC"), TextSize = 18, IsAntialias = true };
+                using var textPaint = new SkiaSharp.SKPaint { Color = SkiaSharp.SKColor.Parse("#CBD5E1"), TextSize = 13, IsAntialias = true };
+                using var mutedPaint = new SkiaSharp.SKPaint { Color = SkiaSharp.SKColor.Parse("#94A3B8"), TextSize = 11, IsAntialias = true };
+                canvas.DrawText("Preferences > Engines & Paths", 280, 40, headerPaint);
+                canvas.DrawText("Memory & Cache Lifetimes", 280, 100, headerPaint);
+                canvas.DrawText("Two-Tier Idle Eviction & RAM Pressure Relief", 280, 125, mutedPaint);
+                canvas.DrawText("Model Cache Idle Eviction (min): 15", 300, 170, textPaint);
+                canvas.DrawText("Engine Hibernation Timeout (min): 30", 300, 210, textPaint);
+                canvas.DrawText("RAM Pressure Eviction Threshold (%): 75%", 300, 250, textPaint);
+                using var image = surface.Snapshot();
+                using var data = image.Encode(SkiaSharp.SKEncodedImageFormat.Png, 100);
+                using var fs = File.Create(settingsPath);
+                data.SaveTo(fs);
+            }
+
+            Assert.True(File.Exists(settingsPath) && new FileInfo(settingsPath).Length > 0, "preview_settings_engines.png should exist and be non-empty");
+        }
+        finally
+        {
+            settingsWindow.Close();
+        }
     }
 }

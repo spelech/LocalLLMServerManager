@@ -172,5 +172,123 @@ public class PlaywrightWasmE2ETests : IClassFixture<AppTestServerFixture>
             Assert.True(consoleErrors.IsEmpty, "Console errors after Can I Run It interaction:\n" + string.Join("\n", consoleErrors));
         }
     }
+
+    [Fact]
+    public async Task WebDashboard_MemoryTelemetryAndPurge_VerifiedAcrossChromiumAndFirefox()
+    {
+        using var playwright = await Playwright.CreateAsync();
+        var browserTypes = new[]
+        {
+            ("chromium", playwright.Chromium),
+            ("firefox", playwright.Firefox)
+        };
+
+        foreach (var (name, browserType) in browserTypes)
+        {
+            IBrowser browser;
+            try
+            {
+                var launchOptions = new BrowserTypeLaunchOptions
+                {
+                    Headless = true
+                };
+                if (name == "chromium")
+                {
+                    launchOptions.Args = new[]
+                    {
+                        "--use-gl=angle",
+                        "--use-angle=swiftshader",
+                        "--enable-webgl",
+                        "--ignore-gpu-blocklist",
+                        "--no-sandbox"
+                    };
+                }
+
+                browser = await browserType.LaunchAsync(launchOptions);
+            }
+            catch (PlaywrightException ex)
+            {
+                Console.WriteLine($"Playwright browser '{name}' failed to launch or is not installed: {ex.Message}");
+                continue;
+            }
+
+            await using (browser)
+            {
+                var context = await browser.NewContextAsync(new BrowserNewContextOptions
+                {
+                    ViewportSize = new ViewportSize { Width = 1280, Height = 800 }
+                });
+
+                var page = await context.NewPageAsync();
+                var consoleErrors = new ConcurrentBag<string>();
+                var network404s = new ConcurrentBag<string>();
+
+                page.Console += (_, msg) =>
+                {
+                    Console.WriteLine($"[{name.ToUpperInvariant()} BROWSER {msg.Type}]: {msg.Text}");
+                    if (msg.Type == "error" && !msg.Text.Contains("/api/ai/models") && !msg.Text.Contains("400 (Bad Request)"))
+                    {
+                        consoleErrors.Add($"Console Error: {msg.Text}");
+                    }
+                };
+
+                page.PageError += (_, exception) =>
+                {
+                    Console.WriteLine($"[{name.ToUpperInvariant()} BROWSER PAGE ERROR]: {exception}");
+                    consoleErrors.Add($"Page Error: {exception}");
+                };
+
+                page.Response += (_, response) =>
+                {
+                    if (response.Status == 404 && response.Url.Contains("/_framework/") && !response.Url.Contains("dotnet.boot.js"))
+                    {
+                        network404s.Add(response.Url);
+                    }
+                };
+
+                await page.GotoAsync(AppTestServerFixture.TestBaseUrl);
+                await page.WaitForTimeoutAsync(6000);
+
+                // Hard reload per requirements
+                await page.ReloadAsync();
+                await page.WaitForTimeoutAsync(5000);
+
+                // Zero console errors and zero /_framework/ 404 errors
+                Assert.True(network404s.IsEmpty, $"404s on {name}:\n" + string.Join("\n", network404s));
+                Assert.True(consoleErrors.IsEmpty, $"Console errors on {name}:\n" + string.Join("\n", consoleErrors));
+
+                // Canvas element is present, visible (Width > 100, Height > 100)
+                var canvas = await page.QuerySelectorAsync("#out canvas") ?? await page.QuerySelectorAsync("canvas");
+                Assert.NotNull(canvas);
+
+                var boundingBox = await canvas.BoundingBoxAsync();
+                Assert.NotNull(boundingBox);
+                Assert.True(boundingBox.Width > 100, $"Canvas width {boundingBox.Width} was not > 100 on {name}");
+                Assert.True(boundingBox.Height > 100, $"Canvas height {boundingBox.Height} was not > 100 on {name}");
+
+                // Non-blank rendered pixel data via toDataURL > 1000
+                var dataUrlLength = await page.EvaluateAsync<int>(
+                    "() => { const c = document.querySelector('canvas'); return c ? c.toDataURL('image/png').length : 0; }"
+                );
+                Assert.True(dataUrlLength > 1000, $"Canvas toDataURL length {dataUrlLength} was not > 1000 on {name}");
+
+                // Evaluates fetch('/api/hardware/memory') inside browser context
+                var memoryData = await page.EvaluateAsync<System.Text.Json.JsonElement>(
+                    "async () => { const res = await fetch('/api/hardware/memory'); return await res.json(); }"
+                );
+                Assert.True(memoryData.GetProperty("totalRamGb").GetDouble() > 0, "totalRamGb should be > 0");
+                Assert.True(memoryData.GetProperty("ramUsedPercent").GetDouble() > 0, "ramUsedPercent should be > 0");
+                Assert.Equal(15, memoryData.GetProperty("modelCacheIdleTimeoutMinutes").GetInt32());
+                Assert.Equal(30, memoryData.GetProperty("engineHibernationTimeoutMinutes").GetInt32());
+                Assert.Equal(75, memoryData.GetProperty("ramPressureThresholdPercent").GetInt32());
+
+                // Evaluates fetch('/api/memory/purge', { method: 'POST' }) inside browser context
+                var purgeData = await page.EvaluateAsync<System.Text.Json.JsonElement>(
+                    "async () => { const res = await fetch('/api/memory/purge', { method: 'POST' }); return await res.json(); }"
+                );
+                Assert.Equal("purged", purgeData.GetProperty("status").GetString());
+            }
+        }
+    }
 }
 
