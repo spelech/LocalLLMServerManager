@@ -7,6 +7,8 @@
 [![Documentation](https://img.shields.io/badge/docs-VitePress-blue)](https://spelech.github.io/LocalLLMServerManager/)
 [![Release](https://img.shields.io/github/v/release/spelech/LocalLLMServerManager)](https://github.com/spelech/LocalLLMServerManager/releases/latest)
 [![CI & Code Coverage](https://github.com/spelech/LocalLLMServerManager/actions/workflows/ci.yml/badge.svg)](https://github.com/spelech/LocalLLMServerManager/actions/workflows/ci.yml)
+[![.NET 10](https://img.shields.io/badge/.NET-10.0-512BD4?logo=dotnet&logoColor=white)](https://dotnet.microsoft.com/)
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 
 ![Dashboard Overview](docs/images/dashboard_desktop.png)
 
