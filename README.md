@@ -1,6 +1,6 @@
 # Local LLM Server Manager
 
-> **v4.0.0** — The unified orchestrator for local AI. Manage Large Language Models (**Ollama**), Image Generation (**Stable Diffusion Forge & ComfyUI**), **3D Mesh Generation**, **Video Generation**, and **Audio & Speech Synthesis (Kokoro TTS)** from a single desktop dashboard, background daemon, and Model Context Protocol (MCP) server.
+> **v4.1.0** — The unified orchestrator for local AI. Manage Large Language Models (**Ollama**), Image Generation (**Stable Diffusion Forge & ComfyUI**), **3D Mesh Generation**, **Video Generation**, and **Audio & Speech Synthesis (Kokoro TTS)** from a single desktop dashboard, background daemon, and Model Context Protocol (MCP) server.
 > 
 > Designed with the **`L³M²`** Matte Carbon design system, real-time GPU VRAM telemetry, automated memory management, and magnetic multi-window support on Windows and Linux.
 
@@ -247,10 +247,10 @@ services:
 ### Running with Docker CLI
 ```bash
 # Build Docker image
-docker build -t localllmservermanager:v4.0.0 .
+docker build -t localllmservermanager:v4.1.0 .
 
 # Run container exposing port 5246
-docker run -d -p 5246:5246 --name localllmservermanager localllmservermanager:v4.0.0
+docker run -d -p 5246:5246 --name localllmservermanager localllmservermanager:v4.1.0
 
 # Or start using Docker Compose
 docker-compose up -d
