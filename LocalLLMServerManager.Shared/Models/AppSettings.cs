@@ -32,7 +32,8 @@ public record AppSettings(
     string AiAssistantApiKey = "",
     string AiAssistantModel = "google/gemini-2.5-flash",
     string AiAssistantCustomSystemPrompt = "",
-    string AiAssistantPromptsDirectory = ""
+    string AiAssistantPromptsDirectory = "",
+    int ModelCacheIdleTimeoutMinutes = 15,
+    int EngineHibernationTimeoutMinutes = 30,
+    int RamPressureThresholdPercent = 75
 );
-
-

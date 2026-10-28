@@ -109,22 +109,41 @@
             </StackPanel>
             </ScrollViewer>
 
-            <!-- Center: Compact VRAM Badge & Telemetry Pill -->
-            <Border Grid.Column="1" Classes="matte-pill" Height="24" Padding="8,2" HorizontalAlignment="Center" VerticalAlignment="Center" ClipToBounds="True">
-                <StackPanel Orientation="Horizontal" Spacing="6" VerticalAlignment="Center" ClipToBounds="True">
+            <!-- Center: Unified Hardware Pill (GPU VRAM + Host RAM) -->
+            <Border Grid.Column="1" Classes="matte-pill" Height="24" Padding="8,2" HorizontalAlignment="Center" VerticalAlignment="Center" ClipToBounds="True" ToolTip.Tip="{Binding HardwareTooltipText}">
+                <StackPanel Orientation="Horizontal" Spacing="5" VerticalAlignment="Center" ClipToBounds="True">
                     <PathIcon Data="{StaticResource IconGpu}" Width="12" Height="12" Foreground="{StaticResource TextMutedBrush}" VerticalAlignment="Center"/>
-                    <TextBlock Text="{Binding GpuName}" FontSize="11" Foreground="{StaticResource TextMutedBrush}"
-                               FontWeight="Medium" VerticalAlignment="Center" MaxWidth="140"
-                               TextTrimming="CharacterEllipsis" ToolTip.Tip="{Binding GpuName}"/>
+                    <TextBlock Text="{Binding GpuName}" FontSize="10" Foreground="{StaticResource TextMutedBrush}"
+                               FontWeight="Medium" VerticalAlignment="Center" MaxWidth="110"
+                               TextTrimming="CharacterEllipsis"/>
+
+                    <!-- VRAM Section -->
+                    <TextBlock Text="VRAM" FontSize="10" Foreground="{StaticResource TextMutedBrush}" VerticalAlignment="Center"/>
                     <ProgressBar Value="{Binding VramPercentage}" Maximum="100" Classes="matte-progress"
-                                 MinWidth="0" Width="40" Height="4" VerticalAlignment="Center"/>
-                    <TextBlock Text="{Binding VramStatusText}" FontSize="11" Foreground="{StaticResource PrimaryBrush}"
-                               FontWeight="Bold" VerticalAlignment="Center" TextTrimming="CharacterEllipsis"/>
+                                 MinWidth="0" Width="34" Height="4" VerticalAlignment="Center"/>
+                    <TextBlock Text="{Binding VramCompactText}" FontSize="10" Foreground="{StaticResource PrimaryBrush}"
+                               FontWeight="Bold" VerticalAlignment="Center"/>
+
+                    <!-- Divider -->
+                    <Border Width="1" Height="12" Background="{StaticResource GlassBorderBrush}" Margin="2,0" VerticalAlignment="Center"/>
+
+                    <!-- RAM Section -->
+                    <TextBlock Text="RAM" FontSize="10" Foreground="{StaticResource TextMutedBrush}" VerticalAlignment="Center"/>
+                    <ProgressBar Value="{Binding RamPercentage}" Maximum="100" Classes="matte-progress"
+                                 Foreground="{Binding RamBarColor}"
+                                 MinWidth="0" Width="34" Height="4" VerticalAlignment="Center"/>
+                    <TextBlock Text="{Binding RamCompactText}" FontSize="10" Foreground="{Binding RamBarColor}"
+                               FontWeight="Bold" VerticalAlignment="Center"/>
                 </StackPanel>
             </Border>
 
             <!-- Right: Refresh & Actions -->
             <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="4" VerticalAlignment="Center">
+                <Button Classes="ribbon-icon-btn"
+                        Command="{Binding PurgeMemoryCommand}"
+                        ToolTip.Tip="Purge Idle Model &amp; Memory Caches">
+                    <PathIcon Data="{StaticResource IconPurge}" Width="12" Height="12" Foreground="{StaticResource TextMutedBrush}" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                </Button>
                 <Button Classes="ribbon-icon-btn"
                         Command="{Binding RefreshStatusCommand}"
                         ToolTip.Tip="Refresh Service &amp; GPU Telemetry">

@@ -11,12 +11,31 @@ public record GpuTelemetryResult(
     double UtilizationPercent
 );
 
+public record SystemMemorySnapshot(
+    long TotalRamBytes,
+    long UsedRamBytes,
+    long AvailableRamBytes,
+    int RamUsedPercent,
+    long ProcessWorkingSetBytes,
+    long NonPagedPoolBytes
+);
+
 public interface IGpuTelemetryProvider
 {
     (string GpuName, long TotalVramBytes, long UsedVramBytes) GetGpuInfo();
     (string GpuName, long TotalVramBytes, long UsedVramBytes)? GetLinuxMemoryInfo();
     (string GpuName, long TotalVramBytes, long UsedVramBytes)? ParseNvidiaSmiOutput(string output);
     (string GpuName, long TotalVramBytes, long UsedVramBytes) GetGpuInfoFromRegistry();
+
+    SystemMemorySnapshot GetSystemMemoryInfo()
+    {
+        var gcInfo = GC.GetGCMemoryInfo();
+        long totalBytes = gcInfo.TotalAvailableMemoryBytes > 0 ? gcInfo.TotalAvailableMemoryBytes : 32L * 1024 * 1024 * 1024;
+        long usedBytes = gcInfo.MemoryLoadBytes > 0 ? gcInfo.MemoryLoadBytes : totalBytes / 2;
+        long availBytes = Math.Max(0, totalBytes - usedBytes);
+        int pct = totalBytes > 0 ? (int)Math.Clamp(Math.Round((double)usedBytes / totalBytes * 100.0), 0, 100) : 0;
+        return new SystemMemorySnapshot(totalBytes, usedBytes, availBytes, pct, Environment.WorkingSet, 0);
+    }
 
     Task<GpuTelemetryResult> GetTelemetryAsync()
     {

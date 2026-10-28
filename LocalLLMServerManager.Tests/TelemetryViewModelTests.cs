@@ -1,4 +1,9 @@
 using System.Linq;
+using System.Net;
+using System.Net.Http;
+using System.Threading;
+using System.Threading.Tasks;
+using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Headless.XUnit;
 using Avalonia.VisualTree;
@@ -6,6 +11,7 @@ using LocalLLMServerManager.Shared.Interfaces;
 using LocalLLMServerManager.Shared.ViewModels;
 using LocalLLMServerManager.Shared.Views.Controls;
 using Moq;
+using Moq.Protected;
 using Xunit;
 
 namespace LocalLLMServerManager.Tests;
@@ -206,5 +212,126 @@ public class TelemetryViewModelTests
         Assert.Equal("sd_xl_base", vm.ForgeCard.ActiveModel);
         Assert.True(vm.KokoroCard.IsOnline);
         Assert.Equal("af_sky", vm.KokoroCard.ActiveModel);
+    }
+
+    [Fact]
+    public async Task CheckGpuVramAsync_PopulatesSystemRam_WorkingSet_NonPagedPool_And_Tooltip()
+    {
+        var mockTelemetry = new Mock<ITelemetryService>();
+        mockTelemetry
+            .Setup(t => t.QueryGpuVramAsync(It.IsAny<string>(), It.IsAny<HttpClient>()))
+            .ReturnsAsync(new GpuTelemetryInfo(
+                "RTX 4090",
+                6.5,
+                24.0,
+                17.5,
+                27,
+                25.0,
+                32.0,
+                78,
+                1850.5,
+                1920.0,
+                15,
+                30,
+                75));
+
+        var vm = new TelemetryViewModel(mockTelemetry.Object);
+        using var http = new HttpClient();
+        await vm.CheckGpuVramAsync("http://127.0.0.1:5246", http);
+
+        Assert.Equal(25.0, vm.RamUsedGb);
+        Assert.Equal(32.0, vm.RamTotalGb);
+        Assert.Equal(78, vm.RamPercentage);
+        Assert.Equal(1850.5, vm.ProcessWorkingSetMb);
+        Assert.Equal(1920.0, vm.NonPagedPoolMb);
+
+        Assert.Equal("#F59E0B", vm.RamBarColor);
+        vm.RamPercentage = 92;
+        Assert.Equal("#EF4444", vm.RamBarColor);
+        vm.RamPercentage = 50;
+        Assert.Equal("#6366F1", vm.RamBarColor);
+
+        Assert.Contains("RTX 4090", vm.HardwareTooltipText);
+        Assert.Contains("25", vm.HardwareTooltipText);
+        Assert.Contains("32", vm.HardwareTooltipText);
+        Assert.Contains("1850.5", vm.HardwareTooltipText);
+        Assert.Contains("1920", vm.HardwareTooltipText);
+        Assert.Contains("15m Unload / 30m Hibernate / 75% Pressure", vm.HardwareTooltipText);
+    }
+
+    [Fact]
+    public async Task PurgeMemoryAsync_PostsToMemoryPurgeEndpoint_AndRefreshesTelemetry()
+    {
+        var mockTelemetry = new Mock<ITelemetryService>();
+        mockTelemetry
+            .Setup(t => t.QueryGpuVramAsync(It.IsAny<string>(), It.IsAny<HttpClient>()))
+            .ReturnsAsync(new GpuTelemetryInfo("RTX 4090", 2.0, 24.0, 22.0, 8, 12.0, 32.0, 37, 850.0, 1024.0, 15, 30, 75));
+
+        bool purgeEndpointHit = false;
+        var mockHandler = new Mock<HttpMessageHandler>();
+        mockHandler.Protected()
+            .Setup<Task<HttpResponseMessage>>(
+                "SendAsync",
+                ItExpr.Is<HttpRequestMessage>(r => r.Method == HttpMethod.Post && r.RequestUri!.ToString().Contains("/api/memory/purge")),
+                ItExpr.IsAny<CancellationToken>()
+            )
+            .ReturnsAsync(new HttpResponseMessage
+            {
+                StatusCode = HttpStatusCode.OK,
+                Content = new StringContent("{\"status\":\"purged\"}")
+            })
+            .Callback<HttpRequestMessage, CancellationToken>((_, _) => purgeEndpointHit = true);
+
+        var http = new HttpClient(mockHandler.Object);
+        var vm = new TelemetryViewModel(mockTelemetry.Object);
+
+        await vm.PurgeMemoryAsync("http://127.0.0.1:5246", http);
+
+        Assert.True(purgeEndpointHit);
+        Assert.Equal(12.0, vm.RamUsedGb);
+        Assert.Equal(37, vm.RamPercentage);
+        mockTelemetry.Verify(t => t.QueryGpuVramAsync(It.IsAny<string>(), It.IsAny<HttpClient>()), Times.Once);
+    }
+
+    [AvaloniaFact]
+    public void SettingsTabControl_EnginesCategory_RendersMemoryCacheLifetimesControls()
+    {
+        var vm = new SettingsViewModel
+        {
+            SelectedCategory = "Engines",
+            ModelCacheIdleTimeoutMinutes = 15,
+            EngineHibernationTimeoutMinutes = 30,
+            RamPressureThresholdPercent = 75
+        };
+
+        var control = new SettingsTabControl { DataContext = vm };
+        var window = new Window { Content = control, Width = 1280, Height = 900 };
+        try
+        {
+            window.Show();
+            Avalonia.Threading.Dispatcher.UIThread.RunJobs();
+
+            var textBlocks = control.GetVisualDescendants().OfType<TextBlock>().ToList();
+            Assert.Contains(textBlocks, tb => tb.Text != null && tb.Text.Contains("Memory & Cache Lifetimes"));
+
+            var numUpDowns = control.GetVisualDescendants().OfType<NumericUpDown>().ToList();
+            var modelTimeout = numUpDowns.FirstOrDefault(n => n.Value == 15);
+            Assert.NotNull(modelTimeout);
+            Assert.Equal(0, modelTimeout.Minimum);
+            Assert.True(modelTimeout.IsVisible);
+
+            var hibernationTimeout = numUpDowns.FirstOrDefault(n => n.Value == 30);
+            Assert.NotNull(hibernationTimeout);
+            Assert.Equal(0, hibernationTimeout.Minimum);
+            Assert.True(hibernationTimeout.IsVisible);
+
+            var pressureNum = numUpDowns.FirstOrDefault(n => n.Value == 75);
+            var pressureSlider = control.GetVisualDescendants().OfType<Slider>().FirstOrDefault(s => (int)s.Value == 75);
+            Assert.True(pressureNum != null || pressureSlider != null, "RAM pressure threshold control (value 75) should be present");
+        }
+        finally
+        {
+            window.Close();
+        }
     }
 }

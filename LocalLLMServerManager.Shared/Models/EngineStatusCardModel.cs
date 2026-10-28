@@ -84,6 +84,12 @@ public class TelemetryData
     public double TotalVramGb { get; set; } = 16.0;
     public int VramPercent { get; set; }
 
+    public double UsedRamGb { get; set; } = 0.0;
+    public double TotalRamGb { get; set; } = 32.0;
+    public int RamPercent { get; set; } = 0;
+    public double ProcessWorkingSetMb { get; set; } = 0.0;
+    public double NonPagedPoolMb { get; set; } = 0.0;
+
     public TelemetryData()
     {
     }

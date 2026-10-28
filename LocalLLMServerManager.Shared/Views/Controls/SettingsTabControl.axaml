@@ -147,7 +147,7 @@
                     <StackPanel Spacing="3" ClipToBounds="True">
                         <WrapPanel Orientation="Horizontal">
                             <TextBlock Text="● " Foreground="{StaticResource OnlineBrush}" FontSize="9" VerticalAlignment="Center"/>
-                            <TextBlock Text="Manager v4.0.0" FontSize="11" FontWeight="SemiBold" Foreground="{StaticResource TextMainBrush}" TextTrimming="CharacterEllipsis"/>
+                            <TextBlock Text="Manager v4.1.0" FontSize="11" FontWeight="SemiBold" Foreground="{StaticResource TextMainBrush}" TextTrimming="CharacterEllipsis"/>
                         </WrapPanel>
                         <TextBlock Text="Carbon &amp; Indigo" FontSize="10" Foreground="{StaticResource TextMutedBrush}" TextTrimming="CharacterEllipsis"/>
                     </StackPanel>
@@ -492,6 +492,46 @@
                                     <TextBox Text="{Binding ComfyUiUrl, Mode=TwoWay}" Classes="matte-input"/>
                                 </StackPanel>
                             </Grid>
+
+                            <!-- Memory & Cache Lifetimes -->
+                            <Border Classes="matte-card" Padding="14" Background="#141724" BorderBrush="#202538">
+                                <StackPanel Spacing="10">
+                                    <StackPanel Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+                                        <TextBlock Text="🧠" FontSize="16" VerticalAlignment="Center"/>
+                                        <TextBlock Text="Memory &amp; Cache Lifetimes" FontSize="14" FontWeight="Bold" Foreground="{StaticResource TextMainBrush}" VerticalAlignment="Center"/>
+                                    </StackPanel>
+                                    <TextBlock Text="Configure two-tier memory eviction and host RAM pressure management for idle models and engines:" FontSize="12" Foreground="{StaticResource TextMutedBrush}"/>
+
+                                    <Grid ColumnDefinitions="*,*,*">
+                                        <!-- Tier 1: Model Cache Idle Timeout -->
+                                        <StackPanel Grid.Column="0" Spacing="4" Margin="0,0,8,0">
+                                            <TextBlock Text="Model Idle Timeout (min)" FontSize="12" Foreground="{StaticResource TextMutedBrush}" FontWeight="Medium"/>
+                                            <NumericUpDown Value="{Binding ModelCacheIdleTimeoutMinutes, Mode=TwoWay}"
+                                                           Minimum="0" Maximum="1440" Increment="1"
+                                                           FormatString="0"/>
+                                            <TextBlock Text="Tier 1: Weight cache unload (0 = off)" FontSize="10" Foreground="{StaticResource TextMutedBrush}"/>
+                                        </StackPanel>
+
+                                        <!-- Tier 2: Engine Hibernation Timeout -->
+                                        <StackPanel Grid.Column="1" Spacing="4" Margin="4,0,4,0">
+                                            <TextBlock Text="Engine Hibernation (min)" FontSize="12" Foreground="{StaticResource TextMutedBrush}" FontWeight="Medium"/>
+                                            <NumericUpDown Value="{Binding EngineHibernationTimeoutMinutes, Mode=TwoWay}"
+                                                           Minimum="0" Maximum="1440" Increment="1"
+                                                           FormatString="0"/>
+                                            <TextBlock Text="Tier 2: Process termination (0 = off)" FontSize="10" Foreground="{StaticResource TextMutedBrush}"/>
+                                        </StackPanel>
+
+                                        <!-- RAM Pressure Threshold -->
+                                        <StackPanel Grid.Column="2" Spacing="4" Margin="8,0,0,0">
+                                            <TextBlock Text="RAM Pressure Threshold (%)" FontSize="12" Foreground="{StaticResource TextMutedBrush}" FontWeight="Medium"/>
+                                            <NumericUpDown Value="{Binding RamPressureThresholdPercent, Mode=TwoWay}"
+                                                           Minimum="10" Maximum="99" Increment="5"
+                                                           FormatString="0"/>
+                                            <TextBlock Text="Emergency eviction trigger" FontSize="10" Foreground="{StaticResource TextMutedBrush}"/>
+                                        </StackPanel>
+                                    </Grid>
+                                </StackPanel>
+                            </Border>
 
                             <Button Command="{Binding SaveSettingsCommand}" 
                                     Classes="matte-primary" HorizontalAlignment="Left" Margin="0,6,0,0">

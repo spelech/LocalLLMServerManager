@@ -1,9 +1,173 @@
+using System;
 using System.Diagnostics;
+using System.IO;
+using System.Runtime.InteropServices;
 
 namespace LocalLLMServerManager.Services;
 
 public class GpuTelemetryProvider : IGpuTelemetryProvider
 {
+    private readonly IAiEngineManager? _engineManager;
+
+    public GpuTelemetryProvider(IAiEngineManager? engineManager = null)
+    {
+        _engineManager = engineManager;
+    }
+
+    [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Auto)]
+    private struct MEMORYSTATUSEX
+    {
+        public uint dwLength;
+        public uint dwMemoryLoad;
+        public ulong ullTotalPhys;
+        public ulong ullAvailPhys;
+        public ulong ullTotalPageFile;
+        public ulong ullAvailPageFile;
+        public ulong ullTotalVirtual;
+        public ulong ullAvailVirtual;
+        public ulong ullAvailExtendedVirtual;
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    private struct PERFORMANCE_INFORMATION
+    {
+        public uint cb;
+        public nuint CommitTotal;
+        public nuint CommitLimit;
+        public nuint CommitPeak;
+        public nuint PhysicalTotal;
+        public nuint PhysicalAvailable;
+        public nuint SystemCache;
+        public nuint KernelTotal;
+        public nuint KernelPaged;
+        public nuint KernelNonpaged;
+        public nuint PageSize;
+        public uint HandleCount;
+        public uint ProcessCount;
+        public uint ThreadCount;
+    }
+
+    [DllImport("kernel32.dll", CharSet = CharSet.Auto, SetLastError = true)]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    private static extern bool GlobalMemoryStatusEx(ref MEMORYSTATUSEX lpBuffer);
+
+    [DllImport("psapi.dll", SetLastError = true)]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    private static extern bool GetPerformanceInfo(out PERFORMANCE_INFORMATION pPerformanceInformation, uint cb);
+
+    public SystemMemorySnapshot GetSystemMemoryInfo()
+    {
+        long totalBytes = 0;
+        long availBytes = 0;
+        long nonPagedPoolBytes = 0;
+
+        if (OperatingSystem.IsWindows())
+        {
+            try
+            {
+                var memStatus = new MEMORYSTATUSEX { dwLength = (uint)Marshal.SizeOf<MEMORYSTATUSEX>() };
+                if (GlobalMemoryStatusEx(ref memStatus) && memStatus.ullTotalPhys > 0)
+                {
+                    totalBytes = (long)memStatus.ullTotalPhys;
+                    availBytes = (long)memStatus.ullAvailPhys;
+                }
+            }
+            catch { }
+
+            try
+            {
+                if (GetPerformanceInfo(out var perfInfo, (uint)Marshal.SizeOf<PERFORMANCE_INFORMATION>()))
+                {
+                    nonPagedPoolBytes = (long)((ulong)perfInfo.KernelNonpaged * (ulong)perfInfo.PageSize);
+                }
+            }
+            catch { }
+        }
+        else if (OperatingSystem.IsLinux())
+        {
+            try
+            {
+                if (File.Exists("/proc/meminfo"))
+                {
+                    long totalKb = 0;
+                    long availKb = 0;
+                    long sunreclaimKb = 0;
+                    foreach (var line in File.ReadLines("/proc/meminfo"))
+                    {
+                        if (line.StartsWith("MemTotal:"))
+                        {
+                            var val = line.Split(':', StringSplitOptions.TrimEntries)[1].Split(' ', StringSplitOptions.RemoveEmptyEntries)[0];
+                            long.TryParse(val, out totalKb);
+                        }
+                        else if (line.StartsWith("MemAvailable:"))
+                        {
+                            var val = line.Split(':', StringSplitOptions.TrimEntries)[1].Split(' ', StringSplitOptions.RemoveEmptyEntries)[0];
+                            long.TryParse(val, out availKb);
+                        }
+                        else if (line.StartsWith("SUnreclaim:"))
+                        {
+                            var val = line.Split(':', StringSplitOptions.TrimEntries)[1].Split(' ', StringSplitOptions.RemoveEmptyEntries)[0];
+                            long.TryParse(val, out sunreclaimKb);
+                        }
+                    }
+                    if (totalKb > 0)
+                    {
+                        totalBytes = totalKb * 1024;
+                        availBytes = availKb * 1024;
+                        nonPagedPoolBytes = sunreclaimKb * 1024;
+                    }
+                }
+            }
+            catch { }
+        }
+
+        if (totalBytes <= 0)
+        {
+            var gcInfo = GC.GetGCMemoryInfo();
+            totalBytes = gcInfo.TotalAvailableMemoryBytes > 0 ? gcInfo.TotalAvailableMemoryBytes : 32L * 1024 * 1024 * 1024;
+            long gcUsed = gcInfo.MemoryLoadBytes > 0 ? gcInfo.MemoryLoadBytes : totalBytes / 2;
+            availBytes = Math.Max(0, totalBytes - gcUsed);
+        }
+
+        long usedBytes = Math.Max(0, totalBytes - availBytes);
+        int ramUsedPct = totalBytes > 0
+            ? (int)Math.Clamp(Math.Round((double)usedBytes / totalBytes * 100.0), 0, 100)
+            : 0;
+
+        long workingSetBytes = Environment.WorkingSet;
+        if (_engineManager != null)
+        {
+            workingSetBytes += GetSafeProcessWorkingSet(_engineManager.ComfyProcess);
+            workingSetBytes += GetSafeProcessWorkingSet(_engineManager.ForgeProcess);
+            workingSetBytes += GetSafeProcessWorkingSet(_engineManager.AudioProcess);
+            workingSetBytes += GetSafeProcessWorkingSet(_engineManager.OllamaProcess);
+        }
+
+        return new SystemMemorySnapshot(
+            TotalRamBytes: totalBytes,
+            UsedRamBytes: usedBytes,
+            AvailableRamBytes: availBytes,
+            RamUsedPercent: ramUsedPct,
+            ProcessWorkingSetBytes: workingSetBytes,
+            NonPagedPoolBytes: nonPagedPoolBytes
+        );
+    }
+
+    private static long GetSafeProcessWorkingSet(Process? proc)
+    {
+        if (proc == null) return 0;
+        try
+        {
+            if (proc.HasExited) return 0;
+            proc.Refresh();
+            return proc.WorkingSet64;
+        }
+        catch
+        {
+            return 0;
+        }
+    }
+
     public (string GpuName, long TotalVramBytes, long UsedVramBytes) GetGpuInfo()
     {
         try

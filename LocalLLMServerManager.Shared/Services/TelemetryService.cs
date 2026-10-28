@@ -16,18 +16,68 @@ public class TelemetryService : ITelemetryService
             if (resp.IsSuccessStatusCode)
             {
                 var doc = JsonNode.Parse(await resp.Content.ReadAsStringAsync());
-                string gpuName = doc?["gpuName"]?.ToString() ?? "GPU Telemetry Active";
-                double used = doc?["usedVramGb"]?.GetValue<double>() ?? 0.0;
-                double total = doc?["totalVramGb"]?.GetValue<double>() ?? 16.0;
-                double free = doc?["freeVramGb"]?.GetValue<double>() ?? (total - used);
-                int pct = doc?["usedPercent"]?.GetValue<int>() ?? (int)Math.Round((used / (total > 0 ? total : 1.0)) * 100.0);
+                string gpuName = doc?["gpuName"]?.ToString() 
+                    ?? doc?["GpuName"]?.ToString() 
+                    ?? "GPU Telemetry Active";
 
-                return new GpuTelemetryInfo(gpuName, used, total, free, pct);
+                double totalVram = TryGetDouble(doc, "totalVramGb", "TotalVramGb") 
+                    ?? TryGetDouble(doc, "vramGB", "VramGB") 
+                    ?? (TryGetDouble(doc, "vramBytes", "VramBytes") is double vb ? Math.Round(vb / (1024.0 * 1024.0 * 1024.0), 2) : 16.0);
+
+                double usedVram = TryGetDouble(doc, "usedVramGb", "UsedVramGb") 
+                    ?? (TryGetDouble(doc, "usedVramBytes", "UsedVramBytes") is double uvb ? Math.Round(uvb / (1024.0 * 1024.0 * 1024.0), 2) : 0.0);
+
+                double freeVram = TryGetDouble(doc, "freeVramGb", "FreeVramGb") 
+                    ?? Math.Max(0.0, Math.Round(totalVram - usedVram, 2));
+
+                int pct = TryGetInt(doc, "usedPercent", "UsedPercent") 
+                    ?? (int)Math.Round((usedVram / (totalVram > 0 ? totalVram : 1.0)) * 100.0);
+
+                double totalRam = TryGetDouble(doc, "totalRamGb", "TotalRamGb") ?? 32.0;
+                double usedRam = TryGetDouble(doc, "usedRamGb", "UsedRamGb") ?? 0.0;
+                int ramPct = TryGetInt(doc, "ramUsedPercent", "RamUsedPercent") 
+                    ?? (int)Math.Round((usedRam / (totalRam > 0 ? totalRam : 1.0)) * 100.0);
+
+                double processWs = TryGetDouble(doc, "processWorkingSetMb", "ProcessWorkingSetMb") ?? 0.0;
+                double nonPaged = TryGetDouble(doc, "nonPagedPoolMb", "NonPagedPoolMb") ?? 0.0;
+                int modelCacheTimeout = TryGetInt(doc, "modelCacheIdleTimeoutMinutes", "ModelCacheIdleTimeoutMinutes") ?? 15;
+                int hibernationTimeout = TryGetInt(doc, "engineHibernationTimeoutMinutes", "EngineHibernationTimeoutMinutes") ?? 30;
+                int ramPressureThreshold = TryGetInt(doc, "ramPressureThresholdPercent", "RamPressureThresholdPercent") ?? 75;
+
+                return new GpuTelemetryInfo(
+                    gpuName,
+                    usedVram,
+                    totalVram,
+                    freeVram,
+                    pct,
+                    usedRam,
+                    totalRam,
+                    ramPct,
+                    processWs,
+                    nonPaged,
+                    modelCacheTimeout,
+                    hibernationTimeout,
+                    ramPressureThreshold
+                );
             }
         }
         catch { }
 
-        return new GpuTelemetryInfo("GPU Telemetry Active", 0.0, 16.0, 16.0, 0);
+        return new GpuTelemetryInfo("GPU Telemetry Active", 0.0, 16.0, 16.0, 0, 0.0, 32.0, 0, 0.0, 0.0, 15, 30, 75);
+    }
+
+    private static double? TryGetDouble(JsonNode? node, string camel, string pascal)
+    {
+        var target = node?[camel] ?? node?[pascal];
+        if (target == null) return null;
+        try { return target.GetValue<double>(); } catch { return null; }
+    }
+
+    private static int? TryGetInt(JsonNode? node, string camel, string pascal)
+    {
+        var target = node?[camel] ?? node?[pascal];
+        if (target == null) return null;
+        try { return target.GetValue<int>(); } catch { return null; }
     }
 
     public async Task<(bool Ollama, bool Forge, bool ComfyUi)> CheckServiceHealthAsync(string apiBase, string comfyUrl, HttpClient http)

@@ -14,11 +14,94 @@ public partial class TelemetryViewModel : ObservableObject
     private readonly ITelemetryService _telemetryService;
 
     [ObservableProperty] private bool _isCollapsed = false;
-    [ObservableProperty] private string _gpuName = "GPU Telemetry Active";
-    [ObservableProperty] private double _vramUsedGb = 0.0;
-    [ObservableProperty] private double _vramTotalGb = 16.0;
-    [ObservableProperty] private double _vramPercentage = 0.0;
+
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(HardwareTooltipText))]
+    private string _gpuName = "GPU Telemetry Active";
+
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(HardwareTooltipText))]
+    private double _vramUsedGb = 0.0;
+
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(HardwareTooltipText))]
+    private double _vramTotalGb = 16.0;
+
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(HardwareTooltipText))]
+    private double _vramPercentage = 0.0;
+
     [ObservableProperty] private string _vramStatusText = "0.0 GB / 16.0 GB (0%)";
+    [ObservableProperty] private string _vramCompactText = "0.0/16.0G";
+
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(HardwareTooltipText))]
+    private double _ramUsedGb = 0.0;
+
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(HardwareTooltipText))]
+    private double _ramTotalGb = 32.0;
+
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(RamBarColor))]
+    [NotifyPropertyChangedFor(nameof(HardwareTooltipText))]
+    private double _ramPercentage = 0.0;
+
+    [ObservableProperty] private string _ramStatusText = "0.0 GB / 32.0 GB (0%)";
+    [ObservableProperty] private string _ramCompactText = "0.0/32.0G";
+
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(HardwareTooltipText))]
+    private double _processWorkingSetMb = 0.0;
+
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(HardwareTooltipText))]
+    private double _nonPagedPoolMb = 0.0;
+
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(HardwareTooltipText))]
+    private int _modelCacheIdleTimeoutMinutes = 15;
+
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(HardwareTooltipText))]
+    private int _engineHibernationTimeoutMinutes = 30;
+
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(RamBarColor))]
+    [NotifyPropertyChangedFor(nameof(HardwareTooltipText))]
+    private int _ramPressureThresholdPercent = 75;
+
+    public string RamBarColor => RamPercentage >= 90
+        ? "#EF4444"
+        : (RamPercentage >= RamPressureThresholdPercent ? "#F59E0B" : "#6366F1");
+
+    public string HardwareTooltipText =>
+        $"{GpuName}\n" +
+        $"VRAM: {VramUsedGb:0.0} / {VramTotalGb:0.0} GB ({VramPercentage:0}%)\n" +
+        $"Host RAM: {RamUsedGb:0.0} / {RamTotalGb:0.0} GB ({RamPercentage:0}%)\n" +
+        $"App + Engine Working Set: {ProcessWorkingSetMb:0.0} MB\n" +
+        $"Kernel Non-Paged Pool: {NonPagedPoolMb:0.0} MB\n" +
+        $"Cache Lifetime: {ModelCacheIdleTimeoutMinutes}m Unload / {EngineHibernationTimeoutMinutes}m Hibernate / {RamPressureThresholdPercent}% Pressure";
+
+    partial void OnVramUsedGbChanged(double value) => UpdateVramStrings();
+    partial void OnVramTotalGbChanged(double value) => UpdateVramStrings();
+    partial void OnVramPercentageChanged(double value) => UpdateVramStrings();
+
+    private void UpdateVramStrings()
+    {
+        VramStatusText = $"{VramUsedGb:0.0} GB / {VramTotalGb:0.0} GB ({VramPercentage:0}%)";
+        VramCompactText = $"{VramUsedGb:0.0}/{VramTotalGb:0.0}G";
+    }
+
+    partial void OnRamUsedGbChanged(double value) => UpdateRamStrings();
+    partial void OnRamTotalGbChanged(double value) => UpdateRamStrings();
+    partial void OnRamPercentageChanged(double value) => UpdateRamStrings();
+
+    private void UpdateRamStrings()
+    {
+        RamStatusText = $"{RamUsedGb:0.0} GB / {RamTotalGb:0.0} GB ({RamPercentage:0}%)";
+        RamCompactText = $"{RamUsedGb:0.0}/{RamTotalGb:0.0}G";
+    }
 
     [ObservableProperty] private EngineStatusCardModel _ollamaCard = new("ollama", "Ollama", 11434);
     [ObservableProperty] private EngineStatusCardModel _comfyUiCard = new("comfyui", "ComfyUI", 8188);
@@ -385,6 +468,17 @@ public partial class TelemetryViewModel : ObservableObject
             VramUsedGb = data.UsedVramGb;
             VramPercentage = data.VramPercent > 0 ? data.VramPercent : Math.Round((VramUsedGb / VramTotalGb) * 100.0, 1);
             VramStatusText = $"{VramUsedGb} GB / {VramTotalGb} GB ({VramPercentage}%)";
+            VramCompactText = $"{VramUsedGb:0.0}/{VramTotalGb:0.0}G";
+        }
+        if (data.TotalRamGb > 0)
+        {
+            RamTotalGb = data.TotalRamGb;
+            RamUsedGb = data.UsedRamGb;
+            RamPercentage = data.RamPercent > 0 ? data.RamPercent : Math.Round((RamUsedGb / RamTotalGb) * 100.0, 1);
+            RamStatusText = $"{RamUsedGb:0.0} GB / {RamTotalGb:0.0} GB ({RamPercentage:0}%)";
+            RamCompactText = $"{RamUsedGb:0.0}/{RamTotalGb:0.0}G";
+            ProcessWorkingSetMb = data.ProcessWorkingSetMb;
+            NonPagedPoolMb = data.NonPagedPoolMb;
         }
 
         IsServiceRunning = (OllamaCard?.IsOnline ?? false) || (ComfyUiCard?.IsOnline ?? false) || (ForgeCard?.IsOnline ?? false) || (KokoroCard?.IsOnline ?? false);
@@ -394,7 +488,8 @@ public partial class TelemetryViewModel : ObservableObject
     [RelayCommand]
     public async Task RefreshStatusAsync()
     {
-        await RefreshStatusAsync(ApiBase, "http://127.0.0.1:8188", HttpHelper.CreateClient(ApiBase));
+        using var http = HttpHelper.CreateClient(ApiBase);
+        await RefreshStatusAsync(ApiBase, "http://127.0.0.1:8188", http);
     }
 
     public async Task RefreshStatusAsync(string apiBase, string comfyUrl, HttpClient http)
@@ -445,5 +540,49 @@ public partial class TelemetryViewModel : ObservableObject
         VramUsedGb = info.UsedVramGb;
         VramPercentage = info.Percent;
         VramStatusText = $"{VramUsedGb} GB / {VramTotalGb} GB ({VramPercentage}%)";
+        VramCompactText = $"{VramUsedGb:0.0}/{VramTotalGb:0.0}G";
+
+        RamTotalGb = info.TotalRamGb;
+        RamUsedGb = info.UsedRamGb;
+        RamPercentage = info.RamPercent;
+        RamStatusText = $"{RamUsedGb:0.0} GB / {RamTotalGb:0.0} GB ({RamPercentage:0}%)";
+        RamCompactText = $"{RamUsedGb:0.0}/{RamTotalGb:0.0}G";
+        ProcessWorkingSetMb = info.ProcessWorkingSetMb;
+        NonPagedPoolMb = info.NonPagedPoolMb;
+        ModelCacheIdleTimeoutMinutes = info.ModelCacheIdleTimeoutMinutes;
+        EngineHibernationTimeoutMinutes = info.EngineHibernationTimeoutMinutes;
+        RamPressureThresholdPercent = info.RamPressureThresholdPercent;
+    }
+
+    [RelayCommand]
+    public async Task PurgeMemoryAsync()
+    {
+        using var http = HttpHelper.CreateClient(ApiBase);
+        await PurgeMemoryAsync(ApiBase, http);
+    }
+
+    public async Task PurgeMemoryAsync(string apiBase, HttpClient http)
+    {
+        try
+        {
+            var url = HttpHelper.FormatEndpoint(apiBase, "/api/memory/purge");
+            var resp = await http.PostAsync(url, null);
+            if (resp.IsSuccessStatusCode)
+            {
+                ToastService.Instance.Show("Memory caches purged.", ToastType.Success, 2500);
+            }
+            else
+            {
+                ToastService.Instance.Show("Failed to purge memory caches.", ToastType.Warning, 2500);
+            }
+        }
+        catch (Exception ex)
+        {
+            ToastService.Instance.Show($"Error purging memory: {ex.Message}", ToastType.Error, 3000);
+        }
+        finally
+        {
+            await CheckGpuVramAsync(apiBase, http);
+        }
     }
 }
