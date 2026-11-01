@@ -1,5 +1,7 @@
 using System;
+using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.Linq;
 using System.Net.Http;
 using System.Threading.Tasks;
 using CommunityToolkit.Mvvm.ComponentModel;
@@ -88,8 +90,17 @@ public partial class CivitaiSearchViewModel : ObservableObject
 
     public void UpdateHardwareTelemetry(double totalVramMb, double totalRamMb)
     {
-        if (totalVramMb > 0) TotalVramMb = totalVramMb;
-        if (totalRamMb > 0) TotalRamMb = totalRamMb;
+        double nextVram = totalVramMb > 0 ? totalVramMb : TotalVramMb;
+        double nextRam = totalRamMb > 0 ? totalRamMb : TotalRamMb;
+        if (nextVram == TotalVramMb && nextRam == TotalRamMb &&
+            CivitaiResults.All(r => r.FitBadge != null) &&
+            StarterModels.All(s => s.FitBadge != null))
+        {
+            return;
+        }
+
+        TotalVramMb = nextVram;
+        TotalRamMb = nextRam;
 
         RecomputeBadges();
     }
@@ -238,7 +249,8 @@ public partial class CivitaiSearchViewModel : ObservableObject
     [RelayCommand]
     public async Task SearchCivitaiAsync()
     {
-        await SearchCivitaiAsync(ApiBase, HttpHelper.CreateClient(ApiBase));
+        using var client = HttpHelper.CreateClient(ApiBase);
+        await SearchCivitaiAsync(ApiBase, client);
     }
 
     public async Task SearchCivitaiAsync(string apiBase, HttpClient http)
@@ -269,7 +281,8 @@ public partial class CivitaiSearchViewModel : ObservableObject
     [RelayCommand]
     public async Task DownloadCivitaiModelAsync(CivitaiModelItem item)
     {
-        await DownloadCivitaiModelAsync(item, ApiBase, HttpHelper.CreateClient(ApiBase));
+        using var client = HttpHelper.CreateClient(ApiBase);
+        await DownloadCivitaiModelAsync(item, ApiBase, client);
     }
 
     public async Task DownloadCivitaiModelAsync(CivitaiModelItem item, string apiBase, HttpClient http)

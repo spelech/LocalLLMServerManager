@@ -96,8 +96,15 @@ public partial class HuggingFaceSearchViewModel : ObservableObject
 
     public void UpdateHardwareTelemetry(double totalVramMb, double totalRamMb)
     {
-        if (totalVramMb > 0) TotalVramMb = totalVramMb;
-        if (totalRamMb > 0) TotalRamMb = totalRamMb;
+        double nextVram = totalVramMb > 0 ? totalVramMb : TotalVramMb;
+        double nextRam = totalRamMb > 0 ? totalRamMb : TotalRamMb;
+        if (nextVram == TotalVramMb && nextRam == TotalRamMb && HuggingFaceResults.All(r => r.FitBadge != null))
+        {
+            return;
+        }
+
+        TotalVramMb = nextVram;
+        TotalRamMb = nextRam;
 
         RecomputeBadges();
     }
@@ -497,7 +504,8 @@ public partial class HuggingFaceSearchViewModel : ObservableObject
     [RelayCommand]
     public async Task SearchHuggingFaceAsync()
     {
-        await SearchHuggingFaceAsync(ApiBase, HttpHelper.CreateClient(ApiBase));
+        using var client = HttpHelper.CreateClient(ApiBase);
+        await SearchHuggingFaceAsync(ApiBase, client);
     }
 
     [RelayCommand]
@@ -602,14 +610,16 @@ public partial class HuggingFaceSearchViewModel : ObservableObject
     public async Task OpenHfModalAsync(HuggingFaceRepoItem? item)
     {
         if (item == null || string.IsNullOrWhiteSpace(item.Id)) return;
-        await OpenHfModalAsync(item.Id, ApiBase, HttpHelper.CreateClient(ApiBase));
+        using var client = HttpHelper.CreateClient(ApiBase);
+        await OpenHfModalAsync(item.Id, ApiBase, client);
     }
 
     [RelayCommand]
     public async Task DownloadHfFileAsync(HfFileQuantItem? file)
     {
         if (file == null || string.IsNullOrWhiteSpace(file.Filename) || string.IsNullOrWhiteSpace(ModalRepoId)) return;
-        await DownloadHfFileAsync(file, ApiBase, HttpHelper.CreateClient(ApiBase));
+        using var client = HttpHelper.CreateClient(ApiBase);
+        await DownloadHfFileAsync(file, ApiBase, client);
     }
 
     public async Task DownloadHfFileAsync(HfFileQuantItem file, string apiBase, HttpClient http)

@@ -149,4 +149,51 @@ public class OllamaLibraryViewModelTests
         vm.ClosePullDrawer();
         Assert.False(vm.IsPullDrawerOpen);
     }
+
+    [Fact]
+    public void UpdateHardwareTelemetry_WhenVramAndRamUnchanged_DoesNotFireCollectionChanged()
+    {
+        var mockOllama = new Mock<IOllamaModelService>();
+        var vm = new OllamaLibraryViewModel(mockOllama.Object);
+
+        vm.InstalledModels.Add(new OllamaModelItem("llama3.1:8b", "4.7 GB", "General", "#38BDF8", false));
+        vm.UpdateHardwareTelemetry(8192.0, 16384.0);
+
+        int installedChanges = 0;
+        int filteredChanges = 0;
+        vm.InstalledModels.CollectionChanged += (s, e) => installedChanges++;
+        vm.FilteredInstalledModels.CollectionChanged += (s, e) => filteredChanges++;
+
+        vm.UpdateHardwareTelemetry(8192.0, 16384.0);
+
+        Assert.Equal(0, installedChanges);
+        Assert.Equal(0, filteredChanges);
+    }
+
+    [Fact]
+    public async Task LoadInstalledModelsAsync_WhenFetchedModelsIdentical_DoesNotClearOrReAddItems()
+    {
+        var mockOllama = new Mock<IOllamaModelService>();
+        mockOllama.Setup(m => m.LoadInstalledModelsAsync(It.IsAny<string>(), It.IsAny<HttpClient>()))
+            .ReturnsAsync(new List<OllamaModelItem>
+            {
+                new OllamaModelItem("llama3.1:8b", "4.7 GB", "General", "#38BDF8", false, null, 4700000000L),
+                new OllamaModelItem("qwen2.5:7b", "4.4 GB", "Coding", "#38BDF8", false, null, 4400000000L)
+            });
+
+        var vm = new OllamaLibraryViewModel(mockOllama.Object);
+        using var client = new HttpClient();
+        await vm.LoadInstalledModelsAsync("http://localhost:5246", client);
+
+        int installedChanges = 0;
+        int filteredChanges = 0;
+        vm.InstalledModels.CollectionChanged += (s, e) => installedChanges++;
+        vm.FilteredInstalledModels.CollectionChanged += (s, e) => filteredChanges++;
+
+        await vm.LoadInstalledModelsAsync("http://localhost:5246", client);
+
+        Assert.Equal(0, installedChanges);
+        Assert.Equal(0, filteredChanges);
+        Assert.Equal(2, vm.InstalledModels.Count);
+    }
 }

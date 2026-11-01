@@ -1,6 +1,7 @@
 using System;
 using System.Collections.ObjectModel;
 using System.IO;
+using System.Linq;
 using System.Net.Http;
 using System.Text.Json;
 using System.Text.Json.Nodes;
@@ -63,6 +64,8 @@ public partial class OllamaLibraryViewModel : ObservableObject
     public Action<string, string>? OnInspectModelRequested { get; set; }
     public Action<string, int>? OnApplyModelContextRequested { get; set; }
 
+    private bool _suppressFilter;
+
     public OllamaLibraryViewModel(IOllamaModelService ollamaModelService)
         : this(ollamaModelService, new CanIRunItService(), null)
     {
@@ -76,14 +79,24 @@ public partial class OllamaLibraryViewModel : ObservableObject
         _ollamaModelService = ollamaModelService;
         _canIRunItService = canIRunItService ?? new CanIRunItService();
         _telemetryService = telemetryService;
-        InstalledModels.CollectionChanged += (s, e) => ApplyFilter();
+        InstalledModels.CollectionChanged += (s, e) =>
+        {
+            if (!_suppressFilter) ApplyFilter();
+        };
         RecalculateKvCache();
     }
 
     public void UpdateHardwareTelemetry(double totalVramMb, double totalRamMb)
     {
-        if (totalVramMb > 0) TotalVramMb = totalVramMb;
-        if (totalRamMb > 0) TotalRamMb = totalRamMb;
+        double nextVram = totalVramMb > 0 ? totalVramMb : TotalVramMb;
+        double nextRam = totalRamMb > 0 ? totalRamMb : TotalRamMb;
+        if (nextVram == TotalVramMb && nextRam == TotalRamMb && InstalledModels.All(m => m.FitBadge != null))
+        {
+            return;
+        }
+
+        TotalVramMb = nextVram;
+        TotalRamMb = nextRam;
 
         RecomputeBadges();
         RecalculateKvCache();
@@ -91,11 +104,19 @@ public partial class OllamaLibraryViewModel : ObservableObject
 
     public void RecomputeBadges()
     {
-        for (int i = 0; i < InstalledModels.Count; i++)
+        _suppressFilter = true;
+        try
         {
-            var m = InstalledModels[i];
-            var badge = _canIRunItService.EvaluateQuickFit(m.Name, m.SizeBytes > 0 ? m.SizeBytes : null, "LLM", (long)TotalVramMb, (long)TotalRamMb);
-            InstalledModels[i] = m with { FitBadge = badge };
+            for (int i = 0; i < InstalledModels.Count; i++)
+            {
+                var m = InstalledModels[i];
+                var badge = _canIRunItService.EvaluateQuickFit(m.Name, m.SizeBytes > 0 ? m.SizeBytes : null, "LLM", (long)TotalVramMb, (long)TotalRamMb);
+                InstalledModels[i] = m with { FitBadge = badge };
+            }
+        }
+        finally
+        {
+            _suppressFilter = false;
         }
         ApplyFilter();
     }
@@ -246,10 +267,18 @@ public partial class OllamaLibraryViewModel : ObservableObject
     {
         if (model == null) return;
         SelectedInstalledModel = model;
-        for (int i = 0; i < InstalledModels.Count; i++)
+        _suppressFilter = true;
+        try
         {
-            var m = InstalledModels[i];
-            InstalledModels[i] = m with { IsSelected = (m.Name == model.Name) };
+            for (int i = 0; i < InstalledModels.Count; i++)
+            {
+                var m = InstalledModels[i];
+                InstalledModels[i] = m with { IsSelected = (m.Name == model.Name) };
+            }
+        }
+        finally
+        {
+            _suppressFilter = false;
         }
         ApplyFilter();
         RecalculateKvCache();
@@ -311,12 +340,44 @@ public partial class OllamaLibraryViewModel : ObservableObject
         try
         {
             var models = await _ollamaModelService.LoadInstalledModelsAsync(apiBase, http);
-            InstalledModels.Clear();
-            foreach (var m in models)
+            bool isSame = models.Count == InstalledModels.Count;
+            if (isSame)
             {
-                var badge = _canIRunItService.EvaluateQuickFit(m.Name, m.SizeBytes > 0 ? m.SizeBytes : null, "LLM", (long)TotalVramMb, (long)TotalRamMb);
-                InstalledModels.Add(m with { FitBadge = badge });
+                for (int i = 0; i < models.Count; i++)
+                {
+                    var existing = InstalledModels[i];
+                    var incoming = models[i];
+                    if (existing.Name != incoming.Name ||
+                        existing.SizeBytes != incoming.SizeBytes ||
+                        existing.CapabilityTag != incoming.CapabilityTag ||
+                        existing.FormatSize != incoming.FormatSize)
+                    {
+                        isSame = false;
+                        break;
+                    }
+                }
             }
+
+            if (isSame)
+            {
+                return;
+            }
+
+            _suppressFilter = true;
+            try
+            {
+                InstalledModels.Clear();
+                foreach (var m in models)
+                {
+                    var badge = _canIRunItService.EvaluateQuickFit(m.Name, m.SizeBytes > 0 ? m.SizeBytes : null, "LLM", (long)TotalVramMb, (long)TotalRamMb);
+                    InstalledModels.Add(m with { FitBadge = badge });
+                }
+            }
+            finally
+            {
+                _suppressFilter = false;
+            }
+
             if (SelectedInstalledModel == null && InstalledModels.Count > 0)
             {
                 SelectModel(InstalledModels[0]);
@@ -381,7 +442,8 @@ public partial class OllamaLibraryViewModel : ObservableObject
         ToastService.Instance.Show($"Deleting model '{item.Name}'...", ToastType.Info);
         try
         {
-            var success = await _ollamaModelService.DeleteModelAsync(ApiBase, item.Name, HttpHelper.CreateClient(ApiBase));
+            using var client = HttpHelper.CreateClient(ApiBase);
+            var success = await _ollamaModelService.DeleteModelAsync(ApiBase, item.Name, client);
             if (success)
             {
                 InstalledModels.Remove(item);
@@ -402,7 +464,8 @@ public partial class OllamaLibraryViewModel : ObservableObject
     [RelayCommand]
     public async Task UnloadAllVramAsync()
     {
-        await UnloadAllVramAsync(ApiBase, HttpHelper.CreateClient(ApiBase));
+        using var client = HttpHelper.CreateClient(ApiBase);
+        await UnloadAllVramAsync(ApiBase, client);
     }
 
     public async Task UnloadAllVramAsync(string apiBase, HttpClient http)

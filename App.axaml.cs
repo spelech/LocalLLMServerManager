@@ -53,11 +53,21 @@ public partial class App : Application
 
     public void OnOpenDashboardClick(object? sender, EventArgs e)
     {
+        ShowMainWindow();
+    }
+
+    public void ShowMainWindow()
+    {
         if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
         {
             if (desktop.MainWindow == null)
             {
                 desktop.MainWindow = new MainWindow();
+            }
+            if (desktop.MainWindow.DataContext is LocalLLMServerManager.Shared.ViewModels.MainViewModel vm)
+            {
+                vm.IsWindowVisible = true;
+                _ = vm.RefreshStatusCommand.ExecuteAsync(null);
             }
             try
             {

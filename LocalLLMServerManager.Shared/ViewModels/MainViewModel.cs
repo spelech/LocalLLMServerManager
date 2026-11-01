@@ -1078,6 +1078,18 @@ public partial class MainViewModel : ObservableObject
         }
     }
 
+    [ObservableProperty] private bool _isWindowVisible = true;
+
+    public void ReleaseTransientBuffers()
+    {
+        StudioGeneratedImageBytes = null;
+        AttachedImageBytes = null;
+        StickerStudio.GeneratedPngBytes = null;
+        StickerStudio.InputImageBytes = null;
+    }
+
+    private int _pollTickCount = 0;
+
     private async Task StartBackgroundPollingAsync()
     {
         while (EnableAutomaticPolling)
@@ -1086,17 +1098,27 @@ public partial class MainViewModel : ObservableObject
             {
                 await Task.Delay(5000);
                 if (!EnableAutomaticPolling) break;
-                await RefreshStatusAsync();
+                if (!IsWindowVisible) continue;
+                _pollTickCount++;
+                await RefreshStatusCoreAsync(isBackgroundPoll: true);
             }
             catch { }
         }
     }
 
     [RelayCommand]
-    public async Task RefreshStatusAsync()
+    public Task RefreshStatusAsync() => RefreshStatusCoreAsync(isBackgroundPoll: false);
+
+    private async Task RefreshStatusCoreAsync(bool isBackgroundPoll)
     {
-        await Telemetry.RefreshStatusAsync(ApiBase, ComfyUiUrl, Http);
-        await Ollama.LoadInstalledModelsAsync(ApiBase, Http);
+        var apiBase = ApiBase;
+        var comfyUiUrl = ComfyUiUrl;
+        var http = Http;
+        await Telemetry.RefreshStatusAsync(apiBase, comfyUiUrl, http);
+        if (!isBackgroundPoll || Ollama.InstalledModels.Count == 0 || _pollTickCount % 12 == 0)
+        {
+            await Ollama.LoadInstalledModelsAsync(apiBase, http);
+        }
         if (Telemetry != null)
         {
             IsForgeOnline = Telemetry.IsForgeOnline;
