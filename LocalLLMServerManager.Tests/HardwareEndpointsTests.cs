@@ -306,4 +306,35 @@ public class HardwareEndpointsTests : IClassFixture<AppTestServerFixture>
         Assert.True(snapshot.ProcessWorkingSetBytes > 0);
         Assert.True(snapshot.NonPagedPoolBytes >= 0);
     }
+
+    [Fact]
+    public async Task GpuTelemetryProvider_GetTelemetryAsync_ReturnsValidTelemetryAndCachesWithinTtl()
+    {
+        var provider = new LocalLLMServerManager.Services.GpuTelemetryProvider(TimeSpan.FromSeconds(3));
+        var first = await provider.GetTelemetryAsync();
+        var second = await provider.GetTelemetryAsync();
+
+        Assert.NotNull(first);
+        Assert.False(string.IsNullOrWhiteSpace(first.GpuName));
+        Assert.True(first.TotalVramMb > 0);
+        Assert.True(first.UsedVramMb >= 0);
+        Assert.True(first.FreeVramMb >= 0);
+        Assert.InRange(first.UtilizationPercent, 0.0, 100.0);
+        Assert.Same(first, second);
+    }
+
+    [Fact]
+    public async Task PostMemoryPurge_CompactsHeapAndReturnsPurgedStatusWithMemoryTelemetry()
+    {
+        var response = await _client.PostAsync("/api/memory/purge", null);
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+
+        using var doc = await JsonDocument.ParseAsync(await response.Content.ReadAsStreamAsync());
+        var root = doc.RootElement;
+        Assert.Equal("purged", root.GetProperty("status").GetString());
+        Assert.True(root.TryGetProperty("eviction", out _));
+        Assert.True(root.TryGetProperty("memory", out var memory));
+        Assert.True(memory.GetProperty("totalRamBytes").GetInt64() > 0);
+        Assert.True(memory.GetProperty("processWorkingSetMb").GetDouble() > 0);
+    }
 }

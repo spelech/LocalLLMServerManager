@@ -23,6 +23,10 @@ public static class EngineEndpoints
         app.MapPost("/api/memory/purge", async (VramOrchestrator orchestrator, IGpuTelemetryProvider telemetryProvider, ISettingsService settingsService, CancellationToken ct) =>
         {
             var eviction = await orchestrator.PurgeAllCachesAsync(stopIdleEngines: true, ct);
+            System.Runtime.GCSettings.LargeObjectHeapCompactionMode = System.Runtime.GCLargeObjectHeapCompactionMode.CompactOnce;
+            GC.Collect(2, GCCollectionMode.Aggressive, blocking: true, compacting: true);
+            GC.WaitForPendingFinalizers();
+            GC.Collect(2, GCCollectionMode.Aggressive, blocking: true, compacting: true);
             return Results.Ok(new
             {
                 status = "purged",
