@@ -669,5 +669,22 @@ public class MainViewModelTests : IClassFixture<AppTestServerFixture>
         Assert.True(vm.IsCopilotSidebarOpen);
         Assert.Equal("Assistant", vm.SelectedCopilotTab);
     }
+
+    [Fact]
+    public void ReleaseTransientBuffers_ClearsImageByteArrays()
+    {
+        var vm = new MainViewModel();
+        vm.StudioGeneratedImageBytes = new byte[] { 1, 2, 3 };
+        vm.AttachedImageBytes = new byte[] { 4, 5, 6 };
+        vm.StickerStudio.GeneratedPngBytes = new byte[] { 7, 8, 9 };
+        vm.StickerStudio.InputImageBytes = new byte[] { 10, 11, 12 };
+
+        vm.ReleaseTransientBuffers();
+
+        Assert.Null(vm.StudioGeneratedImageBytes);
+        Assert.Null(vm.AttachedImageBytes);
+        Assert.Null(vm.StickerStudio.GeneratedPngBytes);
+        Assert.Null(vm.StickerStudio.InputImageBytes);
+    }
 }
 

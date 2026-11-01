@@ -144,5 +144,10 @@ public partial class MainWindow : Window
         // Hide window to system tray when user clicks X close button
         e.Cancel = true;
         Hide();
+        if (DataContext is MainViewModel vm)
+        {
+            vm.IsWindowVisible = false;
+            vm.ReleaseTransientBuffers();
+        }
     }
 }
