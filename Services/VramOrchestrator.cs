@@ -31,6 +31,7 @@ public class VramOrchestrator
     private readonly TimeProvider _timeProvider;
 
     private readonly ConcurrentDictionary<string, DateTimeOffset> _lastActivityUtc = new(StringComparer.OrdinalIgnoreCase);
+    private readonly ConcurrentDictionary<string, DateTimeOffset> _lastPressureEvictionUtc = new(StringComparer.OrdinalIgnoreCase);
     private readonly ConcurrentDictionary<string, bool> _tier1Evicted = new(StringComparer.OrdinalIgnoreCase);
     private readonly ConcurrentDictionary<string, bool> _tier2Hibernated = new(StringComparer.OrdinalIgnoreCase);
 
@@ -79,6 +80,7 @@ public class VramOrchestrator
         {
             var now = _timeProvider.GetUtcNow();
             _lastActivityUtc[key] = now;
+            _lastPressureEvictionUtc.TryRemove(key, out _);
             _tier1Evicted[key] = false;
             _tier2Hibernated[key] = false;
             _logger.LogDebug("Recorded activity for engine '{Engine}' at {Timestamp}", key, now);
@@ -97,7 +99,7 @@ public class VramOrchestrator
         {
             using var cts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
             cts.CancelAfter(TimeSpan.FromSeconds(1.5));
-            var response = await _httpClient.GetAsync("http://127.0.0.1:11434/", cts.Token);
+            using var response = await _httpClient.GetAsync("http://127.0.0.1:11434/", cts.Token);
             return response.IsSuccessStatusCode;
         }
         catch
@@ -112,7 +114,7 @@ public class VramOrchestrator
         {
             using var cts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
             cts.CancelAfter(TimeSpan.FromSeconds(1.5));
-            var response = await _httpClient.GetAsync("http://127.0.0.1:7860/sdapi/v1/progress", cts.Token);
+            using var response = await _httpClient.GetAsync("http://127.0.0.1:7860/sdapi/v1/progress", cts.Token);
             return response.IsSuccessStatusCode;
         }
         catch
@@ -128,7 +130,7 @@ public class VramOrchestrator
             using var cts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
             cts.CancelAfter(TimeSpan.FromSeconds(1.5));
             var baseUrl = comfyUrl.TrimEnd('/');
-            var response = await _httpClient.GetAsync($"{baseUrl}/system_stats", cts.Token);
+            using var response = await _httpClient.GetAsync($"{baseUrl}/system_stats", cts.Token);
             return response.IsSuccessStatusCode;
         }
         catch
@@ -151,10 +153,15 @@ public class VramOrchestrator
     {
         try
         {
+            if (!await IsComfyUiHealthyAsync(comfyUrl, cancellationToken))
+            {
+                return false;
+            }
+
             var baseUrl = comfyUrl.TrimEnd('/');
             var payload = new { free_memory = true, unload_models = true };
-            var content = new StringContent(JsonSerializer.Serialize(payload), Encoding.UTF8, "application/json");
-            var response = await _httpClient.PostAsync($"{baseUrl}/free", content, cancellationToken);
+            using var content = new StringContent(JsonSerializer.Serialize(payload), Encoding.UTF8, "application/json");
+            using var response = await _httpClient.PostAsync($"{baseUrl}/free", content, cancellationToken);
             _logger.LogInformation("Triggered ComfyUI VRAM unload / free memory.");
             return response.IsSuccessStatusCode;
         }
@@ -169,7 +176,7 @@ public class VramOrchestrator
     {
         try
         {
-            var psResponse = await _httpClient.GetAsync("http://127.0.0.1:11434/api/ps", cancellationToken);
+            using var psResponse = await _httpClient.GetAsync("http://127.0.0.1:11434/api/ps", cancellationToken);
             if (!psResponse.IsSuccessStatusCode) return false;
 
             var psContent = await psResponse.Content.ReadAsStringAsync(cancellationToken);
@@ -186,8 +193,8 @@ public class VramOrchestrator
                     if (!string.IsNullOrEmpty(modelName))
                     {
                         var payload = new { model = modelName, keep_alive = 0 };
-                        var content = new StringContent(JsonSerializer.Serialize(payload), Encoding.UTF8, "application/json");
-                        await _httpClient.PostAsync("http://127.0.0.1:11434/api/generate", content, cancellationToken);
+                        using var content = new StringContent(JsonSerializer.Serialize(payload), Encoding.UTF8, "application/json");
+                        using var genResponse = await _httpClient.PostAsync("http://127.0.0.1:11434/api/generate", content, cancellationToken);
                         _logger.LogInformation($"Unloaded model: {modelName}");
                     }
                 }
@@ -209,6 +216,40 @@ public class VramOrchestrator
         }
     }
 
+    private HashSet<string> GetActiveEngineKeys()
+    {
+        var active = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        if (_engineManager == null) return active;
+
+        if (_engineManager is AiEngineManager aiEngineManager)
+        {
+            foreach (var key in aiEngineManager.GetActiveProcesses().Keys)
+            {
+                active.Add(NormalizeEngineKey(key));
+            }
+        }
+
+        if (IsProcessRunningSafe(_engineManager.ComfyProcess)) active.Add("comfy");
+        if (IsProcessRunningSafe(_engineManager.ForgeProcess)) active.Add("forge");
+        if (IsProcessRunningSafe(_engineManager.AudioProcess)) active.Add("audio");
+        if (IsProcessRunningSafe(_engineManager.OllamaProcess)) active.Add("ollama");
+
+        return active;
+    }
+
+    private static bool IsProcessRunningSafe(System.Diagnostics.Process? process)
+    {
+        if (process == null) return false;
+        try
+        {
+            return !process.HasExited;
+        }
+        catch
+        {
+            return false;
+        }
+    }
+
     public async Task<CacheEvictionResult> EvaluateCacheLifetimesAsync(CancellationToken cancellationToken = default)
     {
         var settings = _settingsService?.LoadSettings() ?? new AppSettings();
@@ -223,6 +264,16 @@ public class VramOrchestrator
         bool isRamPressure = ramPressureThreshold > 0 && ramUsedPct >= ramPressureThreshold;
         var comfyUrl = string.IsNullOrWhiteSpace(settings.ComfyUiUrl) ? "http://127.0.0.1:8188" : settings.ComfyUiUrl;
 
+        var activeEngines = GetActiveEngineKeys();
+        foreach (var engine in activeEngines)
+        {
+            if (_tier2Hibernated.TryGetValue(engine, out var wasHibernated) && wasHibernated)
+            {
+                _tier2Hibernated[engine] = false;
+                _tier1Evicted[engine] = false;
+            }
+        }
+
         bool ollamaUnloaded = false;
         bool comfyVramFreed = false;
         var hibernatedEngines = new List<string>();
@@ -232,22 +283,28 @@ public class VramOrchestrator
             var twoMinutes = TimeSpan.FromMinutes(2);
 
             var ollamaIdle = now - (_lastActivityUtc.TryGetValue("ollama", out var oLast) ? oLast : now);
-            if (ollamaIdle >= twoMinutes && (!_tier1Evicted.TryGetValue("ollama", out var oEvicted) || !oEvicted))
+            bool ollamaCanPressureEvict = !_tier1Evicted.TryGetValue("ollama", out var oEvicted) || !oEvicted ||
+                                          !_lastPressureEvictionUtc.TryGetValue("ollama", out var oPressLast) || (now - oPressLast) >= twoMinutes;
+            if (ollamaIdle >= twoMinutes && ollamaCanPressureEvict)
             {
                 ollamaUnloaded = await UnloadOllamaModelsAsync($"RAM pressure ({ramUsedPct}% >= {ramPressureThreshold}%)", cancellationToken);
                 _tier1Evicted["ollama"] = true;
+                _lastPressureEvictionUtc["ollama"] = now;
             }
 
             var comfyIdle = now - (_lastActivityUtc.TryGetValue("comfy", out var cLast) ? cLast : now);
-            if (comfyIdle >= twoMinutes && (!_tier1Evicted.TryGetValue("comfy", out var cEvicted) || !cEvicted))
+            bool comfyCanPressureEvict = !_tier1Evicted.TryGetValue("comfy", out var cEvicted) || !cEvicted ||
+                                         !_lastPressureEvictionUtc.TryGetValue("comfy", out var cPressLast) || (now - cPressLast) >= twoMinutes;
+            if (comfyIdle >= twoMinutes && comfyCanPressureEvict)
             {
                 comfyVramFreed = await FreeComfyUiVramAsync(comfyUrl, cancellationToken);
                 _tier1Evicted["comfy"] = true;
+                _lastPressureEvictionUtc["comfy"] = now;
             }
 
             if (_engineManager != null)
             {
-                if (comfyIdle >= twoMinutes && (!_tier2Hibernated.TryGetValue("comfy", out var cHib) || !cHib))
+                if (comfyIdle >= twoMinutes && (!_tier2Hibernated.TryGetValue("comfy", out var cHib) || !cHib || activeEngines.Contains("comfy")))
                 {
                     await _engineManager.StopComfyUiAsync(_logger);
                     hibernatedEngines.Add("comfy");
@@ -255,7 +312,7 @@ public class VramOrchestrator
                 }
 
                 var forgeIdle = now - (_lastActivityUtc.TryGetValue("forge", out var fLast) ? fLast : now);
-                if (forgeIdle >= twoMinutes && (!_tier2Hibernated.TryGetValue("forge", out var fHib) || !fHib))
+                if (forgeIdle >= twoMinutes && (!_tier2Hibernated.TryGetValue("forge", out var fHib) || !fHib || activeEngines.Contains("forge")))
                 {
                     await _engineManager.StopForgeAsync(_logger);
                     hibernatedEngines.Add("forge");
@@ -263,7 +320,7 @@ public class VramOrchestrator
                 }
 
                 var audioIdle = now - (_lastActivityUtc.TryGetValue("audio", out var aLast) ? aLast : now);
-                if (audioIdle >= twoMinutes && (!_tier2Hibernated.TryGetValue("audio", out var aHib) || !aHib))
+                if (audioIdle >= twoMinutes && (!_tier2Hibernated.TryGetValue("audio", out var aHib) || !aHib || activeEngines.Contains("audio")))
                 {
                     await _engineManager.StopAudioEngineAsync(_logger);
                     hibernatedEngines.Add("audio");
@@ -303,7 +360,7 @@ public class VramOrchestrator
             var tier2Ttl = TimeSpan.FromMinutes(engineHibernateTimeoutMinutes);
 
             var comfyIdle = now - (_lastActivityUtc.TryGetValue("comfy", out var cLast) ? cLast : now);
-            if (comfyIdle >= tier2Ttl && (!_tier2Hibernated.TryGetValue("comfy", out var cHib) || !cHib))
+            if (comfyIdle >= tier2Ttl && (!_tier2Hibernated.TryGetValue("comfy", out var cHib) || !cHib || activeEngines.Contains("comfy")))
             {
                 await _engineManager.StopComfyUiAsync(_logger);
                 hibernatedEngines.Add("comfy");
@@ -311,7 +368,7 @@ public class VramOrchestrator
             }
 
             var forgeIdle = now - (_lastActivityUtc.TryGetValue("forge", out var fLast) ? fLast : now);
-            if (forgeIdle >= tier2Ttl && (!_tier2Hibernated.TryGetValue("forge", out var fHib) || !fHib))
+            if (forgeIdle >= tier2Ttl && (!_tier2Hibernated.TryGetValue("forge", out var fHib) || !fHib || activeEngines.Contains("forge")))
             {
                 await _engineManager.StopForgeAsync(_logger);
                 hibernatedEngines.Add("forge");
@@ -319,7 +376,7 @@ public class VramOrchestrator
             }
 
             var audioIdle = now - (_lastActivityUtc.TryGetValue("audio", out var aLast) ? aLast : now);
-            if (audioIdle >= tier2Ttl && (!_tier2Hibernated.TryGetValue("audio", out var aHib) || !aHib))
+            if (audioIdle >= tier2Ttl && (!_tier2Hibernated.TryGetValue("audio", out var aHib) || !aHib || activeEngines.Contains("audio")))
             {
                 await _engineManager.StopAudioEngineAsync(_logger);
                 hibernatedEngines.Add("audio");
