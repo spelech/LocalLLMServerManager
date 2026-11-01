@@ -124,11 +124,21 @@ public class StudioControlInstantiationTests
         Assert.Equal("✓", iconConv.Convert(StickerPipelineStage.Ready, typeof(string), "4", System.Globalization.CultureInfo.InvariantCulture));
         Assert.Equal("✕", iconConv.Convert(StickerPipelineStage.Failed, typeof(string), "5", System.Globalization.CultureInfo.InvariantCulture));
 
-        // Verify stage status brush converter
+        // Verify stage status brush converter and static brush reuse
         var brushConv = StageStatusBrushConverter.Instance;
         var activeBrush = brushConv.Convert(StickerPipelineStage.IsolatingSubject, typeof(Avalonia.Media.IBrush), "2", System.Globalization.CultureInfo.InvariantCulture) as Avalonia.Media.SolidColorBrush;
+        var activeBrush2 = brushConv.Convert(StickerPipelineStage.GeneratingDiffusion, typeof(Avalonia.Media.IBrush), "1", System.Globalization.CultureInfo.InvariantCulture) as Avalonia.Media.SolidColorBrush;
         Assert.NotNull(activeBrush);
         Assert.Equal(Avalonia.Media.Color.Parse("#388bfd"), activeBrush.Color);
+        Assert.Same(activeBrush, activeBrush2);
+
+        // Verify ImageSourceConverter reuses cached Bitmap for the same byte[] instance
+        byte[] pngBytes = Convert.FromBase64String(
+            "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==");
+        var bmp1 = ImageSourceConverter.Instance.Convert(pngBytes, typeof(Avalonia.Media.Imaging.Bitmap), null, System.Globalization.CultureInfo.InvariantCulture);
+        var bmp2 = ImageSourceConverter.Instance.Convert(pngBytes, typeof(Avalonia.Media.Imaging.Bitmap), null, System.Globalization.CultureInfo.InvariantCulture);
+        Assert.NotNull(bmp1);
+        Assert.Same(bmp1, bmp2);
 
         // Verify preset match converter
         var matchConv = PresetMatchConverter.Instance;

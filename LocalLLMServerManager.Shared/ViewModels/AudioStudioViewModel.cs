@@ -277,7 +277,8 @@ public partial class AudioStudioViewModel : ObservableObject
         try
         {
             var apiBase = ctx?.ApiBase ?? (!string.IsNullOrWhiteSpace(ApiBase) ? ApiBase : (OperatingSystem.IsBrowser() ? "" : "http://127.0.0.1:5246"));
-            var http = ctx?.Http ?? HttpHelper.CreateClient(apiBase);
+            using var fallbackHttp = ctx?.Http == null ? HttpHelper.CreateClient(apiBase) : null;
+            var http = ctx?.Http ?? fallbackHttp!;
 
             var payload = new
             {
@@ -297,7 +298,7 @@ public partial class AudioStudioViewModel : ObservableObject
             LiveLogOutput += "[Stage 2] Generating audio latents with conditioning...\n";
             LogsText = LiveLogOutput;
 
-            var response = await http.PostAsJsonAsync($"{apiBase}/api/audio/generate", payload);
+            using var response = await http.PostAsJsonAsync($"{apiBase}/api/audio/generate", payload);
             if (response.IsSuccessStatusCode)
             {
                 Stage2Status = "Complete";

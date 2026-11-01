@@ -12,7 +12,7 @@ public class TelemetryService : ITelemetryService
     {
         try
         {
-            var resp = await http.GetAsync($"{apiBase}/api/gpu/vram");
+            using var resp = await http.GetAsync($"{apiBase}/api/gpu/vram");
             if (resp.IsSuccessStatusCode)
             {
                 var doc = JsonNode.Parse(await resp.Content.ReadAsStringAsync());
@@ -90,7 +90,7 @@ public class TelemetryService : ITelemetryService
         {
             try
             {
-                var healthResp = await http.GetAsync($"{apiBase}/health");
+                using var healthResp = await http.GetAsync($"{apiBase}/health");
                 if (healthResp.IsSuccessStatusCode)
                 {
                     var doc = JsonNode.Parse(await healthResp.Content.ReadAsStringAsync());
@@ -105,7 +105,7 @@ public class TelemetryService : ITelemetryService
 
         try
         {
-            var healthResp = await http.GetAsync($"{apiBase}/health");
+            using var healthResp = await http.GetAsync($"{apiBase}/health");
             if (healthResp.IsSuccessStatusCode)
             {
                 var doc = JsonNode.Parse(await healthResp.Content.ReadAsStringAsync());
@@ -117,9 +117,9 @@ public class TelemetryService : ITelemetryService
         }
         catch { }
 
-        try { var r = await http.GetAsync("http://127.0.0.1:11434/"); ollama = r.IsSuccessStatusCode; } catch { }
-        try { var r = await http.GetAsync("http://127.0.0.1:7860/"); forge = r.IsSuccessStatusCode; } catch { }
-        try { var r = await http.GetAsync($"{comfyUrl.TrimEnd('/')}/system_stats"); comfy = r.IsSuccessStatusCode; } catch { }
+        try { using var r = await http.GetAsync("http://127.0.0.1:11434/"); ollama = r.IsSuccessStatusCode; } catch { }
+        try { using var r = await http.GetAsync("http://127.0.0.1:7860/"); forge = r.IsSuccessStatusCode; } catch { }
+        try { using var r = await http.GetAsync($"{comfyUrl.TrimEnd('/')}/system_stats"); comfy = r.IsSuccessStatusCode; } catch { }
 
         return (ollama, forge, comfy);
     }
