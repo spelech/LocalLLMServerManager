@@ -6,9 +6,13 @@ namespace LocalLLMServerManager.Shared.Services;
 
 public static class HttpHelper
 {
+    private static readonly HttpMessageHandler SharedHandler = OperatingSystem.IsBrowser()
+        ? new HttpClientHandler()
+        : new SocketsHttpHandler { PooledConnectionLifetime = TimeSpan.FromMinutes(2) };
+
     public static HttpClient CreateClient(string? apiBase = null)
     {
-        var client = new HttpClient();
+        var client = new HttpClient(SharedHandler, disposeHandler: false);
         if (!string.IsNullOrWhiteSpace(apiBase) && Uri.TryCreate(apiBase, UriKind.Absolute, out var baseUri))
         {
             client.BaseAddress = baseUri;

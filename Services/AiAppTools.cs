@@ -53,7 +53,7 @@ public class AiAppTools : IAiAppTools
         try
         {
             var telemetry = await _telemetryProvider.GetTelemetryAsync();
-            return JsonSerializer.Serialize(telemetry, new JsonSerializerOptions { WriteIndented = true });
+            return JsonSerializer.Serialize(telemetry, JsonOptions);
         }
         catch (Exception ex)
         {
@@ -72,7 +72,7 @@ public class AiAppTools : IAiAppTools
             try
             {
                 var sw = System.Diagnostics.Stopwatch.StartNew();
-                var resp = await client.GetAsync(url, cancellationToken);
+                using var resp = await client.GetAsync(url, cancellationToken);
                 sw.Stop();
                 return new { online = resp.IsSuccessStatusCode, statusCode = (int)resp.StatusCode, latencyMs = sw.ElapsedMilliseconds };
             }
@@ -91,7 +91,7 @@ public class AiAppTools : IAiAppTools
             kokoroTts = await CheckPort(string.IsNullOrWhiteSpace(settings.AudioEngineUrl) ? "http://127.0.0.1:8880/" : settings.AudioEngineUrl)
         };
 
-        return JsonSerializer.Serialize(results, new JsonSerializerOptions { WriteIndented = true });
+        return JsonSerializer.Serialize(results, JsonOptions);
     }
 
     [Description("List all installed Ollama LLM models, quantization formats, and memory footprint.")]
@@ -100,7 +100,7 @@ public class AiAppTools : IAiAppTools
         try
         {
             var models = await _ollamaModelService.GetInstalledModelsAsync();
-            return JsonSerializer.Serialize(models, new JsonSerializerOptions { WriteIndented = true });
+            return JsonSerializer.Serialize(models, JsonOptions);
         }
         catch (Exception ex)
         {
@@ -114,7 +114,7 @@ public class AiAppTools : IAiAppTools
         try
         {
             var result = await _engineManager.StartEngineAsync(engine);
-            return JsonSerializer.Serialize(result, new JsonSerializerOptions { WriteIndented = true });
+            return JsonSerializer.Serialize(result, JsonOptions);
         }
         catch (Exception ex)
         {
@@ -128,7 +128,7 @@ public class AiAppTools : IAiAppTools
         try
         {
             var result = await _engineManager.StopEngineAsync(engine);
-            return JsonSerializer.Serialize(result, new JsonSerializerOptions { WriteIndented = true });
+            return JsonSerializer.Serialize(result, JsonOptions);
         }
         catch (Exception ex)
         {
@@ -143,7 +143,7 @@ public class AiAppTools : IAiAppTools
         {
             using var client = _httpClientFactory.CreateClient();
             var payload = new StringContent("{\"model\":\"\",\"keep_alive\":0}", Encoding.UTF8, "application/json");
-            var response = await client.PostAsync("http://127.0.0.1:11434/api/generate", payload, cancellationToken);
+            using var response = await client.PostAsync("http://127.0.0.1:11434/api/generate", payload, cancellationToken);
             return JsonSerializer.Serialize(new { success = response.IsSuccessStatusCode, status = (int)response.StatusCode, message = "VRAM unload requested" });
         }
         catch (Exception ex)
@@ -282,7 +282,7 @@ public class AiAppTools : IAiAppTools
                     steps = 20
                 };
                 var content = new StringContent(JsonSerializer.Serialize(forgePayload), Encoding.UTF8, "application/json");
-                var resp = await client.PostAsync("http://127.0.0.1:7860/sdapi/v1/txt2img", content, cancellationToken);
+                using var resp = await client.PostAsync("http://127.0.0.1:7860/sdapi/v1/txt2img", content, cancellationToken);
                 return JsonSerializer.Serialize(new
                 {
                     success = resp.IsSuccessStatusCode,
@@ -296,7 +296,7 @@ public class AiAppTools : IAiAppTools
                 var comfyUrl = string.IsNullOrWhiteSpace(settings.ComfyUiUrl) ? "http://127.0.0.1:8188" : settings.ComfyUiUrl.TrimEnd('/');
                 var comfyPayload = new { prompt = new { } };
                 var content = new StringContent(JsonSerializer.Serialize(comfyPayload), Encoding.UTF8, "application/json");
-                var resp = await client.PostAsync($"{comfyUrl}/prompt", content, cancellationToken);
+                using var resp = await client.PostAsync($"{comfyUrl}/prompt", content, cancellationToken);
                 return JsonSerializer.Serialize(new
                 {
                     success = resp.IsSuccessStatusCode,
@@ -330,7 +330,7 @@ public class AiAppTools : IAiAppTools
 
             var body = JsonSerializer.Serialize(new { text, voice, format });
             var content = new StringContent(body, Encoding.UTF8, "application/json");
-            var resp = await client.PostAsync($"{ttsUrl}/api/tts", content, cancellationToken);
+            using var resp = await client.PostAsync($"{ttsUrl}/api/tts", content, cancellationToken);
 
             var mediaId = Guid.NewGuid().ToString("N")[..8];
             return JsonSerializer.Serialize(new
@@ -379,7 +379,7 @@ public class AiAppTools : IAiAppTools
                 warnings = m.Warnings
             });
 
-            return Task.FromResult(JsonSerializer.Serialize(results, new JsonSerializerOptions { WriteIndented = true }));
+            return Task.FromResult(JsonSerializer.Serialize(results, JsonOptions));
         }
         catch (Exception ex)
         {

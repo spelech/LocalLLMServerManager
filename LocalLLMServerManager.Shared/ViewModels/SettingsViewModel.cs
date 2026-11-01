@@ -472,7 +472,8 @@ public partial class SettingsViewModel : ObservableObject
     [RelayCommand]
     public async Task RefreshComponentStatusesAsync()
     {
-        await RefreshComponentStatusesAsync(EffectiveApiBase, HttpHelper.CreateClient(EffectiveApiBase));
+        using var http = HttpHelper.CreateClient(EffectiveApiBase);
+        await RefreshComponentStatusesAsync(EffectiveApiBase, http);
     }
 
     public async Task RefreshComponentStatusesAsync(string apiBase, HttpClient http)
@@ -480,7 +481,7 @@ public partial class SettingsViewModel : ObservableObject
         try
         {
             var url = HttpHelper.FormatEndpoint(apiBase, "/api/components");
-            var response = await http.GetAsync(url);
+            using var response = await http.GetAsync(url);
             if (response.IsSuccessStatusCode)
             {
                 var json = await response.Content.ReadAsStringAsync();
@@ -514,14 +515,14 @@ public partial class SettingsViewModel : ObservableObject
     private async Task ToggleComponentAsync(string componentId, bool currentlyInstalled)
     {
         var apiBase = EffectiveApiBase;
-        var http = HttpHelper.CreateClient(apiBase);
+        using var http = HttpHelper.CreateClient(apiBase);
         try
         {
             if (currentlyInstalled)
             {
-                var content = new StringContent(JsonSerializer.Serialize(new { componentId }), System.Text.Encoding.UTF8, "application/json");
+                using var content = new StringContent(JsonSerializer.Serialize(new { componentId }), System.Text.Encoding.UTF8, "application/json");
                 var url = HttpHelper.FormatEndpoint(apiBase, "/api/components/uninstall");
-                var res = await http.PostAsync(url, content);
+                using var res = await http.PostAsync(url, content);
                 if (res.IsSuccessStatusCode)
                 {
                     ToastService.Instance.Show($"Uninstalled component '{componentId}'.", ToastType.Info);
@@ -529,9 +530,9 @@ public partial class SettingsViewModel : ObservableObject
             }
             else
             {
-                var content = new StringContent(JsonSerializer.Serialize(new { componentId }), System.Text.Encoding.UTF8, "application/json");
+                using var content = new StringContent(JsonSerializer.Serialize(new { componentId }), System.Text.Encoding.UTF8, "application/json");
                 var url = HttpHelper.FormatEndpoint(apiBase, "/api/components/install");
-                var res = await http.PostAsync(url, content);
+                using var res = await http.PostAsync(url, content);
                 if (res.IsSuccessStatusCode)
                 {
                     ToastService.Instance.Show($"Installed component '{componentId}'.", ToastType.Success);
@@ -565,7 +566,8 @@ public partial class SettingsViewModel : ObservableObject
     [RelayCommand]
     public async Task AutoDetectToolsAsync()
     {
-        await AutoDetectToolsAsync(EffectiveApiBase, HttpHelper.CreateClient(EffectiveApiBase));
+        using var http = HttpHelper.CreateClient(EffectiveApiBase);
+        await AutoDetectToolsAsync(EffectiveApiBase, http);
     }
 
     public async Task AutoDetectToolsAsync(string apiBase, HttpClient http)
@@ -573,7 +575,7 @@ public partial class SettingsViewModel : ObservableObject
         try
         {
             IsAutoDetecting = true;
-            var response = await http.GetAsync($"{apiBase}/api/system/tools/detect");
+            using var response = await http.GetAsync($"{apiBase}/api/system/tools/detect");
             if (response.IsSuccessStatusCode)
             {
                 var jsonStr = await response.Content.ReadAsStringAsync();
@@ -771,7 +773,8 @@ public partial class SettingsViewModel : ObservableObject
     [RelayCommand]
     public async Task TestVoiceSynthesizerAsync()
     {
-        await TestVoiceSynthesizerAsync(EffectiveApiBase, HttpHelper.CreateClient(EffectiveApiBase));
+        using var http = HttpHelper.CreateClient(EffectiveApiBase);
+        await TestVoiceSynthesizerAsync(EffectiveApiBase, http);
     }
 
     public async Task TestVoiceSynthesizerAsync(string apiBase, HttpClient http)
@@ -786,9 +789,9 @@ public partial class SettingsViewModel : ObservableObject
                 response_format = "mp3"
             };
 
-            var content = new StringContent(JsonSerializer.Serialize(payload), System.Text.Encoding.UTF8, "application/json");
+            using var content = new StringContent(JsonSerializer.Serialize(payload), System.Text.Encoding.UTF8, "application/json");
             var url = HttpHelper.FormatEndpoint(apiBase, "/v1/audio/speech");
-            var response = await http.PostAsync(url, content);
+            using var response = await http.PostAsync(url, content);
             if (response.IsSuccessStatusCode)
             {
                 ToastService.Instance.Show("Audio synthesized successfully! Playing preview...", ToastType.Success);
@@ -863,7 +866,7 @@ public partial class SettingsViewModel : ObservableObject
         try
         {
             var url = HttpHelper.FormatEndpoint(apiBase, "/api/settings");
-            var response = await http.GetAsync(url);
+            using var response = await http.GetAsync(url);
             if (response.IsSuccessStatusCode)
             {
                 var jsonStr = await response.Content.ReadAsStringAsync();
@@ -929,7 +932,8 @@ public partial class SettingsViewModel : ObservableObject
     [RelayCommand]
     public async Task SaveSettingsAsync()
     {
-        await SaveSettingsAsync(EffectiveApiBase, HttpHelper.CreateClient(EffectiveApiBase));
+        using var http = HttpHelper.CreateClient(EffectiveApiBase);
+        await SaveSettingsAsync(EffectiveApiBase, http);
     }
 
     public async Task SaveSettingsAsync(string apiBase, HttpClient http)
@@ -984,7 +988,7 @@ public partial class SettingsViewModel : ObservableObject
             );
 
             var url = HttpHelper.FormatEndpoint(apiBase, "/api/settings");
-            var response = await http.PostAsync(url, content);
+            using var response = await http.PostAsync(url, content);
             if (response.IsSuccessStatusCode)
             {
                 ToastService.Instance.Show("Settings saved successfully.", ToastType.Success);

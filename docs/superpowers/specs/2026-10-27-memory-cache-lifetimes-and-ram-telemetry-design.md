@@ -144,3 +144,25 @@ Add a **Memory & Cache Lifetimes** section card with three controls:
 3. **Browser E2E & Visual Verification:**
    - Run Playwright tests across both Chromium and Firefox (`npx playwright test`), including `page.reload()`.
    - Capture and visually inspect screenshots of the updated titlebar Unified Hardware Pill and Settings Memory & Cache Lifetimes card.
+
+---
+
+## 6. v4.1.1 Host Memory Retention & Leak Remediation (2026-11-01)
+
+Following multi-day production validation of v4.1.0, four additional host memory retention and leak vectors were resolved across PRs [#103](https://github.com/spelech/LocalLLMServerManager/pull/103), [#104](https://github.com/spelech/LocalLLMServerManager/pull/104), [#105](https://github.com/spelech/LocalLLMServerManager/pull/105), and [#106](https://github.com/spelech/LocalLLMServerManager/pull/106):
+
+1. **Workstation GC with DATAS & Large Object Heap (LOH) Compaction ([#104](https://github.com/spelech/LocalLLMServerManager/pull/104)):**
+   - Configured `<ServerGarbageCollection>false</ServerGarbageCollection>` and `<GarbageCollectionAdaptationMode>1</GarbageCollectionAdaptationMode>` in `LocalLLMServerManager.csproj` so .NET decommits freed heap segments back to the OS instead of retaining multi-gigabyte per-core Server GC heaps.
+   - `MemoryLifecycleWatchdog` and `POST /api/memory/purge` set `GCSettings.LargeObjectHeapCompactionMode = GCLargeObjectHeapCompactionMode.CompactOnce` and trigger blocking Gen 2 compacting collections when host working set (`> 512 MB`), managed heap (`> 256 MB`), or system RAM pressure (`>= 75%`) thresholds are exceeded.
+   - Added a 3-second TTL cache in `GpuTelemetryProvider` so concurrent UI, health, and watchdog callers share `nvidia-smi` snapshots without spawning redundant child processes.
+2. **UI Polling Churn Elimination & System Tray Lifecycle ([#103](https://github.com/spelech/LocalLLMServerManager/pull/103)):**
+   - Paused the 5-second UI background polling loop (`IsWindowVisible = false`) and released transient image byte buffers (`ReleaseTransientBuffers()`) when the desktop window is hidden to the system tray (`MainWindow.OnClosing`), resuming and refreshing immediately on `App.ShowMainWindow()`.
+   - Eliminated redundant 5-second `ObservableCollection` clear/rebuild cycles in `OllamaLibraryViewModel` and skipped hardware fit badge recalculations in `OllamaLibraryViewModel`, `HuggingFaceSearchViewModel`, and `CivitaiSearchViewModel` when VRAM/RAM metrics are unchanged.
+3. **`VramOrchestrator` Eviction Latch Recovery & ComfyUI Health Guard ([#106](https://github.com/spelech/LocalLLMServerManager/pull/106)):**
+   - Guarded `FreeComfyUiVramAsync` with `IsComfyUiHealthyAsync` before posting to `:8188/free` to prevent `SocketException (10061)` errors when ComfyUI is offline.
+   - Fixed the one-way `_tier1Evicted` / `_tier2Hibernated` latch in `EvaluateCacheLifetimesAsync` by inspecting active engine processes (`GetActiveEngineKeys`), allowing recurring RAM pressure evictions and resetting hibernation flags when engines are restarted outside the proxy middleware.
+   - Added activity tracking in `WorkflowEndpoints` (`/api/video/generate`, `/api/3d/generate`, `/api/audio/generate`), `LocalLlmMcpTools`, and `AiEngineManager`, plus automatic disposal of exited `Process` handles.
+4. **Unmanaged Skia `Bitmap` Cache, Shared `SocketsHttpHandler` & Stateless MCP Transport ([#105](https://github.com/spelech/LocalLLMServerManager/pull/105)):**
+   - Added a `ConditionalWeakTable<byte[], Bitmap>` cache in `ImageSourceConverter` so repeated binding evaluations reuse the same unmanaged Skia `Bitmap` instance, and cached per-thread `SolidColorBrush` instances in `StageStatusBrushConverter`.
+   - Updated `HttpHelper.CreateClient` to reuse a static `SocketsHttpHandler` (`PooledConnectionLifetime = 2m`, `disposeHandler: false`) and enabled `options.Stateless = true` on `AddMcpServer().WithHttpTransport(...)` so external MCP gateway polling does not accumulate stateful sessions.
+

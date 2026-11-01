@@ -188,7 +188,10 @@ public class Program
 
         // Register MCP Server
         builder.Services.AddMcpServer()
-            .WithHttpTransport()
+            .WithHttpTransport(options =>
+            {
+                options.Stateless = true;
+            })
             .WithTools<LocalLlmMcpTools>();
 
         // Enable permissive CORS for Web UI and LAN browser clients
