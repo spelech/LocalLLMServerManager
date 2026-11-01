@@ -2,16 +2,35 @@ using System;
 using System.Diagnostics;
 using System.IO;
 using System.Runtime.InteropServices;
+using System.Threading.Tasks;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace LocalLLMServerManager.Services;
 
 public class GpuTelemetryProvider : IGpuTelemetryProvider
 {
     private readonly IAiEngineManager? _engineManager;
+    private readonly TimeSpan _cacheTtl = TimeSpan.FromSeconds(3);
+    private readonly object _cacheLock = new();
+    private (string GpuName, long TotalVramBytes, long UsedVramBytes)? _cachedGpuInfo;
+    private GpuTelemetryResult? _cachedTelemetry;
+    private DateTimeOffset _cacheExpiresAtUtc = DateTimeOffset.MinValue;
 
+    [ActivatorUtilitiesConstructor]
     public GpuTelemetryProvider(IAiEngineManager? engineManager = null)
     {
         _engineManager = engineManager;
+    }
+
+    public GpuTelemetryProvider(IAiEngineManager? engineManager, TimeSpan cacheTtl)
+    {
+        _engineManager = engineManager;
+        _cacheTtl = cacheTtl;
+    }
+
+    public GpuTelemetryProvider(TimeSpan cacheTtl)
+        : this(null, cacheTtl)
+    {
     }
 
     [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Auto)]
@@ -160,7 +179,7 @@ public class GpuTelemetryProvider : IGpuTelemetryProvider
         {
             if (proc.HasExited) return 0;
             proc.Refresh();
-            return proc.WorkingSet64;
+            return Math.Max(0, proc.WorkingSet64);
         }
         catch
         {
@@ -168,7 +187,62 @@ public class GpuTelemetryProvider : IGpuTelemetryProvider
         }
     }
 
+    public Task<GpuTelemetryResult> GetTelemetryAsync()
+    {
+        var now = DateTimeOffset.UtcNow;
+        lock (_cacheLock)
+        {
+            if (_cachedTelemetry != null && now < _cacheExpiresAtUtc)
+            {
+                return Task.FromResult(_cachedTelemetry);
+            }
+        }
+
+        var (gpuName, totalBytes, usedBytes) = GetGpuInfo();
+        lock (_cacheLock)
+        {
+            if (_cachedTelemetry != null)
+            {
+                return Task.FromResult(_cachedTelemetry);
+            }
+
+            var totalMb = totalBytes / (1024 * 1024);
+            var usedMb = usedBytes / (1024 * 1024);
+            var freeMb = Math.Max(0, (totalBytes - usedBytes) / (1024 * 1024));
+            var utilPercent = totalBytes > 0 ? Math.Round((double)usedBytes / totalBytes * 100.0, 1) : 0.0;
+            _cachedTelemetry = new GpuTelemetryResult(gpuName, totalMb, usedMb, freeMb, utilPercent);
+            return Task.FromResult(_cachedTelemetry);
+        }
+    }
+
     public (string GpuName, long TotalVramBytes, long UsedVramBytes) GetGpuInfo()
+    {
+        var now = DateTimeOffset.UtcNow;
+        lock (_cacheLock)
+        {
+            if (_cachedGpuInfo.HasValue && now < _cacheExpiresAtUtc)
+            {
+                return _cachedGpuInfo.Value;
+            }
+        }
+
+        var info = QueryGpuInfoCore();
+
+        lock (_cacheLock)
+        {
+            _cachedGpuInfo = info;
+            var totalMb = info.TotalVramBytes / (1024 * 1024);
+            var usedMb = info.UsedVramBytes / (1024 * 1024);
+            var freeMb = Math.Max(0, (info.TotalVramBytes - info.UsedVramBytes) / (1024 * 1024));
+            var utilPercent = info.TotalVramBytes > 0 ? Math.Round((double)info.UsedVramBytes / info.TotalVramBytes * 100.0, 1) : 0.0;
+            _cachedTelemetry = new GpuTelemetryResult(info.GpuName, totalMb, usedMb, freeMb, utilPercent);
+            _cacheExpiresAtUtc = DateTimeOffset.UtcNow.Add(_cacheTtl);
+        }
+
+        return info;
+    }
+
+    private (string GpuName, long TotalVramBytes, long UsedVramBytes) QueryGpuInfoCore()
     {
         try
         {
