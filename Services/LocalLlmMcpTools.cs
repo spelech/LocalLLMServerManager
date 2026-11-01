@@ -24,6 +24,7 @@ public sealed class LocalLlmMcpTools
     private readonly IHuggingFaceSearchService _hfSearchService;
     private readonly ICivitaiSearchService _civitaiSearchService;
     private readonly ISettingsService _settingsService;
+    private readonly VramOrchestrator? _vramOrchestrator;
 
     public LocalLlmMcpTools(
         IGpuTelemetryProvider telemetryProvider,
@@ -33,7 +34,8 @@ public sealed class LocalLlmMcpTools
         IHttpClientFactory httpClientFactory,
         IHuggingFaceSearchService? hfSearchService = null,
         ICivitaiSearchService? civitaiSearchService = null,
-        ISettingsService? settingsService = null)
+        ISettingsService? settingsService = null,
+        VramOrchestrator? vramOrchestrator = null)
     {
         _telemetryProvider = telemetryProvider;
         _engineManager = engineManager;
@@ -43,6 +45,7 @@ public sealed class LocalLlmMcpTools
         _hfSearchService = hfSearchService ?? new HuggingFaceSearchService();
         _civitaiSearchService = civitaiSearchService ?? new CivitaiSearchService();
         _settingsService = settingsService ?? new SettingsService();
+        _vramOrchestrator = vramOrchestrator;
     }
 
     [McpServerTool, Description("Get real-time GPU VRAM allocation, total memory, used memory, and GPU hardware name via NVML CUDA.")]
@@ -63,7 +66,7 @@ public sealed class LocalLlmMcpTools
             try
             {
                 var sw = System.Diagnostics.Stopwatch.StartNew();
-                var resp = await client.GetAsync(url);
+                using var resp = await client.GetAsync(url);
                 sw.Stop();
                 return new { online = resp.IsSuccessStatusCode, status = (int)resp.StatusCode, latencyMs = sw.ElapsedMilliseconds };
             }
@@ -96,6 +99,7 @@ public sealed class LocalLlmMcpTools
         if (string.IsNullOrWhiteSpace(modelName))
             return JsonSerializer.Serialize(new { success = false, error = "modelName is required" });
 
+        _vramOrchestrator?.RecordActivity("ollama");
         var started = await _ollamaModelService.PullModelAsync(modelName);
         return JsonSerializer.Serialize(new { success = started, modelName, message = started ? "Model pull initiated" : "Failed to initiate pull" });
     }
@@ -106,8 +110,8 @@ public sealed class LocalLlmMcpTools
         try
         {
             using var client = _httpClientFactory.CreateClient();
-            var payload = new StringContent("{\"model\":\"\",\"keep_alive\":0}", System.Text.Encoding.UTF8, "application/json");
-            var response = await client.PostAsync("http://127.0.0.1:11434/api/generate", payload);
+            using var payload = new StringContent("{\"model\":\"\",\"keep_alive\":0}", System.Text.Encoding.UTF8, "application/json");
+            using var response = await client.PostAsync("http://127.0.0.1:11434/api/generate", payload);
             return JsonSerializer.Serialize(new { success = response.IsSuccessStatusCode, status = (int)response.StatusCode, message = "VRAM unload requested" });
         }
         catch (Exception ex)
@@ -119,6 +123,7 @@ public sealed class LocalLlmMcpTools
     [McpServerTool, Description("Start an AI backend engine process ('forge', 'comfyui', or 'ollama').")]
     public async Task<string> StartEngineAsync([Description("Target engine: 'forge', 'comfyui', or 'ollama'")] string engine)
     {
+        _vramOrchestrator?.RecordActivity(engine);
         var result = await _engineManager.StartEngineAsync(engine);
         return JsonSerializer.Serialize(result, new JsonSerializerOptions { WriteIndented = true });
     }
@@ -148,12 +153,14 @@ public sealed class LocalLlmMcpTools
         if (string.IsNullOrWhiteSpace(prompt))
             return JsonSerializer.Serialize(new { success = false, error = "prompt is required" });
 
+        _vramOrchestrator?.RecordActivity("comfy");
+
         try
         {
             using var client = _httpClientFactory.CreateClient();
             var body = JsonSerializer.Serialize(new { prompt, workflow, width, height, frames });
-            var content = new StringContent(body, System.Text.Encoding.UTF8, "application/json");
-            var response = await client.PostAsync("http://127.0.0.1:8188/prompt", content);
+            using var content = new StringContent(body, System.Text.Encoding.UTF8, "application/json");
+            using var response = await client.PostAsync("http://127.0.0.1:8188/prompt", content);
 
             var mediaId = Guid.NewGuid().ToString("N")[..8];
             var result = new
@@ -185,12 +192,14 @@ public sealed class LocalLlmMcpTools
         if (string.IsNullOrWhiteSpace(text))
             return JsonSerializer.Serialize(new { success = false, error = "text is required" });
 
+        _vramOrchestrator?.RecordActivity("audio");
+
         try
         {
             using var client = _httpClientFactory.CreateClient();
             var body = JsonSerializer.Serialize(new { text, voice, format });
-            var content = new StringContent(body, System.Text.Encoding.UTF8, "application/json");
-            var response = await client.PostAsync("http://127.0.0.1:7851/api/tts", content);
+            using var content = new StringContent(body, System.Text.Encoding.UTF8, "application/json");
+            using var response = await client.PostAsync("http://127.0.0.1:7851/api/tts", content);
 
             var mediaId = Guid.NewGuid().ToString("N")[..8];
             var ext = string.IsNullOrWhiteSpace(format) ? "mp3" : format.TrimStart('.');
@@ -220,12 +229,14 @@ public sealed class LocalLlmMcpTools
         if (string.IsNullOrWhiteSpace(prompt))
             return JsonSerializer.Serialize(new { success = false, error = "prompt is required" });
 
+        _vramOrchestrator?.RecordActivity("audio");
+
         try
         {
             using var client = _httpClientFactory.CreateClient();
             var body = JsonSerializer.Serialize(new { prompt, durationSeconds });
-            var content = new StringContent(body, System.Text.Encoding.UTF8, "application/json");
-            var response = await client.PostAsync("http://127.0.0.1:7860/api/audio/generate", content);
+            using var content = new StringContent(body, System.Text.Encoding.UTF8, "application/json");
+            using var response = await client.PostAsync("http://127.0.0.1:7860/api/audio/generate", content);
 
             var mediaId = Guid.NewGuid().ToString("N")[..8];
             var result = new
@@ -310,8 +321,9 @@ public sealed class LocalLlmMcpTools
 
             if (w.Contains("text") || w.Contains("llm") || w.Contains("ollama"))
             {
+                _vramOrchestrator?.RecordActivity("ollama");
                 var payload = new { prompt, model = "llama3.2:latest", stream = false };
-                var resp = await client.PostAsJsonAsync("http://127.0.0.1:11434/api/generate", payload);
+                using var resp = await client.PostAsJsonAsync("http://127.0.0.1:11434/api/generate", payload);
                 if (resp.IsSuccessStatusCode)
                 {
                     var textResp = await resp.Content.ReadAsStringAsync();
@@ -321,6 +333,7 @@ public sealed class LocalLlmMcpTools
             }
             else if (w.Contains("video") || w.Contains("wan") || w.Contains("ltx"))
             {
+                _vramOrchestrator?.RecordActivity("comfy");
                 var payload = new
                 {
                     WorkflowId = w.Contains("wan") || w == "video" ? "wan2.2_t2v" : w,
@@ -331,12 +344,13 @@ public sealed class LocalLlmMcpTools
                     Frames = 49,
                     Seed = seed
                 };
-                var resp = await client.PostAsJsonAsync("http://127.0.0.1:5246/api/video/generate", payload);
+                using var resp = await client.PostAsJsonAsync("http://127.0.0.1:5246/api/video/generate", payload);
                 var content = await resp.Content.ReadAsStringAsync();
                 return JsonSerializer.Serialize(new { success = resp.IsSuccessStatusCode, modality = "video", data = JsonNode.Parse(content) });
             }
             else if (w.Contains("audio") || w.Contains("sound") || w.Contains("music"))
             {
+                _vramOrchestrator?.RecordActivity("audio");
                 var payload = new
                 {
                     WorkflowId = "stable_audio_open_sfx",
@@ -345,13 +359,14 @@ public sealed class LocalLlmMcpTools
                     DurationSeconds = Math.Max(5, (int)(steps * 0.6)),
                     Seed = seed
                 };
-                var resp = await client.PostAsJsonAsync("http://127.0.0.1:5246/api/audio/generate", payload);
+                using var resp = await client.PostAsJsonAsync("http://127.0.0.1:5246/api/audio/generate", payload);
                 var content = await resp.Content.ReadAsStringAsync();
                 return JsonSerializer.Serialize(new { success = resp.IsSuccessStatusCode, modality = "audio", data = JsonNode.Parse(content) });
             }
             else
             {
                 // Default to Image via SD Forge / Comfy
+                _vramOrchestrator?.RecordActivity("forge");
                 var payload = new
                 {
                     prompt,
@@ -362,7 +377,7 @@ public sealed class LocalLlmMcpTools
                     width,
                     height
                 };
-                var resp = await client.PostAsJsonAsync("http://127.0.0.1:7860/sdapi/v1/txt2img", payload);
+                using var resp = await client.PostAsJsonAsync("http://127.0.0.1:7860/sdapi/v1/txt2img", payload);
                 if (resp.IsSuccessStatusCode)
                 {
                     var respStr = await resp.Content.ReadAsStringAsync();

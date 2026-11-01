@@ -70,7 +70,8 @@ public static class WorkflowEndpoints
 
             try
             {
-                var response = await httpClient.PostAsync($"{baseUrl}/interrupt", new StringContent("{}", Encoding.UTF8, "application/json"));
+                using var content = new StringContent("{}", Encoding.UTF8, "application/json");
+                using var response = await httpClient.PostAsync($"{baseUrl}/interrupt", content);
                 return Results.Ok(new { success = response.IsSuccessStatusCode, status = (int)response.StatusCode });
             }
             catch (Exception ex)
@@ -151,6 +152,7 @@ public static class WorkflowEndpoints
 
         app.MapPost("/api/3d/generate", async (ThreeDGenerateRequest request, ISettingsService settingsService, VramOrchestrator vramOrchestrator, HttpClient httpClient) =>
         {
+            vramOrchestrator.RecordActivity("comfy");
             await vramOrchestrator.EnsureVramForComfyUiAsync();
 
             var settings = settingsService.LoadSettings();
@@ -271,8 +273,8 @@ public static class WorkflowEndpoints
                 {
                     ["prompt"] = targetGraph?.DeepClone()
                 };
-                var content = new StringContent(payload.ToJsonString(), Encoding.UTF8, "application/json");
-                var response = await httpClient.PostAsync($"{baseUrl}/prompt", content);
+                using var content = new StringContent(payload.ToJsonString(), Encoding.UTF8, "application/json");
+                using var response = await httpClient.PostAsync($"{baseUrl}/prompt", content);
 
                 if (response.IsSuccessStatusCode)
                 {
@@ -345,6 +347,7 @@ public static class WorkflowEndpoints
 
         app.MapPost("/api/video/generate", async (VideoGenerateRequest request, ISettingsService settingsService, VramOrchestrator vramOrchestrator, HttpClient httpClient) =>
         {
+            vramOrchestrator.RecordActivity("comfy");
             await vramOrchestrator.EnsureVramForComfyUiAsync();
 
             var settings = settingsService.LoadSettings();
@@ -441,8 +444,8 @@ public static class WorkflowEndpoints
                 {
                     ["prompt"] = workflowNode
                 };
-                var content = new StringContent(payload.ToJsonString(), Encoding.UTF8, "application/json");
-                var response = await httpClient.PostAsync($"{baseUrl}/prompt", content);
+                using var content = new StringContent(payload.ToJsonString(), Encoding.UTF8, "application/json");
+                using var response = await httpClient.PostAsync($"{baseUrl}/prompt", content);
 
                 if (response.IsSuccessStatusCode)
                 {
@@ -613,8 +616,9 @@ public static class WorkflowEndpoints
             return Results.Ok(sortedList);
         });
 
-        app.MapPost("/api/audio/generate", async (AudioGenerateRequest request, ISettingsService settingsService, IHttpClientFactory clientFactory) =>
+        app.MapPost("/api/audio/generate", async (AudioGenerateRequest request, ISettingsService settingsService, VramOrchestrator vramOrchestrator, IHttpClientFactory clientFactory) =>
         {
+            vramOrchestrator.RecordActivity("audio");
             var settings = settingsService.LoadSettings();
             var workflowsDir = string.IsNullOrWhiteSpace(settings.WorkflowsPath)
                 ? Path.Combine(AppContext.BaseDirectory, "Workflows")
@@ -713,11 +717,11 @@ public static class WorkflowEndpoints
 
             try
             {
-                var http = clientFactory.CreateClient();
+                using var http = clientFactory.CreateClient();
                 var comfyEndpoint = $"{comfyUrl.TrimEnd('/')}/prompt";
                 var payload = new { prompt = targetGraph };
 
-                var response = await http.PostAsJsonAsync(comfyEndpoint, payload);
+                using var response = await http.PostAsJsonAsync(comfyEndpoint, payload);
                 if (response.IsSuccessStatusCode)
                 {
                     var respJson = await response.Content.ReadFromJsonAsync<JsonElement>();

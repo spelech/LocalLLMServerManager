@@ -1,6 +1,9 @@
+using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Runtime.InteropServices;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 
 namespace LocalLLMServerManager.Services;
@@ -13,17 +16,82 @@ public class AiEngineManager : IAiEngineManager
     private static Process? _ollamaProcess;
     private static readonly JobObject AiEnginesJob = new();
 
-    public Process? ComfyProcess => _comfyProcess;
-    public Process? ForgeProcess => _forgeProcess;
-    public Process? AudioProcess => _audioProcess;
-    public Process? OllamaProcess => _ollamaProcess;
+    private readonly Lazy<VramOrchestrator?>? _vramOrchestrator;
+
+    public AiEngineManager()
+    {
+    }
+
+    [ActivatorUtilitiesConstructor]
+    public AiEngineManager(IServiceProvider? serviceProvider = null)
+    {
+        if (serviceProvider != null)
+        {
+            _vramOrchestrator = new Lazy<VramOrchestrator?>(() => serviceProvider.GetService<VramOrchestrator>());
+        }
+    }
+
+    public AiEngineManager(Lazy<VramOrchestrator> vramOrchestrator)
+    {
+        _vramOrchestrator = new Lazy<VramOrchestrator?>(() => vramOrchestrator.Value);
+    }
+
+    public Process? ComfyProcess => GetActiveProcess(ref _comfyProcess);
+    public Process? ForgeProcess => GetActiveProcess(ref _forgeProcess);
+    public Process? AudioProcess => GetActiveProcess(ref _audioProcess);
+    public Process? OllamaProcess => GetActiveProcess(ref _ollamaProcess);
+
+    private static Process? GetActiveProcess(ref Process? process)
+    {
+        if (process == null) return null;
+        try
+        {
+            if (process.HasExited)
+            {
+                process.Dispose();
+                process = null;
+                return null;
+            }
+            return process;
+        }
+        catch
+        {
+            try { process?.Dispose(); } catch { }
+            process = null;
+            return null;
+        }
+    }
+
+    public IReadOnlyDictionary<string, Process> GetActiveProcesses()
+    {
+        var active = new Dictionary<string, Process>(StringComparer.OrdinalIgnoreCase);
+
+        var comfy = GetActiveProcess(ref _comfyProcess);
+        if (comfy != null) active["comfy"] = comfy;
+
+        var forge = GetActiveProcess(ref _forgeProcess);
+        if (forge != null) active["forge"] = forge;
+
+        var audio = GetActiveProcess(ref _audioProcess);
+        if (audio != null) active["audio"] = audio;
+
+        var ollama = GetActiveProcess(ref _ollamaProcess);
+        if (ollama != null) active["ollama"] = ollama;
+
+        return active;
+    }
 
     public bool IsProcessRunning(string name)
     {
         try
         {
             var processes = Process.GetProcessesByName(name);
-            return processes.Length > 0;
+            var running = processes.Length > 0;
+            foreach (var p in processes)
+            {
+                p.Dispose();
+            }
+            return running;
         }
         catch
         {
@@ -35,7 +103,11 @@ public class AiEngineManager : IAiEngineManager
     {
         try
         {
-            if (_comfyProcess != null && !_comfyProcess.HasExited) return Task.FromResult(true);
+            if (GetActiveProcess(ref _comfyProcess) != null)
+            {
+                _vramOrchestrator?.Value?.RecordActivity("comfy");
+                return Task.FromResult(true);
+            }
 
             var expandedPath = ResolveComfyExecutable(executablePath);
             if (!File.Exists(expandedPath))
@@ -58,6 +130,7 @@ public class AiEngineManager : IAiEngineManager
                 AiEnginesJob.AddProcess(_comfyProcess);
             }
 
+            _vramOrchestrator?.Value?.RecordActivity("comfy");
             logger.LogInformation("Started ComfyUI engine process PID {Pid}", _comfyProcess?.Id);
             return Task.FromResult(true);
         }
@@ -72,9 +145,11 @@ public class AiEngineManager : IAiEngineManager
     {
         try
         {
-            if (_comfyProcess != null && !_comfyProcess.HasExited)
+            var active = GetActiveProcess(ref _comfyProcess);
+            if (active != null)
             {
-                _comfyProcess.Kill(true);
+                active.Kill(true);
+                active.Dispose();
                 _comfyProcess = null;
                 logger.LogInformation("Stopped ComfyUI process");
                 return Task.FromResult(true);
@@ -91,6 +166,10 @@ public class AiEngineManager : IAiEngineManager
                     }
                 }
                 catch { }
+                finally
+                {
+                    p.Dispose();
+                }
             }
             _comfyProcess = null;
             return Task.FromResult(true);
@@ -106,7 +185,11 @@ public class AiEngineManager : IAiEngineManager
     {
         try
         {
-            if (_forgeProcess != null && !_forgeProcess.HasExited) return Task.FromResult(true);
+            if (GetActiveProcess(ref _forgeProcess) != null)
+            {
+                _vramOrchestrator?.Value?.RecordActivity("forge");
+                return Task.FromResult(true);
+            }
 
             var expandedPath = ResolveForgeExecutable(executablePath);
             if (!File.Exists(expandedPath))
@@ -129,6 +212,7 @@ public class AiEngineManager : IAiEngineManager
                 AiEnginesJob.AddProcess(_forgeProcess);
             }
 
+            _vramOrchestrator?.Value?.RecordActivity("forge");
             logger.LogInformation("Started SD Forge process PID {Pid}", _forgeProcess?.Id);
             return Task.FromResult(true);
         }
@@ -143,9 +227,11 @@ public class AiEngineManager : IAiEngineManager
     {
         try
         {
-            if (_forgeProcess != null && !_forgeProcess.HasExited)
+            var active = GetActiveProcess(ref _forgeProcess);
+            if (active != null)
             {
-                _forgeProcess.Kill(true);
+                active.Kill(true);
+                active.Dispose();
                 _forgeProcess = null;
                 logger.LogInformation("Stopped SD Forge process");
                 return Task.FromResult(true);
@@ -164,7 +250,11 @@ public class AiEngineManager : IAiEngineManager
     {
         try
         {
-            if (_audioProcess != null && !_audioProcess.HasExited) return Task.FromResult(true);
+            if (GetActiveProcess(ref _audioProcess) != null)
+            {
+                _vramOrchestrator?.Value?.RecordActivity("audio");
+                return Task.FromResult(true);
+            }
 
             var expandedPath = ResolveAudioExecutable(executablePath);
             ProcessStartInfo startInfo;
@@ -221,6 +311,7 @@ public class AiEngineManager : IAiEngineManager
                 AiEnginesJob.AddProcess(_audioProcess);
             }
 
+            _vramOrchestrator?.Value?.RecordActivity("audio");
             logger.LogInformation("Started Audio Engine process PID {Pid}", _audioProcess?.Id);
             return Task.FromResult(true);
         }
@@ -235,9 +326,11 @@ public class AiEngineManager : IAiEngineManager
     {
         try
         {
-            if (_audioProcess != null && !_audioProcess.HasExited)
+            var active = GetActiveProcess(ref _audioProcess);
+            if (active != null)
             {
-                _audioProcess.Kill(true);
+                active.Kill(true);
+                active.Dispose();
                 _audioProcess = null;
                 logger.LogInformation("Stopped Audio Engine process");
                 return Task.FromResult(true);
@@ -256,6 +349,10 @@ public class AiEngineManager : IAiEngineManager
                     }
                 }
                 catch { }
+                finally
+                {
+                    p.Dispose();
+                }
             }
             _audioProcess = null;
             return Task.FromResult(true);
@@ -271,9 +368,14 @@ public class AiEngineManager : IAiEngineManager
     {
         try
         {
-            if (_ollamaProcess != null && !_ollamaProcess.HasExited) return Task.FromResult(true);
+            if (GetActiveProcess(ref _ollamaProcess) != null)
+            {
+                _vramOrchestrator?.Value?.RecordActivity("ollama");
+                return Task.FromResult(true);
+            }
             if (IsProcessRunning("ollama"))
             {
+                _vramOrchestrator?.Value?.RecordActivity("ollama");
                 logger.LogInformation("Ollama process is already running");
                 return Task.FromResult(true);
             }
@@ -299,6 +401,7 @@ public class AiEngineManager : IAiEngineManager
                 AiEnginesJob.AddProcess(_ollamaProcess);
             }
 
+            _vramOrchestrator?.Value?.RecordActivity("ollama");
             logger.LogInformation("Started Ollama server process PID {Pid}", _ollamaProcess?.Id);
             return Task.FromResult(true);
         }
@@ -394,9 +497,11 @@ public class AiEngineManager : IAiEngineManager
     {
         try
         {
-            if (_ollamaProcess != null && !_ollamaProcess.HasExited)
+            var active = GetActiveProcess(ref _ollamaProcess);
+            if (active != null)
             {
-                _ollamaProcess.Kill(true);
+                active.Kill(true);
+                active.Dispose();
                 _ollamaProcess = null;
                 logger.LogInformation("Stopped managed Ollama process");
             }
@@ -409,6 +514,10 @@ public class AiEngineManager : IAiEngineManager
                     p.Kill(true);
                 }
                 catch { }
+                finally
+                {
+                    p.Dispose();
+                }
             }
 
             var appProcesses = Process.GetProcessesByName("ollama_app");
@@ -419,6 +528,10 @@ public class AiEngineManager : IAiEngineManager
                     p.Kill(true);
                 }
                 catch { }
+                finally
+                {
+                    p.Dispose();
+                }
             }
 
             _ollamaProcess = null;
