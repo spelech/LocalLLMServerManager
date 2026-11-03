@@ -76,6 +76,7 @@ public partial class SettingsViewModel : ObservableObject
     [ObservableProperty] private int _modelCacheIdleTimeoutMinutes = 15;
     [ObservableProperty] private int _engineHibernationTimeoutMinutes = 30;
     [ObservableProperty] private int _ramPressureThresholdPercent = 75;
+    [ObservableProperty] private int _defaultOllamaContextLength = 24576;
 
     [ObservableProperty] private string _audioPath = "";
     [ObservableProperty] private string _videoModelsPath = "";
@@ -908,6 +909,7 @@ public partial class SettingsViewModel : ObservableObject
                     ModelCacheIdleTimeoutMinutes = settings.ModelCacheIdleTimeoutMinutes;
                     EngineHibernationTimeoutMinutes = settings.EngineHibernationTimeoutMinutes;
                     RamPressureThresholdPercent = settings.RamPressureThresholdPercent;
+                    DefaultOllamaContextLength = settings.DefaultOllamaContextLength > 0 ? settings.DefaultOllamaContextLength : 24576;
 
                     if (settings.CustomPresets != null && settings.CustomPresets.Count > 0)
                     {
@@ -978,7 +980,8 @@ public partial class SettingsViewModel : ObservableObject
                 AiAssistantPromptsDirectory: this.AiAssistantPromptsDirectory,
                 ModelCacheIdleTimeoutMinutes: this.ModelCacheIdleTimeoutMinutes,
                 EngineHibernationTimeoutMinutes: this.EngineHibernationTimeoutMinutes,
-                RamPressureThresholdPercent: this.RamPressureThresholdPercent
+                RamPressureThresholdPercent: this.RamPressureThresholdPercent,
+                DefaultOllamaContextLength: this.DefaultOllamaContextLength
             );
 
             var content = new StringContent(

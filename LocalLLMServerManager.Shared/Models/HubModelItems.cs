@@ -11,7 +11,10 @@ public record OllamaModelItem(
     bool IsLoaded,
     QuickFitBadge? FitBadge = null,
     long SizeBytes = 0,
-    bool IsSelected = false
+    bool IsSelected = false,
+    int ContextLength = 24576,
+    int MaxInputTokens = 24576,
+    int MaxOutputTokens = 8192
 );
 
 public record HuggingFaceRepoItem(

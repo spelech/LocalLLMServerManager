@@ -502,9 +502,9 @@
                                     </StackPanel>
                                     <TextBlock Text="Configure two-tier memory eviction and host RAM pressure management for idle models and engines:" FontSize="12" Foreground="{StaticResource TextMutedBrush}"/>
 
-                                    <Grid ColumnDefinitions="*,*,*">
+                                    <Grid ColumnDefinitions="*,*,*,*">
                                         <!-- Tier 1: Model Cache Idle Timeout -->
-                                        <StackPanel Grid.Column="0" Spacing="4" Margin="0,0,8,0">
+                                        <StackPanel Grid.Column="0" Spacing="4" Margin="0,0,6,0">
                                             <TextBlock Text="Model Idle Timeout (min)" FontSize="12" Foreground="{StaticResource TextMutedBrush}" FontWeight="Medium"/>
                                             <NumericUpDown Value="{Binding ModelCacheIdleTimeoutMinutes, Mode=TwoWay}"
                                                            Minimum="0" Maximum="1440" Increment="1"
@@ -513,7 +513,7 @@
                                         </StackPanel>
 
                                         <!-- Tier 2: Engine Hibernation Timeout -->
-                                        <StackPanel Grid.Column="1" Spacing="4" Margin="4,0,4,0">
+                                        <StackPanel Grid.Column="1" Spacing="4" Margin="3,0,3,0">
                                             <TextBlock Text="Engine Hibernation (min)" FontSize="12" Foreground="{StaticResource TextMutedBrush}" FontWeight="Medium"/>
                                             <NumericUpDown Value="{Binding EngineHibernationTimeoutMinutes, Mode=TwoWay}"
                                                            Minimum="0" Maximum="1440" Increment="1"
@@ -522,12 +522,21 @@
                                         </StackPanel>
 
                                         <!-- RAM Pressure Threshold -->
-                                        <StackPanel Grid.Column="2" Spacing="4" Margin="8,0,0,0">
+                                        <StackPanel Grid.Column="2" Spacing="4" Margin="3,0,3,0">
                                             <TextBlock Text="RAM Pressure Threshold (%)" FontSize="12" Foreground="{StaticResource TextMutedBrush}" FontWeight="Medium"/>
                                             <NumericUpDown Value="{Binding RamPressureThresholdPercent, Mode=TwoWay}"
                                                            Minimum="10" Maximum="99" Increment="5"
                                                            FormatString="0"/>
                                             <TextBlock Text="Emergency eviction trigger" FontSize="10" Foreground="{StaticResource TextMutedBrush}"/>
+                                        </StackPanel>
+
+                                        <!-- Default Ollama Context Window -->
+                                        <StackPanel Grid.Column="3" Spacing="4" Margin="6,0,0,0">
+                                            <TextBlock Text="Default Context (tokens)" FontSize="12" Foreground="{StaticResource TextMutedBrush}" FontWeight="Medium"/>
+                                            <NumericUpDown Value="{Binding DefaultOllamaContextLength, Mode=TwoWay}"
+                                                           Minimum="2048" Maximum="131072" Increment="2048"
+                                                           FormatString="0"/>
+                                            <TextBlock Text="Active context advertised to OpenCode" FontSize="10" Foreground="{StaticResource TextMutedBrush}"/>
                                         </StackPanel>
                                     </Grid>
                                 </StackPanel>

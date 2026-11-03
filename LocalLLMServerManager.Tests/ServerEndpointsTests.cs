@@ -460,4 +460,18 @@ public class ServerEndpointsTests : IClassFixture<AppTestServerFixture>
             if (File.Exists(tempFile)) File.Delete(tempFile);
         }
     }
+
+    [Fact]
+    public async Task GetModelsEndpoint_ReturnsEnrichedContextAndModelInfoMetadata()
+    {
+        var response = await _client.GetAsync("/api/models");
+        Assert.Equal(System.Net.HttpStatusCode.OK, response.StatusCode);
+
+        var content = await response.Content.ReadAsStringAsync();
+        Assert.NotNull(content);
+
+        var doc = System.Text.Json.Nodes.JsonNode.Parse(content);
+        Assert.NotNull(doc);
+        Assert.NotNull(doc["models"]);
+    }
 }

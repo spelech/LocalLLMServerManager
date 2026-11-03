@@ -35,5 +35,6 @@ public record AppSettings(
     string AiAssistantPromptsDirectory = "",
     int ModelCacheIdleTimeoutMinutes = 15,
     int EngineHibernationTimeoutMinutes = 30,
-    int RamPressureThresholdPercent = 75
+    int RamPressureThresholdPercent = 75,
+    int DefaultOllamaContextLength = 24576
 );
