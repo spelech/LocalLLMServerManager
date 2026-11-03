@@ -11,7 +11,7 @@ public static class ModelProxyEndpoints
 {
     public static void MapModelProxyEndpoints(this WebApplication app)
     {
-        app.MapGet("/api/models", async (IHttpClientFactory clientFactory) =>
+        app.MapGet("/api/models", async (IHttpClientFactory clientFactory, ISettingsService? settingsService) =>
         {
             try
             {
@@ -21,7 +21,100 @@ public static class ModelProxyEndpoints
                 if (response.IsSuccessStatusCode)
                 {
                     var content = await response.Content.ReadAsStringAsync(cts.Token);
-                    return Results.Content(content, "application/json");
+                    var settings = settingsService?.LoadSettings() ?? new AppSettings();
+                    int defaultContext = settings.DefaultOllamaContextLength > 0 ? settings.DefaultOllamaContextLength : 24576;
+
+                    // Query running models to detect active runtime context windows
+                    var activeContextMap = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
+                    try
+                    {
+                        using var psCts = new CancellationTokenSource(TimeSpan.FromSeconds(2));
+                        var psResp = await http.GetAsync("http://127.0.0.1:11434/api/ps", psCts.Token);
+                        if (psResp.IsSuccessStatusCode)
+                        {
+                            var psJson = await psResp.Content.ReadAsStringAsync(psCts.Token);
+                            var psDoc = JsonNode.Parse(psJson);
+                            var psModels = psDoc?["models"]?.AsArray();
+                            if (psModels != null)
+                            {
+                                foreach (var psm in psModels)
+                                {
+                                    string? mName = psm?["name"]?.ToString() ?? psm?["model"]?.ToString();
+                                    int? cLen = psm?["context_length"]?.GetValue<int>();
+                                    if (!string.IsNullOrEmpty(mName) && cLen.HasValue && cLen.Value > 0)
+                                    {
+                                        activeContextMap[mName] = cLen.Value;
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    catch { }
+
+                    var doc = JsonNode.Parse(content);
+                    var models = doc?["models"]?.AsArray();
+                    if (models != null)
+                    {
+                        foreach (var m in models)
+                        {
+                            if (m is JsonObject mObj)
+                            {
+                                string name = mObj["name"]?.ToString() ?? mObj["model"]?.ToString() ?? "";
+                                var detailsObj = mObj["details"] as JsonObject;
+
+                                int ggufMaxContext = 32768;
+                                if (detailsObj != null && detailsObj.TryGetPropertyValue("context_length", out var clVal) && clVal != null)
+                                {
+                                    if (int.TryParse(clVal.ToString(), out var parsedCl) && parsedCl > 0)
+                                    {
+                                        ggufMaxContext = parsedCl;
+                                    }
+                                }
+
+                                // Use active running context if loaded, otherwise configured default context clamped by model maximum
+                                int effectiveContext;
+                                if (activeContextMap.TryGetValue(name, out var activeCtx))
+                                {
+                                    effectiveContext = activeCtx;
+                                }
+                                else
+                                {
+                                    effectiveContext = Math.Min(defaultContext, ggufMaxContext);
+                                    if (effectiveContext <= 0) effectiveContext = defaultContext;
+                                }
+
+                                int maxOutput = 8192;
+
+                                // Inject top-level token and context limits for LiteLLM / OpenCode
+                                mObj["context_length"] = effectiveContext;
+                                mObj["max_input_tokens"] = effectiveContext;
+                                mObj["max_output_tokens"] = maxOutput;
+                                mObj["max_tokens"] = effectiveContext;
+
+                                // Inject inside details for downstream Model Managers that inspect details
+                                if (detailsObj != null)
+                                {
+                                    detailsObj["context_length"] = effectiveContext;
+                                    detailsObj["max_input_tokens"] = effectiveContext;
+                                    detailsObj["max_output_tokens"] = maxOutput;
+                                }
+
+                                // Inject model_info schema (mirrors LiteLLM ModelInfo specification)
+                                var modelInfo = new JsonObject
+                                {
+                                    ["context_length"] = effectiveContext,
+                                    ["max_input_tokens"] = effectiveContext,
+                                    ["max_output_tokens"] = maxOutput,
+                                    ["max_tokens"] = effectiveContext,
+                                    ["key"] = name,
+                                    ["mode"] = "chat"
+                                };
+                                mObj["model_info"] = modelInfo;
+                            }
+                        }
+                    }
+
+                    return Results.Content(doc?.ToJsonString(new JsonSerializerOptions { WriteIndented = true }) ?? content, "application/json");
                 }
             }
             catch { }

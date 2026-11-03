@@ -56,7 +56,21 @@ public class OllamaModelService : IOllamaModelService
                             if (name.Contains("math", StringComparison.OrdinalIgnoreCase)) { cap = "🧮 Mathematics"; color = "#C084FC"; }
                             else if (name.Contains("r1", StringComparison.OrdinalIgnoreCase) || name.Contains("deepseek", StringComparison.OrdinalIgnoreCase)) { cap = "🧠 Reasoning profile"; color = "#A855F7"; }
 
-                            result.Add(new OllamaModelItem(name, formatSize, cap, color, false, null, size));
+                            int contextLength = 24576;
+                            var ctxNode = m?["context_length"] ?? m?["details"]?["context_length"];
+                            if (ctxNode != null && int.TryParse(ctxNode.ToString(), out var parsedCtx) && parsedCtx > 0)
+                            {
+                                contextLength = parsedCtx;
+                            }
+
+                            int maxOut = 8192;
+                            var outNode = m?["max_output_tokens"] ?? m?["details"]?["max_output_tokens"];
+                            if (outNode != null && int.TryParse(outNode.ToString(), out var parsedOut) && parsedOut > 0)
+                            {
+                                maxOut = parsedOut;
+                            }
+
+                            result.Add(new OllamaModelItem(name, formatSize, cap, color, false, null, size, false, contextLength, contextLength, maxOut));
                         }
                     }
                 }
