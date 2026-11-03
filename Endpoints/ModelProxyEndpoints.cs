@@ -83,7 +83,28 @@ public static class ModelProxyEndpoints
                                     if (effectiveContext <= 0) effectiveContext = defaultContext;
                                 }
 
+                                // Determine max_output_tokens based on model capabilities and architecture:
+                                // Reasoning/R1 models: up to 16,384 or 32,768 for long chain-of-thought
+                                // Large modern coding models (Qwen 2.5 / DeepSeek): 8,192
+                                // Small models (< 7B): 4,096
                                 int maxOutput = 8192;
+                                if (name.Contains("r1", StringComparison.OrdinalIgnoreCase) || name.Contains("reason", StringComparison.OrdinalIgnoreCase))
+                                {
+                                    maxOutput = Math.Min(16384, effectiveContext / 2);
+                                }
+                                else if (name.Contains("1.5b", StringComparison.OrdinalIgnoreCase) || name.Contains("0.5b", StringComparison.OrdinalIgnoreCase) || name.Contains("3b", StringComparison.OrdinalIgnoreCase))
+                                {
+                                    maxOutput = 4096;
+                                }
+
+                                // Check if details explicitly provided a max_output_tokens override
+                                if (detailsObj != null && detailsObj.TryGetPropertyValue("max_output_tokens", out var moVal) && moVal != null)
+                                {
+                                    if (int.TryParse(moVal.ToString(), out var parsedMo) && parsedMo > 0)
+                                    {
+                                        maxOutput = parsedMo;
+                                    }
+                                }
 
                                 // Inject top-level token and context limits for LiteLLM / OpenCode
                                 mObj["context_length"] = effectiveContext;
