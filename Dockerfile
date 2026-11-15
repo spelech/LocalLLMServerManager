@@ -1,4 +1,4 @@
-FROM mcr.microsoft.com/dotnet/sdk:10.0 AS build
+FROM mcr.microsoft.com/dotnet/sdk:11.0 AS build
 WORKDIR /src
 
 # Install python3 required by Emscripten WASM native toolchain
@@ -29,7 +29,7 @@ RUN dotnet publish "LocalLLMServerManager.Web/LocalLLMServerManager.Web.csproj" 
 RUN dotnet publish "LocalLLMServerManager.csproj" -c Release -o /app/publish --nologo /p:PublishSingleFile=false
 
 # Runtime Image
-FROM mcr.microsoft.com/dotnet/aspnet:10.0 AS final
+FROM mcr.microsoft.com/dotnet/aspnet:11.0 AS final
 WORKDIR /app
 
 ENV ASPNETCORE_URLS=http://0.0.0.0:5246
